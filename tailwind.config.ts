@@ -12,16 +12,18 @@ const config: Config = {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"]
       },
       colors: {
-        ink: "#111111",
-        "ink-soft": "#1E1E1E",
-        muted: "#746D63",
-        accent: "#FF5638",
-        mint: "#C8FF3D",
-        sand: "#ECE3D2",
-        paper: "#F3EFE7",
-        "paper-alt": "#ECE3D2",
-        clay: "#DDD4C8",
-        card: "#FFFFFF"
+        ink: "#F5F7FB",
+        "ink-soft": "#12161F",
+        muted: "#96A0B5",
+        accent: "#7CFF6B",
+        mint: "#7CFF6B",
+        violet: "#8C7BFF",
+        cyan: "#6EDCFF",
+        sand: "#1A2130",
+        paper: "#0B0D12",
+        "paper-alt": "#12161F",
+        clay: "rgba(255,255,255,0.08)",
+        card: "#171C26"
       },
       maxWidth: {
         content: "1280px"
@@ -32,8 +34,8 @@ const config: Config = {
         button: "999px"
       },
       boxShadow: {
-        soft: "0 18px 60px rgba(17, 17, 17, 0.08)",
-        card: "0 1px 0 rgba(17, 17, 17, 0.04)"
+        soft: "0 24px 80px rgba(0, 0, 0, 0.36)",
+        card: "inset 0 1px 0 rgba(255,255,255,0.06), 0 18px 60px rgba(0,0,0,0.22)"
       },
       keyframes: {
         revealUp: {

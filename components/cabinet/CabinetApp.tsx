@@ -174,7 +174,7 @@ export function CabinetApp() {
 
   return (
     <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className="sticky top-0 hidden h-screen flex-col border-r border-white/10 bg-ink p-5 text-white lg:flex">
+      <aside className="sticky top-0 hidden h-screen flex-col border-r border-clay bg-paper p-5 text-white lg:flex">
         <Logo light href="/cabinet" />
         <div className="mt-8 rounded-[22px] border border-white/10 bg-white/[0.06] p-4">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">Баланс</p>
@@ -203,7 +203,7 @@ export function CabinetApp() {
       <div className="flex min-h-screen flex-col">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-clay bg-paper/88 px-5 py-4 backdrop-blur-xl lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-full bg-ink text-white lg:hidden">
+            <div className="grid h-10 w-10 place-items-center rounded-full border border-clay bg-card text-ink lg:hidden">
               <LayoutDashboard size={18} />
             </div>
             <div>
@@ -238,7 +238,7 @@ export function CabinetApp() {
                   </div>
                 ))}
               </div>
-              <div className="studio-noise relative overflow-hidden rounded-container border border-ink bg-ink p-5 md:p-7">
+              <div className="studio-noise relative overflow-hidden rounded-container border border-clay bg-card p-5 shadow-soft md:p-7">
                 <CardGenerator embedded hideHistory onSaved={refreshCards} persistToServer darkConsole />
               </div>
             </div>
@@ -364,7 +364,7 @@ export function CabinetApp() {
         {nav.map((item) => (
           <button
             className={`grid place-items-center gap-1 rounded-[14px] px-2 py-2 text-[11px] font-black ${
-              tab === item.id ? "bg-ink text-white" : "text-muted"
+              tab === item.id ? "bg-accent text-paper" : "text-muted"
             }`}
             key={item.id}
             onClick={() => setTab(item.id)}
@@ -377,7 +377,7 @@ export function CabinetApp() {
       </nav>
 
       {selected ? (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
           <Card className="w-full max-w-2xl overflow-hidden p-0" padding="none">
             <div className="flex items-center justify-between border-b border-clay px-6 py-4">
               <h3 className="font-bold text-ink">{selected.headline || selected.title}</h3>

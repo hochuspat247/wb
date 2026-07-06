@@ -8,11 +8,11 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants = {
   primary:
-    "bg-accent text-white border border-accent hover:bg-[#e64b31] hover:-translate-y-px active:translate-y-0",
+    "bg-accent text-paper border border-accent hover:bg-[#9BFF8D] hover:-translate-y-px active:translate-y-0",
   secondary:
-    "border border-clay bg-card text-ink hover:border-ink/30 hover:bg-sand/50 active:translate-y-0",
-  ghost: "bg-transparent text-muted hover:bg-ink/5 hover:text-ink",
-  dark: "bg-ink text-white border border-ink hover:bg-ink-soft hover:-translate-y-px"
+    "border border-clay bg-card text-ink hover:border-accent/35 hover:bg-sand active:translate-y-0",
+  ghost: "bg-transparent text-muted hover:bg-white/5 hover:text-ink",
+  dark: "bg-ink text-paper border border-ink hover:bg-white hover:-translate-y-px"
 };
 
 const sizes = {

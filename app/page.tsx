@@ -25,10 +25,10 @@ export default function Home() {
 
       <section className="py-16 md:py-24" id="demo">
         <div className="section-shell">
-          <div className="studio-noise relative overflow-hidden rounded-container border border-ink bg-ink p-5 md:p-10">
+          <div className="studio-noise relative overflow-hidden rounded-container border border-clay bg-card p-5 shadow-soft md:p-10">
             <SectionHeader
               align="left"
-              description="Введите описание товара, выберите стиль и получите текст, SEO и визуал."
+              description="Введите товар, выберите стиль и получите текст, SEO и визуал в одном рабочем процессе."
               theme="dark"
               title="Соберите первую карточку прямо сейчас"
             />

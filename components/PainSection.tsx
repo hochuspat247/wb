@@ -3,23 +3,23 @@ import { Reveal } from "@/components/ui/Reveal";
 const pains = [
   {
     num: "01",
-    title: "Долго писать описание",
-    text: "Название, преимущества, ключи и адаптация под площадку отнимают часы на каждый SKU."
+    title: "Текст",
+    text: "Название и описание требуют отдельной редакторской сборки."
   },
   {
     num: "02",
-    title: "Дорого заказывать дизайн",
-    text: "Каждая новая карточка — отдельный бюджет, согласования и ожидание исполнителя."
+    title: "SEO",
+    text: "Ключи и структура часто собираются отдельно от визуала."
   },
   {
     num: "03",
-    title: "Сложно попасть в требования площадок",
-    text: "Формат 4:5, инфографика, SEO и визуальные стандарты WB и Ozon нужно соблюдать вручную."
+    title: "Дизайн",
+    text: "Хороший креатив требует времени, вкуса и согласований."
   },
   {
     num: "04",
-    title: "Нельзя быстро тестировать гипотезы",
-    text: "Пока готовится одна версия карточки, конкуренты уже тестируют другие обложки и тексты."
+    title: "Форматы",
+    text: "Обложка, PNG, JSON и история должны быть в одном процессе."
   }
 ];
 
@@ -34,7 +34,7 @@ export function PainSection() {
               Карточка товара — узкое место запуска
             </h2>
             <p className="mt-6 max-w-lg text-lg font-medium leading-relaxed text-muted">
-              Товар готов, но запуск застревает на тексте, SEO, визуале и форматах площадок. Здесь чаще всего теряется скорость теста.
+              Товар готов, но запуск застревает на тексте, SEO, визуале и форматах площадок.
             </p>
           </div>
         </Reveal>
@@ -42,7 +42,7 @@ export function PainSection() {
           {pains.map((pain, i) => (
             <Reveal delay={(i + 1) as 1 | 2 | 3 | 4} key={pain.num}>
               <div className="grid gap-4 rounded-[22px] border border-clay bg-card p-6 md:grid-cols-[80px_1fr] md:items-start">
-                <span className="text-3xl font-black text-clay">{pain.num}</span>
+                <span className="text-3xl font-black text-accent">{pain.num}</span>
                 <div>
                   <h3 className="text-xl font-black text-ink">{pain.title}</h3>
                   <p className="mt-2 text-sm font-medium leading-relaxed text-muted">{pain.text}</p>

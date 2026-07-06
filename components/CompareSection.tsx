@@ -6,7 +6,8 @@ const rows = [
   ["Правки", "каждый раз вручную", "через согласования", "новая версия сразу"],
   ["Масштабирование", "сложно на SKU", "растёт бюджет", "100+ карточек в месяц"],
   ["Экспорт", "собирать отдельно", "по договорённости", "PNG + JSON"],
-  ["Тест гипотез", "медленно", "дорого", "быстро"]
+  ["Скорость тестов", "медленно", "дорого", "быстро"],
+  ["Варианты карточек", "собирать вручную", "оплата за версию", "несколько гипотез сразу"]
 ];
 
 export function CompareSection() {
@@ -23,7 +24,7 @@ export function CompareSection() {
             <div className="min-w-[760px]">
             <div className="grid grid-cols-[1fr_1fr_1fr_1.08fr] border-b border-clay text-sm font-black text-ink">
               {["", "Ручная сборка", "Фрилансер", "MarketCard AI"].map((head, index) => (
-                <div className={`p-4 md:p-5 ${index === 3 ? "bg-ink text-white" : ""}`} key={head || "metric"}>
+                <div className={`p-4 md:p-5 ${index === 3 ? "bg-accent text-paper" : ""}`} key={head || "metric"}>
                   {head}
                 </div>
               ))}
@@ -33,7 +34,7 @@ export function CompareSection() {
                 {row.map((cell, index) => (
                   <div
                     className={`min-h-16 p-4 text-sm font-semibold md:p-5 ${
-                      index === 0 ? "text-ink" : index === 3 ? "bg-ink text-white" : "text-muted"
+                      index === 0 ? "text-ink" : index === 3 ? "bg-white/[0.055] text-ink" : "text-muted"
                     }`}
                     key={cell}
                   >

@@ -60,7 +60,7 @@ export function Header() {
                 <Button variant="ghost">{session?.user?.name || "Кабинет"}</Button>
               </Link>
               <Link href="/cabinet#create">
-                <Button>Создать карточку</Button>
+                <Button>Попробовать бесплатно</Button>
               </Link>
               <Button onClick={() => signOut({ callbackUrl: "/" })} variant="secondary">
                 Выйти
@@ -72,7 +72,7 @@ export function Header() {
                 <Button variant="ghost">Войти</Button>
               </Link>
               <Link href="/register">
-                <Button>Создать карточку</Button>
+                <Button>Попробовать бесплатно</Button>
               </Link>
             </>
           )}
@@ -89,7 +89,7 @@ export function Header() {
       </div>
 
       {menuOpen ? (
-        <div className="border-t border-clay bg-card px-5 py-4 lg:hidden">
+        <div className="border-t border-clay bg-card/95 px-5 py-4 backdrop-blur-xl lg:hidden">
           <nav className="grid gap-1">
             {links.map(([label, href]) => (
               <Link

@@ -47,7 +47,7 @@ export function WorkflowSection() {
                   i === steps.length - 1 ? "" : ""
                 }`}
               >
-                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-full bg-ink text-xs font-black text-white">
+                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-full bg-accent text-xs font-black text-paper">
                   {step.num}
                 </div>
                 <h3 className="text-lg font-black text-ink">{step.title}</h3>

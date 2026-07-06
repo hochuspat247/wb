@@ -13,12 +13,12 @@ export function RoadmapSection() {
   return (
     <section className="py-20 md:py-28">
       <div className="section-shell">
-        <div className="studio-noise relative overflow-hidden rounded-container border border-ink bg-ink p-8 text-white md:p-12">
+        <div className="studio-noise relative overflow-hidden rounded-container border border-clay bg-card p-8 text-white shadow-soft md:p-12">
           <SectionHeader
             align="left"
             description="Следующие шаги — превратить генератор в полноценное рабочее место селлера."
             theme="dark"
-            title="Дальше — не просто генератор, а рабочее место селлера"
+            title="Дальше — рабочее место селлера"
           />
 
           <div className="relative z-10 mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

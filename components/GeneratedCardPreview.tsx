@@ -26,10 +26,10 @@ const styleMap: Record<
   "Минималистичный": {
     background: "bg-[#f7f8fb]",
     panel: "bg-white/88",
-    text: "text-ink",
+    text: "text-[#0B0D12]",
     muted: "text-gray-600",
-    badge: "bg-ink text-white",
-    chip: "bg-white text-ink",
+    badge: "bg-[#0B0D12] text-white",
+    chip: "bg-white text-[#0B0D12]",
     imagePanel: "bg-white",
     glow: "bg-gray-200/70"
   },
@@ -145,7 +145,7 @@ export const GeneratedCardPreview = forwardRef<HTMLDivElement, GeneratedCardPrev
         </div>
 
         <div className="absolute bottom-[4%] left-[5%] right-[5%] z-30 flex items-center justify-between gap-3">
-          <span className={`rounded-full px-4 py-2 text-[13px] font-black ${imageUrl ? "bg-mint text-ink" : theme.panel}`}>
+          <span className={`rounded-full px-4 py-2 text-[13px] font-black ${imageUrl ? "bg-mint text-paper" : theme.panel}`}>
             {imageUrl ? "С вашим фото" : "Нужно фото"}
           </span>
           <span className={`rounded-full px-4 py-2 text-[13px] font-black ${theme.badge}`}>Готово к публикации</span>

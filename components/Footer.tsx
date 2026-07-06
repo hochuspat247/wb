@@ -3,7 +3,7 @@ import { Logo } from "@/components/Logo";
 
 export function Footer() {
   return (
-    <footer className="border-t border-ink bg-ink py-14 text-white">
+    <footer className="border-t border-clay bg-paper py-14 text-white">
       <div className="section-shell">
         <div className="grid gap-10 md:grid-cols-[1.2fr_1fr_1fr]">
           <div>

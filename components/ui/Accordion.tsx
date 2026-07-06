@@ -30,7 +30,7 @@ export function Accordion({ items }: AccordionProps) {
               <span className="text-xl font-black leading-tight text-ink md:text-2xl">{item.question}</span>
               <span
                 className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border border-clay text-muted transition ${
-                  isOpen ? "rotate-45 bg-ink text-white" : ""
+                  isOpen ? "rotate-45 bg-accent text-paper" : ""
                 }`}
               >
                 +

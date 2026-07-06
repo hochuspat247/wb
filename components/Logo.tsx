@@ -10,7 +10,7 @@ export function Logo({ light = false, href = "/" }: LogoProps) {
     <Link className="group flex items-center gap-2.5" href={href}>
       <span
         className={`grid h-9 w-9 place-items-center rounded-xl text-xs font-bold ${
-          light ? "bg-white/10 text-mint" : "bg-ink text-mint"
+          light ? "bg-white/10 text-accent" : "border border-clay bg-card text-accent"
         }`}
       >
         MC

@@ -7,25 +7,25 @@ import { Reveal } from "@/components/ui/Reveal";
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden pb-14 pt-12 md:pb-20 md:pt-18">
+    <section className="relative overflow-hidden pb-16 pt-14 md:pb-24 md:pt-20">
       <div className="section-shell relative z-10 grid items-center gap-12 lg:grid-cols-[0.86fr_1.14fr] lg:gap-14">
         <div>
           <Reveal>
-            <Badge className="mb-7 border-ink/15 bg-card/70 text-ink" variant="outline">
-              Инструмент для селлеров WB, Ozon и Avito
+            <Badge className="mb-7 border-clay bg-card/70 text-muted" variant="outline">
+              AI для продавцов маркетплейсов
             </Badge>
           </Reveal>
 
           <Reveal delay={1}>
-            <h1 className="text-balance text-[2.75rem] font-black leading-[0.95] tracking-normal text-ink md:text-[4.8rem] lg:text-[5.5rem]">
-              Карточки товаров, которые выглядят как работа дорогого дизайнера
+            <h1 className="text-balance text-[3rem] font-black leading-[0.9] tracking-normal text-ink md:text-[5.25rem] lg:text-[6rem]">
+              Карточки, которые выглядят <span className="bg-gradient-to-r from-accent via-cyan to-violet bg-clip-text text-transparent">дороже</span> и продают лучше
             </h1>
           </Reveal>
 
           <Reveal delay={2}>
             <p className="mt-7 max-w-xl text-lg font-medium leading-relaxed text-muted md:text-xl">
-              Загрузите фото товара — MarketCard AI соберёт название, описание, SEO и премиальную обложку 4:5 для
-              маркетплейсов.
+              Загрузите фото товара — MarketCard AI соберёт название, описание, SEO-ключи и премиальную обложку 4:5
+              для Wildberries, Ozon и Avito.
             </p>
           </Reveal>
 
@@ -39,12 +39,12 @@ export function Hero() {
               </Link>
               <Link href="/#examples">
                 <Button className="w-full sm:w-auto" size="lg" variant="secondary">
-                  Посмотреть примеры
+                  Смотреть примеры
                 </Button>
               </Link>
             </div>
             <p className="mt-5 text-sm font-semibold text-muted">
-              Без карты · 3 тестовые карточки · Экспорт PNG и JSON
+              Без карты · 3 тестовые карточки · PNG и JSON экспорт
             </p>
           </Reveal>
         </div>

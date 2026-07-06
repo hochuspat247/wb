@@ -27,24 +27,24 @@ export function PricingCard({
 }: PricingCardProps) {
   return (
     <Card
-      className={`relative flex h-full flex-col ${highlighted ? "border-ink bg-ink text-white" : "bg-card"}`}
+      className={`relative flex h-full flex-col ${highlighted ? "border-accent/45 bg-gradient-to-b from-card to-paper text-ink" : "bg-card"}`}
       padding="lg"
     >
       {badge ? (
-        <Badge className={`absolute -top-3 left-6 ${highlighted ? "border-mint bg-mint text-ink" : ""}`} variant="accent">
+        <Badge className={`absolute -top-3 left-6 ${highlighted ? "border-mint bg-mint text-paper" : ""}`} variant="accent">
           {badge}
         </Badge>
       ) : null}
       <h3 className="text-2xl font-black">{name}</h3>
       <div className="mt-4">
         <span className="text-5xl font-black tracking-normal">{price}</span>
-        <span className={`ml-2 text-sm ${highlighted ? "text-white/50" : "text-muted"}`}>/{period}</span>
+        <span className={`ml-2 text-sm ${highlighted ? "text-muted" : "text-muted"}`}>/{period}</span>
       </div>
       <ul className="mt-8 flex-1 space-y-3">
         {features.map((feature) => (
           <li className="flex items-start gap-3 text-sm" key={feature}>
             <Check className={`mt-0.5 shrink-0 ${highlighted ? "text-mint" : "text-accent"}`} size={16} />
-            <span className={highlighted ? "text-white/80" : "text-muted"}>{feature}</span>
+            <span className={highlighted ? "text-muted" : "text-muted"}>{feature}</span>
           </li>
         ))}
       </ul>

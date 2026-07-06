@@ -1,3 +1,5 @@
+import Image, { type StaticImageData } from "next/image";
+
 type ExampleCardProps = {
   title: string;
   subtitle?: string;
@@ -8,11 +10,34 @@ type ExampleCardProps = {
     product: string;
     label?: string;
   };
+  images?: {
+    before: StaticImageData;
+    after: StaticImageData;
+  };
   badges?: string[];
   featured?: boolean;
 };
 
-export function ExampleCard({ title, subtitle, variant, theme, badges = [], featured = false }: ExampleCardProps) {
+export function ExampleCard({ title, subtitle, variant, theme, images, badges = [], featured = false }: ExampleCardProps) {
+  if (images) {
+    const image = images[variant];
+
+    return (
+      <div className="group h-full overflow-hidden rounded-card border border-ink/10 bg-card transition duration-300 hover:-translate-y-1 hover:border-ink/25">
+        <div className="relative aspect-[4/5]">
+          <Image
+            alt={`${title} ${variant}`}
+            className="object-cover"
+            fill
+            placeholder="blur"
+            sizes={featured ? "(min-width: 768px) 50vw, 100vw" : "(min-width: 768px) 25vw, 100vw"}
+            src={image}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (variant === "before") {
     return (
       <div className="overflow-hidden rounded-card border border-clay bg-[#E8E4DE]">
@@ -33,7 +58,7 @@ export function ExampleCard({ title, subtitle, variant, theme, badges = [], feat
     <div className="group h-full overflow-hidden rounded-[22px] border border-ink/10 bg-card transition duration-300 hover:-translate-y-1 hover:border-ink/25">
       <div className={`relative aspect-[4/5] ${theme.bg}`}>
         {theme.label ? (
-          <span className="absolute left-4 top-4 rounded-full bg-white/92 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-ink">
+          <span className="absolute left-4 top-4 rounded-full bg-white/92 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-paper">
             {theme.label}
           </span>
         ) : null}
@@ -54,7 +79,7 @@ export function ExampleCard({ title, subtitle, variant, theme, badges = [], feat
           <div className="absolute bottom-4 right-4 space-y-1.5">
             {badges.map((badge) => (
               <div
-                className="rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black text-ink shadow-sm"
+                className="rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black text-paper shadow-sm"
                 key={badge}
               >
                 {badge}

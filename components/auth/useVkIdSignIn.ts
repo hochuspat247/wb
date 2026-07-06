@@ -1,29 +1,37 @@
 "use client";
 
 import { useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { completeVkIdLogin } from "@/lib/auth/vk-id-client";
+import {
+  clearVkAuthParamsFromUrl,
+  completeVkIdLogin,
+  storeVkCallbackUrl
+} from "@/lib/auth/vk-id-client";
 
 export function useVkIdSignIn(callbackUrl = "/cabinet") {
-  const router = useRouter();
-
   return useCallback(
     async (payload: { code: string; device_id: string }) => {
+      storeVkCallbackUrl(callbackUrl);
+
       const accessToken = await completeVkIdLogin(payload);
+
+      if (!accessToken) {
+        throw new Error("VK_TOKEN_EMPTY");
+      }
+
       const result = await signIn("vk-id", {
         accessToken,
         redirect: false,
         callbackUrl
       });
 
-      if (result?.error) {
-        throw new Error("SESSION_FAILED");
+      if (result?.error || result?.ok === false) {
+        throw new Error(result?.error || "SESSION_FAILED");
       }
 
-      router.push(callbackUrl);
-      router.refresh();
+      clearVkAuthParamsFromUrl();
+      window.location.assign(callbackUrl);
     },
-    [callbackUrl, router]
+    [callbackUrl]
   );
 }

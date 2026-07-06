@@ -59,7 +59,12 @@ const providers: Provider[] = [
         return null;
       }
 
-      return authenticateVkAccessToken(accessToken);
+      try {
+        return await authenticateVkAccessToken(accessToken);
+      } catch (error) {
+        console.error("[MarketCard AI] VK authorize failed", error);
+        return null;
+      }
     }
   })
 ];

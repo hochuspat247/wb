@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import * as VKID from "@vkid/sdk";
-import { getVkAppName, initVkIdConfig } from "@/lib/auth/vk-id-client";
+import { getVkAppName, initVkIdConfig, storeVkCallbackUrl } from "@/lib/auth/vk-id-client";
 import { useVkIdSignIn } from "@/components/auth/useVkIdSignIn";
 
 type VkIdFloatingProps = {
@@ -15,6 +15,8 @@ export function VkIdFloating({ callbackUrl = "/cabinet" }: VkIdFloatingProps) {
   const signInWithVk = useVkIdSignIn(callbackUrl);
 
   useEffect(() => {
+    storeVkCallbackUrl(callbackUrl);
+
     if (!initVkIdConfig()) {
       return;
     }

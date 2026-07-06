@@ -112,6 +112,10 @@ export function LoginForm() {
             <VkIdAuthPanel callbackUrl={callbackUrl} />
           </div>
 
+          <p className="text-center text-xs text-muted">
+            После VK ID вы вернётесь на сайт и попадёте в кабинет автоматически.
+          </p>
+
           <p className="mt-6 text-center text-sm text-muted">
             Нет аккаунта?{" "}
             <Link className="font-bold text-accent hover:text-ink" href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}>

@@ -35,7 +35,8 @@ export async function authenticateVkAccessToken(accessToken: string) {
 
   const data = (await response.json()) as VkUserInfoResponse;
 
-  if (!data.user?.user_id) {
+  if (!response.ok || !data.user?.user_id) {
+    console.error("[MarketCard AI] VK user_info failed", response.status, data.error || data);
     return null;
   }
 

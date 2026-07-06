@@ -27,6 +27,8 @@ export const exampleProducts = [
       before: waterTesterBefore,
       after: waterTesterAfter
     },
+    compareLabel: "Новая обложка",
+    duration: "32 сек",
     badges: ["Контроль солей", "Термометр", "Проводимость"]
   },
   {
@@ -43,6 +45,8 @@ export const exampleProducts = [
       before: faceCreamBefore,
       after: faceCreamAfter
     },
+    compareLabel: "Замена окружения",
+    duration: "29 сек",
     badges: ["SPF 30", "Гиалурон", "Без парабенов"]
   },
   {
@@ -59,6 +63,8 @@ export const exampleProducts = [
       before: steamerBefore,
       after: steamerAfter
     },
+    compareLabel: "Замена ракурса",
+    duration: "31 сек",
     badges: ["180°C", "2 л", "5 насадок"]
   },
   {
@@ -75,6 +81,8 @@ export const exampleProducts = [
       before: fanBefore,
       after: fanAfter
     },
+    compareLabel: "Премиум-инфографика",
+    duration: "28 сек",
     badges: ["3 скорости", "Пульт", "35 дБ"]
   },
   {
@@ -91,6 +99,8 @@ export const exampleProducts = [
       before: awardBefore,
       after: awardAfter
     },
+    compareLabel: "Каталожный стиль",
+    duration: "34 сек",
     badges: ["Гравировка", "Подарок", "Премиум"]
   },
   {
@@ -107,6 +117,8 @@ export const exampleProducts = [
       before: organizerBefore,
       after: organizerAfter
     },
+    compareLabel: "Чистый фон",
+    duration: "27 сек",
     badges: ["6 отделений", "Акрил", "Стекло"]
   }
 ] as const;
@@ -121,11 +133,13 @@ export function ProductPreviewCard({ productId, variant = "after" }: ProductPrev
   return (
     <ExampleCard
       badges={[...product.badges]}
+      compareLabel={product.compareLabel}
+      duration={product.duration}
+      images={product.images}
       subtitle={product.subtitle}
       theme={product.theme}
       title={product.title}
       variant={variant}
-      images={product.images}
     />
   );
 }

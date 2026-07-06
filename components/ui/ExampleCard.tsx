@@ -1,4 +1,5 @@
-import Image, { type StaticImageData } from "next/image";
+import { BeforeAfterSlider } from "@/components/ui/BeforeAfterSlider";
+import type { StaticImageData } from "next/image";
 
 type ExampleCardProps = {
   title: string;
@@ -14,27 +15,33 @@ type ExampleCardProps = {
     before: StaticImageData;
     after: StaticImageData;
   };
+  compareLabel?: string;
+  duration?: string;
   badges?: string[];
   featured?: boolean;
 };
 
-export function ExampleCard({ title, subtitle, variant, theme, images, badges = [], featured = false }: ExampleCardProps) {
+export function ExampleCard({
+  title,
+  subtitle,
+  variant,
+  theme,
+  images,
+  compareLabel,
+  duration,
+  badges = [],
+  featured = false
+}: ExampleCardProps) {
   if (images) {
-    const image = images[variant];
-
     return (
-      <div className="group h-full overflow-hidden rounded-card border border-ink/10 bg-card transition duration-300 hover:-translate-y-1 hover:border-ink/25">
-        <div className="relative aspect-[4/5]">
-          <Image
-            alt={`${title} ${variant}`}
-            className="object-cover"
-            fill
-            placeholder="blur"
-            sizes={featured ? "(min-width: 768px) 50vw, 100vw" : "(min-width: 768px) 25vw, 100vw"}
-            src={image}
-          />
-        </div>
-      </div>
+      <BeforeAfterSlider
+        after={images.after}
+        alt={title}
+        before={images.before}
+        duration={duration}
+        label={compareLabel}
+        sizes={featured ? "(min-width: 768px) 50vw, 100vw" : "(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"}
+      />
     );
   }
 

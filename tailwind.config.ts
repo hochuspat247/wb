@@ -56,7 +56,7 @@ const config: Config = {
         },
         float: {
           "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-10px)" }
+          "50%": { transform: "translateY(-6px)" }
         },
         glowPulse: {
           "0%, 100%": { opacity: "0.35", transform: "scale(0.96)" },

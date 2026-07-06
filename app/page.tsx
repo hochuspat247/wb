@@ -10,6 +10,7 @@ import { HowItWorks } from "@/components/HowItWorks";
 import { PainSection } from "@/components/PainSection";
 import { PricingSection } from "@/components/PricingSection";
 import { RoadmapSection } from "@/components/RoadmapSection";
+import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { TrustBar } from "@/components/TrustBar";
 import { WorkflowSection } from "@/components/WorkflowSection";
 import { Reveal } from "@/components/ui/Reveal";
@@ -47,6 +48,7 @@ export default function Home() {
       <HowItWorks />
       <AudienceSection />
       <PricingSection />
+      <TestimonialsSection />
       <RoadmapSection />
       <FAQSection />
       <Footer />

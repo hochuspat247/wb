@@ -33,6 +33,7 @@ import {
   updateUserProfile
 } from "@/lib/api/user";
 import { base64ToDataUrl, downloadBase64Image, downloadImageFromUrl } from "@/lib/image";
+import { FREE_TRIAL_CARDS } from "@/lib/pricing";
 import { getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { clearHistory, getHistory } from "@/lib/storage";
 import type { ProductCardResult } from "@/types/product-card";
@@ -178,7 +179,7 @@ export function CabinetApp() {
         <Logo light href="/cabinet" />
         <div className="mt-8 rounded-[22px] border border-white/10 bg-white/[0.06] p-4">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">Баланс</p>
-          <p className="mt-3 text-3xl font-black text-white">{Math.max(0, 3 - stats.total)}</p>
+          <p className="mt-3 text-3xl font-black text-white">{Math.max(0, FREE_TRIAL_CARDS - stats.total)}</p>
           <p className="mt-1 text-xs font-semibold text-white/45">тестовых карточек</p>
         </div>
         <nav className="mt-6 grid gap-1">

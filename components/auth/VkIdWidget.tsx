@@ -29,7 +29,7 @@ export function VkIdWidget({ callbackUrl = "/cabinet" }: VkIdWidgetProps) {
       redirectUrl,
       responseMode: VKID.ConfigResponseMode.Callback,
       source: VKID.ConfigSource.LOWCODE,
-      scope: "email"
+      scope: ""
     });
 
     const oneTap = new VKID.OneTap();
@@ -37,7 +37,8 @@ export function VkIdWidget({ callbackUrl = "/cabinet" }: VkIdWidgetProps) {
     oneTap
       .render({
         container: containerRef.current,
-        showAlternativeLogin: true
+        showAlternativeLogin: true,
+        oauthList: [VKID.OAuthName.MAIL]
       })
       .on(VKID.WidgetEvents.ERROR, (vkError: unknown) => {
         console.error(vkError);

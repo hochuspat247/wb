@@ -34,7 +34,7 @@ export function FinalCta() {
                   </Button>
                 </Link>
               </div>
-              <p className="mt-6 text-sm text-white/40">Без карты · Без регистрации · Результат сразу</p>
+              <p className="mt-6 text-sm text-white/40">Без карты · 3 карточки бесплатно · Результат можно скачать</p>
             </div>
           </div>
         </Reveal>

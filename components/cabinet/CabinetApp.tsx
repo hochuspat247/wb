@@ -45,16 +45,14 @@ function getPresetLabel(preset?: string) {
 }
 
 export function CabinetApp() {
-  const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<Tab>("dashboard");
   const [cards, setCards] = useState<ProductCardResult[]>([]);
   const [profileName, setProfileName] = useState("Продавец");
-  const [editName, setEditName] = useState("");
+  const [editName, setEditName] = useState("Продавец");
   const [selected, setSelected] = useState<ProductCardResult | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     setCards(getHistory());
     const profile = getProfile();
     setProfileName(profile.name);
@@ -109,17 +107,6 @@ export function CabinetApp() {
     if (card.generatedImageBase64 && card.generatedImageMimeType) {
       downloadBase64Image(card.generatedImageBase64, card.generatedImageMimeType, "marketcard-ai.png");
     }
-  }
-
-  if (!mounted) {
-    return (
-      <div className="cabinet-bg grid min-h-screen place-items-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-2 border-mint/30 border-t-mint" />
-          <p className="text-sm font-semibold text-white/50">Загружаем кабинет…</p>
-        </div>
-      </div>
-    );
   }
 
   const nav = [

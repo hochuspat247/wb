@@ -14,6 +14,7 @@ import { detectCategory } from "@/lib/category";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
 import { base64ToDataUrl, dataUrlToBase64, downloadBase64Image, downloadImageFromUrl, validateImageFile } from "@/lib/image";
 import { clearHistory, getHistory, removeFromHistory, saveToHistory } from "@/lib/storage";
+import { saveUserCardRemote } from "@/lib/api/user";
 import type { GenerateImageResult, ImageDesignPreset, ProductCardInput, ProductCardResult } from "@/types/product-card";
 
 const marketplaces = ["Wildberries", "Ozon", "Avito", "Яндекс Маркет"];
@@ -40,11 +41,13 @@ function getDesignPresetBadge(preset?: ImageDesignPreset) {
 export function CardGenerator({
   hideHistory = false,
   onSaved,
-  embedded = false
+  embedded = false,
+  persistToServer = false
 }: {
   hideHistory?: boolean;
   onSaved?: () => void;
   embedded?: boolean;
+  persistToServer?: boolean;
 }) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -223,18 +226,31 @@ export function CardGenerator({
     setNotice("");
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!card) {
       return;
     }
 
-    setHistory(saveToHistory({
+    const nextCard = {
       ...card,
       headline: headline.trim() || card.headline,
       price: price.trim() || card.price,
       ctaText: ctaText.trim() || card.ctaText,
       designPreset: card.designPreset || designPreset
-    }));
+    };
+
+    if (persistToServer) {
+      try {
+        const saved = await saveUserCardRemote(nextCard);
+        setHistory(saved);
+      } catch {
+        setError("Не удалось сохранить карточку в аккаунт.");
+        return;
+      }
+    } else {
+      setHistory(saveToHistory(nextCard));
+    }
+
     onSaved?.();
     setNotice("Карточка сохранена.");
   }

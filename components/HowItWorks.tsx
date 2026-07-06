@@ -28,7 +28,7 @@ export function HowItWorks() {
     <section className="py-20 md:py-28" id="how">
       <div className="section-shell">
         <SectionHeader
-          description="Весь процесс — в личном кабинете. Первые 3 карточки бесплатно, без привязки карты."
+          description="Весь процесс — в личном кабинете после регистрации. Первые 3 карточки бесплатно."
           kicker="Как это работает"
           title={
             <>

@@ -69,7 +69,7 @@ export function Hero() {
               </Link>
             </div>
             <p className="mt-4 text-sm text-muted">Без карты · 3 карточки бесплатно · Результат можно скачать</p>
-            <p className="mt-2 text-xs text-muted/80">Демо-режим: создайте карточку в кабинете без оплаты</p>
+            <p className="mt-2 text-xs text-muted/80">Регистрация за 30 секунд · демо-режим, результат можно скачать</p>
           </Reveal>
         </div>
 

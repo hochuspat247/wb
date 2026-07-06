@@ -18,13 +18,21 @@ import {
   X,
   Zap
 } from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
 import { CardGenerator } from "@/components/CardGenerator";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import {
+  clearUserCardsRemote,
+  fetchUserCards,
+  fetchUserProfile,
+  migrateLocalCards,
+  removeUserCardRemote,
+  updateUserProfile
+} from "@/lib/api/user";
 import { base64ToDataUrl, downloadBase64Image, downloadImageFromUrl } from "@/lib/image";
-import { getProfile, saveProfile } from "@/lib/profile";
-import { clearHistory, getHistory, removeFromHistory } from "@/lib/storage";
+import { clearHistory, getHistory } from "@/lib/storage";
 import type { ProductCardResult } from "@/types/product-card";
 
 type Tab = "dashboard" | "create" | "cards" | "settings";
@@ -45,18 +53,40 @@ function getPresetLabel(preset?: string) {
 }
 
 export function CabinetApp() {
+  const { data: session } = useSession();
   const [tab, setTab] = useState<Tab>("dashboard");
   const [cards, setCards] = useState<ProductCardResult[]>([]);
   const [profileName, setProfileName] = useState("Продавец");
+  const [userEmail, setUserEmail] = useState("");
   const [editName, setEditName] = useState("Продавец");
   const [selected, setSelected] = useState<ProductCardResult | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setCards(getHistory());
-    const profile = getProfile();
-    setProfileName(profile.name);
-    setEditName(profile.name);
+    async function loadCabinet() {
+      try {
+        const [profile, remoteCards] = await Promise.all([fetchUserProfile(), fetchUserCards()]);
+        setProfileName(profile.name);
+        setUserEmail(profile.email);
+        setEditName(profile.name);
+
+        const localCards = getHistory();
+        if (localCards.length > 0 && remoteCards.length === 0) {
+          const migrated = await migrateLocalCards(localCards);
+          setCards(migrated);
+          clearHistory();
+        } else {
+          setCards(remoteCards);
+        }
+      } catch {
+        setCards(getHistory());
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void loadCabinet();
 
     if (window.location.hash === "#create") {
       setTab("create");
@@ -64,7 +94,9 @@ export function CabinetApp() {
   }, []);
 
   function refreshCards() {
-    setCards(getHistory());
+    fetchUserCards()
+      .then(setCards)
+      .catch(() => setCards(getHistory()));
   }
 
   function openCreateTab() {
@@ -82,21 +114,35 @@ export function CabinetApp() {
     return { total: cards.length, thisWeek, marketplaces, premium };
   }, [cards]);
 
-  function handleRemove(id: string) {
-    setCards(removeFromHistory(id));
+  async function handleRemove(id: string) {
+    try {
+      const next = await removeUserCardRemote(id);
+      setCards(next);
+    } catch {
+      setCards((current) => current.filter((item) => item.id !== id));
+    }
     if (selected?.id === id) setSelected(null);
   }
 
-  function handleClearAll() {
-    clearHistory();
+  async function handleClearAll() {
+    try {
+      await clearUserCardsRemote();
+    } catch {
+      clearHistory();
+    }
     setCards([]);
     setSelected(null);
   }
 
-  function handleSaveProfile() {
-    const saved = saveProfile({ name: editName });
-    setProfileName(saved.name);
-    setTab("dashboard");
+  async function handleSaveProfile() {
+    try {
+      const saved = await updateUserProfile(editName);
+      setProfileName(saved.name);
+      setTab("dashboard");
+    } catch {
+      setProfileName(editName);
+      setTab("dashboard");
+    }
   }
 
   async function handleDownload(card: ProductCardResult) {
@@ -107,6 +153,17 @@ export function CabinetApp() {
     if (card.generatedImageBase64 && card.generatedImageMimeType) {
       downloadBase64Image(card.generatedImageBase64, card.generatedImageMimeType, "marketcard-ai.png");
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="cabinet-bg grid min-h-screen place-items-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-2 border-mint/30 border-t-mint" />
+          <p className="text-sm font-semibold text-white/50">Загружаем кабинет…</p>
+        </div>
+      </div>
+    );
   }
 
   const nav = [
@@ -252,7 +309,7 @@ export function CabinetApp() {
           {/* Create tab */}
           {tab === "create" ? (
             <div className="animate-scale-in">
-              <CardGenerator embedded hideHistory onSaved={refreshCards} />
+              <CardGenerator embedded hideHistory onSaved={refreshCards} persistToServer />
             </div>
           ) : null}
 
@@ -295,9 +352,16 @@ export function CabinetApp() {
                 </Button>
               </div>
               <div className="glass-dark rounded-3xl p-8">
+                <h2 className="text-xl font-black text-white">Аккаунт</h2>
+                <p className="mt-2 text-sm text-white/50">{userEmail || session?.user?.email}</p>
+                <Button className="mt-6" onClick={() => signOut({ callbackUrl: "/" })} variant="secondary">
+                  Выйти из аккаунта
+                </Button>
+              </div>
+              <div className="glass-dark rounded-3xl p-8">
                 <h2 className="text-xl font-black text-white">Хранилище</h2>
-                <p className="mt-2 text-sm text-white/50">Карточки хранятся локально в вашем браузере</p>
-                <p className="mt-4 text-3xl font-black text-mint">{cards.length} / 10</p>
+                <p className="mt-2 text-sm text-white/50">Карточки сохраняются в вашем аккаунте на сервере</p>
+                <p className="mt-4 text-3xl font-black text-mint">{cards.length} / 50</p>
                 <p className="text-xs text-white/40">максимум карточек в истории</p>
               </div>
             </div>

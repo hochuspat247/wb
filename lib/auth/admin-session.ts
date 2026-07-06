@@ -1,12 +1,19 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 
-export const ADMIN_LOGIN = "1234";
-export const ADMIN_PASSWORD = "1234ВаННа";
+const DEFAULT_ADMIN_LOGIN = "1234";
+const DEFAULT_ADMIN_PASSWORD = "1234\u0412\u0430\u041d\u041d\u0430";
+
+export const ADMIN_LOGIN = process.env.ADMIN_LOGIN || DEFAULT_ADMIN_LOGIN;
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD;
 export const ADMIN_COOKIE_NAME = "mc_admin_session";
 
 function getAdminSessionSecret() {
   return process.env.AUTH_SECRET || "marketcard-admin-dev-secret";
+}
+
+function normalizeCredential(value: string) {
+  return value.normalize("NFC");
 }
 
 export function createAdminSessionToken() {
@@ -14,7 +21,8 @@ export function createAdminSessionToken() {
 }
 
 export function verifyAdminCredentials(login: string, password: string) {
-  return login === ADMIN_LOGIN && password === ADMIN_PASSWORD;
+  return normalizeCredential(login.trim()) === normalizeCredential(ADMIN_LOGIN.trim())
+    && normalizeCredential(password) === normalizeCredential(ADMIN_PASSWORD);
 }
 
 export function isValidAdminSessionToken(token?: string | null) {

@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
+import { isPlaceholderOAuthEmail } from "@/lib/auth/email-utils";
 import { db } from "@/lib/db";
-import { payments } from "@/lib/db/schema";
+import { payments, users } from "@/lib/db/schema";
 import { calculatePackagePrice } from "@/lib/pricing";
 import { amountToMinorUnits } from "@/lib/server/payments";
 import { createYooKassaPayment } from "@/lib/server/yookassa";
@@ -36,6 +38,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid package size" }, { status: 400 });
   }
 
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId)
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (isPlaceholderOAuthEmail(user.email)) {
+    return NextResponse.json(
+      { error: "Для оплаты нужен реальный email покупателя. Войдите через email или Яндекс-аккаунт с email." },
+      { status: 400 }
+    );
+  }
+
   const price = calculatePackagePrice(count);
   const idempotenceKey = crypto.randomUUID();
   const siteUrl = getSiteUrl(request);
@@ -43,6 +60,7 @@ export async function POST(request: Request) {
   try {
     const payment = await createYooKassaPayment({
       amount: price.total,
+      customerEmail: user.email,
       credits: count,
       description: `MarketCard AI: ${count} generations`,
       idempotenceKey,

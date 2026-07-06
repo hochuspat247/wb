@@ -49,7 +49,7 @@ function Heatmap({ points }: { points: AdminStats["heatmap"] }) {
   const max = useMemo(() => Math.max(1, ...points.map((point) => point.count)), [points]);
 
   return (
-    <div className="relative aspect-[16/10] overflow-hidden rounded-[18px] border border-clay bg-paper">
+    <div className="relative aspect-[4/3] overflow-hidden rounded-card border border-clay bg-paper sm:aspect-[16/10]">
       <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(15,23,42,0.03),transparent)]" />
       {points.map((point) => (
         <span
@@ -78,7 +78,7 @@ function MiniBars({ rows, label }: { rows: { day: string; value: number }[]; lab
   return (
     <div>
       <p className="mb-3 text-sm font-semibold text-ink">{label}</p>
-      <div className="flex h-28 items-end gap-1">
+      <div className="flex h-28 items-end gap-1 overflow-hidden">
         {rows.map((row) => (
           <div className="flex flex-1 flex-col items-center gap-1" key={row.day}>
             <div
@@ -166,18 +166,19 @@ export function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <header className="border-b border-clay bg-card/80 px-5 py-4 backdrop-blur-xl lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Admin</p>
-            <h1 className="text-2xl font-black text-ink">Аналитика MarketCard AI</h1>
+      <header className="sticky top-0 z-20 border-b border-clay bg-card/90 px-4 py-4 backdrop-blur-xl sm:px-5 lg:px-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-accent sm:text-xs sm:tracking-[0.18em]">Admin</p>
+            <h1 className="mt-1 text-xl font-black leading-tight text-ink sm:text-2xl">Аналитика MarketCard AI</h1>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => load(path)} size="sm" variant="secondary">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+            <Button className="w-full sm:w-auto" onClick={() => load(path)} size="sm" variant="secondary">
               <RefreshCw size={16} />
               Обновить
             </Button>
             <Button
+              className="w-full sm:w-auto"
               onClick={async () => {
                 await fetch("/api/admin/login", { method: "DELETE" });
                 router.push("/admin/login");
@@ -192,55 +193,55 @@ export function AdminDashboard() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl space-y-6 p-5 lg:p-8">
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card padding="md">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Пользователи</p>
-                <p className="mt-2 text-3xl font-black text-ink">{stats.overview.users}</p>
+      <main className="mx-auto max-w-7xl space-y-5 p-4 sm:p-5 lg:space-y-6 lg:p-8">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+          <Card className="min-w-0" padding="md">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Пользователи</p>
+                <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.users}</p>
               </div>
-              <Users className="text-accent" size={22} />
+              <Users className="shrink-0 text-accent" size={22} />
             </div>
           </Card>
-          <Card padding="md">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Карточек в БД</p>
-                <p className="mt-2 text-3xl font-black text-ink">{stats.overview.cards}</p>
+          <Card className="min-w-0" padding="md">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Карточек в БД</p>
+                <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.cards}</p>
               </div>
-              <BarChart3 className="text-accent" size={22} />
+              <BarChart3 className="shrink-0 text-accent" size={22} />
             </div>
           </Card>
-          <Card padding="md">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Генераций всего</p>
-                <p className="mt-2 text-3xl font-black text-ink">{stats.overview.totalGenerations}</p>
+          <Card className="min-w-0" padding="md">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Генераций всего</p>
+                <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.totalGenerations}</p>
               </div>
-              <MousePointerClick className="text-accent" size={22} />
+              <MousePointerClick className="shrink-0 text-accent" size={22} />
             </div>
           </Card>
-          <Card padding="md">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Событий за 7 дней</p>
-                <p className="mt-2 text-3xl font-black text-ink">{stats.overview.events7d}</p>
+          <Card className="min-w-0" padding="md">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Событий за 7 дней</p>
+                <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.events7d}</p>
               </div>
-              <BarChart3 className="text-accent" size={22} />
+              <BarChart3 className="shrink-0 text-accent" size={22} />
             </div>
           </Card>
         </div>
 
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <Card padding="lg">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
+            <div className="grid gap-4 sm:flex sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <h2 className="text-lg font-bold text-ink">Тепловая карта кликов</h2>
                 <p className="mt-1 text-sm text-muted">Агрегация кликов за 30 дней</p>
               </div>
               <select
-                className="rounded-full border border-clay bg-paper px-4 py-2 text-sm font-semibold text-ink"
+                className="min-h-11 w-full rounded-button border border-clay bg-paper px-4 py-2 text-sm font-semibold text-ink outline-none focus:border-accent/60 sm:w-auto"
                 onChange={(event) => setPath(event.target.value)}
                 value={path}
               >
@@ -262,9 +263,9 @@ export function AdminDashboard() {
             <div className="mt-5 space-y-3">
               {funnel.map(([label, value]) => (
                 <div key={label}>
-                  <div className="mb-1 flex items-center justify-between text-sm">
+                  <div className="mb-1 flex items-start justify-between gap-3 text-sm">
                     <span className="font-semibold text-ink">{label}</span>
-                    <span className="text-muted">
+                    <span className="shrink-0 text-muted">
                       {value} · {pct(value, stats.funnel.pageViews || value)}
                     </span>
                   </div>
@@ -285,9 +286,9 @@ export function AdminDashboard() {
             <h2 className="text-lg font-bold text-ink">Топ кликов</h2>
             <div className="mt-4 space-y-2">
               {stats.topClicks.map((item) => (
-                <div className="flex items-center justify-between rounded-[14px] border border-clay px-4 py-3 text-sm" key={`${item.label}-${item.count}`}>
-                  <span className="font-medium text-ink">{item.label}</span>
-                  <span className="font-black text-accent">{item.count}</span>
+                <div className="flex items-start justify-between gap-3 rounded-[14px] border border-clay px-4 py-3 text-sm" key={`${item.label}-${item.count}`}>
+                  <span className="min-w-0 break-words font-medium text-ink">{item.label}</span>
+                  <span className="shrink-0 font-black text-accent">{item.count}</span>
                 </div>
               ))}
               {!stats.topClicks.length ? <p className="text-sm text-muted">Клики ещё не собраны</p> : null}
@@ -305,7 +306,23 @@ export function AdminDashboard() {
         <Card padding="lg">
           <h2 className="text-lg font-bold text-ink">Последние пользователи</h2>
           <p className="mt-1 text-sm text-muted">Email и квота сохраняются в SQLite</p>
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-4 grid gap-3 md:hidden">
+            {stats.recentUsers.map((user) => (
+              <div className="rounded-card border border-clay bg-paper/40 p-4" key={user.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-ink">{user.name || "—"}</p>
+                    <p className="mt-1 break-all text-sm text-muted">{formatAccountEmail(user.email)}</p>
+                  </div>
+                  <span className="shrink-0 rounded-button bg-accent/10 px-3 py-1 text-sm font-black text-accent">
+                    {user.generationsUsed}/{user.generationCredits}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs font-semibold text-muted">{new Date(user.createdAt).toLocaleDateString("ru-RU")}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 hidden overflow-x-auto md:block">
             <table className="min-w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-clay text-muted">

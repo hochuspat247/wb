@@ -46,8 +46,8 @@ export function Footer() {
             <p className="text-sm font-black text-white">Контакты</p>
             <ul className="mt-4 space-y-2.5 text-sm font-semibold text-white/55">
               <li>
-                <a className="transition hover:text-white" href="mailto:hello@marketcard.ai">
-                  hello@marketcard.ai
+                <a className="transition hover:text-white" href="mailto:avenir.team.corp@gmail.com">
+                  avenir.team.corp@gmail.com
                 </a>
               </li>
               <li>

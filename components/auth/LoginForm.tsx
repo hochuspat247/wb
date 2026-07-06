@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { VkIdAuthPanel } from "@/components/auth/VkIdAuthPanel";
+import { YandexIdButton } from "@/components/auth/YandexIdButton";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
@@ -102,13 +103,7 @@ export function LoginForm() {
           </div>
 
           <div className="grid gap-3">
-            <Button
-              className="w-full bg-[#FC3F1D] text-white hover:bg-[#e43719]"
-              onClick={() => signIn("yandex", { callbackUrl })}
-              type="button"
-            >
-              Войти через Яндекс
-            </Button>
+            <YandexIdButton onClick={() => signIn("yandex", { callbackUrl })} />
             <VkIdAuthPanel callbackUrl={callbackUrl} />
           </div>
 

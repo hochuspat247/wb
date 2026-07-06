@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { VkIdCallbackHandler } from "@/components/auth/VkIdCallbackHandler";
-import { VkIdFloatingGate } from "@/components/auth/VkIdFloatingGate";
 import { rootMetadata } from "@/lib/seo";
 import "./globals.css";
 
@@ -26,7 +25,6 @@ export default function RootLayout({
           {children}
           <AnalyticsTracker />
           <VkIdCallbackHandler />
-          <VkIdFloatingGate />
         </AuthProvider>
       </body>
     </html>

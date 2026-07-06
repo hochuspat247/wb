@@ -8,6 +8,20 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 
+async function readResponseMessage(response: Response) {
+  const text = await response.text();
+  if (!text) {
+    return null;
+  }
+
+  try {
+    const data = JSON.parse(text) as { error?: string };
+    return data.error || null;
+  } catch {
+    return null;
+  }
+}
+
 export function AdminLoginForm() {
   const router = useRouter();
   const [login, setLogin] = useState("");
@@ -26,10 +40,10 @@ export function AdminLoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ login, password })
       });
-      const data = await response.json();
+      const responseError = await readResponseMessage(response);
 
       if (!response.ok) {
-        throw new Error(data.error || "Неверный логин или пароль.");
+        throw new Error(responseError || "Неверный логин или пароль.");
       }
 
       router.push("/admin");
@@ -42,27 +56,33 @@ export function AdminLoginForm() {
   }
 
   return (
-    <div className="grid min-h-screen place-items-center bg-paper px-5 py-12">
+    <div className="grid min-h-[100svh] place-items-center bg-paper px-4 py-6 sm:px-5 sm:py-12">
       <Card className="w-full max-w-md" padding="lg">
-        <div className="mb-6 text-center">
+        <div className="mb-5 text-center sm:mb-6">
           <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent/10 text-accent">
             <Shield size={22} />
           </div>
-          <h1 className="mt-4 text-2xl font-black text-ink">Вход в админку</h1>
+          <h1 className="mt-4 text-2xl font-black leading-tight text-ink">Вход в админку</h1>
           <p className="mt-2 text-sm text-muted">Статистика, тепловая карта и воронка конверсий</p>
         </div>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <label className="grid gap-2 text-sm font-bold text-ink">
             Логин
-            <Input onChange={(event) => setLogin(event.target.value)} required value={login} />
+            <Input autoComplete="username" onChange={(event) => setLogin(event.target.value)} required value={login} />
           </label>
           <label className="grid gap-2 text-sm font-bold text-ink">
             Пароль
-            <Input onChange={(event) => setPassword(event.target.value)} required type="password" value={password} />
+            <Input
+              autoComplete="current-password"
+              onChange={(event) => setPassword(event.target.value)}
+              required
+              type="password"
+              value={password}
+            />
           </label>
           {error ? <p className="text-sm font-semibold text-accent">{error}</p> : null}
-          <Button className="w-full" disabled={loading} type="submit">
+          <Button className="min-h-12 w-full" disabled={loading} type="submit">
             {loading ? <Loader2 className="animate-spin" size={18} /> : null}
             Войти
           </Button>

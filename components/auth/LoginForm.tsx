@@ -79,7 +79,7 @@ export function LoginForm() {
               />
             </label>
 
-            {error ? <p className="text-sm font-semibold text-coral">{error}</p> : null}
+            {error ? <p className="text-sm font-semibold text-accent">{error}</p> : null}
 
             <Button className="w-full py-3" disabled={loading} type="submit">
               {loading ? <Loader2 className="animate-spin" size={18} /> : null}
@@ -107,7 +107,7 @@ export function LoginForm() {
 
           <p className="mt-6 text-center text-sm text-muted">
             Нет аккаунта?{" "}
-            <Link className="font-bold text-coral hover:text-violet" href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
+            <Link className="font-bold text-accent hover:text-ink" href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
               Зарегистрироваться
             </Link>
           </p>

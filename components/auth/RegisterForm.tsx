@@ -104,7 +104,7 @@ export function RegisterForm() {
               />
             </label>
 
-            {error ? <p className="text-sm font-semibold text-coral">{error}</p> : null}
+            {error ? <p className="text-sm font-semibold text-accent">{error}</p> : null}
 
             <Button className="w-full py-3" disabled={loading} type="submit">
               {loading ? <Loader2 className="animate-spin" size={18} /> : null}
@@ -132,7 +132,7 @@ export function RegisterForm() {
 
           <p className="mt-6 text-center text-sm text-muted">
             Уже есть аккаунт?{" "}
-            <Link className="font-bold text-coral hover:text-violet" href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
+            <Link className="font-bold text-accent hover:text-ink" href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
               Войти
             </Link>
           </p>

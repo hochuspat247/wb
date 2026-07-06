@@ -1,48 +1,52 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+
 const rows = [
-  ["Время", "2–6 часов", "1–3 дня", "около 2 минут"],
-  ["Стоимость", "внутренний ресурс", "за каждую карточку", "от 0 ₽"],
-  ["Правки", "каждый раз вручную", "через согласования", "новая версия сразу"],
-  ["Масштабирование", "сложно на SKU", "растёт бюджет", "100+ карточек в месяц"],
-  ["Экспорт", "собирать отдельно", "по договорённости", "PNG + JSON"],
-  ["Скорость тестов", "медленно", "дорого", "быстро"],
-  ["Варианты карточек", "собирать вручную", "оплата за версию", "несколько гипотез сразу"]
+  ["Время на 1 карточку", "2–6 часов", "1–3 дня", "15–30 мин", "~2 минуты"],
+  ["Стоимость", "внутренний ресурс", "от 1 500 ₽", "от 990 ₽/мес", "от 0 ₽"],
+  ["SEO и тексты", "вручную", "частично", "шаблоны", "автоматически"],
+  ["Обложка 4:5", "дизайнер/Canva", "дизайнер", "шаблоны", "AI + пресеты WB/Ozon"],
+  ["Масштаб SKU", "сложно", "дорого", "ограничено", "пакеты до 100+"],
+  ["Экспорт", "собирать отдельно", "по договорённости", "PNG", "PNG + JSON"],
+  ["Правки и версии", "каждый раз вручную", "оплата за версию", "ограничено", "новая версия сразу"],
+  ["Поддержка маркетплейсов", "универсально", "зависит от исполнителя", "универсально", "WB, Ozon, Avito"]
 ];
+
+const columns = ["", "Ручная сборка", "Фрилансер", "Canva / шаблоны", "MarketCard AI"];
 
 export function CompareSection() {
   return (
-    <section className="py-20 md:py-28">
+    <section className="py-20 md:py-28" id="compare">
       <div className="section-shell">
         <SectionHeader
-          description="Многие карточки уже создаются с помощью AI-инструментов. MarketCard AI даёт продавцу такой инструмент напрямую — без ожидания, посредников и переплат."
-          title="Дешевле фрилансера, быстрее ручной сборки"
+          description="Сравнение по скорости, стоимости и функционалу — почему продавцам выгоднее генерировать карточки в MarketCard AI."
+          title="Наши преимущества относительно альтернатив"
         />
 
         <Reveal delay={1}>
           <div className="mt-14 overflow-x-auto rounded-container border border-clay bg-card">
-            <div className="min-w-[760px]">
-            <div className="grid grid-cols-[1fr_1fr_1fr_1.08fr] border-b border-clay text-sm font-black text-ink">
-              {["", "Ручная сборка", "Фрилансер", "MarketCard AI"].map((head, index) => (
-                <div className={`p-4 md:p-5 ${index === 3 ? "bg-accent text-paper" : ""}`} key={head || "metric"}>
-                  {head}
-                </div>
-              ))}
-            </div>
-            {rows.map((row) => (
-              <div className="grid grid-cols-[1fr_1fr_1fr_1.08fr] border-b border-clay last:border-b-0" key={row[0]}>
-                {row.map((cell, index) => (
-                  <div
-                    className={`min-h-16 p-4 text-sm font-semibold md:p-5 ${
-                      index === 0 ? "text-ink" : index === 3 ? "bg-white/[0.055] text-ink" : "text-muted"
-                    }`}
-                    key={cell}
-                  >
-                    {index === 3 ? <span className="text-mint">{cell}</span> : cell}
+            <div className="min-w-[920px]">
+              <div className="grid grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_1.05fr] border-b border-clay text-sm font-black text-ink">
+                {columns.map((head, index) => (
+                  <div className={`p-4 md:p-5 ${index === 4 ? "bg-accent text-paper" : ""}`} key={head || "metric"}>
+                    {head}
                   </div>
                 ))}
               </div>
-            ))}
+              {rows.map((row) => (
+                <div className="grid grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_1.05fr] border-b border-clay last:border-b-0" key={row[0]}>
+                  {row.map((cell, index) => (
+                    <div
+                      className={`min-h-16 p-4 text-sm font-semibold md:p-5 ${
+                        index === 0 ? "text-ink" : index === 4 ? "bg-white/[0.055] text-ink" : "text-muted"
+                      }`}
+                      key={`${row[0]}-${cell}`}
+                    >
+                      {index === 4 ? <span className="text-mint">{cell}</span> : cell}
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </Reveal>

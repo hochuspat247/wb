@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { users } from "@/lib/db/schema";
+import { users, verificationTokens } from "@/lib/db/schema";
+import { appUrl, sendEmail } from "@/lib/email";
+import { FREE_TRIAL_CARDS } from "@/lib/pricing";
 
 type RegisterBody = {
   name?: string;
@@ -38,12 +40,29 @@ export async function POST(request: Request) {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
+    const verifyToken = crypto.randomUUID();
 
     await db.insert(users).values({
       email,
       name,
       passwordHash,
+      generationCredits: FREE_TRIAL_CARDS,
+      generationsUsed: 0,
       createdAt: new Date()
+    });
+
+    await db.insert(verificationTokens).values({
+      identifier: `verify:${email}`,
+      token: verifyToken,
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24)
+    });
+
+    const verifyUrl = appUrl(`/api/auth/verify-email?token=${verifyToken}&email=${encodeURIComponent(email)}`);
+
+    await sendEmail({
+      to: email,
+      subject: "Подтвердите email в MarketCard AI",
+      html: `<p>Здравствуйте, ${name}!</p><p>Подтвердите email, чтобы сохранять карточки и получать доступ к генерациям:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
     });
 
     return NextResponse.json({ ok: true });

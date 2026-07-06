@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
 import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
 import type {
@@ -60,6 +61,13 @@ function applyImageDefaults(input: GenerateImageRequest): GenerateImageRequest {
 
 export async function POST(request: Request) {
   try {
+    const session = await auth();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ error: "Войдите в аккаунт, чтобы сгенерировать обложку." }, { status: 401 });
+    }
+
     const parsed = await parseGenerateImageRequest(request);
     const input = applyImageDefaults(parsed);
     const validationError = validateGenerateImageInput(input);

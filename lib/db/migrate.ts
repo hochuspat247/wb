@@ -49,4 +49,16 @@ export function migrate(sqlite: Database.Database) {
 
     CREATE INDEX IF NOT EXISTS product_card_user_idx ON product_card(userId);
   `);
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN generationCredits INTEGER NOT NULL DEFAULT 1`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN generationsUsed INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // column already exists
+  }
 }

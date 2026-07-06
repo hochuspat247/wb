@@ -7,6 +7,7 @@ import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
 import { HowItWorks } from "@/components/HowItWorks";
 import { PainSection } from "@/components/PainSection";
+import { PricingCalculatorSection } from "@/components/PricingCalculatorSection";
 import { PricingSection } from "@/components/PricingSection";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
@@ -27,6 +28,7 @@ export default function Home() {
       <HowItWorks />
       <AudienceSection />
       <PricingSection />
+      <PricingCalculatorSection />
       <TestimonialsSection />
       <RoadmapSection />
       <FAQSection />

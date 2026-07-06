@@ -60,12 +60,36 @@ export async function clearUserCardsRemote() {
   return [];
 }
 
+export async function fetchUserQuota() {
+  const response = await fetch("/api/quota", { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error("FAILED_TO_LOAD_QUOTA");
+  }
+  return response.json() as Promise<{
+    credits: number;
+    used: number;
+    remaining: number;
+    canGenerate: boolean;
+  }>;
+}
+
 export async function fetchUserProfile() {
   const response = await fetch("/api/profile", { cache: "no-store" });
   if (!response.ok) {
     throw new Error("FAILED_TO_LOAD_PROFILE");
   }
-  return response.json() as Promise<{ name: string; email: string; joinedAt: string }>;
+  return response.json() as Promise<{
+    name: string;
+    email: string;
+    emailVerified?: boolean;
+    joinedAt: string;
+    quota?: {
+      credits: number;
+      used: number;
+      remaining: number;
+      canGenerate: boolean;
+    };
+  }>;
 }
 
 export async function updateUserProfile(name: string) {

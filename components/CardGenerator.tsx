@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { FileImage, ImageUp, Loader2, RotateCcw, Wand2 } from "lucide-react";
 import { GeneratedCardPreview } from "@/components/GeneratedCardPreview";
 import { HistorySection } from "@/components/HistorySection";
+import { PaywallModal } from "@/components/PaywallModal";
 import { ResultPanel } from "@/components/ResultPanel";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -17,7 +18,7 @@ import { detectCategory } from "@/lib/category";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
 import { base64ToDataUrl, dataUrlToBase64, downloadBase64Image, downloadImageFromUrl, validateImageFile } from "@/lib/image";
 import { clearHistory, getHistory, removeFromHistory, saveToHistory } from "@/lib/storage";
-import { saveUserCardRemote } from "@/lib/api/user";
+import { fetchUserQuota, saveUserCardRemote } from "@/lib/api/user";
 import type {
   GenerateImageResult,
   ImageDesignPreset,
@@ -74,7 +75,17 @@ export function CardGenerator({
   const [renderedImageUrl, setRenderedImageUrl] = useState("");
   const [isRenderingImage, setIsRenderingImage] = useState(false);
   const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [remainingGenerations, setRemainingGenerations] = useState<number | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!persistToServer) return;
+
+    fetchUserQuota()
+      .then((quota) => setRemainingGenerations(quota.remaining))
+      .catch(() => setRemainingGenerations(null));
+  }, [persistToServer]);
 
   const effectiveCategory = useMemo(() => detectCategory(description, category), [category, description]);
 
@@ -87,6 +98,17 @@ export function CardGenerator({
   useEffect(() => {
     if (!card) {
       setRenderedImageUrl("");
+      return;
+    }
+
+    const cardHasAiCover = Boolean(
+      !card.generatedImageIsFallback &&
+      (card.generatedImageUrl || (card.generatedImageBase64 && card.generatedImageMimeType))
+    );
+
+    if (cardHasAiCover) {
+      setRenderedImageUrl("");
+      setIsRenderingImage(false);
       return;
     }
 
@@ -103,7 +125,7 @@ export function CardGenerator({
         }
       } catch {
         if (!cancelled) {
-          setNotice("Карточка готова. Нажмите «Скачать изображение», чтобы сохранить файл.");
+          setNotice("Карточка готова. Нажмите «Скачать PNG», чтобы сохранить файл.");
         }
       } finally {
         if (!cancelled) {
@@ -167,6 +189,11 @@ export function CardGenerator({
       return;
     }
 
+    if (persistToServer && remainingGenerations === 0) {
+      setShowPaywall(true);
+      return;
+    }
+
     if (removeBackground) {
       await handleBackgroundRemoval();
     }
@@ -192,11 +219,23 @@ export function CardGenerator({
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 402) {
+          setRemainingGenerations(0);
+          setShowPaywall(true);
+        }
         throw new Error(data.error || "Не удалось создать карточку. Попробуйте ещё раз.");
       }
 
+      if (data.quota?.remaining !== undefined) {
+        setRemainingGenerations(data.quota.remaining);
+      }
+
+      const { quota: _quota, ...cardPayload } = data as ProductCardResult & {
+        quota?: { remaining: number };
+      };
+
       const generatedCard: ProductCardResult = {
-        ...(data as ProductCardResult),
+        ...(cardPayload as ProductCardResult),
         benefits: Array.isArray((data as ProductCardResult).benefits) ? (data as ProductCardResult).benefits : [],
         keywords: Array.isArray((data as ProductCardResult).keywords) ? (data as ProductCardResult).keywords : [],
         infographicTexts: Array.isArray((data as ProductCardResult).infographicTexts) ? (data as ProductCardResult).infographicTexts : [],
@@ -209,6 +248,10 @@ export function CardGenerator({
       setCard(generatedCard);
       setNotice("Создаём обложку…");
       await generateAiMarketplaceImage(generatedCard);
+
+      if (data.quota?.remaining === 0) {
+        setShowPaywall(true);
+      }
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Не удалось создать карточку. Попробуйте ещё раз.");
     } finally {
@@ -387,18 +430,18 @@ export function CardGenerator({
     }
   }
 
-  const displayImageUrl =
+  const aiImageUrl =
     card?.generatedImageUrl ||
     (card?.generatedImageBase64 && card.generatedImageMimeType
       ? base64ToDataUrl(card.generatedImageBase64, card.generatedImageMimeType)
       : card?.generatedImageDataUrl) ||
-    renderedImageUrl;
+    null;
 
   const hasAiCover = Boolean(
     card &&
     !isGeneratingAiImage &&
     !card.generatedImageIsFallback &&
-    (card.generatedImageUrl || (card.generatedImageBase64 && card.generatedImageMimeType))
+    aiImageUrl
   );
 
   const isWorking = isLoading || isGeneratingAiImage || isRenderingImage;
@@ -413,23 +456,11 @@ export function CardGenerator({
   const selectVariant = darkConsole ? "dark" : "default";
 
   const showPreviewColumn = !embedded || Boolean(card) || isWorking;
-  const hideVisualPreview = embedded;
 
   return (
     <section className={embedded ? "" : "relative py-24"} id={embedded ? undefined : "demo"}>
+      <PaywallModal onClose={() => setShowPaywall(false)} open={showPaywall} />
       <div className={embedded ? undefined : "section-shell"}>
-        {embedded && !showPreviewColumn ? (
-          <div className="sr-only" aria-hidden>
-            <GeneratedCardPreview
-              card={card}
-              generatedImageUrl={card?.generatedImageUrl || card?.generatedImageDataUrl}
-              imageUrl={imageUrl || card?.imageDataUrl}
-              ref={previewRef}
-              styleName={style}
-            />
-          </div>
-        ) : null}
-
         <div className={embedded ? "grid gap-8" : "relative z-10 grid gap-8 xl:grid-cols-[0.82fr_1.18fr]"}>
           <form className={formClass} onSubmit={handleSubmit}>
             <div className="grid gap-5">
@@ -449,6 +480,16 @@ export function CardGenerator({
                     <ImageUp size={15} />
                     {imageFileName || "JPG или PNG, до 10 МБ"}
                   </div>
+                  {imageUrl ? (
+                    <div className="mt-4 overflow-hidden rounded-[14px] border border-clay">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        alt="Загруженное фото товара"
+                        className="aspect-[4/5] max-h-56 w-full object-cover"
+                        src={imageUrl}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               </label>
               <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
@@ -556,8 +597,13 @@ export function CardGenerator({
               </div>
               {error ? <Alert variant="error">{error}</Alert> : null}
               {notice ? <Alert variant="success">{notice}</Alert> : null}
+              {persistToServer && remainingGenerations !== null ? (
+                <p className="text-sm font-semibold text-muted">
+                  Доступно генераций: <span className="text-accent">{remainingGenerations}</span>
+                </p>
+              ) : null}
               <div className={`flex flex-wrap gap-3 border-t pt-1 ${darkConsole ? "border-white/10" : "border-clay"}`}>
-                <Button disabled={isWorking} type="submit">
+                <Button disabled={isWorking || (persistToServer && remainingGenerations === 0)} type="submit">
                   {isWorking ? <Loader2 className="animate-spin" size={17} /> : <Wand2 size={17} />}
                   {isWorking ? "Генерируем…" : "Сгенерировать карточку"}
                 </Button>
@@ -570,21 +616,12 @@ export function CardGenerator({
           </form>
           {showPreviewColumn ? (
           <div className="grid gap-6">
-            <div className={hideVisualPreview || hasAiCover ? "sr-only" : undefined}>
-              <GeneratedCardPreview
-                card={card}
-                generatedImageUrl={card?.generatedImageUrl || card?.generatedImageDataUrl}
-                imageUrl={imageUrl || card?.imageDataUrl}
-                ref={previewRef}
-                styleName={style}
-              />
-            </div>
             {isWorking && !card ? (
               <div className={panelClass}>
                 <p className={`mb-4 text-sm font-semibold ${darkConsole ? "text-white/70" : "text-muted"}`}>
                   Подготавливаем карточку…
                 </p>
-                <SkeletonBlock className={`w-full ${hideVisualPreview ? "h-48" : "aspect-[4/5]"}`} />
+                <SkeletonBlock className={`w-full ${embedded ? "h-48" : "aspect-[4/5]"}`} />
               </div>
             ) : null}
             {card ? (
@@ -609,25 +646,29 @@ export function CardGenerator({
                       <Loader2 className="animate-spin text-muted" size={28} />
                       <p className="text-center text-sm font-medium text-muted">Создаём обложку…</p>
                     </div>
-                  ) : isRenderingImage && !card.generatedImageUrl && !card.generatedImageDataUrl ? (
-                    <div className="grid aspect-[4/5] place-items-center">
-                      <SkeletonBlock className="h-full w-full rounded-none" />
-                    </div>
-                  ) : displayImageUrl ? (
+                  ) : hasAiCover && aiImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       alt="Готовая обложка"
-                      className="aspect-[4/5] w-full object-contain transition duration-300 hover:scale-[1.01]"
-                      src={displayImageUrl}
+                      className="aspect-[4/5] w-full object-cover"
+                      src={aiImageUrl}
                     />
-                  ) : (
-                    <div className="grid aspect-[4/5] place-items-center px-6 text-center text-sm font-medium text-muted">
-                      Базовая обложка 4:5 появится после генерации
+                  ) : isRenderingImage ? (
+                    <div className="grid aspect-[4/5] place-items-center">
+                      <SkeletonBlock className="h-full w-full rounded-none" />
                     </div>
+                  ) : (
+                    <GeneratedCardPreview
+                      card={card}
+                      generatedImageUrl={card.generatedImageUrl || card.generatedImageDataUrl}
+                      imageUrl={imageUrl || card.imageDataUrl}
+                      ref={previewRef}
+                      styleName={style}
+                    />
                   )}
                 </div>
               </div>
-            ) : !isWorking && !hideVisualPreview ? (
+            ) : !isWorking && !embedded ? (
               <div className={`${panelClass} grid aspect-[4/5] place-items-center text-center`}>
                 <div>
                   <p className={`text-sm font-semibold ${darkConsole ? "text-white/70" : "text-muted"}`}>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 
 const links = [
   ["Примеры", "/#examples"],
+  ["Сравнение", "/#compare"],
   ["Генератор", "/cabinet#create"],
   ["Как работает", "/#how"],
   ["Тарифы", "/#pricing"],

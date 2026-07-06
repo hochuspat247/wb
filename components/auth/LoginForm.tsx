@@ -78,6 +78,11 @@ export function LoginForm() {
                 value={password}
               />
             </label>
+            <div className="flex justify-end">
+              <Link className="text-sm font-semibold text-accent hover:text-ink" href="/forgot-password">
+                Забыли пароль?
+              </Link>
+            </div>
 
             {error ? <p className="text-sm font-semibold text-accent">{error}</p> : null}
 

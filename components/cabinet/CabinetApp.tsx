@@ -10,6 +10,7 @@ import {
   ImageIcon,
   LayoutDashboard,
   Plus,
+  Scale,
   Settings,
   Trash2,
   Wand2,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { CardGenerator } from "@/components/CardGenerator";
+import { CompareSection } from "@/components/CompareSection";
 import { HistorySection } from "@/components/HistorySection";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
@@ -33,12 +35,12 @@ import {
   updateUserProfile
 } from "@/lib/api/user";
 import { base64ToDataUrl, downloadBase64Image, downloadImageFromUrl } from "@/lib/image";
-import { FREE_TRIAL_CARDS } from "@/lib/pricing";
+import { PAYMENT_TELEGRAM_URL } from "@/lib/pricing";
 import { getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { clearHistory, getHistory } from "@/lib/storage";
 import type { ProductCardResult } from "@/types/product-card";
 
-type Tab = "create" | "history" | "examples" | "settings";
+type Tab = "create" | "history" | "examples" | "compare" | "settings";
 
 function getThumbnail(card: ProductCardResult) {
   if (card.generatedImageUrl) return card.generatedImageUrl;
@@ -58,6 +60,8 @@ export function CabinetApp() {
   const [selected, setSelected] = useState<ProductCardResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [imageSettings, setImageSettings] = useState<ImageSettings>(getImageSettings());
+  const [remainingGenerations, setRemainingGenerations] = useState(0);
+  const [emailVerified, setEmailVerified] = useState(true);
 
   useEffect(() => {
     async function loadCabinet() {
@@ -66,6 +70,8 @@ export function CabinetApp() {
         setProfileName(profile.name);
         setUserEmail(profile.email);
         setEditName(profile.name);
+        setRemainingGenerations(profile.quota?.remaining ?? 0);
+        setEmailVerified(Boolean(profile.emailVerified));
 
         const localCards = getHistory();
         if (localCards.length > 0 && remoteCards.length === 0) {
@@ -93,6 +99,10 @@ export function CabinetApp() {
     fetchUserCards()
       .then(setCards)
       .catch(() => setCards(getHistory()));
+
+    fetchUserProfile()
+      .then((profile) => setRemainingGenerations(profile.quota?.remaining ?? 0))
+      .catch(() => undefined);
   }
 
   function openCreateTab() {
@@ -163,6 +173,7 @@ export function CabinetApp() {
     create: "Создать карточку",
     history: "История генераций",
     examples: "Примеры карточек",
+    compare: "Сравнение с альтернативами",
     settings: "Настройки"
   };
 
@@ -170,6 +181,7 @@ export function CabinetApp() {
     { id: "create" as const, label: "Создать", icon: Wand2 },
     { id: "history" as const, label: "История", icon: History },
     { id: "examples" as const, label: "Примеры", icon: ImageIcon },
+    { id: "compare" as const, label: "Сравнение", icon: Scale },
     { id: "settings" as const, label: "Настройки", icon: Settings }
   ];
 
@@ -179,8 +191,18 @@ export function CabinetApp() {
         <Logo light href="/cabinet" />
         <div className="mt-8 rounded-[22px] border border-white/10 bg-white/[0.06] p-4">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">Баланс</p>
-          <p className="mt-3 text-3xl font-black text-white">{Math.max(0, FREE_TRIAL_CARDS - stats.total)}</p>
-          <p className="mt-1 text-xs font-semibold text-white/45">тестовых карточек</p>
+          <p className="mt-3 text-3xl font-black text-white">{remainingGenerations}</p>
+          <p className="mt-1 text-xs font-semibold text-white/45">генераций доступно</p>
+          {remainingGenerations === 0 ? (
+            <a
+              className="mt-4 inline-flex rounded-full bg-accent px-4 py-2 text-xs font-black text-paper"
+              href={PAYMENT_TELEGRAM_URL}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Купить пакет
+            </a>
+          ) : null}
         </div>
         <nav className="mt-6 grid gap-1">
           {nav.map((item) => (
@@ -225,6 +247,12 @@ export function CabinetApp() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-5 pb-28 lg:p-8">
+          {!emailVerified ? (
+            <div className="mb-6 rounded-[18px] border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100">
+              Подтвердите email ({userEmail}) — проверьте почту после регистрации.
+            </div>
+          ) : null}
+
           {tab === "create" ? (
             <div className="space-y-6">
               <div className="grid gap-4 md:grid-cols-3">
@@ -288,6 +316,12 @@ export function CabinetApp() {
                   </Button>
                 </Link>
               </Card>
+            </div>
+          ) : null}
+
+          {tab === "compare" ? (
+            <div className="-mx-5 lg:-mx-8">
+              <CompareSection />
             </div>
           ) : null}
 
@@ -361,7 +395,7 @@ export function CabinetApp() {
         </main>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-4 border-t border-clay bg-card/95 p-2 backdrop-blur lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 border-t border-clay bg-card/95 p-2 backdrop-blur lg:hidden">
         {nav.map((item) => (
           <button
             className={`grid place-items-center gap-1 rounded-[14px] px-2 py-2 text-[11px] font-black ${

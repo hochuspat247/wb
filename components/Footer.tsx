@@ -26,6 +26,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link className="transition hover:text-white" href="/#compare">
+                  Сравнение
+                </Link>
+              </li>
+              <li>
                 <Link className="transition hover:text-white" href="/#pricing">
                   Тарифы
                 </Link>

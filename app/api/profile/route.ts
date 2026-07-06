@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { getUserQuota } from "@/lib/server/quota";
 
 export async function GET() {
   const session = await auth();
@@ -23,7 +24,9 @@ export async function GET() {
   return NextResponse.json({
     name: user.name || "Продавец",
     email: user.email,
-    joinedAt: user.createdAt
+    emailVerified: Boolean(user.emailVerified),
+    joinedAt: user.createdAt,
+    quota: await getUserQuota(userId)
   });
 }
 

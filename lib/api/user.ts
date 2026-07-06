@@ -108,3 +108,26 @@ export async function updateUserProfile(name: string) {
 
   return response.json() as Promise<{ name: string }>;
 }
+
+export async function createPayment(count: number) {
+  const response = await fetch("/api/payments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ count })
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("UNAUTHORIZED");
+    }
+
+    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(data?.error || "FAILED_TO_CREATE_PAYMENT");
+  }
+
+  return response.json() as Promise<{
+    id: string;
+    status: string;
+    confirmationUrl: string;
+  }>;
+}

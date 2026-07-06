@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { PaymentButton } from "@/components/PaymentButton";
 
 type PricingCardProps = {
   name: string;
@@ -13,6 +14,7 @@ type PricingCardProps = {
   features: string[];
   cta: string;
   href: string;
+  packageCount?: number;
   highlighted?: boolean;
   badge?: string;
 };
@@ -26,6 +28,7 @@ export function PricingCard({
   features,
   cta,
   href,
+  packageCount,
   highlighted = false,
   badge
 }: PricingCardProps) {
@@ -62,7 +65,11 @@ export function PricingCard({
         ))}
       </ul>
 
-      {href.startsWith("http") ? (
+      {packageCount ? (
+        <PaymentButton className="mt-8" count={packageCount} variant={highlighted ? "primary" : "secondary"}>
+          {cta}
+        </PaymentButton>
+      ) : href.startsWith("http") ? (
         <a className="mt-8 block" href={href} rel="noopener noreferrer" target="_blank">
           <Button className="w-full" variant={highlighted ? "primary" : "secondary"}>
             {cta}

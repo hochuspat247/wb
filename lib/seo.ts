@@ -49,6 +49,11 @@ export function createPageMetadata({
     alternates: {
       canonical: absoluteUrl(path)
     },
+    icons: {
+      icon: [{ url: "/favicon.png", type: "image/png" }],
+      shortcut: "/favicon.png",
+      apple: "/favicon.png"
+    },
     openGraph: {
       type: "website",
       locale: siteConfig.locale,

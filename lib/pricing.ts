@@ -1,5 +1,4 @@
 export const FREE_TRIAL_CARDS = 1;
-export const PAYMENT_TELEGRAM_URL = "https://t.me/kuanpa";
 
 export type GenerationPackage = {
   id: string;
@@ -42,11 +41,6 @@ export function calculatePackagePrice(count: number) {
     total,
     savingsPercent: Math.round((1 - discount) * 100)
   };
-}
-
-export function getTelegramPackageUrl(count: number, total: number) {
-  const text = encodeURIComponent(`Здравствуйте! Хочу купить пакет на ${count} генераций карточек (${total.toLocaleString("ru-RU")} ₽).`);
-  return `${PAYMENT_TELEGRAM_URL}?text=${text}`;
 }
 
 export function formatRub(value: number) {

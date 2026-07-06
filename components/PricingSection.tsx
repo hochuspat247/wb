@@ -1,7 +1,6 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PricingCard } from "@/components/ui/PricingCard";
-import { PAYMENT_TELEGRAM_URL } from "@/lib/pricing";
 
 const plans = [
   {
@@ -29,7 +28,8 @@ const plans = [
       "Приоритетная поддержка"
     ],
     cta: "Подключить",
-    href: PAYMENT_TELEGRAM_URL,
+    href: "/register",
+    packageCount: 5,
     highlighted: true,
     badge: "Самый популярный"
   },
@@ -50,7 +50,8 @@ const plans = [
       "Персональная поддержка в Telegram"
     ],
     cta: "Подключить",
-    href: PAYMENT_TELEGRAM_URL
+    href: "/register",
+    packageCount: 20
   }
 ];
 

@@ -1,14 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { PaymentButton } from "@/components/PaymentButton";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { Button } from "@/components/ui/Button";
 import {
   GENERATION_PACKAGES,
   calculatePackagePrice,
-  formatRub,
-  getTelegramPackageUrl
+  formatRub
 } from "@/lib/pricing";
 
 const presetCounts = GENERATION_PACKAGES.map((pack) => pack.count);
@@ -73,11 +72,9 @@ export function PricingCalculatorSection() {
               </div>
             </div>
 
-            <a className="mt-6 block" href={getTelegramPackageUrl(count, price.total)} rel="noopener noreferrer" target="_blank">
-              <Button className="w-full" size="lg">
-                Купить пакет в Telegram
-              </Button>
-            </a>
+            <PaymentButton className="mt-6" count={count} size="lg">
+              Купить пакет
+            </PaymentButton>
           </div>
         </Reveal>
       </div>

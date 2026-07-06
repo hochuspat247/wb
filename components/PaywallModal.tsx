@@ -4,12 +4,12 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
+import { PaymentButton } from "@/components/PaymentButton";
 import { Button } from "@/components/ui/Button";
 import {
   GENERATION_PACKAGES,
   calculatePackagePrice,
-  formatRub,
-  getTelegramPackageUrl
+  formatRub
 } from "@/lib/pricing";
 
 type PaywallModalProps = {
@@ -43,7 +43,7 @@ export function PaywallModal({ open, onClose }: PaywallModalProps) {
         <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Бесплатная генерация использована</p>
         <h3 className="mt-3 text-2xl font-black text-ink">Купите пакет генераций</h3>
         <p className="mt-2 text-sm font-medium text-muted">
-          Вы уже протестировали сервис. Выберите пакет — оплата и подключение через Telegram.
+          Вы уже протестировали сервис. Выберите пакет — оплата пройдет через защищенную страницу ЮKassa.
         </p>
 
         <div className="mt-6 grid gap-3">
@@ -51,37 +51,30 @@ export function PaywallModal({ open, onClose }: PaywallModalProps) {
             const price = calculatePackagePrice(pack.count);
 
             return (
-              <a
-                className="flex items-center justify-between gap-4 rounded-[18px] border border-clay bg-paper/40 px-4 py-4 transition hover:border-accent/35 hover:bg-accent/[0.05]"
-                href={getTelegramPackageUrl(pack.count, price.total)}
+              <div
+                className="grid gap-4 rounded-[18px] border border-clay bg-paper/40 px-4 py-4 sm:grid-cols-[1fr_auto]"
                 key={pack.id}
-                onClick={() => trackConversion("payment_click", { package: pack.count })}
-                rel="noopener noreferrer"
-                target="_blank"
               >
                 <div>
                   <p className="font-black text-ink">{pack.label}</p>
                   <p className="mt-1 text-xs font-medium text-muted">{pack.description}</p>
                 </div>
-                <div className="text-right">
+                <div className="text-left sm:text-right">
                   <p className="text-lg font-black text-ink">{formatRub(price.total)}</p>
                   <p className="text-xs font-semibold text-muted">{formatRub(price.pricePerUnit)} / шт</p>
+                  <PaymentButton className="mt-3 min-w-36" count={pack.count} size="sm">
+                    Купить
+                  </PaymentButton>
                 </div>
-              </a>
+              </div>
             );
           })}
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <a
-            className="flex-1"
-            href={getTelegramPackageUrl(10, calculatePackagePrice(10).total)}
-            onClick={() => trackConversion("payment_click", { package: 10 })}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <Button className="w-full">Купить в Telegram</Button>
-          </a>
+          <PaymentButton className="flex-1" count={10}>
+            Купить пакет
+          </PaymentButton>
           <Link className="flex-1" href="/#pricing-calculator" onClick={onClose}>
             <Button className="w-full" variant="secondary">
               Рассчитать пакет

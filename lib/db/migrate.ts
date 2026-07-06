@@ -85,6 +85,27 @@ export function migrate(sqlite: Database.Database) {
   `);
 
   sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS payment (
+      id TEXT PRIMARY KEY NOT NULL,
+      userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL DEFAULT 'yookassa',
+      status TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      currency TEXT NOT NULL DEFAULT 'RUB',
+      credits INTEGER NOT NULL,
+      paid INTEGER NOT NULL DEFAULT 0,
+      confirmationUrl TEXT,
+      idempotenceKey TEXT NOT NULL,
+      creditedAt INTEGER,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS payment_user_idx ON payment(userId);
+    CREATE INDEX IF NOT EXISTS payment_status_idx ON payment(status);
+    CREATE INDEX IF NOT EXISTS payment_credited_idx ON payment(creditedAt);
+  `);
+
+  sqlite.exec(`
     UPDATE user
     SET emailVerified = CAST(strftime('%s','now') AS INTEGER) * 1000
     WHERE email LIKE '%@oauth.marketcard.local' AND emailVerified IS NULL

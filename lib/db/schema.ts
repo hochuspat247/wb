@@ -93,3 +93,25 @@ export const analyticsEvents = sqliteTable("analytics_event", {
     .notNull()
     .$defaultFn(() => new Date())
 });
+
+export const payments = sqliteTable("payment", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull().default("yookassa"),
+  status: text("status").notNull(),
+  amount: integer("amount").notNull(),
+  currency: text("currency").notNull().default("RUB"),
+  credits: integer("credits").notNull(),
+  paid: integer("paid", { mode: "boolean" }).notNull().default(false),
+  confirmationUrl: text("confirmationUrl"),
+  idempotenceKey: text("idempotenceKey").notNull(),
+  creditedAt: integer("creditedAt", { mode: "timestamp_ms" }),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date())
+});

@@ -6,7 +6,7 @@ const plans = [
   {
     name: "Start",
     price: "0 ₽",
-    period: "навсегда",
+    period: "старт",
     features: [
       "3 тестовые карточки",
       "Генерация названия и описания",

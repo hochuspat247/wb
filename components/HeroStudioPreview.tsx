@@ -1,62 +1,54 @@
 import { AfterCardMock } from "@/components/marketing/ProductMocks";
-import { Badge } from "@/components/ui/Badge";
 import { Reveal } from "@/components/ui/Reveal";
 
 const chips = [
-  { label: "SEO готово", position: "left-[8%] top-[12%]" },
-  { label: "Обложка 4:5", position: "right-[4%] top-[28%]" },
-  { label: "PNG экспорт", position: "left-[6%] bottom-[22%]" },
-  { label: "~2 мин", position: "right-[6%] bottom-[14%]" }
+  "Фото",
+  "SEO",
+  "Обложка",
+  "Экспорт"
 ];
 
 export function HeroStudioPreview() {
   return (
     <Reveal delay={2}>
-      <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
-        <div className="relative rounded-container border border-clay bg-card p-4 shadow-soft md:p-6">
-          <div className="mb-4 flex items-center justify-between border-b border-clay pb-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">Studio preview</p>
-            <Badge variant="outline">Результат сервиса</Badge>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-[1.15fr_0.55fr]">
-            <div className="relative overflow-hidden rounded-card transition duration-300 hover:scale-[1.01]">
+      <div className="relative mx-auto w-full max-w-2xl lg:max-w-none">
+        <div className="studio-noise relative overflow-hidden rounded-container border border-ink/10 bg-ink p-4 shadow-soft md:p-5">
+          <div className="relative z-10 grid gap-4 md:grid-cols-[1fr_0.55fr]">
+            <div className="relative overflow-hidden rounded-[24px] border border-white/10 transition duration-300 hover:scale-[1.01]">
               <AfterCardMock />
-              {chips.slice(0, 2).map((chip) => (
-                <span
-                  className={`absolute z-10 rounded-full border border-clay bg-card px-3 py-1.5 text-[11px] font-semibold text-ink shadow-card ${chip.position}`}
-                  key={chip.label}
-                >
-                  {chip.label}
-                </span>
-              ))}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <div className="overflow-hidden rounded-card border border-clay opacity-90 transition hover:opacity-100">
-                <div className="aspect-[4/5] bg-gradient-to-br from-[#4a1942] via-[#7c2d6a] to-[#1a0a18] p-4">
-                  <p className="text-sm font-bold text-white">Крем для лица</p>
-                  <div className="mx-auto mt-8 h-20 w-10 rounded-full bg-gradient-to-b from-rose-100 to-rose-300" />
-                </div>
-              </div>
-              <div className="overflow-hidden rounded-card border border-clay opacity-80 transition hover:opacity-100">
-                <div className="aspect-[4/5] bg-gradient-to-br from-[#1e3a5f] to-[#111111] p-4">
-                  <p className="text-sm font-bold text-white">Пароочиститель</p>
-                  <div className="mx-auto mt-8 h-16 w-12 rounded-lg bg-neutral-300" />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {chips.slice(2).map((chip) => (
-              <span
-                className="rounded-full border border-clay bg-paper px-3 py-1.5 text-xs font-semibold text-ink"
-                key={chip.label}
-              >
-                {chip.label}
+              <span className="absolute left-4 top-4 rounded-full bg-mint px-3 py-1.5 text-xs font-black text-ink">
+                4:5 marketplace
               </span>
-            ))}
+              <span className="absolute bottom-4 right-4 rounded-full bg-card px-3 py-1.5 text-xs font-black text-ink">
+                PNG готов
+              </span>
+            </div>
+
+            <div className="grid gap-4">
+              <div className="rounded-[22px] border border-white/10 bg-white/[0.06] p-4 text-white">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/45">AI сборка</p>
+                <div className="mt-5 space-y-3">
+                  {chips.map((chip, index) => (
+                    <div className="flex items-center gap-3" key={chip}>
+                      <span className={`grid h-8 w-8 place-items-center rounded-full text-xs font-black ${index === 3 ? "bg-mint text-ink" : "bg-white/10 text-white"}`}>
+                        {index + 1}
+                      </span>
+                      <span className="text-sm font-bold text-white/85">{chip}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-[18px] border border-white/10 bg-white/[0.06] p-4">
+                  <p className="text-2xl font-black text-white">~2</p>
+                  <p className="mt-1 text-xs font-semibold text-white/50">минуты</p>
+                </div>
+                <div className="rounded-[18px] border border-white/10 bg-white/[0.06] p-4">
+                  <p className="text-2xl font-black text-white">SEO</p>
+                  <p className="mt-1 text-xs font-semibold text-white/50">готово</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

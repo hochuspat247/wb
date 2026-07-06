@@ -3,29 +3,29 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 
 const steps = [
   {
-    num: "1",
-    title: "Фото товара",
-    text: "Загрузите исходное фото или рендер товара."
+    num: "01",
+    title: "Фото",
+    text: "Загрузка исходника"
   },
   {
-    num: "2",
-    title: "Текст и SEO",
-    text: "Сервис подготовит название, описание, преимущества и ключевые слова."
+    num: "02",
+    title: "Описание",
+    text: "Смысл и оффер"
   },
   {
-    num: "3",
-    title: "Обложка 4:5",
-    text: "AI соберёт премиальную карточку для маркетплейса."
+    num: "03",
+    title: "SEO",
+    text: "Ключи и структура"
   },
   {
-    num: "4",
+    num: "04",
+    title: "Обложка",
+    text: "Креатив 4:5"
+  },
+  {
+    num: "05",
     title: "Экспорт",
-    text: "Скачайте PNG, JSON или скопируйте описание."
-  },
-  {
-    num: "5",
-    title: "История",
-    text: "Сохраняйте варианты и возвращайтесь к ним позже."
+    text: "PNG и JSON"
   }
 ];
 
@@ -34,26 +34,31 @@ export function WorkflowSection() {
     <section className="py-20 md:py-28" id="workflow">
       <div className="section-shell">
         <SectionHeader
-          description="От загрузки фото до готового файла — один сценарий без переключения между инструментами."
-          title="Один рабочий поток вместо пяти разных инструментов"
+          description="Фото → описание → SEO → обложка → экспорт. Вся логика собрана в один продуктовый сценарий."
+          title="Процесс виден как pipeline, а не спрятан в форме"
         />
 
-        <div className="mt-14 grid gap-4 lg:grid-cols-5">
+        <div className="mt-14 overflow-hidden rounded-container border border-clay bg-card p-4 md:p-6">
+          <div className="grid gap-3 lg:grid-cols-5">
           {steps.map((step, i) => (
             <Reveal delay={(i + 1) as 1 | 2 | 3 | 4} key={step.num}>
               <div
-                className={`workflow-connector relative flex h-full flex-col rounded-card border border-clay bg-card p-5 transition hover:border-ink/10 ${
+                className={`workflow-connector relative flex h-full min-h-40 flex-col rounded-[18px] border border-clay bg-paper p-5 transition hover:border-ink/20 ${
                   i === steps.length - 1 ? "" : ""
                 }`}
               >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-paper text-sm font-bold text-ink">
+                <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-full bg-ink text-xs font-black text-white">
                   {step.num}
                 </div>
-                <h3 className="text-base font-bold text-ink">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted">{step.text}</p>
+                <h3 className="text-lg font-black text-ink">{step.title}</h3>
+                <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">{step.text}</p>
+                <div className="mt-auto pt-6">
+                  <div className="h-12 rounded-xl border border-clay bg-card" />
+                </div>
               </div>
             </Reveal>
           ))}
+          </div>
         </div>
       </div>
     </section>

@@ -1,26 +1,12 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { Card } from "@/components/ui/Card";
-
-const columns = [
-  {
-    title: "Фрилансер",
-    items: ["1–3 дня ожидания", "Правки отдельно", "Цена за каждую карточку", "Сложно быстро тестировать"]
-  },
-  {
-    title: "Ручная сборка",
-    items: ["Нужно писать текст", "Искать ключи", "Делать дизайн", "Проверять форматы"]
-  },
-  {
-    title: "MarketCard AI",
-    items: [
-      "Результат за минуты",
-      "Текст + SEO + обложка",
-      "Можно быстро сделать несколько вариантов",
-      "Экспорт PNG и JSON"
-    ],
-    highlighted: true
-  }
+const rows = [
+  ["Время", "2–6 часов", "1–3 дня", "около 2 минут"],
+  ["Стоимость", "внутренний ресурс", "за каждую карточку", "от 0 ₽"],
+  ["Правки", "каждый раз вручную", "через согласования", "новая версия сразу"],
+  ["Масштабирование", "сложно на SKU", "растёт бюджет", "100+ карточек в месяц"],
+  ["Экспорт", "собирать отдельно", "по договорённости", "PNG + JSON"],
+  ["Тест гипотез", "медленно", "дорого", "быстро"]
 ];
 
 export function CompareSection() {
@@ -32,33 +18,33 @@ export function CompareSection() {
           title="Дешевле фрилансера, быстрее ручной сборки"
         />
 
-        <div className="mt-14 grid gap-5 lg:grid-cols-3">
-          {columns.map((col, i) => (
-            <Reveal delay={(i + 1) as 1 | 2 | 3} key={col.title}>
-              <Card
-                className={`h-full ${col.highlighted ? "border-ink bg-ink text-white" : ""}`}
-                padding="lg"
-              >
-                <h3 className={`text-xl font-bold ${col.highlighted ? "text-white" : "text-ink"}`}>{col.title}</h3>
-                <ul className="mt-6 space-y-3">
-                  {col.items.map((item) => (
-                    <li
-                      className={`flex items-start gap-3 text-sm ${col.highlighted ? "text-white/75" : "text-muted"}`}
-                      key={item}
-                    >
-                      <span
-                        className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
-                          col.highlighted ? "bg-mint" : "bg-clay"
-                        }`}
-                      />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            </Reveal>
-          ))}
-        </div>
+        <Reveal delay={1}>
+          <div className="mt-14 overflow-x-auto rounded-container border border-clay bg-card">
+            <div className="min-w-[760px]">
+            <div className="grid grid-cols-[1fr_1fr_1fr_1.08fr] border-b border-clay text-sm font-black text-ink">
+              {["", "Ручная сборка", "Фрилансер", "MarketCard AI"].map((head, index) => (
+                <div className={`p-4 md:p-5 ${index === 3 ? "bg-ink text-white" : ""}`} key={head || "metric"}>
+                  {head}
+                </div>
+              ))}
+            </div>
+            {rows.map((row) => (
+              <div className="grid grid-cols-[1fr_1fr_1fr_1.08fr] border-b border-clay last:border-b-0" key={row[0]}>
+                {row.map((cell, index) => (
+                  <div
+                    className={`min-h-16 p-4 text-sm font-semibold md:p-5 ${
+                      index === 0 ? "text-ink" : index === 3 ? "bg-ink text-white" : "text-muted"
+                    }`}
+                    key={cell}
+                  >
+                    {index === 3 ? <span className="text-mint">{cell}</span> : cell}
+                  </div>
+                ))}
+              </div>
+            ))}
+            </div>
+          </div>
+        </Reveal>
       </div>
     </section>
   );

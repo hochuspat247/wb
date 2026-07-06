@@ -10,6 +10,7 @@ import { HowItWorks } from "@/components/HowItWorks";
 import { PainSection } from "@/components/PainSection";
 import { PricingSection } from "@/components/PricingSection";
 import { RoadmapSection } from "@/components/RoadmapSection";
+import { TrustBar } from "@/components/TrustBar";
 import { WorkflowSection } from "@/components/WorkflowSection";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -19,13 +20,12 @@ export default function Home() {
     <main className="min-h-screen bg-paper">
       <Header />
       <Hero />
-      <PainSection />
-      <WorkflowSection />
+      <TrustBar />
       <ExamplesSection />
 
-      <section className="py-20 md:py-28" id="demo">
+      <section className="py-16 md:py-24" id="demo">
         <div className="section-shell">
-          <div className="rounded-container border border-clay bg-ink p-6 md:p-10">
+          <div className="studio-noise relative overflow-hidden rounded-container border border-ink bg-ink p-5 md:p-10">
             <SectionHeader
               align="left"
               description="Введите описание товара, выберите стиль и получите текст, SEO и визуал."
@@ -41,6 +41,8 @@ export default function Home() {
         </div>
       </section>
 
+      <PainSection />
+      <WorkflowSection />
       <CompareSection />
       <HowItWorks />
       <AudienceSection />

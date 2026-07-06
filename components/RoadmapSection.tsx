@@ -1,7 +1,5 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { Card } from "@/components/ui/Card";
-
 const items = [
   "Интеграция с Wildberries API",
   "Интеграция с Ozon Seller API",
@@ -15,7 +13,7 @@ export function RoadmapSection() {
   return (
     <section className="py-20 md:py-28">
       <div className="section-shell">
-        <div className="rounded-container border border-ink bg-ink p-8 text-white md:p-12">
+        <div className="studio-noise relative overflow-hidden rounded-container border border-ink bg-ink p-8 text-white md:p-12">
           <SectionHeader
             align="left"
             description="Следующие шаги — превратить генератор в полноценное рабочее место селлера."
@@ -23,12 +21,13 @@ export function RoadmapSection() {
             title="Дальше — не просто генератор, а рабочее место селлера"
           />
 
-          <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="relative z-10 mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item, i) => (
               <Reveal delay={(i + 1) as 1 | 2 | 3 | 4} key={item}>
-                <Card className="border-white/10 bg-white/5 text-white" padding="md">
-                  <p className="text-sm font-medium leading-relaxed text-white/85">{item}</p>
-                </Card>
+                <div className="min-h-28 rounded-[18px] border border-white/10 bg-white/[0.06] p-5">
+                  <p className="text-xs font-black text-mint">0{i + 1}</p>
+                  <p className="mt-4 text-sm font-bold leading-relaxed text-white/85">{item}</p>
+                </div>
               </Reveal>
             ))}
           </div>

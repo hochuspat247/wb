@@ -1,6 +1,4 @@
 import { Reveal } from "@/components/ui/Reveal";
-import { SectionHeader } from "@/components/ui/SectionHeader";
-import { Card } from "@/components/ui/Card";
 
 const pains = [
   {
@@ -27,21 +25,29 @@ const pains = [
 
 export function PainSection() {
   return (
-    <section className="border-t border-clay bg-paper-alt py-20 md:py-28">
-      <div className="section-shell">
-        <SectionHeader
-          align="left"
-          description="Продавец быстро находит товар, но потом тратит часы на описание, ключи, дизайн, обложку и адаптацию под площадки."
-          title="Запуск товара тормозится не из-за товара, а из-за карточки"
-        />
-        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <section className="border-t border-clay bg-paper py-20 md:py-28">
+      <div className="section-shell grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+        <Reveal>
+          <div className="sticky top-28">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-accent">Проблема</p>
+            <h2 className="mt-5 text-balance text-4xl font-black leading-[1] text-ink md:text-6xl">
+              Карточка товара — узкое место запуска
+            </h2>
+            <p className="mt-6 max-w-lg text-lg font-medium leading-relaxed text-muted">
+              Товар готов, но запуск застревает на тексте, SEO, визуале и форматах площадок. Здесь чаще всего теряется скорость теста.
+            </p>
+          </div>
+        </Reveal>
+        <div className="grid gap-3">
           {pains.map((pain, i) => (
             <Reveal delay={(i + 1) as 1 | 2 | 3 | 4} key={pain.num}>
-              <Card className="h-full" hover padding="lg">
-                <span className="text-sm font-bold text-muted">{pain.num}</span>
-                <h3 className="mt-4 text-lg font-bold text-ink">{pain.title}</h3>
-                <p className="mt-3 text-sm leading-relaxed text-muted">{pain.text}</p>
-              </Card>
+              <div className="grid gap-4 rounded-[22px] border border-clay bg-card p-6 md:grid-cols-[80px_1fr] md:items-start">
+                <span className="text-3xl font-black text-clay">{pain.num}</span>
+                <div>
+                  <h3 className="text-xl font-black text-ink">{pain.title}</h3>
+                  <p className="mt-2 text-sm font-medium leading-relaxed text-muted">{pain.text}</p>
+                </div>
+              </div>
             </Reveal>
           ))}
         </div>

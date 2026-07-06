@@ -9,9 +9,10 @@ type ExampleCardProps = {
     label?: string;
   };
   badges?: string[];
+  featured?: boolean;
 };
 
-export function ExampleCard({ title, subtitle, variant, theme, badges = [] }: ExampleCardProps) {
+export function ExampleCard({ title, subtitle, variant, theme, badges = [], featured = false }: ExampleCardProps) {
   if (variant === "before") {
     return (
       <div className="overflow-hidden rounded-card border border-clay bg-[#E8E4DE]">
@@ -29,29 +30,31 @@ export function ExampleCard({ title, subtitle, variant, theme, badges = [] }: Ex
   }
 
   return (
-    <div className="group overflow-hidden rounded-card border border-clay bg-card transition duration-300 hover:-translate-y-1 hover:border-ink/10">
+    <div className="group h-full overflow-hidden rounded-[22px] border border-ink/10 bg-card transition duration-300 hover:-translate-y-1 hover:border-ink/25">
       <div className={`relative aspect-[4/5] ${theme.bg}`}>
         {theme.label ? (
-          <span className="absolute left-4 top-4 rounded-md bg-white/90 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-ink">
+          <span className="absolute left-4 top-4 rounded-full bg-white/92 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-ink">
             {theme.label}
           </span>
         ) : null}
-        <div className="absolute left-4 right-4 top-14">
-          <p className="text-lg font-bold leading-tight text-white md:text-xl">{title}</p>
+        <div className="absolute left-4 right-4 top-16">
+          <p className={`font-black leading-[0.96] text-white ${featured ? "text-4xl md:text-5xl" : "text-2xl md:text-3xl"}`}>
+            {title}
+          </p>
           {subtitle ? (
-            <span className={`mt-2 inline-block rounded px-2 py-0.5 text-[10px] font-bold text-white ${theme.accent}`}>
+            <span className={`mt-3 inline-block rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white ${theme.accent}`}>
               {subtitle}
             </span>
           ) : null}
         </div>
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2">
-          <div className={`h-28 w-20 rounded-xl shadow-2xl ${theme.product}`} />
+        <div className={`absolute left-1/2 -translate-x-1/2 ${featured ? "bottom-20" : "bottom-16"}`}>
+          <div className={`rounded-2xl shadow-2xl ${featured ? "h-44 w-32" : "h-32 w-24"} ${theme.product}`} />
         </div>
         {badges.length > 0 ? (
-          <div className="absolute bottom-4 right-4 space-y-1">
+          <div className="absolute bottom-4 right-4 space-y-1.5">
             {badges.map((badge) => (
               <div
-                className="rounded-md bg-white/95 px-2 py-1 text-[9px] font-semibold text-ink shadow-sm"
+                className="rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black text-ink shadow-sm"
                 key={badge}
               >
                 {badge}

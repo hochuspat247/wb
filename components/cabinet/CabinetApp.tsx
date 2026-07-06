@@ -8,7 +8,7 @@ import {
   ExternalLink,
   History,
   ImageIcon,
-  Menu,
+  LayoutDashboard,
   Plus,
   Settings,
   Trash2,
@@ -55,7 +55,6 @@ export function CabinetApp() {
   const [userEmail, setUserEmail] = useState("");
   const [editName, setEditName] = useState("Продавец");
   const [selected, setSelected] = useState<ProductCardResult | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [imageSettings, setImageSettings] = useState<ImageSettings>(getImageSettings());
 
@@ -97,7 +96,6 @@ export function CabinetApp() {
 
   function openCreateTab() {
     setTab("create");
-    setSidebarOpen(false);
     window.history.replaceState(null, "", "/cabinet#create");
   }
 
@@ -160,13 +158,6 @@ export function CabinetApp() {
     );
   }
 
-  const nav = [
-    { id: "create" as const, label: "Создать карточку", icon: Wand2 },
-    { id: "history" as const, label: "История", icon: History },
-    { id: "examples" as const, label: "Примеры", icon: ImageIcon },
-    { id: "settings" as const, label: "Настройки", icon: Settings }
-  ];
-
   const tabTitles: Record<Tab, string> = {
     create: "Создать карточку",
     history: "История генераций",
@@ -174,77 +165,83 @@ export function CabinetApp() {
     settings: "Настройки"
   };
 
-  return (
-    <div className="flex min-h-screen bg-paper">
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-clay bg-card p-5 transition-transform duration-300 lg:static lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        <div className="flex items-center justify-between">
-          <Logo />
-          <button className="text-muted lg:hidden" onClick={() => setSidebarOpen(false)} type="button">
-            <X size={20} />
-          </button>
-        </div>
+  const nav = [
+    { id: "create" as const, label: "Создать", icon: Wand2 },
+    { id: "history" as const, label: "История", icon: History },
+    { id: "examples" as const, label: "Примеры", icon: ImageIcon },
+    { id: "settings" as const, label: "Настройки", icon: Settings }
+  ];
 
-        <nav className="mt-8 grid gap-1">
+  return (
+    <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[260px_1fr]">
+      <aside className="sticky top-0 hidden h-screen flex-col border-r border-white/10 bg-ink p-5 text-white lg:flex">
+        <Logo light href="/cabinet" />
+        <div className="mt-8 rounded-[22px] border border-white/10 bg-white/[0.06] p-4">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">Баланс</p>
+          <p className="mt-3 text-3xl font-black text-white">{Math.max(0, 3 - stats.total)}</p>
+          <p className="mt-1 text-xs font-semibold text-white/45">тестовых карточек</p>
+        </div>
+        <nav className="mt-6 grid gap-1">
           {nav.map((item) => (
             <button
               className={`cabinet-sidebar-link ${tab === item.id ? "active" : ""}`}
               key={item.id}
-              onClick={() => {
-                setTab(item.id);
-                setSidebarOpen(false);
-              }}
+              onClick={() => setTab(item.id)}
               type="button"
             >
               <item.icon size={18} />
               {item.label}
             </button>
           ))}
-          <Link className="cabinet-sidebar-link mt-4" href="/">
-            <ArrowLeft size={18} />
-            Вернуться на сайт
-          </Link>
         </nav>
-
-        <div className="mt-auto rounded-card border border-clay bg-paper p-4">
-          <p className="text-xs font-semibold text-muted">Карточек сохранено</p>
-          <p className="mt-1 text-2xl font-bold text-ink">{stats.total}</p>
-          <Button className="mt-4 w-full" onClick={openCreateTab} size="sm">
-            <Plus size={16} />
-            Новая карточка
-          </Button>
-        </div>
+        <Link className="cabinet-sidebar-link mt-auto" href="/">
+          <ArrowLeft size={18} />
+          На сайт
+        </Link>
       </aside>
 
-      {sidebarOpen ? (
-        <button
-          aria-label="Закрыть"
-          className="fixed inset-0 z-40 bg-ink/20 backdrop-blur-sm lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-          type="button"
-        />
-      ) : null}
-
-      <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-clay bg-card/90 px-5 py-4 backdrop-blur-xl lg:px-8">
-          <div className="flex items-center gap-4">
-            <button className="text-ink lg:hidden" onClick={() => setSidebarOpen(true)} type="button">
-              <Menu size={22} />
-            </button>
+      <div className="flex min-h-screen flex-col">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-clay bg-paper/88 px-5 py-4 backdrop-blur-xl lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-full bg-ink text-white lg:hidden">
+              <LayoutDashboard size={18} />
+            </div>
             <div>
-              <p className="text-xs font-medium text-muted">Рабочий кабинет</p>
-              <p className="text-lg font-bold text-ink">{tabTitles[tab]}</p>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Рабочий кабинет</p>
+              <p className="text-xl font-black text-ink">{tabTitles[tab]}</p>
             </div>
           </div>
-          <p className="hidden text-sm text-muted sm:block">{profileName}</p>
+          <div className="hidden items-center gap-3 sm:flex">
+            <div className="rounded-full border border-clay bg-card px-4 py-2 text-sm font-bold text-muted">
+              AI: {imageSettings.imageMode}
+            </div>
+            <p className="text-sm font-semibold text-muted">{profileName}</p>
+            <Button onClick={openCreateTab} size="sm">
+              <Plus size={16} />
+              Новая карточка
+            </Button>
+          </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-5 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-5 pb-28 lg:p-8">
           {tab === "create" ? (
-            <CardGenerator embedded hideHistory onSaved={refreshCards} persistToServer />
+            <div className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-3">
+                {[
+                  ["Всего карточек", stats.total],
+                  ["За неделю", stats.thisWeek],
+                  ["Экспорт", "PNG + JSON"]
+                ].map(([label, value]) => (
+                  <div className="rounded-[22px] border border-clay bg-card p-5" key={label}>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">{label}</p>
+                    <p className="mt-3 text-3xl font-black text-ink">{value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="studio-noise relative overflow-hidden rounded-container border border-ink bg-ink p-5 md:p-7">
+                <CardGenerator embedded hideHistory onSaved={refreshCards} persistToServer darkConsole />
+              </div>
+            </div>
           ) : null}
 
           {tab === "history" ? (
@@ -266,44 +263,12 @@ export function CabinetApp() {
               {cards.length === 0 ? (
                 <EmptyState onCreate={openCreateTab} />
               ) : (
-                <>
-                  <HistorySection
-                    history={cards}
-                    onClear={handleClearAll}
-                    onOpen={setSelected}
-                    onRemove={handleRemove}
-                  />
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {cards.map((card) => {
-                      const thumb = getThumbnail(card);
-                      return (
-                        <Card
-                          className="cursor-pointer overflow-hidden p-0 transition hover:-translate-y-0.5"
-                          hover
-                          key={card.id}
-                          padding="none"
-                        >
-                          <button className="w-full text-left" onClick={() => setSelected(card)} type="button">
-                            <div className="aspect-[4/5] bg-paper">
-                              {thumb ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img alt="" className="h-full w-full object-cover" src={thumb} />
-                              ) : (
-                                <div className="grid h-full place-items-center text-sm text-muted">Нет превью</div>
-                              )}
-                            </div>
-                            <div className="p-4">
-                              <p className="truncate font-semibold text-ink">{card.title}</p>
-                              <p className="mt-1 text-xs text-muted">
-                                {card.marketplace} · {new Date(card.generatedAt).toLocaleDateString("ru-RU")}
-                              </p>
-                            </div>
-                          </button>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </>
+                <HistorySection
+                  history={cards}
+                  onClear={handleClearAll}
+                  onOpen={setSelected}
+                  onRemove={handleRemove}
+                />
               )}
             </div>
           ) : null}
@@ -394,6 +359,22 @@ export function CabinetApp() {
           ) : null}
         </main>
       </div>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-4 border-t border-clay bg-card/95 p-2 backdrop-blur lg:hidden">
+        {nav.map((item) => (
+          <button
+            className={`grid place-items-center gap-1 rounded-[14px] px-2 py-2 text-[11px] font-black ${
+              tab === item.id ? "bg-ink text-white" : "text-muted"
+            }`}
+            key={item.id}
+            onClick={() => setTab(item.id)}
+            type="button"
+          >
+            <item.icon size={17} />
+            {item.label}
+          </button>
+        ))}
+      </nav>
 
       {selected ? (
         <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center">

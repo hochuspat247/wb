@@ -18,7 +18,7 @@ export function Card({ children, className = "", hover = false, padding = "md" }
   return (
     <div
       className={`rounded-card border border-clay bg-card ${paddings[padding]} ${
-        hover ? "transition duration-200 hover:-translate-y-0.5 hover:border-ink/10" : ""
+        hover ? "transition duration-200 hover:-translate-y-1 hover:border-ink/20" : ""
       } ${className}`}
     >
       {children}

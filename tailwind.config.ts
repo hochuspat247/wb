@@ -13,27 +13,27 @@ const config: Config = {
       },
       colors: {
         ink: "#111111",
-        "ink-soft": "#171717",
-        muted: "#6F6A61",
-        accent: "#FF5A3D",
-        mint: "#B8FF3D",
-        lavender: "#E8D8FF",
-        paper: "#F7F4EF",
-        "paper-alt": "#F8F6F2",
-        clay: "#E8E1D8",
+        "ink-soft": "#1E1E1E",
+        muted: "#746D63",
+        accent: "#FF5638",
+        mint: "#C8FF3D",
+        sand: "#ECE3D2",
+        paper: "#F3EFE7",
+        "paper-alt": "#ECE3D2",
+        clay: "#DDD4C8",
         card: "#FFFFFF"
       },
       maxWidth: {
         content: "1280px"
       },
       borderRadius: {
-        container: "32px",
-        card: "24px",
-        button: "16px"
+        container: "28px",
+        card: "18px",
+        button: "999px"
       },
       boxShadow: {
-        soft: "0 1px 3px rgba(17, 17, 17, 0.04), 0 8px 24px rgba(17, 17, 17, 0.04)",
-        card: "0 1px 2px rgba(17, 17, 17, 0.03)"
+        soft: "0 18px 60px rgba(17, 17, 17, 0.08)",
+        card: "0 1px 0 rgba(17, 17, 17, 0.04)"
       },
       keyframes: {
         revealUp: {

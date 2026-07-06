@@ -27,17 +27,17 @@ export function PricingCard({
 }: PricingCardProps) {
   return (
     <Card
-      className={`relative flex h-full flex-col ${highlighted ? "border-ink bg-ink text-white" : ""}`}
+      className={`relative flex h-full flex-col ${highlighted ? "border-ink bg-ink text-white" : "bg-card"}`}
       padding="lg"
     >
       {badge ? (
-        <Badge className={`absolute -top-3 left-6 ${highlighted ? "bg-mint text-ink border-mint" : ""}`} variant="accent">
+        <Badge className={`absolute -top-3 left-6 ${highlighted ? "border-mint bg-mint text-ink" : ""}`} variant="accent">
           {badge}
         </Badge>
       ) : null}
-      <h3 className="text-xl font-bold">{name}</h3>
+      <h3 className="text-2xl font-black">{name}</h3>
       <div className="mt-4">
-        <span className="text-4xl font-bold tracking-tight">{price}</span>
+        <span className="text-5xl font-black tracking-normal">{price}</span>
         <span className={`ml-2 text-sm ${highlighted ? "text-white/50" : "text-muted"}`}>/{period}</span>
       </div>
       <ul className="mt-8 flex-1 space-y-3">

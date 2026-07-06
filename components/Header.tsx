@@ -8,8 +8,8 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 
 const links = [
-  ["Возможности", "/#workflow"],
   ["Примеры", "/#examples"],
+  ["Генератор", "/#demo"],
   ["Как работает", "/#how"],
   ["Тарифы", "/#pricing"],
   ["FAQ", "/#faq"]
@@ -35,7 +35,7 @@ export function Header() {
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled ? "border-b border-clay bg-card/85 shadow-card backdrop-blur-xl" : "bg-paper/80 backdrop-blur-sm"
+        scrolled ? "border-b border-clay bg-paper/88 backdrop-blur-xl" : "bg-paper/72 backdrop-blur-sm"
       }`}
     >
       <div className="section-shell flex min-h-[72px] items-center justify-between gap-4">
@@ -44,7 +44,7 @@ export function Header() {
         <nav className="hidden items-center gap-1 lg:flex">
           {links.map(([label, href]) => (
             <Link
-              className="rounded-xl px-4 py-2 text-sm font-medium text-muted transition hover:bg-paper hover:text-ink"
+              className="relative px-3 py-2 text-sm font-semibold text-muted transition after:absolute after:bottom-1 after:left-3 after:h-px after:w-0 after:bg-accent after:transition-all hover:text-ink hover:after:w-[calc(100%-1.5rem)]"
               href={href}
               key={href}
             >
@@ -60,7 +60,7 @@ export function Header() {
                 <Button variant="ghost">{session?.user?.name || "Кабинет"}</Button>
               </Link>
               <Link href="/cabinet#create">
-                <Button>Попробовать бесплатно</Button>
+                <Button>Создать карточку</Button>
               </Link>
               <Button onClick={() => signOut({ callbackUrl: "/" })} variant="secondary">
                 Выйти
@@ -72,7 +72,7 @@ export function Header() {
                 <Button variant="ghost">Войти</Button>
               </Link>
               <Link href="/register">
-                <Button>Попробовать бесплатно</Button>
+                <Button>Создать карточку</Button>
               </Link>
             </>
           )}
@@ -80,7 +80,7 @@ export function Header() {
 
         <button
           aria-label="Меню"
-          className="grid h-10 w-10 place-items-center rounded-xl border border-clay bg-card lg:hidden"
+          className="grid h-10 w-10 place-items-center rounded-full border border-clay bg-card lg:hidden"
           onClick={() => setMenuOpen((v) => !v)}
           type="button"
         >

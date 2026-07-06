@@ -6,8 +6,8 @@ export const exampleProducts = [
     title: "Тестер качества воды",
     subtitle: "TDS-метр",
     theme: {
-      bg: "bg-gradient-to-br from-[#0c4a6e] via-[#134e4a] to-[#111111]",
-      accent: "bg-orange-500",
+      bg: "bg-[radial-gradient(circle_at_20%_10%,#7aa6aa_0%,#24444a_38%,#111111_100%)]",
+      accent: "bg-accent",
       product: "bg-gradient-to-b from-neutral-100 to-neutral-300",
       label: "4:5"
     },
@@ -18,8 +18,8 @@ export const exampleProducts = [
     title: "Крем для лица",
     subtitle: "Увлажнение 24ч",
     theme: {
-      bg: "bg-gradient-to-br from-[#4a1942] via-[#7c2d6a] to-[#1a0a18]",
-      accent: "bg-rose-400",
+      bg: "bg-[radial-gradient(circle_at_18%_16%,#f1c8b7_0%,#8f4a3c_40%,#111111_100%)]",
+      accent: "bg-[#c46b4e]",
       product: "bg-gradient-to-b from-rose-100 to-rose-300 rounded-full",
       label: "Premium"
     },
@@ -30,8 +30,8 @@ export const exampleProducts = [
     title: "Пароочиститель",
     subtitle: "Для дома",
     theme: {
-      bg: "bg-gradient-to-br from-[#1e3a5f] via-[#2d4a6f] to-[#111111]",
-      accent: "bg-sky-500",
+      bg: "bg-[radial-gradient(circle_at_20%_12%,#d7e3e6_0%,#53656d_42%,#111111_100%)]",
+      accent: "bg-[#5f7780]",
       product: "bg-gradient-to-b from-neutral-200 to-neutral-400",
       label: "4:5"
     },
@@ -42,8 +42,8 @@ export const exampleProducts = [
     title: "Вентилятор",
     subtitle: "Тихий режим",
     theme: {
-      bg: "bg-gradient-to-br from-[#1a2e1a] via-[#2d4a2d] to-[#111111]",
-      accent: "bg-emerald-500",
+      bg: "bg-[radial-gradient(circle_at_25%_10%,#d8e5c8_0%,#60724f_42%,#111111_100%)]",
+      accent: "bg-[#6e8054]",
       product: "bg-gradient-to-b from-neutral-100 to-neutral-300 rounded-full",
       label: "4:5"
     },
@@ -54,8 +54,8 @@ export const exampleProducts = [
     title: "Награда из дерева и акрила",
     subtitle: "Персонализация",
     theme: {
-      bg: "bg-gradient-to-br from-[#3d2b1f] via-[#5c4033] to-[#1a1410]",
-      accent: "bg-amber-500",
+      bg: "bg-[radial-gradient(circle_at_20%_12%,#e7c18a_0%,#6d4527_42%,#111111_100%)]",
+      accent: "bg-[#a96d2c]",
       product: "bg-gradient-to-b from-amber-200 to-amber-400",
       label: "Каталог"
     },
@@ -66,8 +66,8 @@ export const exampleProducts = [
     title: "Органайзер для косметики",
     subtitle: "Прозрачный",
     theme: {
-      bg: "bg-gradient-to-br from-[#2d2d3a] via-[#4a4a5a] to-[#111111]",
-      accent: "bg-violet-400",
+      bg: "bg-[radial-gradient(circle_at_18%_12%,#f2efe6_0%,#9d9281_40%,#111111_100%)]",
+      accent: "bg-[#786b5c]",
       product: "bg-gradient-to-b from-white/40 to-white/20 backdrop-blur",
       label: "4:5"
     },

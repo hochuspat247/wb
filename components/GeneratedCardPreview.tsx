@@ -44,12 +44,12 @@ const styleMap: Record<
     glow: "bg-[#d6b56d]/30"
   },
   "Яркий": {
-    background: "bg-gradient-to-br from-[#7c3aed] via-[#5865f2] to-[#38bdf8]",
+    background: "bg-[radial-gradient(circle_at_18%_12%,#ffb84d_0%,#ff5638_42%,#111111_100%)]",
     panel: "bg-white/16",
     text: "text-white",
     muted: "text-white/86",
     badge: "bg-[#ff2e88] text-white",
-    chip: "bg-white text-[#7c3aed]",
+    chip: "bg-white text-[#9a2f1f]",
     imagePanel: "bg-white/16",
     glow: "bg-[#a7f3d0]/45"
   },
@@ -88,7 +88,7 @@ export const GeneratedCardPreview = forwardRef<HTMLDivElement, GeneratedCardPrev
 
     return (
       <div
-        className={`marketplace-card relative mx-auto aspect-square w-full max-w-[680px] overflow-hidden rounded-[24px] border border-ink/15 shadow-soft ${theme.background} ${hasGeneratedImage ? "text-white" : theme.text}`}
+        className={`marketplace-card relative mx-auto aspect-[4/5] w-full max-w-[560px] overflow-hidden rounded-[24px] border border-ink/15 shadow-soft ${theme.background} ${hasGeneratedImage ? "text-white" : theme.text}`}
         ref={ref}
       >
         {generatedImageUrl ? (
@@ -104,7 +104,7 @@ export const GeneratedCardPreview = forwardRef<HTMLDivElement, GeneratedCardPrev
 
         <div className="absolute left-[5%] right-[5%] top-[4%] z-20 flex items-center justify-between gap-3">
           <span className={`rounded-full px-4 py-2 text-[13px] font-black uppercase ${theme.badge}`}>{marketplace}</span>
-          <span className={`rounded-full px-4 py-2 text-[13px] font-black ${theme.panel}`}>Формат 1:1</span>
+          <span className={`rounded-full px-4 py-2 text-[13px] font-black ${theme.panel}`}>Формат 4:5</span>
         </div>
 
         <div className="absolute left-[5%] top-[14%] z-20 max-w-[86%]">

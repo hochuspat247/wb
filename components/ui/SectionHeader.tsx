@@ -32,7 +32,7 @@ export function SectionHeader({
           </span>
         ) : null}
         <h2
-          className={`mt-5 text-3xl font-bold leading-[1.1] tracking-tight md:text-[2.75rem] ${
+          className={`mt-5 text-3xl font-black leading-[1.02] tracking-normal md:text-[3rem] ${
             isDark ? "text-white" : "text-ink"
           }`}
         >

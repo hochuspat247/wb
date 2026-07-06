@@ -36,11 +36,11 @@ const faq = [
 
 export function FAQSection() {
   return (
-    <section className="border-t border-clay bg-paper-alt py-20 md:py-28" id="faq">
+    <section className="border-t border-clay bg-paper py-20 md:py-28" id="faq">
       <div className="section-shell">
         <SectionHeader title="Частые вопросы" />
         <Reveal delay={1}>
-          <div className="mx-auto mt-14 max-w-2xl">
+          <div className="mx-auto mt-14 max-w-4xl">
             <Accordion items={faq} />
           </div>
         </Reveal>

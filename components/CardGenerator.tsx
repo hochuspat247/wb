@@ -5,17 +5,26 @@ import { FileImage, ImageUp, Loader2, RotateCcw, Wand2 } from "lucide-react";
 import { GeneratedCardPreview } from "@/components/GeneratedCardPreview";
 import { HistorySection } from "@/components/HistorySection";
 import { ResultPanel } from "@/components/ResultPanel";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
+import { SkeletonBlock } from "@/components/ui/Loader";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { getImageSettings } from "@/lib/imageSettings";
 import { detectCategory } from "@/lib/category";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
 import { base64ToDataUrl, dataUrlToBase64, downloadBase64Image, downloadImageFromUrl, validateImageFile } from "@/lib/image";
 import { clearHistory, getHistory, removeFromHistory, saveToHistory } from "@/lib/storage";
 import { saveUserCardRemote } from "@/lib/api/user";
-import type { GenerateImageResult, ImageDesignPreset, ProductCardInput, ProductCardResult } from "@/types/product-card";
+import type {
+  GenerateImageResult,
+  ImageDesignPreset,
+  ImageGenerationMode,
+  ProductCardInput,
+  ProductCardResult
+} from "@/types/product-card";
 
 const marketplaces = ["Wildberries", "Ozon", "Avito", "Яндекс Маркет"];
 const styles = ["Минималистичный", "Премиальный", "Яркий", "Нежный", "Технологичный"];
@@ -26,28 +35,24 @@ const designPresets: Array<{ label: string; value: ImageDesignPreset }> = [
   { label: "Standard", value: "standard" }
 ];
 
-function getDesignPresetBadge(preset?: ImageDesignPreset) {
-  if (preset === "luxury-catalog") {
-    return "Luxury Catalog";
-  }
-
-  if (preset === "standard") {
-    return "Standard";
-  }
-
-  return "Premium Marketplace";
-}
+const imageModes: Array<{ label: string; value: ImageGenerationMode }> = [
+  { label: "AI-обложка (авто)", value: "pro" },
+  { label: "Быстрая генерация", value: "fast" },
+  { label: "Базовая обложка 4:5", value: "html" }
+];
 
 export function CardGenerator({
   hideHistory = false,
   onSaved,
   embedded = false,
-  persistToServer = false
+  persistToServer = false,
+  darkConsole = false
 }: {
   hideHistory?: boolean;
   onSaved?: () => void;
   embedded?: boolean;
   persistToServer?: boolean;
+  darkConsole?: boolean;
 }) {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -57,6 +62,7 @@ export function CardGenerator({
   const [price, setPrice] = useState("");
   const [ctaText, setCtaText] = useState("");
   const [designPreset, setDesignPreset] = useState<ImageDesignPreset>("premium-marketplace");
+  const [imageMode, setImageMode] = useState<ImageGenerationMode>("pro");
   const [removeBackground, setRemoveBackground] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageFileName, setImageFileName] = useState("");
@@ -74,6 +80,8 @@ export function CardGenerator({
 
   useEffect(() => {
     setHistory(getHistory());
+    const settings = getImageSettings();
+    setImageMode(settings.imageMode);
   }, []);
 
   useEffect(() => {
@@ -217,6 +225,7 @@ export function CardGenerator({
     setPrice("");
     setCtaText("");
     setDesignPreset("premium-marketplace");
+    setImageMode("pro");
     setRemoveBackground(false);
     setImageUrl("");
     setImageFileName("");
@@ -345,7 +354,8 @@ export function CardGenerator({
           keywords: cardForImage.keywords,
           imageBase64: image.base64,
           imageMimeType: image.mimeType,
-          imageProvider: "auto",
+          imageProvider: getImageSettings().imageProvider,
+          imageMode,
           headline: headline.trim() || undefined,
           price: price.trim() || undefined,
           ctaText: ctaText.trim() || undefined,
@@ -392,27 +402,23 @@ export function CardGenerator({
   );
 
   const isWorking = isLoading || isGeneratingAiImage || isRenderingImage;
+  const labelClass = darkConsole ? "text-white/80" : "text-ink";
+  const formClass = darkConsole
+    ? "rounded-card border border-white/10 bg-white/5 p-5 md:p-6"
+    : "rounded-card border border-clay bg-card p-5 md:p-6";
+  const panelClass = darkConsole
+    ? "rounded-card border border-white/10 bg-white/5 p-5"
+    : "rounded-card border border-clay bg-card p-5";
 
   return (
     <section className={embedded ? "" : "relative py-24"} id={embedded ? undefined : "demo"}>
       <div className={embedded ? undefined : "section-shell"}>
-        {!embedded ? (
-          <div className="mb-12 max-w-3xl">
-            <span className="section-kicker">Попробуйте бесплатно</span>
-            <h2 className="mt-5 text-4xl font-black leading-tight text-ink md:text-5xl">
-              Создайте карточку <span className="gradient-text">за 2 минуты</span>
-            </h2>
-            <p className="mt-4 max-w-2xl text-lg font-medium leading-8 text-muted">
-              Загрузите фото, опишите товар — получите готовые тексты, ключи для поиска и обложку для маркетплейса.
-            </p>
-          </div>
-        ) : null}
         <div className="grid gap-8 xl:grid-cols-[0.95fr_1.05fr]">
-          <form className="panel-frame rounded-[24px] p-5 md:p-6" onSubmit={handleSubmit}>
+          <form className={formClass} onSubmit={handleSubmit}>
             <div className="grid gap-5">
-              <label className="grid gap-2 text-sm font-bold text-ink">
+              <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                 <span>Фото товара</span>
-                <div className="rounded-2xl border border-dashed border-ink/30 bg-paper p-4">
+                <div className={`rounded-xl border border-dashed p-4 ${darkConsole ? "border-white/20 bg-white/5" : "border-clay bg-paper"}`}>
                   <Input accept="image/*" onChange={(event) => handleImage(event.target.files?.[0])} type="file" />
                   <div className="mt-3 flex items-center gap-2 text-xs text-muted">
                     <ImageUp size={15} />
@@ -420,7 +426,7 @@ export function CardGenerator({
                   </div>
                 </div>
               </label>
-              <label className="grid gap-2 text-sm font-bold text-ink">
+              <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                 Описание товара
                 <Textarea
                   onChange={(event) => setDescription(event.target.value)}
@@ -430,7 +436,15 @@ export function CardGenerator({
                 />
               </label>
               <div className="grid gap-4 md:grid-cols-2">
-                <label className="grid gap-2 text-sm font-bold text-ink">
+                <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                  Категория
+                  <Input
+                    onChange={(event) => setCategory(event.target.value)}
+                    placeholder={effectiveCategory || "Электроника"}
+                    value={category}
+                  />
+                </label>
+                <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                   Маркетплейс
                   <Select onChange={(event) => setMarketplace(event.target.value)} value={marketplace}>
                     {marketplaces.map((item) => (
@@ -438,11 +452,26 @@ export function CardGenerator({
                     ))}
                   </Select>
                 </label>
-                <label className="grid gap-2 text-sm font-bold text-ink">
-                  Стиль карточки
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                  Стиль
                   <Select onChange={(event) => setStyle(event.target.value)} value={style}>
                     {styles.map((item) => (
                       <option key={item}>{item}</option>
+                    ))}
+                  </Select>
+                </label>
+                <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                  Режим изображения
+                  <Select
+                    onChange={(event) => setImageMode(event.target.value as ImageGenerationMode)}
+                    value={imageMode}
+                  >
+                    {imageModes.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
                     ))}
                   </Select>
                 </label>
@@ -452,30 +481,30 @@ export function CardGenerator({
                 label="Убрать фон с фото"
                 onChange={(event) => setRemoveBackground(event.target.checked)}
               />
-              <div className="rounded-xl border border-ink/10 bg-paper p-4">
-                <h4 className="text-sm font-black text-ink">Премиум-настройки карточки</h4>
-                <div className="mt-4 grid gap-4">
-                  <label className="grid gap-2 text-sm font-bold text-ink">
-                    Заголовок на карточке
+              <div className={`rounded-xl border p-4 ${darkConsole ? "border-white/10 bg-white/5" : "border-clay bg-paper"}`}>
+                <h4 className={`text-sm font-semibold ${labelClass}`}>Дополнительные поля</h4>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Заголовок
                     <Input
                       onChange={(event) => setHeadline(event.target.value)}
-                      placeholder="ПРЕМИУМ-ТОВАР ДЛЯ МАРКЕТПЛЕЙСА"
+                      placeholder="ПРЕМИУМ-ТОВАР"
                       value={headline}
                     />
                   </label>
-                  <label className="grid gap-2 text-sm font-bold text-ink">
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                     Цена
                     <Input onChange={(event) => setPrice(event.target.value)} placeholder="7 490 ₽" value={price} />
                   </label>
-                  <label className="grid gap-2 text-sm font-bold text-ink">
-                    CTA-кнопка
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    CTA
                     <Input
                       onChange={(event) => setCtaText(event.target.value)}
                       placeholder="ДОБАВИТЬ В КОРЗИНУ"
                       value={ctaText}
                     />
                   </label>
-                  <label className="grid gap-2 text-sm font-bold text-ink">
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                     Пресет дизайна
                     <Select
                       onChange={(event) => setDesignPreset(event.target.value as ImageDesignPreset)}
@@ -489,16 +518,13 @@ export function CardGenerator({
                     </Select>
                   </label>
                 </div>
-                <p className="mt-4 text-xs leading-6 text-muted">
-                  Для дорогих карточек укажите цену, CTA и короткий сильный заголовок. Так AI лучше соберёт премиальный e-commerce creative.
-                </p>
               </div>
-              {error ? <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">{error}</p> : null}
-              {notice ? <p className="rounded-xl border border-ink/10 bg-mint/35 p-4 text-sm font-bold text-ink">{notice}</p> : null}
+              {error ? <Alert variant="error">{error}</Alert> : null}
+              {notice ? <Alert variant="success">{notice}</Alert> : null}
               <div className="flex flex-wrap gap-3">
                 <Button disabled={isWorking} type="submit">
                   {isWorking ? <Loader2 className="animate-spin" size={17} /> : <Wand2 size={17} />}
-                  {isWorking ? "Создаём карточку…" : "Создать карточку"}
+                  {isWorking ? "Генерируем…" : "Сгенерировать карточку"}
                 </Button>
                 <Button onClick={handleClear} type="button" variant="secondary">
                   <RotateCcw size={17} />
@@ -517,53 +543,67 @@ export function CardGenerator({
                 styleName={style}
               />
             </div>
+            {isWorking && !card ? (
+              <div className={panelClass}>
+                <p className={`mb-4 text-sm font-semibold ${darkConsole ? "text-white/70" : "text-muted"}`}>
+                  Подготавливаем карточку…
+                </p>
+                <SkeletonBlock className="aspect-[4/5] w-full" />
+              </div>
+            ) : null}
             {card ? (
-              <div className="rounded-[22px] border border-ink/15 bg-[#fffaf0] p-5 shadow-soft">
+              <div className={panelClass}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="flex items-center gap-2 text-xl font-black text-ink">
-                        <FileImage size={20} />
-                        Обложка для публикации
-                      </h3>
-                      {card.generatedImagePrompt && !card.generatedImageIsFallback ? (
-                        <span className="rounded-full bg-ink px-3 py-1 text-xs font-black text-white">
-                          {getDesignPresetBadge(card.designPreset || designPreset)}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="mt-1 text-sm text-muted">Готова к загрузке на {card.marketplace}</p>
+                    <h3 className={`flex items-center gap-2 text-lg font-bold ${darkConsole ? "text-white" : "text-ink"}`}>
+                      <FileImage size={20} />
+                      Превью обложки
+                    </h3>
+                    <p className={`mt-1 text-sm ${darkConsole ? "text-white/50" : "text-muted"}`}>
+                      Готова к загрузке на {card.marketplace}
+                    </p>
                   </div>
                   <Button onClick={() => downloadBestImage(card, renderedImageUrl, previewRef.current)} variant="dark">
-                    Скачать изображение
+                    Скачать PNG
                   </Button>
                 </div>
-                <div className="mt-4 overflow-hidden rounded-[20px] border border-ink/10 bg-paper">
+                <div className={`mt-4 overflow-hidden rounded-card border ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
                   {isGeneratingAiImage ? (
-                    <div className="grid aspect-[4/5] place-items-center px-6 text-center text-sm font-semibold text-muted">
-                      Создаём обложку…
+                    <div className="grid aspect-[4/5] place-items-center gap-4 px-6">
+                      <Loader2 className="animate-spin text-muted" size={28} />
+                      <p className="text-center text-sm font-medium text-muted">Создаём обложку…</p>
                     </div>
                   ) : isRenderingImage && !card.generatedImageUrl && !card.generatedImageDataUrl ? (
-                    <div className="grid aspect-[4/5] place-items-center text-sm font-semibold text-muted">
-                      Подготавливаем изображение…
+                    <div className="grid aspect-[4/5] place-items-center">
+                      <SkeletonBlock className="h-full w-full rounded-none" />
                     </div>
                   ) : displayImageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img alt="Готовая обложка" className="aspect-[4/5] w-full object-contain" src={displayImageUrl} />
+                    <img
+                      alt="Готовая обложка"
+                      className="aspect-[4/5] w-full object-contain transition duration-300 hover:scale-[1.01]"
+                      src={displayImageUrl}
+                    />
                   ) : (
-                    <div className="grid aspect-[4/5] place-items-center px-6 text-center text-sm font-semibold text-muted">
-                      Изображение появится после генерации
+                    <div className="grid aspect-[4/5] place-items-center px-6 text-center text-sm font-medium text-muted">
+                      Базовая обложка 4:5 появится после генерации
                     </div>
                   )}
                 </div>
               </div>
+            ) : !isWorking ? (
+              <div className={`${panelClass} grid aspect-[4/5] place-items-center text-center`}>
+                <div>
+                  <p className={`text-sm font-semibold ${darkConsole ? "text-white/70" : "text-muted"}`}>
+                    Live preview
+                  </p>
+                  <p className={`mt-2 text-sm ${darkConsole ? "text-white/45" : "text-muted/80"}`}>
+                    Загрузите фото и нажмите «Сгенерировать карточку»
+                  </p>
+                </div>
+              </div>
             ) : null}
-            <ResultPanel
-              card={card}
-              onDownloadPng={() => downloadPreviewPng(previewRef.current, card?.title)}
-              onSave={handleSave}
-              previewRef={previewRef}
-            />
+            <ResultPanel card={card} dark={darkConsole} onDownloadPng={() => downloadPreviewPng(previewRef.current, card?.title)} onSave={handleSave} previewRef={previewRef} />
           </div>
         </div>
         {!hideHistory ? (

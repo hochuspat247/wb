@@ -1,87 +1,69 @@
-import { Check } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { PricingCard } from "@/components/ui/PricingCard";
 
 const plans = [
   {
-    name: "Старт",
+    name: "Start",
     price: "0 ₽",
     period: "навсегда",
-    description: "Попробуйте и оцените результат",
-    features: ["3 карточки в месяц", "Тексты и SEO", "Базовая обложка 4:5", "Скачивание PNG"],
-    cta: "Начать бесплатно",
-    highlighted: false
+    features: [
+      "3 тестовые карточки",
+      "Генерация названия и описания",
+      "SEO-ключи",
+      "Базовая обложка 4:5",
+      "Экспорт результата"
+    ],
+    cta: "Попробовать",
+    href: "/register"
   },
   {
-    name: "Продавец",
+    name: "Seller",
     price: "990 ₽",
-    period: "в месяц",
-    description: "Для активных продавцов на маркетплейсах",
-    features: ["100 карточек в месяц", "AI-обложки", "Все стили", "Приоритетная генерация", "История в кабинете"],
-    cta: "Выбрать тариф",
-    highlighted: true
+    period: "мес",
+    features: [
+      "100 карточек в месяц",
+      "Всё из Start",
+      "AI-обложки через подключённый провайдер",
+      "История генераций",
+      "Экспорт PNG и JSON",
+      "Несколько дизайн-пресетов"
+    ],
+    cta: "Выбрать Seller",
+    href: "/register",
+    highlighted: true,
+    badge: "Популярный"
   },
   {
-    name: "Команда",
-    price: "от 4 990 ₽",
-    period: "в месяц",
-    description: "Для агентств и брендов",
-    features: ["Всё из «Продавец»", "Командный доступ", "Бренд-стили", "Персональный менеджер"],
-    cta: "Связаться с нами",
-    highlighted: false
+    name: "Pro",
+    price: "2 990 ₽",
+    period: "мес",
+    features: [
+      "500 карточек в месяц",
+      "Всё из Seller",
+      "Командная работа",
+      "Больше пресетов",
+      "Приоритетные генерации",
+      "Интеграции в roadmap"
+    ],
+    cta: "Выбрать Pro",
+    href: "/register"
   }
 ];
 
 export function PricingSection() {
   return (
-    <section className="relative py-24" id="pricing">
-      <div className="absolute inset-0 bg-gradient-to-b from-paper via-white to-paper" />
-      <div className="section-shell relative z-10">
-        <Reveal>
-          <div className="mx-auto max-w-2xl text-center">
-            <span className="section-kicker">Тарифы</span>
-            <h2 className="mt-5 text-3xl font-black leading-tight text-ink md:text-5xl">
-              Начните бесплатно — <span className="gradient-text">растите с нами</span>
-            </h2>
-            <p className="mt-4 text-muted">Первые карточки бесплатно. Без привязки карты.</p>
-          </div>
-        </Reveal>
-        <div className="mt-14 grid gap-6 lg:grid-cols-3">
+    <section className="border-t border-clay bg-paper-alt py-20 md:py-28" id="pricing">
+      <div className="section-shell">
+        <SectionHeader
+          description="Первые 3 карточки — без карты. Масштабируйтесь, когда убедитесь в результате."
+          title="Начните бесплатно, масштабируйте после проверки"
+        />
+
+        <div className="mt-14 grid gap-5 lg:grid-cols-3">
           {plans.map((plan, i) => (
             <Reveal delay={(i + 1) as 1 | 2 | 3} key={plan.name}>
-              <div
-                className={`relative flex h-full flex-col rounded-3xl p-7 transition duration-500 ${
-                  plan.highlighted
-                    ? "scale-[1.02] border-2 border-violet/30 bg-ink text-white shadow-glow-violet"
-                    : "premium-card"
-                }`}
-              >
-                {plan.highlighted ? (
-                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-coral to-violet px-5 py-1.5 text-xs font-black text-white shadow-glow">
-                    Популярный
-                  </span>
-                ) : null}
-                <h3 className="text-xl font-black">{plan.name}</h3>
-                <p className={`mt-2 text-sm ${plan.highlighted ? "text-white/60" : "text-muted"}`}>{plan.description}</p>
-                <div className="mt-6">
-                  <span className="text-5xl font-black">{plan.price}</span>
-                  <span className={`ml-2 text-sm ${plan.highlighted ? "text-white/50" : "text-muted"}`}>/{plan.period}</span>
-                </div>
-                <ul className="mt-8 flex-1 space-y-3.5">
-                  {plan.features.map((feature) => (
-                    <li className="flex items-start gap-3 text-sm font-medium" key={feature}>
-                      <Check className={`mt-0.5 shrink-0 ${plan.highlighted ? "text-mint" : "text-coral"}`} size={16} />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Link className="mt-8 block" href="/cabinet#create">
-                  <Button className="w-full" variant={plan.highlighted ? "primary" : "secondary"}>
-                    {plan.cta}
-                  </Button>
-                </Link>
-              </div>
+              <PricingCard {...plan} />
             </Reveal>
           ))}
         </div>

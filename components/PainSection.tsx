@@ -1,41 +1,47 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Card } from "@/components/ui/Card";
 
 const pains = [
   {
-    title: "Карточка не попадает в поиск",
-    text: "Покупатели не находят товар — продажи стоят.",
-    emoji: "🔍"
+    num: "01",
+    title: "Долго писать описание",
+    text: "Название, преимущества, ключи и адаптация под площадку отнимают часы на каждый SKU."
   },
   {
-    title: "Часы на тексты и дизайн",
-    text: "Вместо продаж вы пишете описания и ищете дизайнера.",
-    emoji: "⏳"
+    num: "02",
+    title: "Дорого заказывать дизайн",
+    text: "Каждая новая карточка — отдельный бюджет, согласования и ожидание исполнителя."
   },
   {
-    title: "Фото есть, витрины нет",
-    text: "Товар снят, а продающей обложки для маркетплейса — нет.",
-    emoji: "📸"
+    num: "03",
+    title: "Сложно попасть в требования площадок",
+    text: "Формат 4:5, инфографика, SEO и визуальные стандарты WB и Ozon нужно соблюдать вручную."
+  },
+  {
+    num: "04",
+    title: "Нельзя быстро тестировать гипотезы",
+    text: "Пока готовится одна версия карточки, конкуренты уже тестируют другие обложки и тексты."
   }
 ];
 
 export function PainSection() {
   return (
-    <section className="py-20 md:py-28">
+    <section className="border-t border-clay bg-paper-alt py-20 md:py-28">
       <div className="section-shell">
         <SectionHeader
-          kicker="Знакомо?"
-          title="Продавать сложно, когда карточка не готова"
+          align="left"
+          description="Продавец быстро находит товар, но потом тратит часы на описание, ключи, дизайн, обложку и адаптацию под площадки."
+          title="Запуск товара тормозится не из-за товара, а из-за карточки"
         />
-        <div className="mt-14 grid gap-5 md:grid-cols-3">
+        <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {pains.map((pain, i) => (
-            <Reveal delay={(i + 1) as 1 | 2 | 3} key={pain.title}>
-              <div className="premium-card group h-full rounded-3xl p-7">
-                <span className="text-3xl">{pain.emoji}</span>
-                <h3 className="mt-4 text-xl font-black text-ink">{pain.title}</h3>
-                <p className="mt-3 leading-relaxed text-muted">{pain.text}</p>
-                <div className="mt-5 h-1 w-0 rounded-full bg-gradient-to-r from-coral to-violet transition-all duration-500 group-hover:w-12" />
-              </div>
+            <Reveal delay={(i + 1) as 1 | 2 | 3 | 4} key={pain.num}>
+              <Card className="h-full" hover padding="lg">
+                <span className="text-sm font-bold text-muted">{pain.num}</span>
+                <h3 className="mt-4 text-lg font-bold text-ink">{pain.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-muted">{pain.text}</p>
+              </Card>
             </Reveal>
           ))}
         </div>

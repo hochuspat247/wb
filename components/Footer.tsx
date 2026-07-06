@@ -3,36 +3,59 @@ import { Logo } from "@/components/Logo";
 
 export function Footer() {
   return (
-    <footer className="relative border-t border-ink/5 bg-white/80 py-14 backdrop-blur-sm">
+    <footer className="border-t border-clay bg-card py-14">
       <div className="section-shell">
-        <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+        <div className="grid gap-10 md:grid-cols-[1.2fr_1fr_1fr]">
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
-              AI-сервис для создания премиальных карточек товаров на маркетплейсах.
+              Инструмент для продавцов маркетплейсов: тексты, SEO и премиальные обложки 4:5 из одного фото товара.
             </p>
           </div>
-          <div className="flex flex-wrap gap-12 text-sm">
-            <div>
-              <p className="font-bold text-ink">Продукт</p>
-              <ul className="mt-4 space-y-2.5 text-muted">
-                <li><Link className="transition hover:text-coral" href="/#how">Как работает</Link></li>
-                <li><Link className="transition hover:text-coral" href="/#features">Возможности</Link></li>
-                <li><Link className="transition hover:text-coral" href="/#pricing">Тарифы</Link></li>
-                <li><Link className="transition hover:text-coral" href="/cabinet">Личный кабинет</Link></li>
-              </ul>
-            </div>
-            <div>
-              <p className="font-bold text-ink">Поддержка</p>
-              <ul className="mt-4 space-y-2.5 text-muted">
-                <li><Link className="transition hover:text-coral" href="/#faq">Вопросы</Link></li>
-                <li><Link className="transition hover:text-coral" href="/cabinet#create">Создать карточку</Link></li>
-              </ul>
-            </div>
+          <div>
+            <p className="text-sm font-semibold text-ink">Навигация</p>
+            <ul className="mt-4 space-y-2.5 text-sm text-muted">
+              <li>
+                <Link className="transition hover:text-ink" href="/#workflow">
+                  Возможности
+                </Link>
+              </li>
+              <li>
+                <Link className="transition hover:text-ink" href="/#examples">
+                  Примеры
+                </Link>
+              </li>
+              <li>
+                <Link className="transition hover:text-ink" href="/#pricing">
+                  Тарифы
+                </Link>
+              </li>
+              <li>
+                <Link className="transition hover:text-ink" href="/cabinet">
+                  Кабинет
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-ink">Контакты</p>
+            <ul className="mt-4 space-y-2.5 text-sm text-muted">
+              <li>
+                <a className="transition hover:text-ink" href="mailto:hello@marketcard.ai">
+                  hello@marketcard.ai
+                </a>
+              </li>
+              <li>
+                <Link className="transition hover:text-ink" href="/#faq">
+                  FAQ
+                </Link>
+              </li>
+            </ul>
           </div>
         </div>
-        <div className="mt-12 border-t border-ink/5 pt-6 text-xs text-muted">
+        <div className="mt-12 flex flex-col gap-2 border-t border-clay pt-6 text-xs text-muted md:flex-row md:items-center md:justify-between">
           <p>© {new Date().getFullYear()} MarketCard AI · ИП Головачев И.С. · ИНН 030403024370</p>
+          <p>MVP для проверки продуктовой гипотезы</p>
         </div>
       </div>
     </footer>

@@ -1,21 +1,35 @@
+import { Reveal } from "@/components/ui/Reveal";
+import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Card } from "@/components/ui/Card";
+
 const items = [
-  "Прямая публикация карточек в WB и Ozon.",
-  "Брендбуки, шаблоны визуалов и пакетная генерация.",
-  "Аналитика CTR, A/B тесты обложек и рекламные связки."
+  "Интеграция с Wildberries API",
+  "Интеграция с Ozon Seller API",
+  "Автозаполнение характеристик",
+  "A/B-тестирование обложек",
+  "Аналитика карточек",
+  "Рекомендации по улучшению конверсии"
 ];
 
 export function RoadmapSection() {
   return (
-    <section className="py-20">
+    <section className="py-20 md:py-28">
       <div className="section-shell">
-        <div className="overflow-hidden rounded-[30px] border border-ink bg-ink p-8 text-white shadow-hard md:p-10">
-          <span className="section-kicker">Roadmap</span>
-          <h2 className="mt-4 max-w-3xl text-4xl font-black leading-tight md:text-5xl">Что пойдет во вторую версию</h2>
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {items.map((item) => (
-              <div className="rounded-[20px] border border-white/12 bg-white/[0.06] p-5 font-bold leading-7" key={item}>
-                {item}
-              </div>
+        <div className="rounded-container border border-ink bg-ink p-8 text-white md:p-12">
+          <SectionHeader
+            align="left"
+            description="Следующие шаги — превратить генератор в полноценное рабочее место селлера."
+            theme="dark"
+            title="Дальше — не просто генератор, а рабочее место селлера"
+          />
+
+          <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {items.map((item, i) => (
+              <Reveal delay={(i + 1) as 1 | 2 | 3 | 4} key={item}>
+                <Card className="border-white/10 bg-white/5 text-white" padding="md">
+                  <p className="text-sm font-medium leading-relaxed text-white/85">{item}</p>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </div>

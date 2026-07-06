@@ -1,7 +1,10 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import type { ImageDesignPreset, ProductCardResult } from "@/types/product-card";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Select } from "@/components/ui/Select";
 import { base64ToDataUrl } from "@/lib/image";
 
 type HistorySectionProps = {
@@ -9,87 +12,120 @@ type HistorySectionProps = {
   onOpen: (card: ProductCardResult) => void;
   onRemove: (id: string) => void;
   onClear: () => void;
+  marketplaces?: string[];
+  styles?: string[];
 };
 
 function getHistoryThumbnail(card: ProductCardResult) {
-  if (card.generatedImageUrl) {
-    return card.generatedImageUrl;
-  }
-
+  if (card.generatedImageUrl) return card.generatedImageUrl;
   if (card.generatedImageBase64 && card.generatedImageMimeType) {
     return base64ToDataUrl(card.generatedImageBase64, card.generatedImageMimeType);
   }
-
   return card.generatedImageDataUrl || card.imageDataUrl;
 }
 
 function getDesignPresetLabel(preset?: ImageDesignPreset) {
-  if (preset === "luxury-catalog") {
-    return "Luxury Catalog";
-  }
-
-  if (preset === "standard") {
-    return "Standard";
-  }
-
-  if (preset === "premium-marketplace") {
-    return "Premium Marketplace";
-  }
-
+  if (preset === "luxury-catalog") return "Luxury Catalog";
+  if (preset === "standard") return "Standard";
+  if (preset === "premium-marketplace") return "Premium Marketplace";
   return null;
 }
 
-export function HistorySection({ history, onOpen, onRemove, onClear }: HistorySectionProps) {
+export function HistorySection({
+  history,
+  onOpen,
+  onRemove,
+  onClear,
+  marketplaces,
+  styles
+}: HistorySectionProps) {
+  const [marketplaceFilter, setMarketplaceFilter] = useState("all");
+  const [styleFilter, setStyleFilter] = useState("all");
+
+  const marketplaceOptions = marketplaces ?? [...new Set(history.map((c) => c.marketplace))];
+  const styleOptions = styles ?? [...new Set(history.map((c) => c.style))];
+
+  const filtered = useMemo(() => {
+    return history.filter((card) => {
+      const marketplaceOk = marketplaceFilter === "all" || card.marketplace === marketplaceFilter;
+      const styleOk = styleFilter === "all" || card.style === styleFilter;
+      return marketplaceOk && styleOk;
+    });
+  }, [history, marketplaceFilter, styleFilter]);
+
   if (history.length === 0) {
     return null;
   }
 
   return (
-    <div className="rounded-[22px] border border-ink/15 bg-[#fffaf0] p-6 shadow-soft">
+    <Card padding="md">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-xl font-black text-ink">Ваши карточки</h3>
-          <p className="mt-1 text-sm text-muted">Сохранённые результаты — откройте и скачайте снова.</p>
+          <h3 className="text-lg font-bold text-ink">История генераций</h3>
+          <p className="mt-1 text-sm text-muted">{filtered.length} из {history.length} карточек</p>
         </div>
-        <Button onClick={onClear} variant="ghost">
+        <Button onClick={onClear} size="sm" variant="ghost">
           Очистить
         </Button>
       </div>
+
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <label className="grid gap-1.5 text-xs font-semibold text-muted">
+          Маркетплейс
+          <Select onChange={(e) => setMarketplaceFilter(e.target.value)} value={marketplaceFilter}>
+            <option value="all">Все</option>
+            {marketplaceOptions.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </Select>
+        </label>
+        <label className="grid gap-1.5 text-xs font-semibold text-muted">
+          Стиль
+          <Select onChange={(e) => setStyleFilter(e.target.value)} value={styleFilter}>
+            <option value="all">Все</option>
+            {styleOptions.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </Select>
+        </label>
+      </div>
+
       <div className="mt-5 grid gap-3">
-        {history.map((card) => {
+        {filtered.map((card) => {
           const imageUrl = getHistoryThumbnail(card);
           const presetLabel = getDesignPresetLabel(card.designPreset);
 
           return (
-            <div className="flex flex-col gap-3 rounded-2xl border border-ink/10 bg-paper p-4 md:flex-row md:items-center md:justify-between" key={card.id}>
+            <div
+              className="flex flex-col gap-3 rounded-card border border-clay bg-paper p-4 md:flex-row md:items-center md:justify-between"
+              key={card.id}
+            >
               <div className="flex items-center gap-3">
-                <div className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-xl border border-ink/10 bg-white">
+                <div className="h-16 w-14 shrink-0 overflow-hidden rounded-xl border border-clay bg-card">
                   {imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img alt="" className="h-full w-full object-cover" src={imageUrl} />
                   ) : (
-                    <span className="text-[10px] font-bold text-muted">Нет фото</span>
+                    <div className="grid h-full place-items-center text-[10px] font-medium text-muted">4:5</div>
                   )}
                 </div>
                 <div>
-                  <p className="font-bold text-ink">{card.headline || card.title}</p>
+                  <p className="font-semibold text-ink">{card.headline || card.title}</p>
                   <p className="mt-1 text-xs text-muted">
-                    {card.marketplace} · {new Date(card.generatedAt).toLocaleDateString("ru-RU")}
-                    {card.price ? ` · ${card.price}` : ""}
+                    {card.marketplace} · {card.style} · {new Date(card.generatedAt).toLocaleDateString("ru-RU")}
                   </p>
-                  {presetLabel ? (
-                    <p className="mt-1 text-xs font-bold text-muted">{presetLabel}</p>
-                  ) : null}
-                  {card.ctaText ? (
-                    <p className="mt-0.5 text-xs text-muted">CTA: {card.ctaText}</p>
-                  ) : null}
+                  {presetLabel ? <p className="mt-0.5 text-xs text-muted">{presetLabel}</p> : null}
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button onClick={() => onOpen(card)} variant="secondary">
+                <Button onClick={() => onOpen(card)} size="sm" variant="secondary">
                   Открыть
                 </Button>
-                <Button onClick={() => onRemove(card.id)} variant="ghost">
+                <Button onClick={() => onRemove(card.id)} size="sm" variant="ghost">
                   Удалить
                 </Button>
               </div>
@@ -97,6 +133,6 @@ export function HistorySection({ history, onOpen, onRemove, onClear }: HistorySe
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

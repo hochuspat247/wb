@@ -1,64 +1,58 @@
-import Link from "next/link";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 
 const steps = [
   {
-    step: "01",
-    title: "Загрузите фото",
-    text: "Добавьте снимок товара и пару слов о нём.",
-    accent: "bg-coral/10 text-coral"
+    num: "01",
+    title: "Загрузите фото товара",
+    text: "Добавьте снимок или рендер — этого достаточно для старта."
   },
   {
-    step: "02",
-    title: "Выберите стиль",
-    text: "Укажите маркетплейс и премиум-пресет дизайна.",
-    accent: "bg-violet/10 text-violet"
+    num: "02",
+    title: "Опишите товар обычным языком",
+    text: "Напишите, что это за товар и чем он полезен покупателю."
   },
   {
-    step: "03",
-    title: "Скачайте и публикуйте",
-    text: "Получите текст, SEO и обложку — загрузите на площадку.",
-    accent: "bg-mint/25 text-[#5a7a00]"
+    num: "03",
+    title: "Выберите маркетплейс и стиль",
+    text: "WB, Ozon, Avito — сервис адаптирует подачу под площадку."
+  },
+  {
+    num: "04",
+    title: "Получите текст, SEO и обложку",
+    text: "Название, описание, ключи и визуал 4:5 в одном результате."
+  },
+  {
+    num: "05",
+    title: "Скачайте результат или сохраните в историю",
+    text: "Экспортируйте PNG и JSON или вернитесь к варианту позже."
   }
 ];
 
 export function HowItWorks() {
   return (
-    <section className="py-20 md:py-28" id="how">
+    <section className="border-t border-clay bg-paper-alt py-20 md:py-28" id="how">
       <div className="section-shell">
         <SectionHeader
-          description="Весь процесс — в личном кабинете после регистрации. Первые 3 карточки бесплатно."
-          kicker="Как это работает"
-          title={
-            <>
-              Три шага — <span className="gradient-text">и карточка готова</span>
-            </>
-          }
+          description="Весь процесс укладывается в один сценарий — без переключения между сервисами."
+          title="От фото до готовой карточки — за один сценарий"
         />
 
-        <div className="mt-14 grid gap-5 md:grid-cols-3">
-          {steps.map((item, i) => (
-            <Reveal delay={(i + 1) as 1 | 2 | 3} key={item.step}>
-              <div className="premium-card group h-full rounded-3xl p-7">
-                <span className={`inline-flex rounded-xl px-3.5 py-1.5 text-sm font-black ${item.accent}`}>
-                  {item.step}
-                </span>
-                <h3 className="mt-5 text-xl font-black text-ink">{item.title}</h3>
-                <p className="mt-2.5 leading-relaxed text-muted">{item.text}</p>
-                <div className="mt-6 h-0.5 w-0 rounded-full bg-gradient-to-r from-coral to-violet transition-all duration-500 group-hover:w-12" />
+        <div className="timeline-horizontal mt-14">
+          {steps.map((step, i) => (
+            <Reveal delay={(i + 1) as 1 | 2 | 3 | 4} key={step.num}>
+              <div className="timeline-step px-2 md:px-4">
+                <div className="relative">
+                  <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-full border border-clay bg-card text-xs font-bold text-ink">
+                    {step.num}
+                  </div>
+                  <h3 className="text-base font-bold text-ink md:text-lg">{step.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{step.text}</p>
+                </div>
               </div>
             </Reveal>
           ))}
         </div>
-
-        <Reveal delay={3}>
-          <p className="mt-10 text-center">
-            <Link className="text-sm font-bold text-coral transition hover:text-violet" href="/cabinet#create">
-              Перейти в кабинет и создать карточку →
-            </Link>
-          </p>
-        </Reveal>
       </div>
     </section>
   );

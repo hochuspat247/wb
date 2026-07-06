@@ -2,7 +2,9 @@
 
 import type { RefObject } from "react";
 import { Clipboard, Download, FileJson } from "lucide-react";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { copyCardDescription, downloadJson, downloadPreviewPng } from "@/lib/download";
 import { base64ToDataUrl, downloadBase64Image, downloadImageFromUrl } from "@/lib/image";
 import type { ImageDesignPreset, ProductCardResult } from "@/types/product-card";
@@ -12,34 +14,24 @@ type ResultPanelProps = {
   onDownloadPng: () => Promise<void>;
   onSave: () => void;
   previewRef?: RefObject<HTMLDivElement | null>;
+  dark?: boolean;
 };
 
 function getDesignPresetBadge(preset?: ImageDesignPreset) {
-  if (preset === "luxury-catalog") {
-    return "Luxury Catalog";
-  }
-
-  if (preset === "standard") {
-    return "Standard";
-  }
-
+  if (preset === "luxury-catalog") return "Luxury Catalog";
+  if (preset === "standard") return "Standard";
   return "Premium Marketplace";
 }
 
-export function ResultPanel({ card, onDownloadPng, onSave, previewRef }: ResultPanelProps) {
+export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = false }: ResultPanelProps) {
   if (!card) {
-    return (
-      <div className="rounded-[22px] border border-dashed border-ink/25 bg-[#fffaf0] p-6 text-center">
-        <p className="font-medium text-muted">Здесь появится готовая карточка — загрузите фото и нажмите «Создать карточку».</p>
-      </div>
-    );
+    return null;
   }
 
   const currentCard = card;
   const benefits = currentCard.benefits ?? [];
   const keywords = currentCard.keywords ?? [];
   const infographicTexts = currentCard.infographicTexts ?? [];
-
   const imagePrompt = currentCard.generatedImagePrompt || "";
   const hasAiImage = Boolean(imagePrompt) && !currentCard.generatedImageIsFallback;
 
@@ -74,80 +66,65 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef }: ResultP
     await onDownloadPng();
   }
 
-  async function handleCopyImagePrompt() {
-    if (!imagePrompt) {
-      return;
-    }
-
-    await navigator.clipboard?.writeText(imagePrompt);
-  }
-
   return (
-    <div className="rounded-[22px] border border-ink/15 bg-[#fffaf0] p-6 shadow-soft">
+    <Card
+      className={dark ? "border-white/10 bg-white/5 text-white" : ""}
+      padding="md"
+    >
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-coral px-3 py-1 text-xs font-black text-white">{currentCard.marketplace}</span>
-        <span className="rounded-full border border-ink/10 bg-mint/45 px-3 py-1 text-xs font-black text-ink">{currentCard.style}</span>
-        {hasAiImage ? (
-          <span className="rounded-full bg-ink px-3 py-1 text-xs font-black text-white">
-            {getDesignPresetBadge(currentCard.designPreset)}
-          </span>
-        ) : null}
+        <Badge variant="accent">{currentCard.marketplace}</Badge>
+        <Badge variant="outline">{currentCard.style}</Badge>
+        {hasAiImage ? <Badge variant="dark">{getDesignPresetBadge(currentCard.designPreset)}</Badge> : null}
       </div>
-      <h3 className="mt-4 text-2xl font-black text-ink">{currentCard.title}</h3>
-      <p className="mt-3 leading-7 text-muted">{currentCard.shortDescription}</p>
+      <h3 className={`mt-4 text-xl font-bold ${dark ? "text-white" : "text-ink"}`}>{currentCard.title}</h3>
+      <p className={`mt-3 leading-7 ${dark ? "text-white/60" : "text-muted"}`}>{currentCard.shortDescription}</p>
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <div>
-          <h4 className="font-black text-ink">Преимущества</h4>
-          <ul className="mt-3 space-y-2 text-sm text-muted">
+          <h4 className={`font-semibold ${dark ? "text-white" : "text-ink"}`}>Преимущества</h4>
+          <ul className={`mt-3 space-y-2 text-sm ${dark ? "text-white/60" : "text-muted"}`}>
             {benefits.map((benefit) => (
-              <li key={benefit}>- {benefit}</li>
+              <li key={benefit}>— {benefit}</li>
             ))}
           </ul>
         </div>
         <div>
-          <h4 className="font-black text-ink">Ключи для поиска</h4>
+          <h4 className={`font-semibold ${dark ? "text-white" : "text-ink"}`}>SEO-ключи</h4>
           <div className="mt-3 flex flex-wrap gap-2">
             {keywords.map((keyword) => (
-              <span className="rounded-full border border-ink/10 bg-paper px-3 py-1 text-xs font-bold text-muted" key={keyword}>
+              <Badge key={keyword} variant="outline">
                 {keyword}
-              </span>
+              </Badge>
             ))}
           </div>
         </div>
       </div>
       {infographicTexts.length ? (
         <div className="mt-5">
-          <h4 className="font-black text-ink">Текст для инфографики</h4>
-          <ul className="mt-3 space-y-2 text-sm text-muted">
+          <h4 className={`font-semibold ${dark ? "text-white" : "text-ink"}`}>Текст для инфографики</h4>
+          <ul className={`mt-3 space-y-2 text-sm ${dark ? "text-white/60" : "text-muted"}`}>
             {infographicTexts.map((text) => (
-              <li key={text}>- {text}</li>
+              <li key={text}>— {text}</li>
             ))}
           </ul>
         </div>
       ) : null}
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Button onClick={handleDownloadPng} variant="dark">
-          <Download size={17} />
+      <div className="mt-6 flex flex-wrap gap-2">
+        <Button onClick={handleDownloadPng} size="sm" variant="dark">
+          <Download size={16} />
           Скачать PNG
         </Button>
-        <Button onClick={() => copyCardDescription(currentCard)} variant="secondary">
-          <Clipboard size={17} />
+        <Button onClick={() => copyCardDescription(currentCard)} size="sm" variant="secondary">
+          <Clipboard size={16} />
           Скопировать описание
         </Button>
-        {imagePrompt ? (
-          <Button onClick={handleCopyImagePrompt} variant="secondary">
-            <Clipboard size={17} />
-            Скопировать промт изображения
-          </Button>
-        ) : null}
-        <Button onClick={() => downloadJson(currentCard)} variant="secondary">
-          <FileJson size={17} />
+        <Button onClick={() => downloadJson(currentCard)} size="sm" variant="secondary">
+          <FileJson size={16} />
           Скачать JSON
         </Button>
-        <Button onClick={onSave} variant="ghost">
-          Сохранить
+        <Button onClick={onSave} size="sm" variant="ghost">
+          Сохранить в историю
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }

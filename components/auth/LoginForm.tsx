@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { ArrowRight, Loader2 } from "lucide-react";
+import { VkIdWidget } from "@/components/auth/VkIdWidget";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -43,7 +44,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="mesh-page flex min-h-screen items-center justify-center px-5 py-12">
+    <div className="flex min-h-screen items-center justify-center bg-paper px-5 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link className="inline-flex" href="/">
@@ -53,7 +54,7 @@ export function LoginForm() {
           <p className="mt-2 text-muted">Создавайте и храните карточки в личном кабинете</p>
         </div>
 
-        <div className="premium-card rounded-3xl p-8">
+        <div className="rounded-card border border-clay bg-card p-8">
           <form className="space-y-4" onSubmit={handleSubmit}>
             <label className="grid gap-2 text-sm font-bold text-ink">
               Email
@@ -101,13 +102,7 @@ export function LoginForm() {
             >
               Войти через Яндекс
             </Button>
-            <Button
-              className="w-full bg-[#0077FF] text-white hover:bg-[#0066dd]"
-              onClick={() => signIn("vk", { callbackUrl })}
-              type="button"
-            >
-              Войти через ВКонтакте
-            </Button>
+            <VkIdWidget callbackUrl={callbackUrl} />
           </div>
 
           <p className="mt-6 text-center text-sm text-muted">

@@ -4,13 +4,14 @@ import type { Provider } from "next-auth/providers";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { authenticateVkAccessToken } from "@/lib/auth/vk-id-server";
+import { Yandex } from "@/lib/auth/providers/yandex";
 import { db } from "@/lib/db";
 import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
-import { Yandex } from "@/lib/auth/providers/yandex";
-import { VK } from "@/lib/auth/providers/vk";
 
 const providers: Provider[] = [
   Credentials({
+    id: "credentials",
     name: "Email",
     credentials: {
       email: { label: "Email", type: "email" },
@@ -44,6 +45,21 @@ const providers: Provider[] = [
         image: user.image
       };
     }
+  }),
+  Credentials({
+    id: "vk-id",
+    name: "VK ID",
+    credentials: {
+      accessToken: { label: "Access Token", type: "text" }
+    },
+    async authorize(credentials) {
+      const accessToken = credentials?.accessToken?.toString();
+      if (!accessToken) {
+        return null;
+      }
+
+      return authenticateVkAccessToken(accessToken);
+    }
   })
 ];
 
@@ -52,15 +68,6 @@ if (process.env.AUTH_YANDEX_ID && process.env.AUTH_YANDEX_SECRET) {
     Yandex({
       clientId: process.env.AUTH_YANDEX_ID,
       clientSecret: process.env.AUTH_YANDEX_SECRET
-    })
-  );
-}
-
-if (process.env.AUTH_VK_ID && process.env.AUTH_VK_SECRET) {
-  providers.push(
-    VK({
-      clientId: process.env.AUTH_VK_ID,
-      clientSecret: process.env.AUTH_VK_SECRET
     })
   );
 }

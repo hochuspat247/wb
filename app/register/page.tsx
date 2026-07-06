@@ -3,7 +3,7 @@ import { RegisterForm } from "@/components/auth/RegisterForm";
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="mesh-page grid min-h-screen place-items-center text-muted">Загрузка…</div>}>
+    <Suspense fallback={<div className="grid min-h-screen place-items-center bg-paper text-muted">Загрузка…</div>}>
       <RegisterForm />
     </Suspense>
   );

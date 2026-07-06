@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
-import { LayoutDashboard, LogOut, Menu, User, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 
 const links = [
+  ["Возможности", "/#workflow"],
+  ["Примеры", "/#examples"],
   ["Как работает", "/#how"],
-  ["Возможности", "/#features"],
-  ["Тарифы", "/#pricing"]
+  ["Тарифы", "/#pricing"],
+  ["FAQ", "/#faq"]
 ];
 
 export function Header() {
@@ -20,7 +22,7 @@ export function Header() {
 
   useEffect(() => {
     function onScroll() {
-      setScrolled(window.scrollY > 20);
+      setScrolled(window.scrollY > 12);
     }
 
     onScroll();
@@ -32,10 +34,8 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "border-b border-ink/5 bg-white/75 shadow-soft backdrop-blur-2xl"
-          : "bg-transparent"
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        scrolled ? "border-b border-clay bg-card/85 shadow-card backdrop-blur-xl" : "bg-paper/80 backdrop-blur-sm"
       }`}
     >
       <div className="section-shell flex min-h-[72px] items-center justify-between gap-4">
@@ -44,45 +44,35 @@ export function Header() {
         <nav className="hidden items-center gap-1 lg:flex">
           {links.map(([label, href]) => (
             <Link
-              className="rounded-xl px-4 py-2 text-sm font-semibold text-muted transition hover:bg-ink/5 hover:text-ink"
+              className="rounded-xl px-4 py-2 text-sm font-medium text-muted transition hover:bg-paper hover:text-ink"
               href={href}
               key={href}
             >
               {label}
             </Link>
           ))}
-          {isAuthed ? (
-            <Link
-              className="ml-2 flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-muted transition hover:bg-violet/10 hover:text-violet"
-              href="/cabinet"
-            >
-              <LayoutDashboard size={16} />
-              Кабинет
-            </Link>
-          ) : null}
         </nav>
 
         <div className="hidden items-center gap-3 lg:flex">
           {isAuthed ? (
             <>
-              <span className="max-w-[180px] truncate text-sm font-semibold text-muted">
-                {session?.user?.name || session?.user?.email}
-              </span>
+              <Link href="/cabinet">
+                <Button variant="ghost">{session?.user?.name || "Кабинет"}</Button>
+              </Link>
               <Link href="/cabinet#create">
-                <Button className="btn-glow px-6 shadow-glow">Создать карточку</Button>
+                <Button>Попробовать бесплатно</Button>
               </Link>
               <Button onClick={() => signOut({ callbackUrl: "/" })} variant="secondary">
-                <LogOut size={16} />
                 Выйти
               </Button>
             </>
           ) : (
             <>
               <Link href="/login">
-                <Button variant="secondary">Войти</Button>
+                <Button variant="ghost">Войти</Button>
               </Link>
               <Link href="/register">
-                <Button className="btn-glow px-6 shadow-glow">Регистрация</Button>
+                <Button>Попробовать бесплатно</Button>
               </Link>
             </>
           )}
@@ -90,7 +80,7 @@ export function Header() {
 
         <button
           aria-label="Меню"
-          className="grid h-10 w-10 place-items-center rounded-xl border border-ink/10 bg-white/80 lg:hidden"
+          className="grid h-10 w-10 place-items-center rounded-xl border border-clay bg-card lg:hidden"
           onClick={() => setMenuOpen((v) => !v)}
           type="button"
         >
@@ -99,11 +89,11 @@ export function Header() {
       </div>
 
       {menuOpen ? (
-        <div className="border-t border-ink/5 bg-white/95 px-5 py-4 backdrop-blur-2xl lg:hidden">
+        <div className="border-t border-clay bg-card px-5 py-4 lg:hidden">
           <nav className="grid gap-1">
             {links.map(([label, href]) => (
               <Link
-                className="rounded-xl px-4 py-3 text-sm font-semibold text-ink"
+                className="rounded-xl px-4 py-3 text-sm font-medium text-ink"
                 href={href}
                 key={href}
                 onClick={() => setMenuOpen(false)}
@@ -111,41 +101,31 @@ export function Header() {
                 {label}
               </Link>
             ))}
-            {isAuthed ? (
-              <>
-                <Link
-                  className="flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold text-violet"
-                  href="/cabinet"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  <LayoutDashboard size={16} />
-                  Личный кабинет
-                </Link>
-                <Link className="mt-2 block" href="/cabinet#create" onClick={() => setMenuOpen(false)}>
-                  <Button className="w-full">Создать карточку</Button>
-                </Link>
-                <button
-                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-ink/10 px-5 py-3 text-sm font-bold text-muted"
-                  onClick={() => signOut({ callbackUrl: "/" })}
-                  type="button"
-                >
-                  <LogOut size={16} />
-                  Выйти
-                </button>
-              </>
-            ) : (
-              <>
-                <Link className="mt-2 block" href="/login" onClick={() => setMenuOpen(false)}>
-                  <Button className="w-full" variant="secondary">
-                    <User size={16} />
-                    Войти
-                  </Button>
-                </Link>
-                <Link className="mt-2 block" href="/register" onClick={() => setMenuOpen(false)}>
-                  <Button className="w-full">Регистрация</Button>
-                </Link>
-              </>
-            )}
+            <div className="mt-4 grid gap-2 border-t border-clay pt-4">
+              {isAuthed ? (
+                <>
+                  <Link href="/cabinet" onClick={() => setMenuOpen(false)}>
+                    <Button className="w-full" variant="secondary">
+                      Кабинет
+                    </Button>
+                  </Link>
+                  <Link href="/cabinet#create" onClick={() => setMenuOpen(false)}>
+                    <Button className="w-full">Создать карточку</Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/login" onClick={() => setMenuOpen(false)}>
+                    <Button className="w-full" variant="secondary">
+                      Войти
+                    </Button>
+                  </Link>
+                  <Link href="/register" onClick={() => setMenuOpen(false)}>
+                    <Button className="w-full">Попробовать бесплатно</Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </nav>
         </div>
       ) : null}

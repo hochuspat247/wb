@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { ArrowRight, Loader2 } from "lucide-react";
-import { VkIdWidget } from "@/components/auth/VkIdWidget";
+import { VkIdAuthPanel } from "@/components/auth/VkIdAuthPanel";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -102,7 +102,7 @@ export function LoginForm() {
             >
               Войти через Яндекс
             </Button>
-            <VkIdWidget callbackUrl={callbackUrl} />
+            <VkIdAuthPanel callbackUrl={callbackUrl} />
           </div>
 
           <p className="mt-6 text-center text-sm text-muted">

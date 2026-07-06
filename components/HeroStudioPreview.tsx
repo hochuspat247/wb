@@ -1,54 +1,31 @@
-import { AfterCardMock } from "@/components/marketing/ProductMocks";
+import Image from "next/image";
+import heroCardImage from "@/publick/7ab15fea-2529-4185-bd93-c8bfff5dee2e.png";
 import { Reveal } from "@/components/ui/Reveal";
-
-const chips = [
-  "Заголовок",
-  "Описание",
-  "SEO-ключи",
-  "Обложка 4:5"
-];
 
 export function HeroStudioPreview() {
   return (
     <Reveal delay={2}>
-      <div className="relative mx-auto w-full max-w-2xl lg:max-w-none">
-        <div className="studio-noise relative overflow-hidden rounded-container border border-clay bg-card p-4 shadow-soft md:p-5">
-          <div className="relative z-10 grid gap-4 md:grid-cols-[1fr_0.55fr]">
-            <div className="relative overflow-hidden rounded-[24px] border border-white/10 transition duration-300 hover:scale-[1.01]">
-              <AfterCardMock />
-              <span className="absolute left-4 top-4 rounded-full bg-mint px-3 py-1.5 text-xs font-black text-paper">
-                4:5 marketplace
-              </span>
-              <span className="absolute bottom-4 right-4 rounded-full bg-card px-3 py-1.5 text-xs font-black text-ink">
-                PNG готов
-              </span>
-            </div>
+      <div className="relative mx-auto w-full max-w-md lg:max-w-none">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-6 rounded-[40px] bg-[radial-gradient(circle,rgba(124,255,107,0.18),transparent_68%)] blur-2xl animate-glow-pulse"
+        />
 
-            <div className="grid gap-4">
-              <div className="rounded-[22px] border border-white/10 bg-white/[0.06] p-4 text-white">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/45">Состав карточки</p>
-                <div className="mt-5 space-y-3">
-                  {chips.map((chip, index) => (
-                    <div className="flex items-center gap-3" key={chip}>
-                      <span className={`grid h-8 w-8 place-items-center rounded-full text-xs font-black ${index === 3 ? "bg-mint text-paper" : "bg-white/10 text-white"}`}>
-                        {index + 1}
-                      </span>
-                      <span className="text-sm font-bold text-white/85">{chip}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-[18px] border border-white/10 bg-white/[0.06] p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">Генерация</p>
-                  <p className="mt-3 text-2xl font-black text-white">~2 мин</p>
-                </div>
-                <div className="rounded-[18px] border border-white/10 bg-white/[0.06] p-4">
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">Статус</p>
-                  <p className="mt-3 text-2xl font-black text-accent">Готово</p>
-                </div>
-              </div>
-            </div>
+        <div className="studio-noise relative overflow-hidden rounded-container border border-clay bg-card p-4 shadow-soft md:p-5">
+          <div className="relative z-10 animate-float overflow-hidden rounded-[24px] border border-white/10">
+            <Image
+              alt="Пример карточки товара MarketCard AI"
+              className="aspect-[4/5] w-full object-cover"
+              priority
+              src={heroCardImage}
+            />
+
+            <span className="absolute left-4 top-4 rounded-full bg-mint px-3 py-1.5 text-xs font-black text-paper shadow-[0_8px_24px_rgba(124,255,107,0.35)]">
+              4:5 marketplace
+            </span>
+            <span className="absolute bottom-4 right-4 rounded-full bg-card px-3 py-1.5 text-xs font-black text-ink">
+              PNG готов
+            </span>
           </div>
         </div>
       </div>

@@ -17,8 +17,12 @@ export function Hero() {
           </Reveal>
 
           <Reveal delay={1}>
-            <h1 className="text-balance text-[3rem] font-black leading-[0.9] tracking-normal text-ink md:text-[5.25rem] lg:text-[6rem]">
-              Карточки, которые выглядят <span className="bg-gradient-to-r from-accent via-cyan to-violet bg-clip-text text-transparent">дороже</span> и продают лучше
+            <h1 className="hero-title text-balance text-[3rem] font-black leading-[0.88] tracking-[-0.045em] text-ink md:text-[5.25rem] lg:text-[6rem]">
+              Карточки, которые выглядят{" "}
+              <span className="hero-gradient-text bg-gradient-to-r from-accent via-cyan to-violet bg-[length:200%_auto] bg-clip-text text-transparent">
+                дороже
+              </span>{" "}
+              и продают лучше
             </h1>
           </Reveal>
 

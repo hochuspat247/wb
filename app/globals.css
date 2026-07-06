@@ -85,6 +85,21 @@ a {
 .reveal-delay-3 { transition-delay: 0.24s; }
 .reveal-delay-4 { transition-delay: 0.32s; }
 
+/* ── Hero typography ── */
+.hero-title {
+  font-feature-settings: "ss01", "cv11";
+  text-rendering: optimizeLegibility;
+}
+
+.hero-gradient-text {
+  animation: gradientShift 4s linear infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
 /* ── Marketplace preview ── */
 .marketplace-card {
   container-type: inline-size;

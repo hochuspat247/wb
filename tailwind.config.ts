@@ -49,12 +49,27 @@ const config: Config = {
         pulseSoft: {
           "0%, 100%": { opacity: "0.5" },
           "50%": { opacity: "1" }
+        },
+        gradientShift: {
+          "0%": { backgroundPosition: "0% center" },
+          "100%": { backgroundPosition: "200% center" }
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-10px)" }
+        },
+        glowPulse: {
+          "0%, 100%": { opacity: "0.35", transform: "scale(0.96)" },
+          "50%": { opacity: "0.7", transform: "scale(1.04)" }
         }
       },
       animation: {
         "reveal-up": "revealUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards",
         shimmer: "shimmer 2s linear infinite",
-        "pulse-soft": "pulseSoft 2s ease-in-out infinite"
+        "pulse-soft": "pulseSoft 2s ease-in-out infinite",
+        "gradient-shift": "gradientShift 4s linear infinite",
+        float: "float 5s ease-in-out infinite",
+        "glow-pulse": "glowPulse 4s ease-in-out infinite"
       }
     }
   },

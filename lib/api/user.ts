@@ -109,11 +109,11 @@ export async function updateUserProfile(name: string) {
   return response.json() as Promise<{ name: string }>;
 }
 
-export async function createPayment(count: number) {
+export async function createPayment(count: number, customerEmail?: string) {
   const response = await fetch("/api/payments", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ count })
+    body: JSON.stringify({ count, customerEmail })
   });
 
   if (!response.ok) {
@@ -121,7 +121,10 @@ export async function createPayment(count: number) {
       throw new Error("UNAUTHORIZED");
     }
 
-    const data = (await response.json().catch(() => null)) as { error?: string } | null;
+    const data = (await response.json().catch(() => null)) as { code?: string; error?: string } | null;
+    if (data?.code === "EMAIL_REQUIRED") {
+      throw new Error("EMAIL_REQUIRED");
+    }
     throw new Error(data?.error || "FAILED_TO_CREATE_PAYMENT");
   }
 

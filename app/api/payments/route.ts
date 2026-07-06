@@ -11,8 +11,13 @@ import { createYooKassaPayment } from "@/lib/server/yookassa";
 export const runtime = "nodejs";
 
 type CreatePaymentBody = {
+  customerEmail?: string;
   count?: number;
 };
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
 
 function getSiteUrl(request: Request) {
   const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.AUTH_URL;
@@ -46,9 +51,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (isPlaceholderOAuthEmail(user.email)) {
+  const fallbackEmail = body.customerEmail?.trim().toLowerCase() ?? "";
+  const customerEmail = isPlaceholderOAuthEmail(user.email) ? fallbackEmail : user.email;
+
+  if (!isValidEmail(customerEmail) || isPlaceholderOAuthEmail(customerEmail)) {
     return NextResponse.json(
-      { error: "Для оплаты нужен реальный email покупателя. Войдите через email или Яндекс-аккаунт с email." },
+      {
+        code: "EMAIL_REQUIRED",
+        error: "Для оплаты нужен email покупателя, чтобы сформировать чек."
+      },
       { status: 400 }
     );
   }
@@ -60,7 +71,7 @@ export async function POST(request: Request) {
   try {
     const payment = await createYooKassaPayment({
       amount: price.total,
-      customerEmail: user.email,
+      customerEmail,
       credits: count,
       description: `MarketCard AI: ${count} generations`,
       idempotenceKey,

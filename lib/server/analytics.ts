@@ -39,20 +39,32 @@ function daysAgo(days: number) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 }
 
+async function safeAnalyticsQuery<T>(label: string, query: Promise<T>, fallback: T) {
+  try {
+    return await query;
+  } catch (error) {
+    console.error(`[MarketCard AI] Admin analytics query failed: ${label}`, error);
+    return fallback;
+  }
+}
+
 export async function getAdminAnalytics(pathFilter = "/") {
   const since7d = daysAgo(7);
   const since30d = daysAgo(30);
 
-  const [userCount] = await db.select({ value: count() }).from(users);
-  const [cardCount] = await db.select({ value: count() }).from(productCards);
-  const [generationsSum] = await db
-    .select({ value: sql<number>`coalesce(sum(${users.generationsUsed}), 0)` })
-    .from(users);
+  const [userCount] = await safeAnalyticsQuery("user count", db.select({ value: count() }).from(users), [{ value: 0 }]);
+  const [cardCount] = await safeAnalyticsQuery("card count", db.select({ value: count() }).from(productCards), [{ value: 0 }]);
+  const [generationsSum] = await safeAnalyticsQuery(
+    "generations sum",
+    db.select({ value: sql<number>`coalesce(sum(${users.generationsUsed}), 0)` }).from(users),
+    [{ value: 0 }]
+  );
 
-  const [events7d] = await db
-    .select({ value: count() })
-    .from(analyticsEvents)
-    .where(gte(analyticsEvents.createdAt, since7d));
+  const [events7d] = await safeAnalyticsQuery(
+    "events 7d",
+    db.select({ value: count() }).from(analyticsEvents).where(gte(analyticsEvents.createdAt, since7d)),
+    [{ value: 0 }]
+  );
 
   const funnelNames = [
     "page_view",
@@ -64,26 +76,34 @@ export async function getAdminAnalytics(pathFilter = "/") {
     "payment_click"
   ] as const;
 
-  const funnelRows = await db
-    .select({
-      eventName: analyticsEvents.eventName,
-      value: count()
-    })
-    .from(analyticsEvents)
-    .where(
-      and(
-        eq(analyticsEvents.eventType, "conversion"),
-        gte(analyticsEvents.createdAt, since30d)
+  const funnelRows = await safeAnalyticsQuery(
+    "funnel rows",
+    db
+      .select({
+        eventName: analyticsEvents.eventName,
+        value: count()
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.eventType, "conversion"),
+          gte(analyticsEvents.createdAt, since30d)
+        )
       )
-    )
-    .groupBy(analyticsEvents.eventName);
+      .groupBy(analyticsEvents.eventName),
+    []
+  );
 
-  const pageViews = await db
-    .select({ value: count() })
-    .from(analyticsEvents)
-    .where(
-      and(eq(analyticsEvents.eventType, "page_view"), gte(analyticsEvents.createdAt, since30d))
-    );
+  const pageViews = await safeAnalyticsQuery(
+    "page views",
+    db
+      .select({ value: count() })
+      .from(analyticsEvents)
+      .where(
+        and(eq(analyticsEvents.eventType, "page_view"), gte(analyticsEvents.createdAt, since30d))
+      ),
+    [{ value: 0 }]
+  );
 
   const funnel = {
     pageViews: pageViews[0]?.value ?? 0,
@@ -95,73 +115,93 @@ export async function getAdminAnalytics(pathFilter = "/") {
     paymentClicks: funnelRows.find((row) => row.eventName === "payment_click")?.value ?? 0
   };
 
-  const heatmapRows = await db
-    .select({
-      xPercent: analyticsEvents.xPercent,
-      yPercent: analyticsEvents.yPercent,
-      value: count()
-    })
-    .from(analyticsEvents)
-    .where(
-      and(
-        eq(analyticsEvents.eventType, "click"),
-        eq(analyticsEvents.path, pathFilter),
-        gte(analyticsEvents.createdAt, since30d)
+  const heatmapRows = await safeAnalyticsQuery(
+    "heatmap rows",
+    db
+      .select({
+        xPercent: analyticsEvents.xPercent,
+        yPercent: analyticsEvents.yPercent,
+        value: count()
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.eventType, "click"),
+          eq(analyticsEvents.path, pathFilter),
+          gte(analyticsEvents.createdAt, since30d)
+        )
       )
-    )
-    .groupBy(analyticsEvents.xPercent, analyticsEvents.yPercent)
-    .orderBy(desc(count()))
-    .limit(400);
+      .groupBy(analyticsEvents.xPercent, analyticsEvents.yPercent)
+      .orderBy(desc(count()))
+      .limit(400),
+    []
+  );
 
-  const topClicks = await db
-    .select({
-      label: analyticsEvents.label,
-      eventName: analyticsEvents.eventName,
-      value: count()
-    })
-    .from(analyticsEvents)
-    .where(and(eq(analyticsEvents.eventType, "click"), gte(analyticsEvents.createdAt, since30d)))
-    .groupBy(analyticsEvents.label, analyticsEvents.eventName)
-    .orderBy(desc(count()))
-    .limit(15);
+  const topClicks = await safeAnalyticsQuery(
+    "top clicks",
+    db
+      .select({
+        label: analyticsEvents.label,
+        eventName: analyticsEvents.eventName,
+        value: count()
+      })
+      .from(analyticsEvents)
+      .where(and(eq(analyticsEvents.eventType, "click"), gte(analyticsEvents.createdAt, since30d)))
+      .groupBy(analyticsEvents.label, analyticsEvents.eventName)
+      .orderBy(desc(count()))
+      .limit(15),
+    []
+  );
 
-  const signupsByDay = await db
-    .select({
-      day: sql<string>`strftime('%Y-%m-%d', ${users.createdAt} / 1000, 'unixepoch')`,
-      value: count()
-    })
-    .from(users)
-    .where(gte(users.createdAt, since30d))
-    .groupBy(sql`strftime('%Y-%m-%d', ${users.createdAt} / 1000, 'unixepoch')`)
-    .orderBy(sql`day`);
+  const signupsByDay = await safeAnalyticsQuery(
+    "signups by day",
+    db
+      .select({
+        day: sql<string>`strftime('%Y-%m-%d', ${users.createdAt} / 1000, 'unixepoch')`,
+        value: count()
+      })
+      .from(users)
+      .where(gte(users.createdAt, since30d))
+      .groupBy(sql`strftime('%Y-%m-%d', ${users.createdAt} / 1000, 'unixepoch')`)
+      .orderBy(sql`day`),
+    []
+  );
 
-  const generationsByDay = await db
-    .select({
-      day: sql<string>`strftime('%Y-%m-%d', ${analyticsEvents.createdAt} / 1000, 'unixepoch')`,
-      value: count()
-    })
-    .from(analyticsEvents)
-    .where(
-      and(
-        eq(analyticsEvents.eventName, "generation_complete"),
-        gte(analyticsEvents.createdAt, since30d)
+  const generationsByDay = await safeAnalyticsQuery(
+    "generations by day",
+    db
+      .select({
+        day: sql<string>`strftime('%Y-%m-%d', ${analyticsEvents.createdAt} / 1000, 'unixepoch')`,
+        value: count()
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.eventName, "generation_complete"),
+          gte(analyticsEvents.createdAt, since30d)
+        )
       )
-    )
-    .groupBy(sql`strftime('%Y-%m-%d', ${analyticsEvents.createdAt} / 1000, 'unixepoch')`)
-    .orderBy(sql`day`);
+      .groupBy(sql`strftime('%Y-%m-%d', ${analyticsEvents.createdAt} / 1000, 'unixepoch')`)
+      .orderBy(sql`day`),
+    []
+  );
 
-  const recentUsers = await db.query.users.findMany({
-    orderBy: (table, { desc: descOrder }) => [descOrder(table.createdAt)],
-    limit: 10,
-    columns: {
-      id: true,
-      name: true,
-      email: true,
-      generationsUsed: true,
-      generationCredits: true,
-      createdAt: true
-    }
-  });
+  const recentUsers = await safeAnalyticsQuery(
+    "recent users",
+    db.query.users.findMany({
+      orderBy: (table, { desc: descOrder }) => [descOrder(table.createdAt)],
+      limit: 10,
+      columns: {
+        id: true,
+        name: true,
+        email: true,
+        generationsUsed: true,
+        generationCredits: true,
+        createdAt: true
+      }
+    }),
+    []
+  );
 
   return {
     overview: {

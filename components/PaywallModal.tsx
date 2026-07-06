@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { X } from "lucide-react";
+import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { Button } from "@/components/ui/Button";
 import {
   GENERATION_PACKAGES,
@@ -16,6 +18,12 @@ type PaywallModalProps = {
 };
 
 export function PaywallModal({ open, onClose }: PaywallModalProps) {
+  useEffect(() => {
+    if (open) {
+      trackConversion("paywall_view");
+    }
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -47,6 +55,7 @@ export function PaywallModal({ open, onClose }: PaywallModalProps) {
                 className="flex items-center justify-between gap-4 rounded-[18px] border border-clay bg-paper/40 px-4 py-4 transition hover:border-accent/35 hover:bg-accent/[0.05]"
                 href={getTelegramPackageUrl(pack.count, price.total)}
                 key={pack.id}
+                onClick={() => trackConversion("payment_click", { package: pack.count })}
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -64,7 +73,13 @@ export function PaywallModal({ open, onClose }: PaywallModalProps) {
         </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <a className="flex-1" href={getTelegramPackageUrl(10, calculatePackagePrice(10).total)} rel="noopener noreferrer" target="_blank">
+          <a
+            className="flex-1"
+            href={getTelegramPackageUrl(10, calculatePackagePrice(10).total)}
+            onClick={() => trackConversion("payment_click", { package: 10 })}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
             <Button className="w-full">Купить в Telegram</Button>
           </a>
           <Link className="flex-1" href="/#pricing-calculator" onClick={onClose}>

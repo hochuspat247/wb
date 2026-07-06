@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { VkIdFloatingGate } from "@/components/auth/VkIdFloatingGate";
+import { rootMetadata } from "@/lib/seo";
 import "./globals.css";
 
 const inter = Inter({
@@ -9,10 +11,7 @@ const inter = Inter({
   variable: "--font-inter"
 });
 
-export const metadata: Metadata = {
-  title: "MarketCard AI — карточки товаров для WB и Ozon за 2 минуты",
-  description: "Загрузите фото — получите продающую карточку с текстом, SEO и обложкой для Wildberries, Ozon и Avito."
-};
+export const metadata: Metadata = rootMetadata;
 
 export default function RootLayout({
   children
@@ -24,6 +23,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <AuthProvider>
           {children}
+          <AnalyticsTracker />
           <VkIdFloatingGate />
         </AuthProvider>
       </body>

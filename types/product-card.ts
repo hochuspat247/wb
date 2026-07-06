@@ -1,3 +1,5 @@
+import type { MarketplacePlatform, MarketplaceTextMode, MarketplaceTextResult } from "@/types/marketplace";
+
 export type ProductCardInput = {
   productDescription: string;
   category?: string;
@@ -7,6 +9,21 @@ export type ProductCardInput = {
   focusBenefits: boolean;
   includeInfographicText: boolean;
   imageFileName?: string;
+  platform?: MarketplacePlatform;
+  textMode?: MarketplaceTextMode;
+  brand?: string;
+  sellerSku?: string;
+  color?: string;
+  size?: string;
+  material?: string;
+  dimensions?: string;
+  weight?: string;
+  packageContents?: string;
+  targetAudience?: string;
+  useCase?: string;
+  oldPrice?: string;
+  discount?: string;
+  price?: string;
 };
 
 export type ProductCharacteristic = {
@@ -49,6 +66,9 @@ export type ProductCardResult = {
   ctaText?: string;
   headline?: string;
   designPreset?: ImageDesignPreset;
+  platform?: MarketplacePlatform;
+  textMode?: MarketplaceTextMode;
+  marketplaceText?: MarketplaceTextResult;
 };
 
 export type AiProviderName = "Gemini" | "Ollama" | "OpenRouter" | "Hugging Face" | "Smart fallback";

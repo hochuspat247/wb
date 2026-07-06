@@ -5,6 +5,7 @@ import { FileImage, ImageUp, Loader2, RotateCcw, Wand2 } from "lucide-react";
 import { GeneratedCardPreview } from "@/components/GeneratedCardPreview";
 import { HistorySection } from "@/components/HistorySection";
 import { PaywallModal } from "@/components/PaywallModal";
+import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { ResultPanel } from "@/components/ResultPanel";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -15,6 +16,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { getImageSettings } from "@/lib/imageSettings";
 import { detectCategory } from "@/lib/category";
+import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
 import { base64ToDataUrl, dataUrlToBase64, downloadBase64Image, downloadImageFromUrl, validateImageFile } from "@/lib/image";
 import { clearHistory, getHistory, removeFromHistory, saveToHistory } from "@/lib/storage";
@@ -26,6 +28,7 @@ import type {
   ProductCardInput,
   ProductCardResult
 } from "@/types/product-card";
+import type { MarketplaceTextMode } from "@/types/marketplace";
 
 const marketplaces = ["Wildberries", "Ozon", "Avito", "Яндекс Маркет"];
 const styles = ["Минималистичный", "Премиальный", "Яркий", "Нежный", "Технологичный"];
@@ -42,15 +45,24 @@ const imageModes: Array<{ label: string; value: ImageGenerationMode }> = [
   { label: "Базовая обложка 4:5", value: "html" }
 ];
 
+const textModes: Array<{ label: string; value: MarketplaceTextMode }> = [
+  { label: "Безопасно для модерации", value: "marketplace_safe" },
+  { label: "Промо-креатив", value: "promo_creative" },
+  { label: "SEO-описание", value: "seo" },
+  { label: "Полная карточка", value: "full_listing" }
+];
+
 export function CardGenerator({
   hideHistory = false,
   onSaved,
+  onQuotaChange,
   embedded = false,
   persistToServer = false,
   darkConsole = false
 }: {
   hideHistory?: boolean;
   onSaved?: () => void;
+  onQuotaChange?: (quota: { remaining: number; used: number; credits: number }) => void;
   embedded?: boolean;
   persistToServer?: boolean;
   darkConsole?: boolean;
@@ -58,6 +70,19 @@ export function CardGenerator({
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [marketplace, setMarketplace] = useState("Wildberries");
+  const [textMode, setTextMode] = useState<MarketplaceTextMode>("marketplace_safe");
+  const [brand, setBrand] = useState("");
+  const [sellerSku, setSellerSku] = useState("");
+  const [color, setColor] = useState("");
+  const [size, setSize] = useState("");
+  const [material, setMaterial] = useState("");
+  const [dimensions, setDimensions] = useState("");
+  const [weight, setWeight] = useState("");
+  const [packageContents, setPackageContents] = useState("");
+  const [targetAudience, setTargetAudience] = useState("");
+  const [useCase, setUseCase] = useState("");
+  const [oldPrice, setOldPrice] = useState("");
+  const [discount, setDiscount] = useState("");
   const [style, setStyle] = useState("Премиальный");
   const [headline, setHeadline] = useState("");
   const [price, setPrice] = useState("");
@@ -83,9 +108,12 @@ export function CardGenerator({
     if (!persistToServer) return;
 
     fetchUserQuota()
-      .then((quota) => setRemainingGenerations(quota.remaining))
+      .then((quota) => {
+        setRemainingGenerations(quota.remaining);
+        onQuotaChange?.(quota);
+      })
       .catch(() => setRemainingGenerations(null));
-  }, [persistToServer]);
+  }, [persistToServer, onQuotaChange]);
 
   const effectiveCategory = useMemo(() => detectCategory(description, category), [category, description]);
 
@@ -207,7 +235,22 @@ export function CardGenerator({
       includeSeo: true,
       focusBenefits: true,
       includeInfographicText: true,
-      imageFileName
+      imageFileName,
+      platform: marketplaceLabelToPlatform(marketplace),
+      textMode,
+      brand: brand.trim() || undefined,
+      sellerSku: sellerSku.trim() || undefined,
+      color: color.trim() || undefined,
+      size: size.trim() || undefined,
+      material: material.trim() || undefined,
+      dimensions: dimensions.trim() || undefined,
+      weight: weight.trim() || undefined,
+      packageContents: packageContents.trim() || undefined,
+      targetAudience: targetAudience.trim() || undefined,
+      useCase: useCase.trim() || undefined,
+      price: price.trim() || undefined,
+      oldPrice: oldPrice.trim() || undefined,
+      discount: discount.trim() || undefined
     };
 
     try {
@@ -228,6 +271,7 @@ export function CardGenerator({
 
       if (data.quota?.remaining !== undefined) {
         setRemainingGenerations(data.quota.remaining);
+        onQuotaChange?.(data.quota);
       }
 
       const { quota: _quota, ...cardPayload } = data as ProductCardResult & {
@@ -247,7 +291,10 @@ export function CardGenerator({
       };
       setCard(generatedCard);
       setNotice("Создаём обложку…");
-      await generateAiMarketplaceImage(generatedCard);
+      const finalCard = await generateAiMarketplaceImage(generatedCard);
+      await persistGeneratedCard(finalCard ?? generatedCard);
+
+      trackConversion("generation_complete", { marketplace, platform: payload.platform || "wildberries" });
 
       if (data.quota?.remaining === 0) {
         setShowPaywall(true);
@@ -263,6 +310,19 @@ export function CardGenerator({
     setDescription("");
     setCategory("");
     setMarketplace("Wildberries");
+    setTextMode("marketplace_safe");
+    setBrand("");
+    setSellerSku("");
+    setColor("");
+    setSize("");
+    setMaterial("");
+    setDimensions("");
+    setWeight("");
+    setPackageContents("");
+    setTargetAudience("");
+    setUseCase("");
+    setOldPrice("");
+    setDiscount("");
     setStyle("Премиальный");
     setHeadline("");
     setPrice("");
@@ -276,6 +336,29 @@ export function CardGenerator({
     setRenderedImageUrl("");
     setError("");
     setNotice("");
+  }
+
+  async function persistGeneratedCard(cardToSave: ProductCardResult) {
+    if (!persistToServer) {
+      return;
+    }
+
+    const nextCard = {
+      ...cardToSave,
+      headline: headline.trim() || cardToSave.headline,
+      price: price.trim() || cardToSave.price,
+      ctaText: ctaText.trim() || cardToSave.ctaText,
+      designPreset: cardToSave.designPreset || designPreset
+    };
+
+    try {
+      const saved = await saveUserCardRemote(nextCard);
+      setHistory(saved);
+      onSaved?.();
+      setNotice("Готово! Карточка сохранена в историю. Скачайте PNG или JSON.");
+    } catch {
+      setNotice("Карточка создана. Нажмите «Сохранить в историю», если она не появилась автоматически.");
+    }
   }
 
   async function handleSave() {
@@ -310,6 +393,7 @@ export function CardGenerator({
   function handleOpenHistory(cardFromHistory: ProductCardResult) {
     setCard(cardFromHistory);
     setMarketplace(cardFromHistory.marketplace);
+    setTextMode(cardFromHistory.textMode ?? "marketplace_safe");
     setStyle(cardFromHistory.style);
     setCategory(cardFromHistory.category);
     setHeadline(cardFromHistory.headline || "");
@@ -370,12 +454,12 @@ export function CardGenerator({
     return updatedCard;
   }
 
-  async function generateAiMarketplaceImage(cardForImage: ProductCardResult) {
+  async function generateAiMarketplaceImage(cardForImage: ProductCardResult): Promise<ProductCardResult | null> {
     const productImage = imageUrl || cardForImage.imageDataUrl;
 
     if (!productImage) {
       setNotice("Тексты готовы. Загрузите фото, чтобы создать обложку.");
-      return;
+      return cardForImage;
     }
 
     setIsGeneratingAiImage(true);
@@ -415,16 +499,18 @@ export function CardGenerator({
         throw new Error(data.error || "Не удалось создать обложку.");
       }
 
-      applyImageResult(cardForImage, data);
+      const updatedCard = applyImageResult(cardForImage, data);
 
       if (data.isFallback || (!data.imageUrl && !data.imageBase64)) {
         setNotice("Тексты и превью готовы. Обложку можно скачать кнопкой ниже.");
-        return;
+        return updatedCard;
       }
 
       setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
+      return updatedCard;
     } catch {
       setNotice("Тексты готовы. Превью обложки можно скачать кнопкой ниже.");
+      return cardForImage;
     } finally {
       setIsGeneratingAiImage(false);
     }
@@ -555,7 +641,84 @@ export function CardGenerator({
               />
               <div className={`rounded-[18px] border p-4 ${darkConsole ? "border-white/10 bg-white/5" : "border-clay bg-paper"}`}>
                 <p className={`text-xs font-black uppercase tracking-[0.18em] ${darkConsole ? "text-mint" : "text-accent"}`}>
-                  03 · Продажа
+                  03 · Площадка и текст карточки
+                </p>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Режим текста
+                    <Select
+                      onChange={(event) => setTextMode(event.target.value as MarketplaceTextMode)}
+                      value={textMode}
+                      variant={selectVariant}
+                    >
+                      {textModes.map((item) => (
+                        <option key={item.value} value={item.value}>
+                          {item.label}
+                        </option>
+                      ))}
+                    </Select>
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Бренд
+                    <Input onChange={(event) => setBrand(event.target.value)} placeholder="Например: Xiaomi" value={brand} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Артикул продавца
+                    <Input onChange={(event) => setSellerSku(event.target.value)} placeholder="SKU-12345" value={sellerSku} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Цвет
+                    <Input onChange={(event) => setColor(event.target.value)} placeholder="чёрный" value={color} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Размер
+                    <Input onChange={(event) => setSize(event.target.value)} placeholder="M / 42" value={size} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Материал
+                    <Input onChange={(event) => setMaterial(event.target.value)} placeholder="хлопок" value={material} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Габариты
+                    <Input onChange={(event) => setDimensions(event.target.value)} placeholder="20×15×8 см" value={dimensions} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Вес
+                    <Input onChange={(event) => setWeight(event.target.value)} placeholder="350 г" value={weight} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Комплектация
+                    <Input
+                      onChange={(event) => setPackageContents(event.target.value)}
+                      placeholder="кабель, чехол"
+                      value={packageContents}
+                    />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Целевая аудитория
+                    <Input
+                      onChange={(event) => setTargetAudience(event.target.value)}
+                      placeholder="для офиса"
+                      value={targetAudience}
+                    />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Сценарий использования
+                    <Input onChange={(event) => setUseCase(event.target.value)} placeholder="для поездок" value={useCase} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Старая цена
+                    <Input onChange={(event) => setOldPrice(event.target.value)} placeholder="1 990 ₽" value={oldPrice} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Скидка
+                    <Input onChange={(event) => setDiscount(event.target.value)} placeholder="-20%" value={discount} />
+                  </label>
+                </div>
+              </div>
+              <div className={`rounded-[18px] border p-4 ${darkConsole ? "border-white/10 bg-white/5" : "border-clay bg-paper"}`}>
+                <p className={`text-xs font-black uppercase tracking-[0.18em] ${darkConsole ? "text-mint" : "text-accent"}`}>
+                  04 · Продажа
                 </p>
                 <h4 className={`mt-2 text-sm font-semibold ${labelClass}`}>Заголовок, цена и пресет для обложки</h4>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">

@@ -41,8 +41,10 @@ export async function authenticateVkAccessToken(accessToken: string) {
 
   const vkUserId = String(data.user.user_id);
   const name = [data.user.first_name, data.user.last_name].filter(Boolean).join(" ") || "Пользователь VK";
-  const email = data.user.email?.trim() || `vk_${vkUserId}@oauth.marketcard.local`;
+  const realEmail = data.user.email?.trim();
+  const email = realEmail || `vk_${vkUserId}@oauth.marketcard.local`;
   const image = data.user.avatar;
+  const emailVerified = realEmail ? undefined : new Date();
 
   const linkedAccount = await db.query.accounts.findFirst({
     where: and(eq(accounts.provider, "vk"), eq(accounts.providerAccountId, vkUserId))
@@ -94,6 +96,7 @@ export async function authenticateVkAccessToken(accessToken: string) {
     email,
     name,
     image,
+    emailVerified,
     generationCredits: 1,
     generationsUsed: 0,
     createdAt: new Date()

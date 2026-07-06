@@ -59,7 +59,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-12 border-t border-white/10 pt-6 text-xs font-semibold text-white/40">
-          <p>© {new Date().getFullYear()} MarketCard AI · ИП Головачев И.С. · ИНН 030403024370</p>
+          <p>© {new Date().getFullYear()} MarketCard AI · ИП Головачев И.С. · ИНН 030403024370 · ОГРНИП 325237500009533</p>
         </div>
       </div>
     </footer>

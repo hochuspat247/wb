@@ -82,6 +82,9 @@ export async function fetchUserProfile() {
     name: string;
     email: string;
     emailVerified?: boolean;
+    emailIsPlaceholder?: boolean;
+    emailDisplay?: string;
+    needsEmailVerification?: boolean;
     joinedAt: string;
     quota?: {
       credits: number;

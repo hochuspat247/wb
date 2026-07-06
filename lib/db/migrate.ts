@@ -61,4 +61,32 @@ export function migrate(sqlite: Database.Database) {
   } catch {
     // column already exists
   }
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS analytics_event (
+      id TEXT PRIMARY KEY NOT NULL,
+      eventType TEXT NOT NULL,
+      eventName TEXT NOT NULL,
+      path TEXT NOT NULL,
+      referrer TEXT,
+      label TEXT,
+      xPercent INTEGER,
+      yPercent INTEGER,
+      viewportWidth INTEGER,
+      viewportHeight INTEGER,
+      userId TEXT,
+      sessionId TEXT NOT NULL,
+      metadata TEXT,
+      createdAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS analytics_event_path_idx ON analytics_event(path);
+    CREATE INDEX IF NOT EXISTS analytics_event_type_idx ON analytics_event(eventType);
+    CREATE INDEX IF NOT EXISTS analytics_event_created_idx ON analytics_event(createdAt);
+  `);
+
+  sqlite.exec(`
+    UPDATE user
+    SET emailVerified = CAST(strftime('%s','now') AS INTEGER) * 1000
+    WHERE email LIKE '%@oauth.marketcard.local' AND emailVerified IS NULL
+  `);
 }

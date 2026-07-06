@@ -61,7 +61,8 @@ export function CabinetApp() {
   const [loading, setLoading] = useState(true);
   const [imageSettings, setImageSettings] = useState<ImageSettings>(getImageSettings());
   const [remainingGenerations, setRemainingGenerations] = useState(0);
-  const [emailVerified, setEmailVerified] = useState(true);
+  const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
+  const [emailDisplay, setEmailDisplay] = useState("");
 
   useEffect(() => {
     async function loadCabinet() {
@@ -71,7 +72,8 @@ export function CabinetApp() {
         setUserEmail(profile.email);
         setEditName(profile.name);
         setRemainingGenerations(profile.quota?.remaining ?? 0);
-        setEmailVerified(Boolean(profile.emailVerified));
+        setNeedsEmailVerification(Boolean(profile.needsEmailVerification));
+        setEmailDisplay(profile.emailDisplay || profile.email);
 
         const localCards = getHistory();
         if (localCards.length > 0 && remoteCards.length === 0) {
@@ -247,9 +249,9 @@ export function CabinetApp() {
         </header>
 
         <main className="flex-1 overflow-y-auto p-5 pb-28 lg:p-8">
-          {!emailVerified ? (
+          {needsEmailVerification ? (
             <div className="mb-6 rounded-[18px] border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100">
-              Подтвердите email ({userEmail}) — проверьте почту после регистрации.
+              Подтвердите email ({emailDisplay}) — проверьте почту после регистрации.
             </div>
           ) : null}
 
@@ -268,7 +270,14 @@ export function CabinetApp() {
                 ))}
               </div>
               <div className="studio-noise relative overflow-hidden rounded-container border border-clay bg-card p-5 shadow-soft md:p-7">
-                <CardGenerator embedded hideHistory onSaved={refreshCards} persistToServer darkConsole />
+                <CardGenerator
+                  embedded
+                  hideHistory
+                  darkConsole
+                  onQuotaChange={(quota) => setRemainingGenerations(quota.remaining)}
+                  onSaved={refreshCards}
+                  persistToServer
+                />
               </div>
             </div>
           ) : null}
@@ -385,7 +394,7 @@ export function CabinetApp() {
 
               <Card padding="lg">
                 <h2 className="text-lg font-bold text-ink">Аккаунт</h2>
-                <p className="mt-2 text-sm text-muted">{userEmail || session?.user?.email}</p>
+                <p className="mt-2 text-sm text-muted">{emailDisplay || userEmail || session?.user?.email}</p>
                 <Button className="mt-5" onClick={() => signOut({ callbackUrl: "/" })} size="sm" variant="secondary">
                   Выйти из аккаунта
                 </Button>

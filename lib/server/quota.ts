@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { FREE_TRIAL_CARDS } from "@/lib/pricing";
@@ -32,13 +32,15 @@ export async function getUserQuota(userId: string): Promise<UserQuota> {
 }
 
 export async function consumeGeneration(userId: string): Promise<UserQuota> {
-  const quota = await getUserQuota(userId);
+  const result = await db
+    .update(users)
+    .set({ generationsUsed: sql`${users.generationsUsed} + 1` })
+    .where(sql`${users.id} = ${userId} AND ${users.generationsUsed} < ${users.generationCredits}`)
+    .returning({ id: users.id });
 
-  if (!quota.canGenerate) {
-    return quota;
+  if (!result.length) {
+    return getUserQuota(userId);
   }
-
-  await db.update(users).set({ generationsUsed: quota.used + 1 }).where(eq(users.id, userId));
 
   return getUserQuota(userId);
 }

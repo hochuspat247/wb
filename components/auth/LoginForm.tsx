@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { VkIdAuthPanel } from "@/components/auth/VkIdAuthPanel";
+import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -39,6 +40,7 @@ export function LoginForm() {
       return;
     }
 
+    trackConversion("login_complete");
     router.push(callbackUrl);
     router.refresh();
   }

@@ -72,3 +72,24 @@ export const productCards = sqliteTable("product_card", {
   payload: text("payload", { mode: "json" }).$type<ProductCardResult>().notNull(),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull()
 });
+
+export const analyticsEvents = sqliteTable("analytics_event", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  eventType: text("eventType").notNull(),
+  eventName: text("eventName").notNull(),
+  path: text("path").notNull(),
+  referrer: text("referrer"),
+  label: text("label"),
+  xPercent: integer("xPercent"),
+  yPercent: integer("yPercent"),
+  viewportWidth: integer("viewportWidth"),
+  viewportHeight: integer("viewportHeight"),
+  userId: text("userId"),
+  sessionId: text("sessionId").notNull(),
+  metadata: text("metadata", { mode: "json" }).$type<Record<string, string | number | boolean>>(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date())
+});

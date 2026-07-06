@@ -175,28 +175,6 @@ a {
   animation: shimmer 2s linear infinite;
 }
 
-/* ── Workflow connector ── */
-.workflow-connector {
-  position: relative;
-}
-
-.workflow-connector::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: -12px;
-  width: 24px;
-  height: 1px;
-  background: rgba(124, 255, 107, 0.7);
-  transform: translateY(-50%);
-}
-
-@media (max-width: 1023px) {
-  .workflow-connector::after {
-    display: none;
-  }
-}
-
 /* ── Timeline ── */
 .timeline-line {
   position: absolute;

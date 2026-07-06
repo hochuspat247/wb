@@ -410,10 +410,27 @@ export function CardGenerator({
     ? "rounded-[22px] border border-white/10 bg-white/[0.06] p-5"
     : "rounded-[22px] border border-clay bg-card p-5";
 
+  const selectVariant = darkConsole ? "dark" : "default";
+
+  const showPreviewColumn = !embedded || Boolean(card) || isWorking;
+  const hideVisualPreview = embedded;
+
   return (
     <section className={embedded ? "" : "relative py-24"} id={embedded ? undefined : "demo"}>
       <div className={embedded ? undefined : "section-shell"}>
-        <div className="relative z-10 grid gap-8 xl:grid-cols-[0.82fr_1.18fr]">
+        {embedded && !showPreviewColumn ? (
+          <div className="sr-only" aria-hidden>
+            <GeneratedCardPreview
+              card={card}
+              generatedImageUrl={card?.generatedImageUrl || card?.generatedImageDataUrl}
+              imageUrl={imageUrl || card?.imageDataUrl}
+              ref={previewRef}
+              styleName={style}
+            />
+          </div>
+        ) : null}
+
+        <div className={embedded ? "grid gap-8" : "relative z-10 grid gap-8 xl:grid-cols-[0.82fr_1.18fr]"}>
           <form className={formClass} onSubmit={handleSubmit}>
             <div className="grid gap-5">
               <div>
@@ -459,7 +476,7 @@ export function CardGenerator({
                 </label>
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                   Маркетплейс
-                  <Select onChange={(event) => setMarketplace(event.target.value)} value={marketplace}>
+                  <Select onChange={(event) => setMarketplace(event.target.value)} value={marketplace} variant={selectVariant}>
                     {marketplaces.map((item) => (
                       <option key={item}>{item}</option>
                     ))}
@@ -469,7 +486,7 @@ export function CardGenerator({
               <div className="grid gap-4 md:grid-cols-2">
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                   Стиль
-                  <Select onChange={(event) => setStyle(event.target.value)} value={style}>
+                  <Select onChange={(event) => setStyle(event.target.value)} value={style} variant={selectVariant}>
                     {styles.map((item) => (
                       <option key={item}>{item}</option>
                     ))}
@@ -480,6 +497,7 @@ export function CardGenerator({
                   <Select
                     onChange={(event) => setImageMode(event.target.value as ImageGenerationMode)}
                     value={imageMode}
+                    variant={selectVariant}
                   >
                     {imageModes.map((item) => (
                       <option key={item.value} value={item.value}>
@@ -525,6 +543,7 @@ export function CardGenerator({
                     <Select
                       onChange={(event) => setDesignPreset(event.target.value as ImageDesignPreset)}
                       value={designPreset}
+                      variant={selectVariant}
                     >
                       {designPresets.map((item) => (
                         <option key={item.value} value={item.value}>
@@ -549,8 +568,9 @@ export function CardGenerator({
               </div>
             </div>
           </form>
+          {showPreviewColumn ? (
           <div className="grid gap-6">
-            <div className={hasAiCover ? "sr-only" : undefined}>
+            <div className={hideVisualPreview || hasAiCover ? "sr-only" : undefined}>
               <GeneratedCardPreview
                 card={card}
                 generatedImageUrl={card?.generatedImageUrl || card?.generatedImageDataUrl}
@@ -564,7 +584,7 @@ export function CardGenerator({
                 <p className={`mb-4 text-sm font-semibold ${darkConsole ? "text-white/70" : "text-muted"}`}>
                   Подготавливаем карточку…
                 </p>
-                <SkeletonBlock className="aspect-[4/5] w-full" />
+                <SkeletonBlock className={`w-full ${hideVisualPreview ? "h-48" : "aspect-[4/5]"}`} />
               </div>
             ) : null}
             {card ? (
@@ -607,7 +627,7 @@ export function CardGenerator({
                   )}
                 </div>
               </div>
-            ) : !isWorking ? (
+            ) : !isWorking && !hideVisualPreview ? (
               <div className={`${panelClass} grid aspect-[4/5] place-items-center text-center`}>
                 <div>
                   <p className={`text-sm font-semibold ${darkConsole ? "text-white/70" : "text-muted"}`}>
@@ -621,6 +641,7 @@ export function CardGenerator({
             ) : null}
             <ResultPanel card={card} dark={darkConsole} onDownloadPng={() => downloadPreviewPng(previewRef.current, card?.title)} onSave={handleSave} previewRef={previewRef} />
           </div>
+          ) : null}
         </div>
         {!hideHistory ? (
           <div className="mt-8">

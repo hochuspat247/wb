@@ -53,9 +53,8 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        <div className="mt-12 flex flex-col gap-2 border-t border-white/10 pt-6 text-xs font-semibold text-white/40 md:flex-row md:items-center md:justify-between">
+        <div className="mt-12 border-t border-white/10 pt-6 text-xs font-semibold text-white/40">
           <p>© {new Date().getFullYear()} MarketCard AI · ИП Головачев И.С. · ИНН 030403024370</p>
-          <p>MVP для проверки продуктовой гипотезы</p>
         </div>
       </div>
     </footer>

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 
 const links = [
   ["Примеры", "/#examples"],
-  ["Генератор", "/#demo"],
+  ["Генератор", "/cabinet#create"],
   ["Как работает", "/#how"],
   ["Тарифы", "/#pricing"],
   ["FAQ", "/#faq"]

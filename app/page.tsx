@@ -1,5 +1,4 @@
 import { AudienceSection } from "@/components/AudienceSection";
-import { CardGenerator } from "@/components/CardGenerator";
 import { CompareSection } from "@/components/CompareSection";
 import { ExamplesSection } from "@/components/ExamplesSection";
 import { FAQSection } from "@/components/FAQSection";
@@ -13,8 +12,6 @@ import { RoadmapSection } from "@/components/RoadmapSection";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { TrustBar } from "@/components/TrustBar";
 import { WorkflowSection } from "@/components/WorkflowSection";
-import { Reveal } from "@/components/ui/Reveal";
-import { SectionHeader } from "@/components/ui/SectionHeader";
 
 export default function Home() {
   return (
@@ -23,24 +20,6 @@ export default function Home() {
       <Hero />
       <TrustBar />
       <ExamplesSection />
-
-      <section className="py-16 md:py-24" id="demo">
-        <div className="section-shell">
-          <div className="studio-noise relative overflow-hidden rounded-container border border-clay bg-card p-5 shadow-soft md:p-10">
-            <SectionHeader
-              align="left"
-              description="Введите товар, выберите стиль и получите текст, SEO и визуал в одном рабочем процессе."
-              theme="dark"
-              title="Соберите первую карточку прямо сейчас"
-            />
-            <Reveal delay={1}>
-              <div className="mt-10">
-                <CardGenerator embedded darkConsole />
-              </div>
-            </Reveal>
-          </div>
-        </div>
-      </section>
 
       <PainSection />
       <WorkflowSection />

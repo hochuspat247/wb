@@ -62,11 +62,19 @@ export function PricingCard({
         ))}
       </ul>
 
-      <Link className="mt-8 block" href={href}>
-        <Button className="w-full" variant={highlighted ? "primary" : "secondary"}>
-          {cta}
-        </Button>
-      </Link>
+      {href.startsWith("http") ? (
+        <a className="mt-8 block" href={href} rel="noopener noreferrer" target="_blank">
+          <Button className="w-full" variant={highlighted ? "primary" : "secondary"}>
+            {cta}
+          </Button>
+        </a>
+      ) : (
+        <Link className="mt-8 block" href={href}>
+          <Button className="w-full" variant={highlighted ? "primary" : "secondary"}>
+            {cta}
+          </Button>
+        </Link>
+      )}
     </Card>
   );
 }

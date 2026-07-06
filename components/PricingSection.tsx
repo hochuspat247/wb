@@ -1,6 +1,7 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PricingCard } from "@/components/ui/PricingCard";
+import { PAYMENT_TELEGRAM_URL } from "@/lib/pricing";
 
 const plans = [
   {
@@ -20,10 +21,15 @@ const plans = [
     features: [
       "5 генераций карточек",
       "Доступ к редактору шаблонов",
+      "Название, описание и SEO-ключи",
+      "AI-обложка 4:5 для маркетплейса",
+      "Экспорт PNG и JSON",
+      "История всех генераций",
+      "Пресеты для WB, Ozon и Avito",
       "Приоритетная поддержка"
     ],
     cta: "Подключить",
-    href: "/register",
+    href: PAYMENT_TELEGRAM_URL,
     highlighted: true,
     badge: "Самый популярный"
   },
@@ -35,11 +41,16 @@ const plans = [
     billingNote: "в месяц",
     features: [
       "20 генераций карточек",
-      "Доступ к редактору шаблонов",
-      "Приоритетная поддержка"
+      "Всё из тарифа «Рост»",
+      "Все дизайн-пресеты без ограничений",
+      "Приоритетная очередь генерации",
+      "Несколько вариантов обложки на SKU",
+      "Расширенная история и быстрый повтор",
+      "Ранний доступ к новым интеграциям",
+      "Персональная поддержка в Telegram"
     ],
     cta: "Подключить",
-    href: "/register"
+    href: PAYMENT_TELEGRAM_URL
   }
 ];
 

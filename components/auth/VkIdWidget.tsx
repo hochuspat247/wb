@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import * as VKID from "@vkid/sdk";
+import { initVkIdConfig } from "@/lib/auth/vk-id-client";
+import { useVkIdSignIn } from "@/components/auth/useVkIdSignIn";
 
 type VkIdWidgetProps = {
   callbackUrl?: string;
@@ -12,25 +12,12 @@ type VkIdWidgetProps = {
 export function VkIdWidget({ callbackUrl = "/cabinet" }: VkIdWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
-  const router = useRouter();
-
-  const appId = process.env.NEXT_PUBLIC_VK_APP_ID;
-  const redirectUrl =
-    process.env.NEXT_PUBLIC_VK_REDIRECT_URL ||
-    (typeof window !== "undefined" ? `${window.location.origin}/` : "https://marketcard-ai.avenir-team.ru/");
+  const signInWithVk = useVkIdSignIn(callbackUrl);
 
   useEffect(() => {
-    if (!containerRef.current || !appId) {
+    if (!containerRef.current || !initVkIdConfig()) {
       return;
     }
-
-    VKID.Config.init({
-      app: Number(appId),
-      redirectUrl,
-      responseMode: VKID.ConfigResponseMode.Callback,
-      source: VKID.ConfigSource.LOWCODE,
-      scope: ""
-    });
 
     const oneTap = new VKID.OneTap();
 
@@ -47,20 +34,7 @@ export function VkIdWidget({ callbackUrl = "/cabinet" }: VkIdWidgetProps) {
       .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, async (payload: { code: string; device_id: string }) => {
         try {
           setError("");
-          const tokenData = await VKID.Auth.exchangeCode(payload.code, payload.device_id);
-          const result = await signIn("vk-id", {
-            accessToken: tokenData.access_token,
-            redirect: false,
-            callbackUrl
-          });
-
-          if (result?.error) {
-            setError("Не удалось создать сессию. Попробуйте ещё раз.");
-            return;
-          }
-
-          router.push(callbackUrl);
-          router.refresh();
+          await signInWithVk(payload);
         } catch (vkError) {
           console.error(vkError);
           setError("Ошибка авторизации VK ID.");
@@ -70,9 +44,9 @@ export function VkIdWidget({ callbackUrl = "/cabinet" }: VkIdWidgetProps) {
     return () => {
       containerRef.current?.replaceChildren();
     };
-  }, [appId, callbackUrl, redirectUrl, router]);
+  }, [callbackUrl, signInWithVk]);
 
-  if (!appId) {
+  if (!process.env.NEXT_PUBLIC_VK_APP_ID) {
     return null;
   }
 

@@ -45,6 +45,19 @@ function pct(value: number, total: number) {
   return `${Math.round((value / total) * 100)}%`;
 }
 
+async function readJsonResponse(response: Response): Promise<any> {
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+}
+
 function Heatmap({ points }: { points: AdminStats["heatmap"] }) {
   const max = useMemo(() => Math.max(1, ...points.map((point) => point.count)), [points]);
 
@@ -108,7 +121,7 @@ export function AdminDashboard() {
 
     try {
       const response = await fetch(`/api/admin/stats?path=${encodeURIComponent(nextPath)}`, { cache: "no-store" });
-      const data = await response.json();
+      const data = await readJsonResponse(response);
 
       if (!response.ok) {
         if (response.status === 403) {
@@ -116,6 +129,10 @@ export function AdminDashboard() {
           return;
         }
         throw new Error(data.error || "Не удалось загрузить статистику");
+      }
+
+      if (!data.overview || !data.funnel) {
+        throw new Error("Админка вернула пустой ответ. Попробуйте войти заново.");
       }
 
       setStats(data as AdminStats);

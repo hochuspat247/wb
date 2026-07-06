@@ -14,6 +14,11 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const path = searchParams.get("path") || "/";
 
-  const stats = await getAdminAnalytics(path);
-  return NextResponse.json(stats);
+  try {
+    const stats = await getAdminAnalytics(path);
+    return NextResponse.json(stats);
+  } catch (error) {
+    console.error("[MarketCard AI] Admin stats failed", error);
+    return NextResponse.json({ error: "Failed to load admin stats" }, { status: 500 });
+  }
 }

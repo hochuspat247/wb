@@ -21,5 +21,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cabinet/:path*", "/admin/:path*"]
+  matcher: ["/cabinet/:path*"]
 };

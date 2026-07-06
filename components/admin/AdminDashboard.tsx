@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { BarChart3, MousePointerClick, RefreshCw, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { BarChart3, LogOut, MousePointerClick, RefreshCw, Users } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Loader } from "@/components/ui/Loader";
@@ -96,6 +96,7 @@ function MiniBars({ rows, label }: { rows: { day: string; value: number }[]; lab
 }
 
 export function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [path, setPath] = useState("/");
   const [loading, setLoading] = useState(true);
@@ -110,6 +111,10 @@ export function AdminDashboard() {
       const data = await response.json();
 
       if (!response.ok) {
+        if (response.status === 403) {
+          router.push("/admin/login");
+          return;
+        }
         throw new Error(data.error || "Не удалось загрузить статистику");
       }
 
@@ -139,9 +144,9 @@ export function AdminDashboard() {
         <Card className="max-w-md text-center" padding="lg">
           <p className="text-lg font-bold text-ink">Доступ запрещён</p>
           <p className="mt-2 text-sm text-muted">{error}</p>
-          <Link className="mt-5 inline-block" href="/">
-            <Button>На главную</Button>
-          </Link>
+          <Button className="mt-5" onClick={() => router.push("/admin/login")}>
+            Войти в админку
+          </Button>
         </Card>
       </div>
     );
@@ -172,11 +177,17 @@ export function AdminDashboard() {
               <RefreshCw size={16} />
               Обновить
             </Button>
-            <Link href="/cabinet">
-              <Button size="sm" variant="ghost">
-                В кабинет
-              </Button>
-            </Link>
+            <Button
+              onClick={async () => {
+                await fetch("/api/admin/login", { method: "DELETE" });
+                router.push("/admin/login");
+              }}
+              size="sm"
+              variant="ghost"
+            >
+              <LogOut size={16} />
+              Выйти
+            </Button>
           </div>
         </div>
       </header>

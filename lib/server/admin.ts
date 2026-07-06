@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { hasAdminSessionCookie } from "@/lib/auth/admin-session";
 import { isPlaceholderOAuthEmail } from "@/lib/auth/email-utils";
 
 export function getAdminEmails() {
@@ -20,6 +21,10 @@ export function isAdminEmail(email?: string | null) {
 }
 
 export async function requireAdminSession() {
+  if (await hasAdminSessionCookie()) {
+    return { id: "admin", email: "admin@marketcard.local", name: "Admin" };
+  }
+
   const session = await auth();
   const email = session?.user?.email;
 
@@ -28,4 +33,8 @@ export async function requireAdminSession() {
   }
 
   return session;
+}
+
+export async function isAdminAuthenticated() {
+  return Boolean(await requireAdminSession());
 }

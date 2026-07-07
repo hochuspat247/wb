@@ -1,4 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
+import { callGigaChatJson } from "@/lib/ai/gigachat";
+import { sanitizeMarketplaceTextResult } from "@/lib/contentQuality";
 import { generateMarketplaceTextFallback } from "@/lib/marketplace/textFallback";
 import { buildMarketplaceTextPrompt } from "@/lib/marketplace/textPrompt";
 import { collectTextForModerationScan, scanForbiddenWords } from "@/lib/marketplace/utils";
@@ -11,7 +13,7 @@ import type {
   YandexMarketTextData
 } from "@/types/marketplace";
 
-type ProviderMode = "auto" | "gemini" | "ollama" | "openrouter" | "huggingface" | "fallback";
+type ProviderMode = "auto" | "gigachat" | "gemini" | "ollama" | "openrouter" | "huggingface" | "fallback";
 
 type RawMarketplaceJson = Partial<Omit<MarketplaceTextResult, "platform" | "mode">> & {
   platformSpecific?: {
@@ -158,10 +160,10 @@ function withMeta(raw: RawMarketplaceJson, input: MarketplaceTextInput, isFallba
   };
 
   if (isFallback) {
-    return enrichModerationWarnings(fallback);
+    return sanitizeMarketplaceTextResult(enrichModerationWarnings(fallback), input);
   }
 
-  return enrichModerationWarnings(result);
+  return sanitizeMarketplaceTextResult(enrichModerationWarnings(result), input);
 }
 
 async function callOllama(prompt: string) {
@@ -247,6 +249,7 @@ async function callGemini(prompt: string) {
 }
 
 async function tryProvider(provider: ProviderMode, prompt: string) {
+  if (provider === "gigachat") return safeParseMarketplaceJson(await callGigaChatJson(prompt, { maxTokens: 3000 }));
   if (provider === "gemini") return callGemini(prompt);
   if (provider === "ollama") return callOllama(prompt);
   if (provider === "openrouter") return callOpenRouter(prompt);
@@ -259,15 +262,19 @@ export async function generateMarketplaceText(input: MarketplaceTextInput): Prom
   const mode = (process.env.AI_PROVIDER || "auto").toLowerCase() as ProviderMode;
 
   if (mode === "fallback") {
-    return generateMarketplaceTextFallback(input);
+    return sanitizeMarketplaceTextResult(generateMarketplaceTextFallback(input), input);
   }
 
   const queue: ProviderMode[] =
     mode === "auto"
-      ? ["gemini", "ollama", "openrouter", "huggingface"]
-      : mode === "gemini" || mode === "ollama" || mode === "openrouter" || mode === "huggingface"
+      ? ["gigachat", "gemini", "ollama", "openrouter", "huggingface"]
+      : mode === "gigachat" ||
+          mode === "gemini" ||
+          mode === "ollama" ||
+          mode === "openrouter" ||
+          mode === "huggingface"
         ? [mode]
-        : ["gemini", "ollama", "openrouter", "huggingface"];
+        : ["gigachat", "gemini", "ollama", "openrouter", "huggingface"];
 
   for (const provider of queue) {
     try {
@@ -279,5 +286,5 @@ export async function generateMarketplaceText(input: MarketplaceTextInput): Prom
     }
   }
 
-  return generateMarketplaceTextFallback(input);
+  return sanitizeMarketplaceTextResult(generateMarketplaceTextFallback(input), input);
 }

@@ -1,4 +1,5 @@
 import { detectCategory, extractProductName } from "@/lib/category";
+import { sanitizeKeywords, sanitizeMarketplaceTextResult } from "@/lib/contentQuality";
 import { getPlatformProfile } from "@/lib/marketplace/platformProfiles";
 import { collectTextForModerationScan, scanForbiddenWords } from "@/lib/marketplace/utils";
 import type {
@@ -48,7 +49,7 @@ function buildAdvantages(input: MarketplaceTextInput, productLabel: string) {
   const items = [
     `${productLabel} для повседневного использования`,
     input.useCase ? `Подходит для: ${input.useCase}` : "Понятное назначение по описанию",
-    input.targetAudience ? `Для аудитории: ${input.targetAudience}` : "Универсальная подача"
+    input.targetAudience ? `Для ${input.targetAudience}` : "Удобно для ежедневных задач"
   ];
 
   if (input.packageContents) {
@@ -58,10 +59,21 @@ function buildAdvantages(input: MarketplaceTextInput, productLabel: string) {
   return items.slice(0, 5);
 }
 
-function buildKeywords(productName: string, category: string, platform: string) {
+function buildKeywords(productName: string, category: string) {
   const name = productName.toLowerCase();
-  return Array.from(
-    new Set([name, `${name} ${category.toLowerCase()}`, `${name} купить`, `товар ${category.toLowerCase()}`, platform])
+  const categoryKeyword = category === "Другое" ? "" : category.toLowerCase();
+  return sanitizeKeywords(
+    Array.from(
+      new Set([
+        name,
+        categoryKeyword ? `${name} ${categoryKeyword}` : "",
+        `${name} купить`,
+        `${name} для дома`,
+        `${name} в подарок`,
+        categoryKeyword
+      ])
+    ),
+    productName
   ).slice(0, 12);
 }
 
@@ -91,7 +103,7 @@ function buildWildberries(input: MarketplaceTextInput, productLabel: string): Wi
 
   return {
     wbName,
-    wbDescription: `${productLabel}. ${input.productDescription}. Нейтральное описание для карточки Wildberries без рекламных обещаний.`,
+    wbDescription: `${productLabel}. ${input.productDescription}. ${input.useCase ? `Подходит для сценария: ${input.useCase}.` : "Удобен для повседневного использования."}`,
     wbCharacteristics: characteristics,
     wbPhotoRules: [
       "Товар на нейтральном или белом фоне",
@@ -179,7 +191,7 @@ function buildYandexMarket(input: MarketplaceTextInput, productLabel: string): Y
 
   return {
     yandexName: parts.join(", ").slice(0, 120),
-    yandexDescription: `${productLabel}. ${input.productDescription}. Описание для каталога Яндекс Маркета с акцентом на характеристики.`,
+    yandexDescription: `${productLabel}. ${input.productDescription}. ${input.useCase ? `Подходит для сценария: ${input.useCase}.` : "Подходит для повседневных задач и подарка."}`,
     yandexCharacteristics: buildCharacteristics(input, productLabel),
     yandexImageRules: [
       "Нейтральный фон",
@@ -251,7 +263,7 @@ export function generateMarketplaceTextFallback(input: MarketplaceTextInput): Ma
   const platformSpecific = buildPlatformSpecific(input, productLabel);
   const advantages = buildAdvantages(input, productLabel);
   const characteristics = buildCharacteristics(input, productLabel);
-  const keywords = buildKeywords(productName, category, profile.displayName);
+  const keywords = buildKeywords(productName, category);
   const imageTexts = buildSafeImageTexts(input, productLabel, input.mode);
   const title = resolveTitle(input, productLabel, platformSpecific);
   const fullDescription = resolveDescription(input, platformSpecific);
@@ -302,5 +314,5 @@ export function generateMarketplaceTextFallback(input: MarketplaceTextInput): Ma
     }
   }
 
-  return draft;
+  return sanitizeMarketplaceTextResult(draft, input);
 }

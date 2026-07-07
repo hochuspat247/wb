@@ -1,13 +1,6 @@
 import { detectCategory, extractProductName } from "@/lib/category";
+import { sanitizeKeywords, sanitizeProductCardResult } from "@/lib/contentQuality";
 import type { ProductCardInput, ProductCardResult } from "@/types/product-card";
-
-const STYLE_WORDS: Record<string, string> = {
-  "Минималистичный": "лаконичной и чистой",
-  "Премиальный": "премиальной и выразительной",
-  "Яркий": "яркой и заметной",
-  "Нежный": "мягкой и аккуратной",
-  "Технологичный": "современной и технологичной"
-};
 
 const MARKETPLACE_TIPS: Record<string, string[]> = {
   Wildberries: [
@@ -36,20 +29,24 @@ function sentenceCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function keywordSet(productName: string, category: string, marketplace: string) {
+function keywordSet(productName: string, category: string) {
   const name = productName.toLowerCase();
-  return Array.from(
-    new Set([
-      name,
-      `${name} купить`,
-      `${name} ${category.toLowerCase()}`,
-      `${name} ${marketplace}`,
-      `товар ${category.toLowerCase()}`,
-      `${name} для дома`,
-      `${name} в подарок`,
-      "подарок",
-      "для дома"
-    ])
+  const categoryKeyword = category === "Другое" ? "" : category.toLowerCase();
+  return sanitizeKeywords(
+    Array.from(
+      new Set([
+        name,
+        `${name} купить`,
+        categoryKeyword ? `${name} ${categoryKeyword}` : "",
+        `${name} для дома`,
+        `${name} в подарок`,
+        categoryKeyword ? `${categoryKeyword} для дома` : "",
+        categoryKeyword ? `${categoryKeyword} в подарок` : "",
+        "подарок",
+        "для дома"
+      ])
+    ),
+    productName
   ).slice(0, 12);
 }
 
@@ -57,40 +54,38 @@ export function buildFallbackCard(input: ProductCardInput): ProductCardResult {
   const category = detectCategory(input.productDescription, input.category);
   const productName = extractProductName(input.productDescription);
   const productLabel = sentenceCase(productName);
-  const styleText = STYLE_WORDS[input.style] ?? "современной";
   const marketplace = input.marketplace || "Wildberries";
 
   const benefits = [
     getScenarioBenefit(productName, category),
     "Подходит для повседневного использования или подарка",
-    "Легко показать назначение на первом фото",
-    input.focusBenefits ? "Польза сформулирована без лишней воды" : "Описание без спорных обещаний",
-    `Подача в ${styleText} стилистике`
+    input.useCase ? `Удобно для сценария: ${input.useCase}` : "Удобно держать под рукой каждый день",
+    input.packageContents ? `В комплекте: ${input.packageContents}` : "Легко вписать в ежедневные задачи",
+    input.material ? `Материал: ${input.material}` : "Подходит для разных повседневных сценариев"
   ];
 
   const characteristics = [
     { key: "Тип товара", value: productLabel },
     { key: "Категория", value: category },
-    { key: "Маркетплейс", value: marketplace },
-    { key: "Стиль подачи", value: input.style },
-    { key: "Основа описания", value: input.productDescription.slice(0, 120) },
-    { key: "Формат", value: "Карточка товара с SEO и инфографикой" }
+    { key: "Назначение", value: getScenarioBenefit(productName, category) },
+    { key: "Стиль", value: input.style },
+    { key: "Описание", value: input.productDescription.slice(0, 120) }
   ];
 
   const infographicTexts = input.includeInfographicText
     ? getInfographicTexts(productName, category)
     : ["Крупное фото", "1:1 формат", "Без лишнего", "Для витрины"];
 
-  const fullDescription = `${productLabel} подходит для ситуации, когда покупателю нужно быстро понять назначение товара и увидеть его пользу по первому фото карточки. Описание построено на основе введенных данных: ${input.productDescription}. Формулировки сделаны нейтрально, без неподтвержденных характеристик, медицинских обещаний и рекламных клише. В карточке можно показать сценарий использования, категорию "${category}", ключевые преимущества и короткие подписи для инфографики. Такой текст удобно использовать как основу для публикации на ${marketplace}, теста рекламного креатива или дальнейшей ручной доработки продавцом.`;
+  const fullDescription = `${productLabel} помогает быстро закрыть повседневную задачу и понятен покупателю с первого знакомства. ${input.productDescription}. ${input.useCase ? `Подходит для сценария: ${input.useCase}.` : "Подходит для дома, работы, поездок или подарка в зависимости от задачи."} ${input.packageContents ? `Комплектация: ${input.packageContents}.` : ""} ${input.material ? `Материал: ${input.material}.` : ""} ${input.color ? `Цвет: ${input.color}.` : ""}`.trim();
 
-  return {
+  return sanitizeProductCardResult({
     id: crypto.randomUUID(),
     title: buildMarketplaceTitle(productLabel, category),
-    shortDescription: `${productLabel}: понятное описание, выгоды и SEO-фразы для карточки на ${marketplace}.`,
+    shortDescription: `${productLabel} для понятной задачи, ежедневного использования или подарка.`,
     fullDescription,
     benefits,
     characteristics,
-    keywords: input.includeSeo ? keywordSet(productName, category, marketplace) : keywordSet(productName, category, marketplace).slice(0, 6),
+    keywords: input.includeSeo ? keywordSet(productName, category) : keywordSet(productName, category).slice(0, 6),
     infographicTexts,
     marketplaceTips: MARKETPLACE_TIPS[marketplace] ?? MARKETPLACE_TIPS.Wildberries,
     visualConcept: `Готовая картинка 1:1 для первого фото на ${marketplace}: загруженный товар крупно занимает 60-75% кадра, фон в ${input.style.toLowerCase()} стиле, сверху короткий заголовок, рядом 2 выгоды и 3-4 инфографические плашки без мелкого текста.`,
@@ -100,11 +95,11 @@ export function buildFallbackCard(input: ProductCardInput): ProductCardResult {
     generatedAt: new Date().toISOString(),
     provider: "Smart fallback",
     isFallback: true
-  };
+  }, input);
 }
 
 function buildMarketplaceTitle(productLabel: string, category: string) {
-  const categoryTail = category === "Товары для маркетплейса" ? "" : `, ${category.toLowerCase()}`;
+  const categoryTail = category === "Другое" ? "" : `, ${category.toLowerCase()}`;
   return `${productLabel}${categoryTail}, для дома и подарка`.slice(0, 120);
 }
 
@@ -142,5 +137,5 @@ function getInfographicTexts(productName: string, category: string) {
   }
 
   const name = sentenceCase(productName).slice(0, 18);
-  return [name, "1:1 фото", "Главная выгода", "Для витрины"];
+  return [name, "Для дома", "В подарок", "Каждый день"];
 }

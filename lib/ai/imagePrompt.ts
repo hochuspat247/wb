@@ -61,7 +61,7 @@ function detectSafeCategory(productDescription: string, category: string): strin
     return "Аксессуары";
   }
 
-  return "Товары для маркетплейса";
+  return "Другое";
 }
 
 function buildHeadline(input: GenerateImageInput): string {
@@ -183,7 +183,7 @@ The image must look like an expensive, conversion-focused premium marketplace ad
 }
 
 export function buildPremiumMarketplaceImagePrompt(input: GenerateImageInput): string {
-  const productDescription = cleanText(input.productDescription) || "товар для маркетплейса";
+  const productDescription = cleanText(input.productDescription) || "товар";
   const category = detectSafeCategory(productDescription, input.category);
   const marketplace = cleanText(input.marketplace) || "Wildberries / Ozon / Avito";
   const style = cleanText(input.style) || "Премиальный";
@@ -192,18 +192,18 @@ export function buildPremiumMarketplaceImagePrompt(input: GenerateImageInput): s
   const designPreset = input.designPreset || "premium-marketplace";
 
   const benefits = listToLines(input.benefits, [
-    "Премиальная подача товара",
-    "Подходит для маркетплейсов",
-    "Акцент на выгодах покупателя",
-    "Готово для карточки товара",
-    "Визуально выделяет товар среди конкурентов",
+    "Удобно каждый день",
+    "Для дома и подарка",
+    "Понятная польза",
+    "Легко выбрать",
+    "Подходит под разные задачи",
   ]);
 
   const infographicTexts = listToLines(input.infographicTexts, [
     "Премиальный вид",
     "Для подарка",
-    "Готово к продаже",
-    "Стильная подача",
+    "Каждый день",
+    "Удобный формат",
   ]);
 
   const specs = characteristicsToLines(input.characteristics, [

@@ -19,7 +19,7 @@ export function detectCategory(description: string, category?: string) {
   const normalized = description.toLowerCase();
   const match = CATEGORY_RULES.find((rule) => rule.words.some((word) => normalized.includes(word)));
 
-  return match?.category ?? "Товары для маркетплейса";
+  return match?.category ?? "Другое";
 }
 
 export function extractProductName(description: string) {

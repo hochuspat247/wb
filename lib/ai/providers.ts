@@ -1,11 +1,13 @@
 import { GoogleGenAI } from "@google/genai";
 import { buildFallbackCard } from "@/lib/ai/fallback";
 import { buildCardPrompt } from "@/lib/ai/prompt";
+import { callGigaChatJson } from "@/lib/ai/gigachat";
 import { detectCategory } from "@/lib/category";
+import { sanitizeProductCardResult } from "@/lib/contentQuality";
 import type { ProductCardInput, ProductCardResult } from "@/types/product-card";
 
 type LlmResult = Omit<ProductCardResult, "id" | "category" | "marketplace" | "style" | "generatedAt" | "provider" | "isFallback">;
-type ProviderMode = "auto" | "gemini" | "ollama" | "openrouter" | "huggingface" | "fallback";
+type ProviderMode = "auto" | "gigachat" | "gemini" | "ollama" | "openrouter" | "huggingface" | "fallback";
 
 function safeParseJson(text: string): LlmResult {
   const cleaned = text
@@ -164,6 +166,10 @@ async function callGemini(prompt: string) {
 }
 
 async function tryProvider(provider: ProviderMode, prompt: string) {
+  if (provider === "gigachat") {
+    return { provider: "GigaChat", result: safeParseJson(await callGigaChatJson(prompt)) };
+  }
+
   if (provider === "gemini") {
     return { provider: "Gemini", result: await callGemini(prompt) };
   }
@@ -197,24 +203,28 @@ export async function generateProductCard(input: ProductCardInput): Promise<Prod
   const mode = (process.env.AI_PROVIDER || "auto").toLowerCase() as ProviderMode;
 
   if (mode === "fallback") {
-    return buildFallbackCard({ ...input, category });
+    return sanitizeProductCardResult(buildFallbackCard({ ...input, category }), input);
   }
 
   const queue: ProviderMode[] =
     mode === "auto"
-      ? ["gemini", "ollama", "openrouter", "huggingface"]
-      : mode === "gemini" || mode === "ollama" || mode === "openrouter" || mode === "huggingface"
+      ? ["gigachat", "gemini", "ollama", "openrouter", "huggingface"]
+      : mode === "gigachat" ||
+          mode === "gemini" ||
+          mode === "ollama" ||
+          mode === "openrouter" ||
+          mode === "huggingface"
         ? [mode]
-        : ["gemini", "ollama", "openrouter", "huggingface"];
+        : ["gigachat", "gemini", "ollama", "openrouter", "huggingface"];
 
   for (const provider of queue) {
     try {
       const response = await tryProvider(provider, prompt);
-      return withMeta(response.result, input, category, response.provider);
+      return sanitizeProductCardResult(withMeta(response.result, input, category, response.provider), input);
     } catch (error) {
       console.warn(`[MarketCard AI] ${provider} unavailable: ${getProviderErrorMessage(error)}`);
     }
   }
 
-  return buildFallbackCard({ ...input, category });
+  return sanitizeProductCardResult(buildFallbackCard({ ...input, category }), input);
 }

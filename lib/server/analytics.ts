@@ -203,6 +203,24 @@ export async function getAdminAnalytics(pathFilter = "/") {
     []
   );
 
+  const recentCards = await safeAnalyticsQuery(
+    "recent cards",
+    db
+      .select({
+        id: productCards.id,
+        userId: productCards.userId,
+        payload: productCards.payload,
+        createdAt: productCards.createdAt,
+        userName: users.name,
+        userEmail: users.email
+      })
+      .from(productCards)
+      .leftJoin(users, eq(productCards.userId, users.id))
+      .orderBy(desc(productCards.createdAt))
+      .limit(20),
+    []
+  );
+
   return {
     overview: {
       users: userCount?.value ?? 0,
@@ -231,6 +249,18 @@ export async function getAdminAnalytics(pathFilter = "/") {
       generationsUsed: user.generationsUsed,
       generationCredits: user.generationCredits,
       createdAt: user.createdAt
+    })),
+    recentCards: recentCards.map((row) => ({
+      id: row.id,
+      userId: row.userId,
+      userName: row.userName,
+      userEmail: row.userEmail,
+      title: row.payload.title,
+      marketplace: row.payload.marketplace,
+      style: row.payload.style,
+      category: row.payload.category,
+      generatedAt: row.payload.generatedAt,
+      createdAt: row.createdAt
     })),
     trackedFunnelEvents: funnelNames
   };

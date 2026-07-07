@@ -293,7 +293,16 @@ export function CardGenerator({
         headline: headline.trim() || undefined,
         price: price.trim() || undefined,
         ctaText: ctaText.trim() || undefined,
-        designPreset
+        designPreset,
+        sourceInput: {
+          ...payload,
+          headline: headline.trim() || undefined,
+          price: price.trim() || undefined,
+          ctaText: ctaText.trim() || undefined,
+          designPreset,
+          imageMode,
+          removeBackground
+        }
       };
       setCard(generatedCard);
       setNotice("Создаём обложку…");

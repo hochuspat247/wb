@@ -26,6 +26,15 @@ export type ProductCardInput = {
   price?: string;
 };
 
+export type ProductCardSourceInput = ProductCardInput & {
+  headline?: string;
+  price?: string;
+  ctaText?: string;
+  designPreset?: ImageDesignPreset;
+  imageMode?: ImageGenerationMode;
+  removeBackground?: boolean;
+};
+
 export type ProductCharacteristic = {
   key: string;
   value: string;
@@ -69,6 +78,7 @@ export type ProductCardResult = {
   platform?: MarketplacePlatform;
   textMode?: MarketplaceTextMode;
   marketplaceText?: MarketplaceTextResult;
+  sourceInput?: ProductCardSourceInput;
 };
 
 export type AiProviderName = "Gemini" | "Ollama" | "OpenRouter" | "Hugging Face" | "Smart fallback";

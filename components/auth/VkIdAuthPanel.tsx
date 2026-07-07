@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { VkIdOAuthList } from "@/components/auth/VkIdOAuthList";
-import { VkIdWidget } from "@/components/auth/VkIdWidget";
 import { storeVkCallbackUrl } from "@/lib/auth/vk-id-client";
 
 type VkIdAuthPanelProps = {
@@ -18,10 +17,5 @@ export function VkIdAuthPanel({ callbackUrl = "/cabinet" }: VkIdAuthPanelProps) 
     return null;
   }
 
-  return (
-    <div className="grid gap-3">
-      <VkIdOAuthList callbackUrl={callbackUrl} />
-      <VkIdWidget callbackUrl={callbackUrl} />
-    </div>
-  );
+  return <VkIdOAuthList callbackUrl={callbackUrl} />;
 }

@@ -73,6 +73,19 @@ export const productCards = sqliteTable("product_card", {
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull()
 });
 
+export const demoGenerations = sqliteTable("demo_generation", {
+  id: text("id").primaryKey(),
+  guestId: text("guestId").notNull(),
+  userId: text("userId").references(() => users.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("done"),
+  payload: text("payload", { mode: "json" }).$type<ProductCardResult>().notNull(),
+  originalImageBase64: text("originalImageBase64").notNull(),
+  originalImageMimeType: text("originalImageMimeType").notNull(),
+  previewImageBase64: text("previewImageBase64").notNull(),
+  previewImageMimeType: text("previewImageMimeType").notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull()
+});
+
 export const analyticsEvents = sqliteTable("analytics_event", {
   id: text("id")
     .primaryKey()
@@ -92,6 +105,23 @@ export const analyticsEvents = sqliteTable("analytics_event", {
   createdAt: integer("createdAt", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date())
+});
+
+export const visitorPresence = sqliteTable("visitor_presence", {
+  sessionId: text("sessionId").primaryKey(),
+  userId: text("userId"),
+  guestId: text("guestId"),
+  path: text("path").notNull(),
+  pathLabel: text("pathLabel"),
+  section: text("section"),
+  sectionLabel: text("sectionLabel"),
+  lastAction: text("lastAction"),
+  lastActionLabel: text("lastActionLabel"),
+  referrer: text("referrer"),
+  isAuthed: integer("isAuthed", { mode: "boolean" }).notNull().default(false),
+  isVisible: integer("isVisible", { mode: "boolean" }).notNull().default(true),
+  firstSeenAt: integer("firstSeenAt", { mode: "timestamp_ms" }).notNull(),
+  lastSeenAt: integer("lastSeenAt", { mode: "timestamp_ms" }).notNull()
 });
 
 export const payments = sqliteTable("payment", {

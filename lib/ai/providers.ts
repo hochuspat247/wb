@@ -3,7 +3,7 @@ import { buildFallbackCard } from "@/lib/ai/fallback";
 import { buildCardPrompt } from "@/lib/ai/prompt";
 import { callGigaChatJson } from "@/lib/ai/gigachat";
 import { detectCategory } from "@/lib/category";
-import { sanitizeProductCardResult } from "@/lib/contentQuality";
+import { sanitizeProductCardResult, validateProductCardResultText } from "@/lib/contentQuality";
 import { extractJsonObject } from "@/lib/json";
 import type { ProductCardInput, ProductCardResult } from "@/types/product-card";
 
@@ -213,11 +213,35 @@ export async function generateProductCard(input: ProductCardInput): Promise<Prod
         : ["gigachat", "gemini", "ollama", "openrouter", "huggingface"];
 
   for (const provider of queue) {
-    try {
-      const response = await tryProvider(provider, prompt);
-      return sanitizeProductCardResult(withMeta(response.result, input, category, response.provider), input);
-    } catch (error) {
-      console.warn(`[MarketCard AI] ${provider} unavailable: ${getProviderErrorMessage(error)}`);
+    let attemptPrompt = prompt;
+
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        const response = await tryProvider(provider, attemptPrompt);
+        const card = sanitizeProductCardResult(withMeta(response.result, input, category, response.provider), input);
+        const validation = validateProductCardResultText(card);
+
+        if (validation.isValid) {
+          return card;
+        }
+
+        console.warn(
+          `[MarketCard AI] ${provider} returned low-quality card text on attempt ${attempt}: ${validation.problems.join("; ")}`
+        );
+
+        attemptPrompt = `${prompt}
+
+QUALITY FIX REQUIRED:
+The previous JSON used service, prompt-like, or irrelevant phrases:
+${validation.problems.map((problem) => `- ${problem}`).join("\n")}
+
+Regenerate the JSON from scratch. Write only buyer-facing product content.
+Do not mention prompts, generation, marketplaces as service context, card design, SEO process, text creation, or AI.
+Every benefit must describe the product itself, its use case, material, package, feature, comfort, or practical value.`;
+      } catch (error) {
+        console.warn(`[MarketCard AI] ${provider} unavailable: ${getProviderErrorMessage(error)}`);
+        break;
+      }
     }
   }
 

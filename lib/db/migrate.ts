@@ -48,6 +48,22 @@ export function migrate(sqlite: Database.Database) {
     );
 
     CREATE INDEX IF NOT EXISTS product_card_user_idx ON product_card(userId);
+
+    CREATE TABLE IF NOT EXISTS demo_generation (
+      id TEXT PRIMARY KEY NOT NULL,
+      guestId TEXT NOT NULL,
+      userId TEXT REFERENCES user(id) ON DELETE CASCADE,
+      status TEXT NOT NULL DEFAULT 'done',
+      payload TEXT NOT NULL,
+      originalImageBase64 TEXT NOT NULL,
+      originalImageMimeType TEXT NOT NULL,
+      previewImageBase64 TEXT NOT NULL,
+      previewImageMimeType TEXT NOT NULL,
+      createdAt INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS demo_generation_guest_idx ON demo_generation(guestId);
+    CREATE INDEX IF NOT EXISTS demo_generation_user_idx ON demo_generation(userId);
   `);
 
   try {
@@ -82,6 +98,27 @@ export function migrate(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS analytics_event_path_idx ON analytics_event(path);
     CREATE INDEX IF NOT EXISTS analytics_event_type_idx ON analytics_event(eventType);
     CREATE INDEX IF NOT EXISTS analytics_event_created_idx ON analytics_event(createdAt);
+  `);
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS visitor_presence (
+      sessionId TEXT PRIMARY KEY NOT NULL,
+      userId TEXT,
+      guestId TEXT,
+      path TEXT NOT NULL,
+      pathLabel TEXT,
+      section TEXT,
+      sectionLabel TEXT,
+      lastAction TEXT,
+      lastActionLabel TEXT,
+      referrer TEXT,
+      isAuthed INTEGER NOT NULL DEFAULT 0,
+      isVisible INTEGER NOT NULL DEFAULT 1,
+      firstSeenAt INTEGER NOT NULL,
+      lastSeenAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS visitor_presence_last_seen_idx ON visitor_presence(lastSeenAt);
+    CREATE INDEX IF NOT EXISTS visitor_presence_section_idx ON visitor_presence(section);
   `);
 
   sqlite.exec(`

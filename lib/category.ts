@@ -1,4 +1,19 @@
 const CATEGORY_RULES: Array<{ category: string; words: string[] }> = [
+  {
+    category: "\u0412\u043e\u0434\u043d\u044b\u0439 \u0442\u0440\u0430\u043d\u0441\u043f\u043e\u0440\u0442",
+    words: [
+      "boat",
+      "yacht",
+      "marine",
+      "\u043a\u0430\u0442\u0435\u0440",
+      "\u043b\u043e\u0434\u043a",
+      "\u044f\u0445\u0442",
+      "\u0441\u0443\u0434\u043d",
+      "\u0432\u043e\u0434\u043d",
+      "\u043f\u0440\u0438\u0447\u0430\u043b",
+      "\u043f\u0440\u043e\u0433\u0443\u043b\u043e\u0447"
+    ]
+  },
   { category: "Декор и интерьер", words: ["статуэт", "декор", "ваза", "свеч", "картина", "постер", "фигур"] },
   { category: "Электроника", words: ["наушник", "колонк", "заряд", "кабель", "смартфон", "лампа", "гаджет"] },
   { category: "Аксессуары", words: ["косметич", "сумк", "кошелек", "ремень", "чехол", "органайзер"] },
@@ -10,6 +25,8 @@ const CATEGORY_RULES: Array<{ category: string; words: string[] }> = [
 ];
 
 const PRODUCT_PATTERNS: Array<{ pattern: RegExp; name: string }> = [
+  { pattern: /(\u043a\u0430\u0442\u0435\u0440|boat)/i, name: "\u043a\u0430\u0442\u0435\u0440" },
+  { pattern: /(\u043b\u043e\u0434\u043a|yacht|\u044f\u0445\u0442)/i, name: "\u0432\u043e\u0434\u043d\u044b\u0439 \u0442\u0440\u0430\u043d\u0441\u043f\u043e\u0440\u0442" },
   { pattern: /органайзер/i, name: "органайзер" },
   { pattern: /косметичк/i, name: "косметичка" },
   { pattern: /наушник/i, name: "наушники" },

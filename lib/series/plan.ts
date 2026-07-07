@@ -43,6 +43,29 @@ export function getSeriesTypeOrder(count: CardSeriesCount, category: string) {
     return ["hero", "material", "fit", "sizes", "styling", "details", "care", "colors", "review", "final_cta"];
   }
 
+  if (/boat|yacht|marine|\u043a\u0430\u0442\u0435\u0440|\u043b\u043e\u0434\u043a|\u044f\u0445\u0442|\u0441\u0443\u0434\u043d|\u0432\u043e\u0434\u043d|\u043f\u0440\u043e\u0433\u0443\u043b\u043e\u0447/.test(normalizedCategory)) {
+    const waterTransport: Record<CardSeriesCount, string[]> = {
+      1: ["hero"],
+      3: ["hero", "benefits", "use_cases"],
+      5: ["hero", "benefits", "use_cases", "features", "dimensions"],
+      7: ["hero", "benefits", "use_cases", "features", "dimensions", "safety", "package"],
+      10: [
+        "hero",
+        "benefits",
+        "use_cases",
+        "features",
+        "dimensions",
+        "safety",
+        "package",
+        "comparison",
+        "assortment",
+        "final_cta"
+      ]
+    };
+
+    return waterTransport[count];
+  }
+
   return base[count];
 }
 

@@ -1,4 +1,5 @@
 export const FREE_TRIAL_CARDS = 3;
+export const VIDEO_GENERATION_PRICE_RUB = 50;
 
 export type GenerationPackage = {
   id: string;

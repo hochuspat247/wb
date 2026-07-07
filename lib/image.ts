@@ -1,17 +1,22 @@
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const DEFAULT_MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const HERO_MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
-export function validateImageFile(file: File) {
-  if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    return "Изображение слишком большое. Загрузите файл до 5 МБ.";
+export function validateImageFile(file: File, maxSizeBytes = DEFAULT_MAX_IMAGE_SIZE_BYTES) {
+  const maxSizeMb = Math.round(maxSizeBytes / (1024 * 1024));
+
+  if (file.size > maxSizeBytes) {
+    return `Изображение слишком большое. Загрузите файл до ${maxSizeMb} МБ.`;
   }
 
   if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
-    return "Поддерживаются только image/jpeg, image/png и image/webp.";
+    return "Поддерживаются только JPG и PNG.";
   }
 
   return null;
 }
+
+export const HERO_IMAGE_MAX_BYTES = HERO_MAX_IMAGE_SIZE_BYTES;
 
 export function fileToBase64(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -121,4 +126,36 @@ export async function downloadImageFromUrl(imageUrl: string, fileName: string) {
   } catch {
     window.open(imageUrl, "_blank", "noopener,noreferrer");
   }
+}
+
+export function resizeImageToDataUrl(file: File, maxSize = 1400) {
+  return new Promise<string>((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = () => {
+      const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+      const width = Math.max(1, Math.round(img.width * scale));
+      const height = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error("Canvas is not available"));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(objectUrl);
+      resolve(canvas.toDataURL("image/jpeg", 0.9));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Не удалось прочитать изображение."));
+    };
+    img.src = objectUrl;
+  });
 }

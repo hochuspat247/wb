@@ -33,14 +33,14 @@ export function CompareSection() {
                   </div>
                 ))}
               </div>
-              {rows.map((row) => (
+              {rows.map((row, rowIndex) => (
                 <div className="grid grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_1.05fr] border-b border-clay last:border-b-0" key={row[0]}>
                   {row.map((cell, index) => (
                     <div
                       className={`min-h-16 p-4 text-sm font-semibold md:p-5 ${
                         index === 0 ? "text-ink" : index === 4 ? "bg-white/[0.055] text-ink" : "text-muted"
                       }`}
-                      key={`${row[0]}-${cell}`}
+                      key={`${rowIndex}-${index}`}
                     >
                       {index === 4 ? <span className="text-mint">{cell}</span> : cell}
                     </div>

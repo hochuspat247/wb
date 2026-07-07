@@ -50,9 +50,7 @@ export function LoginForm() {
     <div className="flex min-h-screen items-center justify-center bg-paper px-5 py-12">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <Link className="inline-flex" href="/">
-            <Logo />
-          </Link>
+          <Logo />
           <h1 className="mt-6 text-3xl font-black text-ink">Вход в аккаунт</h1>
           <p className="mt-2 text-muted">Создавайте и храните карточки в личном кабинете</p>
         </div>

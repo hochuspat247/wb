@@ -97,6 +97,16 @@ export type ProductCardResult = {
   generatedImagePrompt?: string;
   generatedImageIsFallback?: boolean;
   generatedImageError?: string;
+  generatedVideoUrl?: string | null;
+  generatedVideoTaskId?: string;
+  generatedVideoProvider?: string;
+  generatedVideoModel?: string;
+  generatedVideoPrompt?: string;
+  generatedVideoStatus?: string;
+  generatedVideoStatusMessage?: string;
+  generatedVideoDurationSeconds?: number;
+  generatedVideoPriceRub?: number;
+  generatedVideoIsFree?: boolean;
   bananasSpent?: number;
   usedCoupon?: boolean;
   generationId?: string;
@@ -184,4 +194,33 @@ export type GenerateImageResult = {
   usedCoupon?: boolean;
   generationId?: string;
   seed?: number;
+};
+
+export type GenerateVideoInput = {
+  productDescription?: string;
+  title?: string;
+  style?: string;
+  marketplace?: string;
+  prompt?: string;
+  negativePrompt?: string;
+  imageBase64?: string;
+  imageMimeType?: string;
+  imageUrl?: string;
+  aspectRatio?: "16:9" | "9:16" | "1:1";
+  model?: string;
+  mode?: string;
+};
+
+export type GenerateVideoResult = {
+  taskId: string;
+  status: string;
+  statusMessage?: string;
+  videoUrl: string | null;
+  durationSeconds: number;
+  provider: string;
+  model: string;
+  prompt: string;
+  generatedAt: string;
+  priceRub: number;
+  isFree?: boolean;
 };

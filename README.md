@@ -85,9 +85,31 @@ NANOBANANA_EXPERT_MODEL=nb2
 NANOBANANA_EXPERT_PROVIDER=auto
 NANOBANANA_EXPERT_RESOLUTION=1k
 NANOBANANA_EXPERT_ASPECT_RATIO=4:5
+
+KLING_ACCESS_KEY=
+KLING_SECRET_KEY=
+KLING_BASE_URL=https://api-singapore.klingai.com
+KLING_VIDEO_MODEL=kling-v1-6
+KLING_VIDEO_MODE=std
 ```
 
 Секретные ключи храните только в `.env.local`. Не добавляйте реальные ключи в `.env.example`.
+
+## Kling video
+
+Видео создаётся через Kling AI Open Platform. Длительность зафиксирована на 5 секунд, цена одной video-генерации в интерфейсе и API — 50 ₽. Для пользователей из `UNLIMITED_GENERATION_NAMES` или `UNLIMITED_GENERATION_EMAILS` видео бесплатно.
+
+Для включения добавьте в `.env.local`:
+
+```env
+KLING_ACCESS_KEY=
+KLING_SECRET_KEY=
+KLING_BASE_URL=https://api-singapore.klingai.com
+KLING_VIDEO_MODEL=kling-v1-6
+KLING_VIDEO_MODE=std
+```
+
+Endpoint приложения: `POST /api/generate-video`. Он создаёт задачу Kling `image2video`, если передано изображение, иначе `text2video`, и возвращает `videoUrl` либо `taskId` для повторной проверки.
 
 ## Как подключить NanoBanana Expert
 

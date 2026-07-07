@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart3, Eye, LogOut, MousePointerClick, RefreshCw, Users, X } from "lucide-react";
+import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Loader } from "@/components/ui/Loader";
@@ -459,6 +460,8 @@ export function AdminDashboard() {
             </div>
           </Card>
         </div>
+
+        <LiveVisitorsPanel />
 
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <Card padding="lg">

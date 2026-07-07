@@ -3,16 +3,11 @@
 import { useCallback, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-
-const SESSION_KEY = "mc_analytics_session";
+import { getAnalyticsSessionId } from "@/lib/analytics/session";
+import { recordPresenceAction } from "@/lib/presence/client-state";
 
 function getSessionId() {
-  if (typeof window === "undefined") return "server";
-  const existing = window.localStorage.getItem(SESSION_KEY);
-  if (existing) return existing;
-  const next = crypto.randomUUID();
-  window.localStorage.setItem(SESSION_KEY, next);
-  return next;
+  return getAnalyticsSessionId();
 }
 
 type TrackPayload = {
@@ -80,6 +75,9 @@ export function AnalyticsTracker() {
       clickable.getAttribute("aria-label") ||
       clickable.textContent?.trim().slice(0, 80) ||
       clickable.tagName.toLowerCase();
+
+    const eventName = clickable.tagName === "A" ? "link_click" : "ui_click";
+    recordPresenceAction(eventName, label);
 
     const xPercent = Math.round((event.clientX / window.innerWidth) * 100);
     const yPercent = Math.round((event.clientY / document.documentElement.scrollHeight) * 100);

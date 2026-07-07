@@ -19,12 +19,13 @@ export function VkIdOAuthList({ callbackUrl = "/cabinet" }: VkIdOAuthListProps) 
       return;
     }
 
+    const container = containerRef.current;
     const oAuth = new VKID.OAuthList();
 
     oAuth
       .render({
-        container: containerRef.current,
-        oauthList: [VKID.OAuthName.VK]
+        container,
+        oauthList: [VKID.OAuthName.VK, VKID.OAuthName.MAIL]
       })
       .on(VKID.WidgetEvents.ERROR, (vkError: unknown) => {
         console.error(vkError);
@@ -41,7 +42,7 @@ export function VkIdOAuthList({ callbackUrl = "/cabinet" }: VkIdOAuthListProps) 
       });
 
     return () => {
-      containerRef.current?.replaceChildren();
+      container.replaceChildren();
     };
   }, [callbackUrl, signInWithVk]);
 

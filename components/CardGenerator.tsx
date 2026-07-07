@@ -1,12 +1,14 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Archive, Download, FileImage, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Wand2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Archive, Download, FileImage, Film, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Video, Wand2 } from "lucide-react";
 import { CardEditPanel } from "@/components/CardEditPanel";
 import { GeneratedCardPreview } from "@/components/GeneratedCardPreview";
 import { HistorySection } from "@/components/HistorySection";
 import { PaywallModal } from "@/components/PaywallModal";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
+import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 import { ResultPanel } from "@/components/ResultPanel";
 import { SeriesTypePicker } from "@/components/SeriesTypePicker";
 import { Alert } from "@/components/ui/Alert";
@@ -18,6 +20,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { getImageSettings } from "@/lib/imageSettings";
 import { detectCategory } from "@/lib/category";
+import { VIDEO_GENERATION_PRICE_RUB } from "@/lib/pricing";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
 import {
@@ -32,6 +35,7 @@ import {
 } from "@/lib/image";
 import { clearHistory, getHistory, removeFromHistory, saveToHistory } from "@/lib/storage";
 import { fetchUserQuota, saveUserCardRemote } from "@/lib/api/user";
+import { getOrCreateGuestId } from "@/lib/guest";
 import { reachGoal } from "@/lib/metrika";
 import { buildPreviousCardSnapshot } from "@/lib/series/editing";
 import {
@@ -44,6 +48,7 @@ import {
 } from "@/lib/series/plan";
 import type {
   GenerateImageResult,
+  GenerateVideoResult,
   CardSeriesCount,
   CardSeriesPlanItem,
   ImageDesignPreset,
@@ -56,6 +61,18 @@ import type { MarketplaceTextMode } from "@/types/marketplace";
 const marketplaces = ["Wildberries", "Ozon", "Avito", "Яндекс Маркет"];
 const styles = ["Минималистичный", "Премиальный", "Яркий", "Нежный", "Технологичный"];
 const cardCountOptions: CardSeriesCount[] = [1, 3, 5, 7, 10];
+const DEMO_MIN_LOADING_MS = 20_000;
+const DEMO_LOADING_STATUSES = [
+  "Загружаем фото",
+  "Определяем товар",
+  "Подбираем стиль и фон",
+  "Формируем текст и акценты",
+  "Собираем карточку",
+  "Наносим демо-метку",
+  "Проверяем результат",
+  "Осталось чуть-чуть",
+  "Делаем последние штрихи"
+];
 
 const designPresets: Array<{ label: string; value: ImageDesignPreset }> = [
   { label: "Premium Marketplace", value: "premium-marketplace" },
@@ -82,15 +99,18 @@ export function CardGenerator({
   onQuotaChange,
   embedded = false,
   persistToServer = false,
-  darkConsole = false
+  darkConsole = false,
+  compactDemoEntry = false
 }: {
   hideHistory?: boolean;
   onSaved?: () => void;
-  onQuotaChange?: (quota: { remaining: number; used: number; credits: number }) => void;
+  onQuotaChange?: (quota: { remaining: number; used: number; credits: number; unlimited?: boolean }) => void;
   embedded?: boolean;
   persistToServer?: boolean;
   darkConsole?: boolean;
+  compactDemoEntry?: boolean;
 }) {
+  const router = useRouter();
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [marketplace, setMarketplace] = useState("Wildberries");
@@ -130,9 +150,16 @@ export function CardGenerator({
   const [renderedImageUrl, setRenderedImageUrl] = useState("");
   const [isRenderingImage, setIsRenderingImage] = useState(false);
   const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoError, setVideoError] = useState("");
   const [showPaywall, setShowPaywall] = useState(false);
   const [remainingGenerations, setRemainingGenerations] = useState<number | null>(null);
+  const [hasUnlimitedAccess, setHasUnlimitedAccess] = useState(false);
+  const [demoStatusIndex, setDemoStatusIndex] = useState(0);
+  const [demoProgress, setDemoProgress] = useState(0);
+  const [isDemoGenerating, setIsDemoGenerating] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const descriptionTrackedRef = useRef(false);
 
   useEffect(() => {
     if (!persistToServer) return;
@@ -140,10 +167,29 @@ export function CardGenerator({
     fetchUserQuota()
       .then((quota) => {
         setRemainingGenerations(quota.remaining);
+        setHasUnlimitedAccess(Boolean(quota.unlimited));
         onQuotaChange?.(quota);
       })
       .catch(() => setRemainingGenerations(null));
   }, [persistToServer, onQuotaChange]);
+
+  useEffect(() => {
+    if (!isDemoGenerating) {
+      return;
+    }
+
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const progress = Math.min(95, Math.round((elapsed / 55_000) * 95));
+      const statusIndex = Math.min(DEMO_LOADING_STATUSES.length - 1, Math.floor(elapsed / 5_500));
+
+      setDemoProgress(progress);
+      setDemoStatusIndex(statusIndex);
+    }, 450);
+
+    return () => window.clearInterval(timer);
+  }, [isDemoGenerating]);
 
   const effectiveCategory = useMemo(() => detectCategory(description, category), [category, description]);
 
@@ -241,6 +287,19 @@ export function CardGenerator({
     });
     const dataUrl = await resizeImageToDataUrl(file);
     setImageUrl(dataUrl);
+    trackMarketingEvent("photo_uploaded", {
+      fileType: file.type,
+      fileSize: file.size
+    });
+  }
+
+  function handleDescriptionChange(value: string) {
+    setDescription(value);
+
+    if (!descriptionTrackedRef.current && value.trim().length >= 3) {
+      descriptionTrackedRef.current = true;
+      trackMarketingEvent("description_filled");
+    }
   }
 
   async function handleBackgroundRemoval() {
@@ -363,6 +422,7 @@ export function CardGenerator({
     event.preventDefault();
     setError("");
     setNotice("");
+    setVideoError("");
     setSeriesProgress("");
 
     if (!description.trim()) {
@@ -419,6 +479,11 @@ export function CardGenerator({
       oldPrice: oldPrice.trim() || undefined,
       discount: discount.trim() || undefined
     };
+
+    if (!persistToServer) {
+      await handleDemoSubmit(payload);
+      return;
+    }
 
     try {
       if (cardsCount === 1) {
@@ -502,8 +567,66 @@ export function CardGenerator({
     }
   }
 
+  async function handleDemoSubmit(payload: ProductCardInput) {
+    const startedAt = Date.now();
+    trackMarketingEvent("demo_generation_started", {
+      marketplace,
+      hasImage: Boolean(imageUrl)
+    });
+    setIsDemoGenerating(true);
+    setIsLoading(true);
+    setDemoProgress(0);
+    setDemoStatusIndex(0);
+    setCard(null);
+    setSeriesCards([]);
+
+    try {
+      const image = dataUrlToBase64(imageUrl);
+      const guestId = getOrCreateGuestId();
+      const response = await fetch("/api/generations/demo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          guestId,
+          cardInput: {
+            ...payload,
+            cardsCount: 1
+          },
+          imageBase64: image.base64,
+          imageMimeType: image.mimeType,
+          imageProvider: getImageSettings().imageProvider,
+          imageMode,
+          headline: headline.trim() || undefined,
+          price: price.trim() || undefined,
+          ctaText: ctaText.trim() || undefined,
+          designPreset
+        })
+      });
+      const data = (await response.json()) as { id?: string; error?: string };
+
+      if (!response.ok || !data.id) {
+        throw new Error(data.error || "Не получилось создать карточку. Попробуйте ещё раз или загрузите другое фото.");
+      }
+
+      const remainingDelay = Math.max(0, DEMO_MIN_LOADING_MS - (Date.now() - startedAt));
+      await wait(remainingDelay);
+      setDemoProgress(100);
+      trackMarketingEvent("demo_generation_completed", {
+        marketplace,
+        generationId: data.id
+      });
+      router.push(`/generations/${data.id}?guestId=${encodeURIComponent(guestId)}`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Не получилось создать карточку. Попробуйте ещё раз или загрузите другое фото.");
+      setIsDemoGenerating(false);
+      setIsLoading(false);
+      setDemoProgress(0);
+    }
+  }
+
   function handleClear() {
     setDescription("");
+    descriptionTrackedRef.current = false;
     setCategory("");
     setMarketplace("Wildberries");
     setTextMode("marketplace_safe");
@@ -538,6 +661,7 @@ export function CardGenerator({
     setRenderedImageUrl("");
     setError("");
     setNotice("");
+    setVideoError("");
   }
 
   async function persistGeneratedCard(cardToSave: ProductCardResult, options: { silent?: boolean } = {}) {
@@ -908,40 +1032,199 @@ export function CardGenerator({
     }
   }
 
+  function getVideoSource(cardForVideo: ProductCardResult) {
+    if (cardForVideo.generatedImageBase64 && cardForVideo.generatedImageMimeType) {
+      return {
+        imageBase64: cardForVideo.generatedImageBase64,
+        imageMimeType: cardForVideo.generatedImageMimeType
+      };
+    }
+
+    if (cardForVideo.generatedImageDataUrl) {
+      const image = dataUrlToBase64(cardForVideo.generatedImageDataUrl);
+      return {
+        imageBase64: image.base64,
+        imageMimeType: image.mimeType
+      };
+    }
+
+    if (cardForVideo.generatedImageUrl) {
+      return { imageUrl: cardForVideo.generatedImageUrl };
+    }
+
+    const sourceImage = imageUrl || cardForVideo.imageDataUrl;
+
+    if (sourceImage) {
+      const image = dataUrlToBase64(sourceImage);
+      return {
+        imageBase64: image.base64,
+        imageMimeType: image.mimeType
+      };
+    }
+
+    return {};
+  }
+
+  async function handleGenerateVideo() {
+    if (!card) {
+      return;
+    }
+
+    setIsGeneratingVideo(true);
+    setVideoError("");
+    setNotice(
+      card.generatedVideoTaskId && !card.generatedVideoUrl
+        ? "Проверяем статус видео Kling…"
+        : "Создаём 5-секундное видео Kling…"
+    );
+
+    try {
+      const source = getVideoSource(card);
+      const response = await fetch("/api/generate-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          card.generatedVideoTaskId && !card.generatedVideoUrl
+            ? {
+                taskId: card.generatedVideoTaskId,
+                taskType: ("imageUrl" in source && source.imageUrl) || ("imageBase64" in source && source.imageBase64) ? "image2video" : "text2video",
+                prompt: card.generatedVideoPrompt
+              }
+            : {
+                productDescription: description || card.fullDescription || card.shortDescription,
+                title: card.title,
+                style,
+                marketplace,
+                prompt: `${card.visualConcept}\n5-second vertical marketplace product video. Show the product clearly, premium lighting, smooth camera movement.`,
+                aspectRatio: "9:16",
+                ...source
+              }
+        )
+      });
+      const data = (await response.json()) as GenerateVideoResult & { error?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error || "Не удалось создать видео.");
+      }
+
+      const updatedCard: ProductCardResult = {
+        ...card,
+        generatedVideoUrl: data.videoUrl,
+        generatedVideoTaskId: data.taskId,
+        generatedVideoProvider: data.provider,
+        generatedVideoModel: data.model,
+        generatedVideoPrompt: data.prompt,
+        generatedVideoStatus: data.status,
+        generatedVideoStatusMessage: data.statusMessage,
+        generatedVideoDurationSeconds: data.durationSeconds,
+        generatedVideoPriceRub: data.priceRub,
+        generatedVideoIsFree: Boolean(data.isFree || data.priceRub === 0)
+      };
+
+      setCard(updatedCard);
+      await persistGeneratedCard(updatedCard, { silent: true });
+
+      if (data.videoUrl) {
+        setNotice("Видео готово. Его можно скачать или использовать в карточке товара.");
+      } else {
+        setNotice("Видео ещё генерируется. Нажмите «Проверить видео» через минуту.");
+      }
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Не удалось создать видео.";
+      setVideoError(message);
+      setNotice("");
+    } finally {
+      setIsGeneratingVideo(false);
+    }
+  }
+
   const aiImageUrl = card ? getGeneratedCoverSrc(card) : null;
 
   const hasAiCover = Boolean(card && !isGeneratingAiImage && hasGeneratedAiCover(card));
+  const videoPriceRub = hasUnlimitedAccess ? 0 : card?.generatedVideoPriceRub ?? VIDEO_GENERATION_PRICE_RUB;
+  const videoPriceLabel = videoPriceRub === 0 ? "Бесплатно" : `${VIDEO_GENERATION_PRICE_RUB} ₽`;
 
-  const isWorking = isLoading || isGeneratingAiImage || isRenderingImage;
+  const isWorking = isLoading || isGeneratingAiImage || isRenderingImage || isGeneratingVideo || isDemoGenerating;
   const labelClass = darkConsole ? "text-white/80" : "text-ink";
   const formClass = darkConsole
     ? "rounded-[22px] border border-white/10 bg-white/[0.06] p-5 md:p-6"
-    : "rounded-[22px] border border-clay bg-card p-5 md:p-6";
+    : compactDemoEntry
+      ? "rounded-[24px] border border-clay bg-card p-5 shadow-soft md:p-7"
+      : "rounded-[22px] border border-clay bg-card p-5 md:p-6";
   const panelClass = darkConsole
     ? "rounded-[22px] border border-white/10 bg-white/[0.06] p-5"
     : "rounded-[22px] border border-clay bg-card p-5";
+  const sectionClass = embedded ? "" : compactDemoEntry ? "relative scroll-mt-24 pb-12 pt-2 md:pb-16" : "relative py-24";
+  const shellClass = embedded ? undefined : compactDemoEntry ? "section-shell max-w-4xl" : "section-shell";
 
   const selectVariant = darkConsole ? "dark" : "default";
 
-  const showPreviewColumn = !embedded || Boolean(card) || isWorking;
+  const showPreviewColumn = !compactDemoEntry && (!embedded || Boolean(card) || isWorking);
+
+  if (isDemoGenerating) {
+    return (
+      <section className={sectionClass} id={embedded ? undefined : "demo"}>
+        <div className={shellClass}>
+          <div className={formClass}>
+            <div className="mx-auto max-w-2xl py-8 text-center md:py-16">
+              <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-full bg-accent/15 text-accent">
+                <Loader2 className="animate-spin" size={30} />
+              </div>
+              <h2 className={`text-3xl font-black md:text-5xl ${darkConsole ? "text-white" : "text-ink"}`}>
+                Создаём вашу карточку
+              </h2>
+              <p className={`mt-4 text-base font-semibold ${darkConsole ? "text-white/55" : "text-muted"}`}>
+                Обычно это занимает около минуты
+              </p>
+              <div className={`mt-8 overflow-hidden rounded-full ${darkConsole ? "bg-white/10" : "bg-ink/10"}`}>
+                <div
+                  className="h-3 rounded-full bg-accent transition-all duration-500"
+                  style={{ width: `${demoProgress}%` }}
+                />
+              </div>
+              <div className="mt-4 flex items-center justify-between text-sm font-bold">
+                <span className={darkConsole ? "text-white/70" : "text-muted"}>{DEMO_LOADING_STATUSES[demoStatusIndex]}</span>
+                <span className={darkConsole ? "text-mint" : "text-accent"}>{demoProgress}%</span>
+              </div>
+              {error ? (
+                <div className="mt-6">
+                  <Alert variant="error">{error}</Alert>
+                  <Button className="mt-4" onClick={() => setIsDemoGenerating(false)} type="button">
+                    Попробовать снова
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
-    <section className={embedded ? "" : "relative py-24"} id={embedded ? undefined : "demo"}>
+    <section className={sectionClass} id={embedded ? undefined : "demo"}>
       <PaywallModal onClose={() => setShowPaywall(false)} open={showPaywall} />
-      <div className={embedded ? undefined : "section-shell"}>
-        <div className={embedded ? "grid gap-8" : "relative z-10 grid gap-8 xl:grid-cols-[0.82fr_1.18fr]"}>
+      <div className={shellClass}>
+        <div className={embedded || compactDemoEntry ? "grid gap-8" : "relative z-10 grid gap-8 xl:grid-cols-[0.82fr_1.18fr]"}>
           <form className={formClass} onSubmit={handleSubmit}>
             <div className="grid gap-5">
               <div>
-                <p className={`text-sm font-semibold ${labelClass}`}>Товар</p>
+                <p className={`text-sm font-semibold ${labelClass}`}>
+                  {compactDemoEntry ? "Попробуйте на своём товаре" : "Товар"}
+                </p>
                 <p className={`mt-1 text-sm ${darkConsole ? "text-white/45" : "text-muted"}`}>
-                  Фото и описание
+                  {compactDemoEntry ? "Загрузите фото и добавьте короткое описание — демо запустится без входа." : "Фото и описание"}
                 </p>
               </div>
               <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                 <span>Фото товара</span>
                 <div className={`rounded-[18px] border border-dashed p-4 ${darkConsole ? "border-white/20 bg-white/5" : "border-clay bg-paper"}`}>
-                  <Input accept="image/*" onChange={(event) => handleImage(event.target.files?.[0])} type="file" />
+                  <Input
+                    accept="image/*"
+                    onClick={() => trackMarketingEvent("photo_upload_started")}
+                    onChange={(event) => handleImage(event.target.files?.[0])}
+                    type="file"
+                  />
                   <div className="mt-3 flex items-center gap-2 text-xs text-muted">
                     <ImageUp size={15} />
                     {imageFileName || "JPG или PNG, до 10 МБ"}
@@ -961,15 +1244,19 @@ export function CardGenerator({
               <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                 Описание товара
                 <Textarea
-                  onChange={(event) => setDescription(event.target.value)}
+                  onChange={(event) => handleDescriptionChange(event.target.value)}
                   placeholder="Например: беспроводные наушники с шумоподавлением, чёрные, с кейсом"
                   rows={3}
                   value={description}
                 />
               </label>
+              {!compactDemoEntry ? (
+              <>
+              {persistToServer ? (
               <div className={`border-t pt-5 ${darkConsole ? "border-white/10" : "border-clay"}`}>
                 <p className={`text-sm font-semibold ${labelClass}`}>Площадка и стиль</p>
               </div>
+              ) : null}
               <div className="grid gap-4 md:grid-cols-2">
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                   Категория
@@ -1190,6 +1477,8 @@ export function CardGenerator({
                   </Select>
                 </label>
               </div>
+              </>
+              ) : null}
               {error ? <Alert variant="error">{error}</Alert> : null}
               {notice ? <Alert variant="success">{notice}</Alert> : null}
               {persistToServer && remainingGenerations !== null ? (
@@ -1205,7 +1494,11 @@ export function CardGenerator({
               <div className={`flex flex-wrap gap-3 border-t pt-1 ${darkConsole ? "border-white/10" : "border-clay"}`}>
                 <Button disabled={isWorking || (persistToServer && remainingGenerations === 0)} type="submit">
                   {isWorking ? <Loader2 className="animate-spin" size={17} /> : <Wand2 size={17} />}
-                  {isWorking
+                  {compactDemoEntry
+                    ? isWorking
+                      ? "Генерируем демо…"
+                      : "Сгенерировать демо"
+                    : isWorking
                     ? plannedGenerationCount > 1
                       ? "Генерируем серию…"
                       : "Генерируем…"
@@ -1213,10 +1506,17 @@ export function CardGenerator({
                       ? `Сгенерировать ${plannedGenerationCount} карточек`
                       : "Сгенерировать карточку"}
                 </Button>
+                {compactDemoEntry ? null : (
                 <Button onClick={handleClear} type="button" variant="secondary">
                   <RotateCcw size={17} />
                   Очистить
                 </Button>
+                )}
+                {compactDemoEntry ? (
+                  <p className="w-full text-sm font-semibold leading-relaxed text-muted">
+                    1 демо-карточка без входа. Оригинал и дополнительные карточки доступны после авторизации.
+                  </p>
+                ) : null}
               </div>
             </div>
           </form>
@@ -1246,6 +1546,10 @@ export function CardGenerator({
                     <Button onClick={handleDownloadBestImage} variant="dark">
                       Скачать PNG
                     </Button>
+                    <Button disabled={isGeneratingVideo} onClick={handleGenerateVideo} type="button" variant="secondary">
+                      {isGeneratingVideo ? <Loader2 className="animate-spin" size={16} /> : <Video size={16} />}
+                      {card.generatedVideoTaskId && !card.generatedVideoUrl ? "Проверить видео" : `Видео 5 сек · ${videoPriceLabel}`}
+                    </Button>
                     <Button onClick={() => openCardEditor(card)} type="button" variant="secondary">
                       <Pencil size={16} />
                       Редактировать
@@ -1257,6 +1561,11 @@ export function CardGenerator({
                     <Alert variant="error">
                       NanoBanana не вернул AI-изображение: {card.generatedImageError}. Ниже показан fallback-preview.
                     </Alert>
+                  </div>
+                ) : null}
+                {videoError ? (
+                  <div className="mt-4">
+                    <Alert variant="error">Kling не вернул видео: {videoError}</Alert>
                   </div>
                 ) : null}
                 <div className={`mt-4 overflow-hidden rounded-card border ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
@@ -1285,6 +1594,44 @@ export function CardGenerator({
                     />
                   )}
                 </div>
+                {card.generatedVideoUrl || isGeneratingVideo || card.generatedVideoTaskId ? (
+                  <div className={`mt-4 rounded-[18px] border p-4 ${darkConsole ? "border-white/10 bg-black/10" : "border-clay bg-paper"}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className={`flex items-center gap-2 text-sm font-black ${darkConsole ? "text-white" : "text-ink"}`}>
+                          <Film size={16} />
+                          Видео 5 секунд
+                        </p>
+                        <p className={`mt-1 text-xs font-semibold ${darkConsole ? "text-white/45" : "text-muted"}`}>
+                          Стоимость генерации: {videoPriceLabel}
+                        </p>
+                      </div>
+                      {card.generatedVideoUrl ? (
+                        <Button
+                          onClick={() => triggerBrowserDownload(card.generatedVideoUrl || "", "marketcard-ai-video.mp4")}
+                          size="sm"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <Download size={15} />
+                          MP4
+                        </Button>
+                      ) : null}
+                    </div>
+                    <div className="mt-3 overflow-hidden rounded-[14px] border border-clay bg-ink">
+                      {card.generatedVideoUrl ? (
+                        <video className="aspect-[9/16] max-h-[520px] w-full bg-black object-contain" controls src={card.generatedVideoUrl} />
+                      ) : (
+                        <div className="grid aspect-[9/16] max-h-[520px] place-items-center gap-3 px-5 text-center">
+                          <Loader2 className="animate-spin text-muted" size={26} />
+                          <p className="text-sm font-semibold text-muted">
+                            {card.generatedVideoStatusMessage || "Kling генерирует видео. Обычно это занимает больше времени, чем картинка."}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : !isWorking && !embedded ? (
               <div className={`${panelClass} grid aspect-[4/5] place-items-center text-center`}>
@@ -1468,6 +1815,10 @@ function triggerBrowserDownload(url: string, fileName: string) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 async function createZipBlob(files: { name: string; blob: Blob }[]) {

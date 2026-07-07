@@ -21,6 +21,13 @@ export function readVkCallbackUrl() {
 }
 
 export function getVkIdRedirectUrl() {
+  if (typeof window !== "undefined") {
+    const { origin, hostname } = window.location;
+    if (hostname === "localhost" || hostname === "127.0.0.1") {
+      return `${origin}/`;
+    }
+  }
+
   if (process.env.NEXT_PUBLIC_VK_REDIRECT_URL) {
     return process.env.NEXT_PUBLIC_VK_REDIRECT_URL;
   }
@@ -50,15 +57,19 @@ export function initVkIdConfig() {
   const redirectUrl = getVkIdRedirectUrl();
 
   if (!initialized) {
-    VKID.Config.init({
-      app: Number(appId),
-      redirectUrl,
-      responseMode: VKID.ConfigResponseMode.Callback,
-      source: VKID.ConfigSource.LOWCODE,
-      scope: ""
-    });
-    initialized = true;
-    return true;
+    try {
+      VKID.Config.init({
+        app: Number(appId),
+        redirectUrl,
+        responseMode: VKID.ConfigResponseMode.Callback,
+        source: VKID.ConfigSource.LOWCODE,
+        scope: ""
+      });
+      initialized = true;
+    } catch (error) {
+      console.error("VK ID config init failed:", error);
+      return false;
+    }
   }
 
   return true;

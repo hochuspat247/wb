@@ -39,6 +39,22 @@ const NON_PRODUCT_BENEFIT_PATTERNS = [
   /маркетплейс/i
 ];
 
+const STRICT_SERVICE_TEXT_PATTERNS = [
+  /marketplace_safe/i,
+  /premium-marketplace/i,
+  /\bprompt\b/i,
+  /\bai[-\s]?generated\b/i,
+  /\u043f\u0440\u043e\u043c\u043f\u0442/i,
+  /\u0433\u0435\u043d\u0435\u0440\u0430\u0446/i,
+  /\u043d\u0435\u0439\u0440\u043e\u0441\u0435\u0442/i,
+  /\u0442\u0435\u043a\u0441\u0442\s+\u0434\u043b\u044f\s+\u0438\u043d\u0444\u043e\u0433\u0440\u0430\u0444\u0438\u043a/i,
+  /\u0434\u043b\u044f\s+\u043a\u0430\u0440\u0442\u043e\u0447\u043a\u0438\s+(wildberries|ozon|avito|wb)/i,
+  /\u0434\u043b\u044f\s+\u043c\u0430\u0440\u043a\u0435\u0442\u043f\u043b\u0435\u0439\u0441/i,
+  /\u0431\u0435\u0437\s+\u0440\u0435\u043a\u043b\u0430\u043c\u043d\u044b\u0445\s+\u043e\u0431\u0435\u0449\u0430\u043d/i,
+  /\u043d\u0435\u0439\u0442\u0440\u0430\u043b\u044c\u043d\u043e\u0435\s+\u043e\u043f\u0438\u0441\u0430\u043d\u0438\u0435/i,
+  /\u043f\u043e\u0434\u0430\u0447\u0430\s+\u0432\s+\u043f\u0440\u0435\u043c\u0438\u0430\u043b\u044c\u043d/i
+];
+
 export function sanitizeGeneratedText(value: string) {
   let next = value;
 
@@ -92,6 +108,38 @@ export function sanitizeProductCardResult(card: ProductCardResult, input?: Produ
     marketplaceTips: card.marketplaceTips.map(sanitizeGeneratedText).filter(Boolean),
     visualConcept: sanitizeGeneratedText(card.visualConcept)
   };
+}
+
+export function validateGeneratedCardText(text: string): { isValid: boolean; problems: string[] } {
+  const problems: string[] = [];
+  const value = text.trim();
+
+  for (const pattern of STRICT_SERVICE_TEXT_PATTERNS) {
+    if (pattern.test(value)) {
+      problems.push(`Service or prompt-like phrase matched: ${pattern.source}`);
+    }
+  }
+
+  return {
+    isValid: problems.length === 0,
+    problems
+  };
+}
+
+export function validateProductCardResultText(card: ProductCardResult): { isValid: boolean; problems: string[] } {
+  const parts = [
+    card.title,
+    card.shortDescription,
+    card.fullDescription,
+    card.visualConcept,
+    ...card.benefits,
+    ...card.infographicTexts,
+    ...card.marketplaceTips,
+    ...card.keywords,
+    ...card.characteristics.flatMap((item) => [item.key, item.value])
+  ];
+
+  return validateGeneratedCardText(parts.filter(Boolean).join("\n"));
 }
 
 export function sanitizeMarketplaceTextResult(

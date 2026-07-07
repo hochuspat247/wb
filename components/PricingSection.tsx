@@ -1,6 +1,7 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PricingCard } from "@/components/ui/PricingCard";
+import { VIDEO_GENERATION_PRICE_RUB, formatRub } from "@/lib/pricing";
 
 const plans = [
   {
@@ -74,6 +75,10 @@ export function PricingSection() {
             </Reveal>
           ))}
         </div>
+
+        <p className="mt-6 text-center text-sm font-bold text-muted">
+          Видео 5 секунд оплачивается отдельно: <span className="text-accent">{formatRub(VIDEO_GENERATION_PRICE_RUB)}</span> за генерацию.
+        </p>
       </div>
     </section>
   );

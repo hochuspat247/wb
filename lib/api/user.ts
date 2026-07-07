@@ -70,6 +70,7 @@ export async function fetchUserQuota() {
     used: number;
     remaining: number;
     canGenerate: boolean;
+    unlimited?: boolean;
   }>;
 }
 
@@ -91,6 +92,7 @@ export async function fetchUserProfile() {
       used: number;
       remaining: number;
       canGenerate: boolean;
+      unlimited?: boolean;
     };
   }>;
 }

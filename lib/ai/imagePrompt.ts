@@ -1,4 +1,5 @@
 import type { GenerateImageInput, ImageDesignPreset } from "@/types/product-card";
+import { buildProductEnvironmentPromptBlock, buildSeriesPlanPrompt } from "@/lib/ai/cardPromptBuilder";
 import { buildImageEditInstructionsBlock } from "@/lib/series/editing";
 
 function cleanText(value: unknown): string {
@@ -90,7 +91,9 @@ function getStyleDirection(style: string): string {
   if (normalized.includes("прем")) {
     return `
 Premium style direction:
-- light luxury background or elegant graphite/beige studio background
+- premium palette chosen for the real product environment, not a random showroom
+- if the product has a natural usage scene, preserve that scene and make it feel expensive
+- use studio/catalog lighting only when studio context is natural for the category
 - beige, white, graphite, black glossy accents, subtle metallic feeling
 - soft elegant shadows
 - premium reflections
@@ -134,7 +137,7 @@ Technological style direction:
 
   return `
 Minimalist premium style direction:
-- white or light neutral background
+- product-relevant light neutral background, not a generic abstract surface
 - clean grid
 - subtle shadows
 - strong typography
@@ -176,7 +179,7 @@ The image must look like an expensive, conversion-focused premium marketplace ad
 - one large hero product image
 - 2–4 smaller supporting preview/detail images
 - structured features/specifications block
-- clean luxury background
+- clean background selected from the product's real environment and use case
 - excellent Russian typography
 - strong hierarchy
 - polished e-commerce art direction
@@ -217,6 +220,8 @@ export function buildPremiumMarketplaceImagePrompt(input: GenerateImageInput): s
 
   const styleDirection = getStyleDirection(style);
   const presetDirection = getPresetDirection(designPreset);
+  const productEnvironmentContext = buildProductEnvironmentPromptBlock(input);
+  const seriesPlanningContext = input.seriesCardType ? buildSeriesPlanPrompt(input) : "";
   const seriesContext = input.seriesCardType
     ? `
 SERIES CARD CONTEXT:
@@ -265,6 +270,10 @@ ${specs}
 INFOGRAPHIC TEXTS TO USE:
 ${infographicTexts}
 
+${productEnvironmentContext}
+
+${seriesPlanningContext}
+
 ${seriesContext}
 
 REQUIRED COMPOSITION:
@@ -272,7 +281,7 @@ REQUIRED COMPOSITION:
 2. One large hero product image as the main focal point.
 3. 2–4 small additional detail preview images showing close-ups, material, angle, texture, or product details.
 4. A structured benefits/specifications text block.
-5. Clean premium background with soft studio lighting.
+5. Product-bound premium background with lighting and environment that match the product category and use case.
 6. Clear information hierarchy and readable Russian text.
 7. Visually balanced layout with enough whitespace.
 8. The result must look like a polished premium sales card suitable for marketplace performance creatives.
@@ -312,8 +321,9 @@ PREMIUM VISUAL REQUIREMENTS:
 - soft shadows
 - elegant lighting
 - polished textures
-- studio-quality composition
-- luxury showroom / studio / premium catalog feeling
+- studio-quality composition only when it fits the product
+- premium catalog feeling in the product's real usage environment
+- background and props must support the product, not compete with it
 
 ${presetDirection}
 
@@ -340,6 +350,8 @@ NEGATIVE DESIGN GUIDANCE:
 - no cheap amateur design
 - no low-quality typography
 - no random extra objects
+- no generic abstract premium background unrelated to the product
+- no random luxury showroom when the product belongs outdoors, in water, in a home, in a vehicle, or in another concrete use context
 - no irrelevant product replacements
 - no unreadable tiny text
 - no distorted product

@@ -1,8 +1,8 @@
 const stats = [
-  ["1", "тестовая карточка бесплатно"],
-  ["~2 мин", "на генерацию"],
-  ["PNG + JSON", "экспорт"],
-  ["WB / Ozon / Avito / Яндекс Маркет", "для площадок"]
+  ["1 демо без входа", ""],
+  ["~60 сек до результата", ""],
+  ["3 карточки после входа", ""],
+  ["WB / Ozon / Avito / Яндекс Маркет", ""]
 ];
 
 export function TrustBar() {
@@ -12,8 +12,8 @@ export function TrustBar() {
         <div className="grid overflow-hidden rounded-[22px] border border-clay bg-card/72 backdrop-blur md:grid-cols-4">
           {stats.map(([value, label]) => (
             <div className="border-clay px-5 py-5 md:border-r md:last:border-r-0" key={value}>
-              <p className="text-lg font-black leading-tight text-ink sm:text-xl">{value}</p>
-              <p className="mt-2 text-sm font-semibold text-muted">{label}</p>
+              <p className="text-base font-black leading-tight text-ink sm:text-lg">{value}</p>
+              {label ? <p className="mt-2 text-sm font-semibold text-muted">{label}</p> : null}
             </div>
           ))}
         </div>

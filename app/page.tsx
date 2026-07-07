@@ -13,7 +13,6 @@ import { RoadmapSection } from "@/components/RoadmapSection";
 import { HomeJsonLd } from "@/components/seo/HomeJsonLd";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { TrustBar } from "@/components/TrustBar";
-import { WorkflowSection } from "@/components/WorkflowSection";
 import { createPageMetadata } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
@@ -33,7 +32,6 @@ export default function Home() {
       <ExamplesSection />
 
       <PainSection />
-      <WorkflowSection />
       <CompareSection />
       <HowItWorks />
       <AudienceSection />

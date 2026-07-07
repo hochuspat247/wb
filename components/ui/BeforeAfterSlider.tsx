@@ -51,7 +51,7 @@ export function BeforeAfterSlider({
   return (
     <div className="overflow-hidden rounded-card border border-clay bg-card transition duration-300 hover:-translate-y-1 hover:border-white/15">
       <div
-        className="relative aspect-[4/5] cursor-ew-resize touch-none select-none"
+        className="relative aspect-[4/5] cursor-ew-resize touch-pan-y select-none"
         onPointerDown={(event) => {
           if ((event.target as HTMLElement).closest("[data-handle]")) return;
           setIsDragging(true);
@@ -99,7 +99,6 @@ export function BeforeAfterSlider({
           className="absolute top-1/2 z-20 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/70 bg-white text-paper shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition hover:scale-105 active:scale-95"
           data-handle
           onPointerDown={(event) => {
-            event.preventDefault();
             event.stopPropagation();
             setIsDragging(true);
             updatePosition(event.clientX);

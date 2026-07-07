@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
+import { PresenceTracker } from "@/components/analytics/PresenceTracker";
+import { CookieBanner } from "@/components/CookieBanner";
 import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { VkIdCallbackHandler } from "@/components/auth/VkIdCallbackHandler";
@@ -25,8 +27,10 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <AnalyticsTracker />
+          <PresenceTracker />
           <YandexMetrika />
           <VkIdCallbackHandler />
+          <CookieBanner />
         </AuthProvider>
       </body>
     </html>

@@ -15,6 +15,7 @@ import {
 } from "@/lib/server/videoOrders";
 import { buildSignedSourceImageUrl } from "@/lib/server/videoSourceImage";
 import { recordVideoPayment } from "@/lib/server/videoPayment";
+import { hasUnlimitedGenerations } from "@/lib/server/unlimitedGenerations";
 import { createYooKassaPayment } from "@/lib/server/yookassa";
 import type { CreateVideoOrderInput } from "@/types/video-generation";
 
@@ -104,6 +105,23 @@ export async function POST(request: Request) {
       orderId
     });
 
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    if (!user) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    if (hasUnlimitedGenerations(user)) {
+      await markVideoOrderPaid(order.id);
+      await startPaidKlingVideoGeneration(order.id, siteUrl);
+
+      return NextResponse.json({
+        orderId: order.id,
+        status: "paid",
+        amountRub: 0,
+        isFree: true
+      });
+    }
+
     const videoCredits = await getUserVideoCredits(userId);
 
     if (body.useVideoCredit && videoCredits > 0) {
@@ -121,11 +139,6 @@ export async function POST(request: Request) {
         amountRub: 0,
         usedVideoCredit: true
       });
-    }
-
-    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
-    if (!user) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
     const fallbackEmail = body.customerEmail?.trim().toLowerCase() ?? "";

@@ -61,6 +61,7 @@ export type CreateVideoOrderResponse = {
   amountRub: number;
   paymentUrl?: string;
   usedVideoCredit?: boolean;
+  isFree?: boolean;
 };
 
 export type VideoOrderStatusResponse = {

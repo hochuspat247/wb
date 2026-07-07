@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { calculateVideoPriceRub, formatVideoPriceRub } from "@/config/video-pricing";
 import { createVideoOrder } from "@/lib/api/video";
+import { fetchUserProfile } from "@/lib/api/user";
 import { getGeneratedCoverSrc } from "@/lib/image";
 import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import type { ProductCardResult } from "@/types/product-card";
 import type {
@@ -23,12 +25,16 @@ const motionStyleOptions: Array<{ value: VideoMotionStyle; label: string }> = [
   { value: "marketplace_motion", label: "Marketplace motion" }
 ];
 
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 type VideoConfigModalProps = {
   open: boolean;
   card: ProductCardResult;
   videoCredits: number;
   onClose: () => void;
-  onOrderCreated: (orderId: string, options?: { usedVideoCredit?: boolean }) => void;
+  onOrderCreated: (orderId: string, options?: { usedVideoCredit?: boolean; isFree?: boolean }) => void;
 };
 
 export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCreated }: VideoConfigModalProps) {
@@ -36,22 +42,42 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
   const [aspectRatio, setAspectRatio] = useState<VideoAspectRatio>("4:5");
   const [quality, setQuality] = useState<VideoQuality>("standard");
   const [motionStyle, setMotionStyle] = useState<VideoMotionStyle>("premium_parallax");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [emailIsPlaceholder, setEmailIsPlaceholder] = useState(false);
+  const [isUnlimited, setIsUnlimited] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const previewSrc = getGeneratedCoverSrc(card) || card.imageDataUrl;
   const amountRub = useMemo(() => calculateVideoPriceRub(duration, quality), [duration, quality]);
-  const canUseCredit = videoCredits > 0;
+  const canUseCredit = videoCredits > 0 && !isUnlimited;
+  const needsPayment = !isUnlimited && !canUseCredit;
+  const showEmailField = needsPayment;
 
   useEffect(() => {
-    if (open) {
-      trackMarketingEvent("video_modal_open", { cardId: card.id });
-    }
+    if (!open) return;
+
+    trackMarketingEvent("video_modal_open", { cardId: card.id });
+
+    fetchUserProfile()
+      .then((profile) => {
+        setIsUnlimited(Boolean(profile.quota?.unlimited));
+        setEmailIsPlaceholder(Boolean(profile.emailIsPlaceholder));
+        if (!profile.emailIsPlaceholder && profile.email) {
+          setCustomerEmail(profile.email);
+        }
+      })
+      .catch(() => undefined);
   }, [open, card.id]);
 
   if (!open) return null;
 
   async function handleSubmit(useVideoCredit = false) {
+    if (showEmailField && emailIsPlaceholder && !isValidEmail(customerEmail.trim())) {
+      setError("Укажите корректный email для чека.");
+      return;
+    }
+
     setLoading(true);
     setError("");
 
@@ -68,7 +94,8 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
         aspectRatio,
         quality,
         motionStyle,
-        useVideoCredit
+        useVideoCredit,
+        customerEmail: showEmailField && emailIsPlaceholder ? customerEmail.trim() : undefined
       });
 
       trackMarketingEvent("video_order_created", { orderId: result.orderId });
@@ -78,18 +105,36 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
         return;
       }
 
-      if (result.usedVideoCredit) {
-        trackMarketingEvent("video_payment_success", { orderId: result.orderId, usedVideoCredit: true });
+      if (result.isFree || result.usedVideoCredit) {
+        trackMarketingEvent("video_payment_success", {
+          orderId: result.orderId,
+          isFree: Boolean(result.isFree),
+          usedVideoCredit: Boolean(result.usedVideoCredit)
+        });
         trackMarketingEvent("video_generation_started", { orderId: result.orderId });
       }
 
-      onOrderCreated(result.orderId, { usedVideoCredit: result.usedVideoCredit });
+      onOrderCreated(result.orderId, {
+        usedVideoCredit: result.usedVideoCredit,
+        isFree: result.isFree
+      });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Не удалось создать заказ.");
+      const message = caught instanceof Error ? caught.message : "Не удалось создать заказ.";
+      if (message.includes("email") || message.includes("EMAIL_REQUIRED")) {
+        setEmailIsPlaceholder(true);
+      }
+      setError(message);
     } finally {
       setLoading(false);
     }
   }
+
+  const priceLabel = isUnlimited ? "Бесплатно" : formatVideoPriceRub(amountRub);
+  const primaryButtonLabel = isUnlimited
+    ? "Создать видео"
+    : canUseCredit
+      ? "Оплатить и создать видео"
+      : "Оплатить и создать видео";
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -158,11 +203,31 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
                 ))}
               </Select>
             </label>
+
+            {showEmailField ? (
+              <label className="grid gap-1.5 text-xs font-semibold text-muted">
+                Email для чека
+                <Input
+                  autoComplete="email"
+                  onChange={(event) => setCustomerEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  readOnly={!emailIsPlaceholder && Boolean(customerEmail)}
+                  type="email"
+                  value={customerEmail}
+                />
+                {!emailIsPlaceholder && customerEmail ? (
+                  <span className="text-[11px] font-medium text-muted/80">Используем email вашего аккаунта для чека.</span>
+                ) : null}
+              </label>
+            ) : null}
           </div>
         </div>
 
         <div className="mt-6 rounded-[18px] border border-clay bg-paper/50 px-4 py-4">
-          <p className="text-sm font-black text-ink">Стоимость: {formatVideoPriceRub(amountRub)}</p>
+          <p className="text-sm font-black text-ink">Стоимость: {priceLabel}</p>
+          {isUnlimited ? (
+            <p className="mt-1 text-xs font-semibold text-mint">Безлимитный аккаунт — оплата не требуется</p>
+          ) : null}
           {canUseCredit ? (
             <p className="mt-1 text-xs font-semibold text-muted">Доступно video-credits: {videoCredits}</p>
           ) : null}
@@ -185,7 +250,7 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
             variant={canUseCredit ? "secondary" : "primary"}
           >
             {loading ? <Loader2 className="animate-spin" size={16} /> : null}
-            Оплатить и создать видео
+            {isUnlimited ? "Создать видео" : primaryButtonLabel}
           </Button>
         </div>
       </div>

@@ -99,11 +99,30 @@ KLING_VIDEO_MODE=std
 
 Видео создаётся через Kling AI Open Platform. Длительность зафиксирована на 5 секунд, цена одной video-генерации в интерфейсе и API — 50 ₽. Для пользователей из `UNLIMITED_GENERATION_NAMES` или `UNLIMITED_GENERATION_EMAILS` видео бесплатно.
 
-Для включения добавьте в `.env.local`:
+Для включения добавьте в `.env.local` один из вариантов.
+
+Новый формат (один ключ из консоли Kling, вида `api-key-kling-...`):
+
+```env
+KLING_API_KEY=
+```
+
+или
+
+```env
+KLING_ACCESS_KEY=
+```
+
+Старый формат (пара Access Key + Secret Key для JWT):
 
 ```env
 KLING_ACCESS_KEY=
 KLING_SECRET_KEY=
+```
+
+Общие настройки:
+
+```env
 KLING_BASE_URL=https://api-singapore.klingai.com
 KLING_VIDEO_MODEL=kling-v1-6
 KLING_VIDEO_MODE=std

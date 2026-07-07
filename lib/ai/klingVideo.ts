@@ -28,17 +28,31 @@ type KlingTaskResponse = {
 const KLING_DEFAULT_BASE_URL = "https://api-singapore.klingai.com";
 const KLING_VIDEO_DURATION_SECONDS = 5;
 
-function getKlingConfig() {
-  const accessKey = process.env.KLING_ACCESS_KEY;
-  const secretKey = process.env.KLING_SECRET_KEY;
+function isDirectKlingApiKey(key: string) {
+  return key.startsWith("api-key-kling-");
+}
 
-  if (!accessKey || !secretKey) {
-    throw new Error("KLING_ACCESS_KEY and KLING_SECRET_KEY are required");
+function resolveKlingAuthToken() {
+  const apiKey = (process.env.KLING_API_KEY || process.env.KLING_ACCESS_KEY || "").trim();
+  const secretKey = (process.env.KLING_SECRET_KEY || "").trim();
+
+  if (!apiKey) {
+    throw new Error("KLING_API_KEY or KLING_ACCESS_KEY is required");
   }
 
+  if (isDirectKlingApiKey(apiKey)) {
+    return apiKey;
+  }
+
+  if (!secretKey) {
+    throw new Error("KLING_SECRET_KEY is required for JWT authentication");
+  }
+
+  return createKlingJwt(apiKey, secretKey);
+}
+
+function getKlingConfig() {
   return {
-    accessKey,
-    secretKey,
     baseUrl: (process.env.KLING_BASE_URL || KLING_DEFAULT_BASE_URL).replace(/\/$/, ""),
     model: process.env.KLING_VIDEO_MODEL || "kling-v1-6",
     mode: process.env.KLING_VIDEO_MODE || "std"
@@ -68,7 +82,7 @@ function createKlingJwt(accessKey: string, secretKey: string) {
 
 async function callKling<T>(path: string, init?: RequestInit): Promise<T> {
   const config = getKlingConfig();
-  const token = createKlingJwt(config.accessKey, config.secretKey);
+  const token = resolveKlingAuthToken();
   const response = await fetch(`${config.baseUrl}${path}`, {
     ...init,
     headers: {

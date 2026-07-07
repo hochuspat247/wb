@@ -237,7 +237,7 @@ export function CabinetApp() {
         </Link>
       </aside>
 
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-screen min-w-0 flex-col overflow-x-hidden">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-clay bg-paper/88 px-3 py-3 backdrop-blur-xl sm:gap-4 sm:px-5 sm:py-4 lg:px-8">
           <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-clay bg-card text-ink sm:h-10 sm:w-10 lg:hidden">
@@ -268,7 +268,7 @@ export function CabinetApp() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-5 sm:py-5 sm:pb-28 lg:p-8">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-5 sm:py-5 sm:pb-28 lg:p-8">
           {needsEmailVerification ? (
             <div className="mb-6 rounded-[18px] border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100">
               Подтвердите email ({emailDisplay}) — проверьте почту после регистрации.

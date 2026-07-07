@@ -26,9 +26,9 @@ export function Alert({ children, variant = "info", className = "" }: AlertProps
   const style = styles[variant];
 
   return (
-    <div className={`flex gap-3 rounded-xl border px-4 py-3 text-sm font-medium ${style.wrap} ${className}`}>
+    <div className={`flex min-w-0 gap-3 rounded-xl border px-4 py-3 text-sm font-medium ${style.wrap} ${className}`}>
       {style.icon}
-      <div className="flex-1">{children}</div>
+      <div className="min-w-0 flex-1 break-words">{children}</div>
     </div>
   );
 }

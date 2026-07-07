@@ -1158,7 +1158,11 @@ export function CardGenerator({
       ? "rounded-[18px] border border-white/10 bg-white/[0.06] p-3 sm:rounded-[22px] sm:p-5"
       : "rounded-[22px] border border-white/10 bg-white/[0.06] p-5"
     : "rounded-[22px] border border-clay bg-card p-5";
-  const sectionClass = embedded ? "" : compactDemoEntry ? "relative scroll-mt-24 pb-12 pt-2 md:pb-16" : "relative py-24";
+  const sectionClass = embedded
+    ? "min-w-0 max-w-full overflow-x-hidden"
+    : compactDemoEntry
+      ? "relative scroll-mt-24 pb-12 pt-2 md:pb-16"
+      : "relative py-24";
   const shellClass = embedded ? undefined : compactDemoEntry ? "section-shell max-w-4xl" : "section-shell";
 
   const selectVariant = darkConsole ? "dark" : "default";
@@ -1209,8 +1213,14 @@ export function CardGenerator({
     <section className={sectionClass} id={embedded ? undefined : "demo"}>
       <PaywallModal onClose={() => setShowPaywall(false)} open={showPaywall} />
       <div className={shellClass}>
-        <div className={embedded || compactDemoEntry ? "grid gap-5 sm:gap-8" : "relative z-10 grid gap-8 xl:grid-cols-[0.82fr_1.18fr]"}>
-          <form className={formClass} onSubmit={handleSubmit}>
+        <div
+          className={
+            embedded || compactDemoEntry
+              ? "grid min-w-0 gap-5 sm:gap-8"
+              : "relative z-10 grid min-w-0 gap-8 xl:grid-cols-[0.82fr_1.18fr]"
+          }
+        >
+          <form className={`${formClass} min-w-0`} onSubmit={handleSubmit}>
             <div className="grid gap-4 sm:gap-5">
               <div>
                 <p className={`text-sm font-semibold ${labelClass}`}>
@@ -1525,7 +1535,7 @@ export function CardGenerator({
             </div>
           </form>
           {showPreviewColumn ? (
-          <div className="grid gap-6">
+          <div className="grid min-w-0 gap-5 sm:gap-6">
             {isWorking && !card ? (
               <div className={panelClass}>
                 <p className={`mb-4 text-sm font-semibold ${darkConsole ? "text-white/70" : "text-muted"}`}>
@@ -1535,9 +1545,9 @@ export function CardGenerator({
               </div>
             ) : null}
             {card ? (
-              <div className={panelClass}>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
+              <div className={`${panelClass} min-w-0`}>
+                <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+                  <div className="min-w-0">
                     <h3 className={`flex items-center gap-2 text-lg font-bold ${darkConsole ? "text-white" : "text-ink"}`}>
                       <FileImage size={20} />
                       Превью обложки
@@ -1546,15 +1556,21 @@ export function CardGenerator({
                       Готова к загрузке на {card.marketplace}
                     </p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button onClick={handleDownloadBestImage} variant="dark">
+                  <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
+                    <Button className="w-full sm:w-auto" onClick={handleDownloadBestImage} variant="dark">
                       Скачать PNG
                     </Button>
-                    <Button disabled={isGeneratingVideo} onClick={handleGenerateVideo} type="button" variant="secondary">
+                    <Button
+                      className="w-full sm:w-auto"
+                      disabled={isGeneratingVideo}
+                      onClick={handleGenerateVideo}
+                      type="button"
+                      variant="secondary"
+                    >
                       {isGeneratingVideo ? <Loader2 className="animate-spin" size={16} /> : <Video size={16} />}
                       {card.generatedVideoTaskId && !card.generatedVideoUrl ? "Проверить видео" : `Видео 5 сек · ${videoPriceLabel}`}
                     </Button>
-                    <Button onClick={() => openCardEditor(card)} type="button" variant="secondary">
+                    <Button className="w-full sm:w-auto" onClick={() => openCardEditor(card)} type="button" variant="secondary">
                       <Pencil size={16} />
                       Редактировать
                     </Button>
@@ -1718,7 +1734,7 @@ export function CardGenerator({
                 </div>
               </div>
             ) : null}
-            <ResultPanel card={card} dark={darkConsole} onDownloadPng={() => downloadPreviewPng(previewRef.current, card?.title)} onSave={handleSave} previewRef={previewRef} />
+            <ResultPanel card={card} compact={embedded} dark={darkConsole} onDownloadPng={() => downloadPreviewPng(previewRef.current, card?.title)} onSave={handleSave} previewRef={previewRef} />
           </div>
           ) : null}
         </div>

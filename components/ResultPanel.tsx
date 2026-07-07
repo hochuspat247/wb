@@ -26,6 +26,7 @@ type ResultPanelProps = {
   onSave: () => void;
   previewRef?: RefObject<HTMLDivElement | null>;
   dark?: boolean;
+  compact?: boolean;
 };
 
 const ALL_TABS = [
@@ -106,7 +107,7 @@ function TextList({ items, dark }: { items: string[]; dark?: boolean }) {
   );
 }
 
-export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = false }: ResultPanelProps) {
+export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = false, compact = false }: ResultPanelProps) {
   const platform = card?.platform ?? card?.marketplaceText?.platform;
   const tabs = useMemo(() => orderTabs(platform), [platform]);
   const [activeTab, setActiveTab] = useState<string>(tabs[0]?.id ?? "general");
@@ -193,7 +194,7 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
   const ym = mt?.platformSpecific.yandexMarket;
 
   return (
-    <Card className={dark ? "border-white/10 bg-white/5 text-white" : ""} padding="md">
+    <Card className={`min-w-0 max-w-full overflow-hidden ${dark ? "border-white/10 bg-white/5 text-white" : ""}`} padding="md">
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="accent">{currentCard.marketplace}</Badge>
         <Badge variant="outline">{currentCard.style}</Badge>
@@ -201,10 +202,10 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
         <ModerationBadge textMode={currentCard.textMode ?? mt?.mode} />
       </div>
 
-      <h3 className={`mt-4 text-xl font-bold ${dark ? "text-white" : "text-ink"}`}>
+      <h3 className={`mt-4 break-words text-xl font-bold ${dark ? "text-white" : "text-ink"}`}>
         {mt?.title ?? currentCard.title}
       </h3>
-      <p className={`mt-3 leading-7 ${dark ? "text-white/60" : "text-muted"}`}>
+      <p className={`mt-3 break-words leading-7 ${dark ? "text-white/60" : "text-muted"}`}>
         {mt?.shortDescription ?? currentCard.shortDescription}
       </p>
 
@@ -430,44 +431,44 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
         </TabPanel>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        <Button onClick={handleDownloadPng} size="sm" variant="dark">
+      <div className={`mt-6 grid gap-2 ${compact ? "grid-cols-1" : "grid-cols-1 sm:flex sm:flex-wrap"}`}>
+        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleDownloadPng} size="sm" variant="dark">
           <Download size={16} />
           Скачать PNG
         </Button>
-        <Button onClick={handleCopyDescription} size="sm" variant="secondary">
+        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopyDescription} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать описание
         </Button>
-        <Button onClick={() => handleCopyPlatformText("wildberries")} size="sm" variant="secondary">
+        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("wildberries")} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать для WB
         </Button>
-        <Button onClick={() => handleCopyPlatformText("ozon")} size="sm" variant="secondary">
+        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("ozon")} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать для Ozon
         </Button>
-        <Button onClick={() => handleCopyPlatformText("avito")} size="sm" variant="secondary">
+        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("avito")} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать для Avito
         </Button>
-        <Button onClick={() => handleCopyPlatformText("yandex_market")} size="sm" variant="secondary">
+        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("yandex_market")} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать для Яндекс Маркета
         </Button>
-        <Button onClick={handleCopySeoText} size="sm" variant="secondary">
+        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopySeoText} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать SEO
         </Button>
-        <Button onClick={handleCopyInfographicText} size="sm" variant="secondary">
+        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopyInfographicText} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать тексты для инфографики
         </Button>
-        <Button onClick={handleDownloadJson} size="sm" variant="secondary">
+        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleDownloadJson} size="sm" variant="secondary">
           <FileJson size={16} />
           Скачать JSON
         </Button>
-        <Button onClick={onSave} size="sm" variant="ghost">
+        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={onSave} size="sm" variant="ghost">
           Сохранить в историю
         </Button>
       </div>

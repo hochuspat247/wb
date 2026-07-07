@@ -1,3 +1,5 @@
+import type { PreviousCardSnapshot } from "@/types/product-card";
+
 export type MarketplacePlatform =
   | "wildberries"
   | "ozon"
@@ -31,6 +33,8 @@ export type MarketplaceTextInput = {
   advantages?: string[];
   characteristics?: { key: string; value: string }[];
   keywords?: string[];
+  editInstructions?: string;
+  previousCard?: PreviousCardSnapshot;
 };
 
 export type WildberriesTextData = {

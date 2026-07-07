@@ -248,18 +248,16 @@ function buildYandexMarket(input: MarketplaceTextInput, productLabel: string): Y
 }
 
 function buildPlatformSpecific(input: MarketplaceTextInput, productLabel: string) {
-  const empty = { wildberries: null, ozon: null, avito: null, yandexMarket: null };
+  return buildAllPlatformSpecific(input, productLabel);
+}
 
-  switch (input.platform) {
-    case "wildberries":
-      return { ...empty, wildberries: buildWildberries(input, productLabel) };
-    case "ozon":
-      return { ...empty, ozon: buildOzon(input, productLabel) };
-    case "avito":
-      return { ...empty, avito: buildAvito(input, productLabel) };
-    case "yandex_market":
-      return { ...empty, yandexMarket: buildYandexMarket(input, productLabel) };
-  }
+export function buildAllPlatformSpecific(input: MarketplaceTextInput, productLabel: string) {
+  return {
+    wildberries: buildWildberries(input, productLabel),
+    ozon: buildOzon(input, productLabel),
+    avito: buildAvito(input, productLabel),
+    yandexMarket: buildYandexMarket(input, productLabel)
+  };
 }
 
 function resolveTitle(input: MarketplaceTextInput, productLabel: string, platformSpecific: MarketplaceTextResult["platformSpecific"]) {

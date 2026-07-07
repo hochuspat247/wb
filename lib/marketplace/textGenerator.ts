@@ -67,7 +67,7 @@ function safeParseMarketplaceJson(text: string): RawMarketplaceJson {
         ? String(parsed.platformFields.packageContents)
         : undefined
     },
-    platformSpecific: parsed.platformSpecific ?? {},
+    platformSpecific: normalizePlatformSpecific(parsed.platformSpecific),
     moderationWarnings: Array.isArray(parsed.moderationWarnings) ? parsed.moderationWarnings.map(String) : [],
     improvementTips: Array.isArray(parsed.improvementTips) ? parsed.improvementTips.map(String) : [],
     exportChecklist: Array.isArray(parsed.exportChecklist) ? parsed.exportChecklist.map(String) : []
@@ -75,26 +75,33 @@ function safeParseMarketplaceJson(text: string): RawMarketplaceJson {
 }
 
 function normalizePlatformSpecific(
-  input: MarketplaceTextInput,
+  platformSpecific: RawMarketplaceJson["platformSpecific"]
+): RawMarketplaceJson["platformSpecific"] {
+  const source = (platformSpecific ?? {}) as Record<string, unknown>;
+
+  return {
+    wildberries: (source.wildberries as WildberriesTextData | null | undefined) ?? null,
+    ozon: (source.ozon as OzonTextData | null | undefined) ?? null,
+    avito: (source.avito as AvitoTextData | null | undefined) ?? null,
+    yandexMarket:
+      (source.yandexMarket as YandexMarketTextData | null | undefined) ??
+      (source.yandex_market as YandexMarketTextData | null | undefined) ??
+      null
+  };
+}
+
+function ensureAllPlatformSpecific(
   raw: RawMarketplaceJson,
   fallback: MarketplaceTextResult
 ): MarketplaceTextResult["platformSpecific"] {
-  const base = { wildberries: null, ozon: null, avito: null, yandexMarket: null };
+  const fallbackPlatforms = fallback.platformSpecific;
 
-  if (input.platform === "wildberries") {
-    const wb = raw.platformSpecific?.wildberries ?? fallback.platformSpecific.wildberries;
-    return { ...base, wildberries: wb ?? fallback.platformSpecific.wildberries };
-  }
-  if (input.platform === "ozon") {
-    const oz = raw.platformSpecific?.ozon ?? fallback.platformSpecific.ozon;
-    return { ...base, ozon: oz ?? fallback.platformSpecific.ozon };
-  }
-  if (input.platform === "avito") {
-    const av = raw.platformSpecific?.avito ?? fallback.platformSpecific.avito;
-    return { ...base, avito: av ?? fallback.platformSpecific.avito };
-  }
-  const ym = raw.platformSpecific?.yandexMarket ?? fallback.platformSpecific.yandexMarket;
-  return { ...base, yandexMarket: ym ?? fallback.platformSpecific.yandexMarket };
+  return {
+    wildberries: raw.platformSpecific?.wildberries ?? fallbackPlatforms.wildberries ?? null,
+    ozon: raw.platformSpecific?.ozon ?? fallbackPlatforms.ozon ?? null,
+    avito: raw.platformSpecific?.avito ?? fallbackPlatforms.avito ?? null,
+    yandexMarket: raw.platformSpecific?.yandexMarket ?? fallbackPlatforms.yandexMarket ?? null
+  };
 }
 
 function enrichModerationWarnings(result: MarketplaceTextResult): MarketplaceTextResult {
@@ -121,7 +128,7 @@ function enrichModerationWarnings(result: MarketplaceTextResult): MarketplaceTex
 
 function withMeta(raw: RawMarketplaceJson, input: MarketplaceTextInput, isFallback: boolean): MarketplaceTextResult {
   const fallback = generateMarketplaceTextFallback(input);
-  const platformSpecific = normalizePlatformSpecific(input, raw, fallback);
+  const platformSpecific = ensureAllPlatformSpecific(raw, fallback);
 
   const result: MarketplaceTextResult = {
     platform: input.platform,
@@ -243,7 +250,7 @@ async function callGemini(prompt: string) {
 }
 
 async function tryProvider(provider: ProviderMode, prompt: string) {
-  if (provider === "gigachat") return safeParseMarketplaceJson(await callGigaChatJson(prompt, { maxTokens: 3000 }));
+  if (provider === "gigachat") return safeParseMarketplaceJson(await callGigaChatJson(prompt, { maxTokens: 5500 }));
   if (provider === "gemini") return callGemini(prompt);
   if (provider === "ollama") return callOllama(prompt);
   if (provider === "openrouter") return callOpenRouter(prompt);

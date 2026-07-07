@@ -1,4 +1,5 @@
 import { getPlatformProfile } from "@/lib/marketplace/platformProfiles";
+import { buildEditInstructionsBlock } from "@/lib/series/editing";
 import type { MarketplaceTextInput } from "@/types/marketplace";
 
 const MODE_LABELS: Record<MarketplaceTextInput["mode"], string> = {
@@ -54,110 +55,43 @@ function formatInputFields(input: MarketplaceTextInput): string {
   return lines.join("\n");
 }
 
-function wildberriesPrompt(input: MarketplaceTextInput): string {
-  const profile = getPlatformProfile("wildberries");
+function allPlatformsPrompt(input: MarketplaceTextInput): string {
+  const wbProfile = getPlatformProfile("wildberries");
+  const ymProfile = getPlatformProfile("yandex_market");
+
   return `
-Платформа: Wildberries.
-Сгенерируй данные карточки товара под WB.
+Сгенерируй тексты сразу для всех площадок: Wildberries, Ozon, Avito и Яндекс Маркет.
+Основная площадка пользователя: ${getPlatformProfile(input.platform).displayName}.
 
-Главный фокус:
-- короткое точное наименование
-- описание без воды
-- характеристики по категории
-- преимущества товара
-- safe-тексты для инфографики без запрещённых слов
+Общие правила:
+- не выдумывай свойства, которых нет во входных данных
+- если свойство неизвестно, формулируй нейтрально
+- заполни platformSpecific.wildberries, platformSpecific.ozon, platformSpecific.avito и platformSpecific.yandexMarket полностью
 
-Правила для WB:
-- title должен быть коротким и точным
-- не добавляй в title: ${profile.forbiddenTitleWords.map((w) => `"${w}"`).join(", ")}
-- не добавляй цену в title
-- не добавляй эмодзи
-- imageTexts в marketplace_safe режиме не должны содержать цену, скидку, CTA, "хит", "лучший", "топ"
-- wbSafeImageTexts должны быть короткими фразами о свойствах товара
-- wbForbiddenImageTexts должны перечислять, что нельзя писать на изображении
-- exportChecklist должен содержать список, что проверить перед загрузкой на WB
-${input.mode === "promo_creative" ? "- В promo_creative можно продающие плашки, но добавь moderationWarnings о том, что это не safe для модерации WB" : ""}
-${input.mode === "marketplace_safe" ? "- Строго соблюдай safe-режим: никаких цен, скидок, CTA на imageTexts и wbSafeImageTexts" : ""}
+Wildberries:
+- короткое точное наименование, описание без воды, safe-тексты для инфографики
+- не добавляй в title: ${wbProfile.forbiddenTitleWords.map((w) => `"${w}"`).join(", ")}
+- wbSafeImageTexts: короткие фразы о свойствах товара
+- wbForbiddenImageTexts: что нельзя писать на изображении
 
-Заполни platformSpecific.wildberries полностью. Остальные platformSpecific поля — null.
-`;
-}
+Ozon:
+- ozonName, ozonAnnotation, ozonDescription
+- ozonRichContentBlocks: минимум 3 блока («Почему стоит купить», «Сценарии использования», «Что в комплекте»)
+- ozonMediaTips: рекомендации по фото и инфографике
 
-function ozonPrompt(input: MarketplaceTextInput): string {
-  return `
-Платформа: Ozon.
-Сгенерируй данные карточки товара под Ozon.
-
-Главный фокус:
-- информативное название
-- аннотация
-- полное описание
-- rich-content блоки
-- характеристики
-- медиа-рекомендации
-
-Правила для Ozon:
-- ozonName должен быть понятным и товарным
-- ozonAnnotation должна кратко объяснять ценность товара
-- ozonRichContentBlocks должны быть готовы для расширенного описания (минимум 3 блока: «Почему стоит купить», «Сценарии использования», «Что в комплекте»)
-- ozonMediaTips должны объяснять, какие изображения и инфографику добавить
-- текст должен быть структурным и полезным для покупателя
-- не выдумывать свойства, которых нет во входных данных
-- не делать слишком короткое описание
-
-Заполни platformSpecific.ozon полностью. Остальные platformSpecific поля — null.
-`;
-}
-
-function avitoPrompt(input: MarketplaceTextInput): string {
-  return `
-Платформа: Avito.
-Сгенерируй не карточку маркетплейса, а объявление.
-
-Главный фокус:
-- цепкий, но честный заголовок
-- понятное описание
-- цена/условия
-- преимущества
-- CTA
-- ответы на частые вопросы
-
-Правила для Avito:
-- avitoTitle должен быть живым и понятным
-- avitoDescription должен звучать как реальное объявление
-- можно использовать более прямой продающий стиль
-- можно упоминать цену, доставку, самовывоз, наличие
+Avito:
+- avitoTitle, avitoDescription, avitoPriceBlock, avitoBenefits, avitoCallToAction
+- avitoQuestionsAnswers: минимум 3 пары вопрос-ответ
 - avitoPriceBlock: ${input.price ? `используй цену ${input.price}` : "укажи, что цену нужно уточнить, если не передана"}
-- avitoQuestionsAnswers должны закрывать типовые вопросы покупателя (минимум 3 пары)
-- avitoCallToAction: призыв написать продавцу
-- не писать слишком официальный маркетинговый текст
 
-Заполни platformSpecific.avito полностью. Остальные platformSpecific поля — null.
-`;
-}
-
-function yandexMarketPrompt(input: MarketplaceTextInput): string {
-  const profile = getPlatformProfile("yandex_market");
-  return `
-Платформа: Яндекс Маркет.
-Сгенерируй данные карточки под Яндекс Маркет.
-
-Главный фокус:
-- информативное название
-- описание
-- характеристики
-- безопасные тексты для фото
-
-Правила для Яндекс Маркета:
+Яндекс Маркет:
 - yandexName: тип товара + бренд/модель + важные характеристики
-- не перегружать title ключами
-- imageTexts в marketplace_safe режиме не должны содержать: ${profile.forbiddenSafeImageWords.map((w) => `"${w}"`).join(", ")}
-- yandexSafeImageTexts должны быть короткими и нейтральными
-- yandexForbiddenImageTexts должны перечислять, что нельзя писать на фото
-- exportChecklist должен помогать подготовить товар к загрузке
-${input.mode === "marketplace_safe" ? "- Строго safe-режим для фото" : ""}
+- yandexSafeImageTexts: короткие нейтральные фразы
+- yandexForbiddenImageTexts: что нельзя писать на фото
+- imageTexts в marketplace_safe не должны содержать: ${ymProfile.forbiddenSafeImageWords.map((w) => `"${w}"`).join(", ")}
 
-Заполни platformSpecific.yandexMarket полностью. Остальные platformSpecific поля — null.
+${input.mode === "promo_creative" ? "- В promo_creative можно продающие плашки, но добавь moderationWarnings о проверке правил площадки" : ""}
+${input.mode === "marketplace_safe" ? "- Строго safe-режим: никаких цен, скидок и CTA на imageTexts и safe-текстах для фото" : ""}
 `;
 }
 
@@ -235,31 +169,10 @@ const YANDEX_SPECIFIC_SCHEMA = `{
 
 export function buildMarketplaceTextPrompt(input: MarketplaceTextInput): string {
   const profile = getPlatformProfile(input.platform);
-
-  let platformBlock = "";
-  let specificSchema = "";
-
-  switch (input.platform) {
-    case "wildberries":
-      platformBlock = wildberriesPrompt(input);
-      specificSchema = WB_SPECIFIC_SCHEMA;
-      break;
-    case "ozon":
-      platformBlock = ozonPrompt(input);
-      specificSchema = OZON_SPECIFIC_SCHEMA;
-      break;
-    case "avito":
-      platformBlock = avitoPrompt(input);
-      specificSchema = AVITO_SPECIFIC_SCHEMA;
-      break;
-    case "yandex_market":
-      platformBlock = yandexMarketPrompt(input);
-      specificSchema = YANDEX_SPECIFIC_SCHEMA;
-      break;
-  }
+  const editBlock = buildEditInstructionsBlock(input.editInstructions, input.previousCard);
 
   return `Ты маркетолог маркетплейсов и специалист по созданию карточек товара.
-На основе данных товара подготовь текстовые данные карточки под выбранную платформу.
+На основе данных товара подготовь текстовые данные карточки сразу для всех площадок.
 Платформа влияет на структуру, стиль, ограничения и итоговый JSON.
 Не выдумывай свойства, которых нет во входных данных.
 Если свойство неизвестно, формулируй нейтрально.
@@ -271,20 +184,21 @@ advantages должны описывать только сам товар: св�
 keywords должны относиться только к товару и категории. Не добавляй "товар", "товары для маркетплейса", "маркетплейс", "Wildberries", "Ozon", "WB", "Avito", "Яндекс Маркет", если это не часть реального названия товара.
 Верни только валидный JSON без markdown.
 
-Платформа: ${profile.displayName}
+Основная площадка: ${profile.displayName}
 Режим: ${MODE_LABELS[input.mode]}
 Подсказка режима: ${profile.modeHints[input.mode]}
 
 Входные данные:
 ${formatInputFields(input)}
 
-${platformBlock}
+${allPlatformsPrompt(input)}
 
 Верни строго такой JSON:
 ${JSON_SCHEMA}
 
-Для platformSpecific заполни только активную платформу по схеме:
-${specificSchema}
-
-Все остальные поля в platformSpecific должны быть null.`;
+Для platformSpecific заполни все четыре блока по схемам:
+wildberries -> ${WB_SPECIFIC_SCHEMA}
+ozon -> ${OZON_SPECIFIC_SCHEMA}
+avito -> ${AVITO_SPECIFIC_SCHEMA}
+yandexMarket -> ${YANDEX_SPECIFIC_SCHEMA}${editBlock}`;
 }

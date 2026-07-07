@@ -1,5 +1,15 @@
 import type { MarketplacePlatform, MarketplaceTextMode, MarketplaceTextResult } from "@/types/marketplace";
 
+export type PreviousCardSnapshot = {
+  title: string;
+  shortDescription: string;
+  fullDescription: string;
+  benefits: string[];
+  characteristics: { key: string; value: string }[];
+  infographicTexts: string[];
+  visualConcept: string;
+};
+
 export type CardSeriesCount = 1 | 3 | 5 | 7 | 10;
 
 export type CardSeriesPlanItem = {
@@ -39,6 +49,8 @@ export type ProductCardInput = {
   oldPrice?: string;
   discount?: string;
   price?: string;
+  editInstructions?: string;
+  previousCard?: PreviousCardSnapshot;
 };
 
 export type ProductCardSourceInput = ProductCardInput & {
@@ -155,6 +167,7 @@ export type GenerateImageInput = {
   seriesCardGoal?: string;
   seriesCardVisualIdea?: string;
   badges?: string[];
+  editInstructions?: string;
 };
 
 export type GenerateImageResult = {

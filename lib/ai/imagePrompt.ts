@@ -1,4 +1,5 @@
 import type { GenerateImageInput, ImageDesignPreset } from "@/types/product-card";
+import { buildImageEditInstructionsBlock } from "@/lib/series/editing";
 
 function cleanText(value: unknown): string {
   if (typeof value !== "string") return "";
@@ -228,6 +229,7 @@ Visual idea: ${cleanText(input.seriesCardVisualIdea || "крупный това�
 Badges to use: ${listToLines(input.badges, ["Ключевой блок", "Для маркетплейса"])}
 `
     : "";
+  const editContext = buildImageEditInstructionsBlock(input.editInstructions);
 
   return `
 Create a premium marketplace product card image in Russian.
@@ -350,6 +352,7 @@ NEGATIVE DESIGN GUIDANCE:
 - no price block or price text
 - no buy button or CTA button
 - no "добавить в корзину" or similar purchase prompts
+${editContext}
 
 FINAL OUTPUT:
 Generate only the final image.

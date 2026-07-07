@@ -1,12 +1,14 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { Archive, Download, FileImage, ImageUp, Loader2, RefreshCcw, RotateCcw, Wand2 } from "lucide-react";
+import { Archive, Download, FileImage, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Wand2 } from "lucide-react";
+import { CardEditPanel } from "@/components/CardEditPanel";
 import { GeneratedCardPreview } from "@/components/GeneratedCardPreview";
 import { HistorySection } from "@/components/HistorySection";
 import { PaywallModal } from "@/components/PaywallModal";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { ResultPanel } from "@/components/ResultPanel";
+import { SeriesTypePicker } from "@/components/SeriesTypePicker";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -31,6 +33,15 @@ import {
 import { clearHistory, getHistory, removeFromHistory, saveToHistory } from "@/lib/storage";
 import { fetchUserQuota, saveUserCardRemote } from "@/lib/api/user";
 import { reachGoal } from "@/lib/metrika";
+import { buildPreviousCardSnapshot } from "@/lib/series/editing";
+import {
+  buildCardSeriesPlanFromTypes,
+  buildFailedSeriesCard,
+  buildSeriesCardDescription,
+  buildSeriesInfographicTexts,
+  buildSeriesStyleGuide,
+  getDefaultSeriesTypes
+} from "@/lib/series/plan";
 import type {
   GenerateImageResult,
   CardSeriesCount,
@@ -98,6 +109,9 @@ export function CardGenerator({
   const [discount, setDiscount] = useState("");
   const [style, setStyle] = useState("Премиальный");
   const [cardsCount, setCardsCount] = useState<CardSeriesCount>(1);
+  const [selectedSeriesTypes, setSelectedSeriesTypes] = useState<string[]>(["hero"]);
+  const [editingCard, setEditingCard] = useState<ProductCardResult | null>(null);
+  const [editInstructions, setEditInstructions] = useState("");
   const [headline, setHeadline] = useState("");
   const [price, setPrice] = useState("");
   const [ctaText, setCtaText] = useState("");
@@ -132,20 +146,30 @@ export function CardGenerator({
   }, [persistToServer, onQuotaChange]);
 
   const effectiveCategory = useMemo(() => detectCategory(description, category), [category, description]);
+
+  useEffect(() => {
+    if (cardsCount === 1) {
+      setSelectedSeriesTypes(["hero"]);
+      return;
+    }
+
+    setSelectedSeriesTypes(getDefaultSeriesTypes(cardsCount, effectiveCategory));
+  }, [cardsCount, effectiveCategory]);
+
+  const plannedGenerationCount = cardsCount === 1 ? 1 : selectedSeriesTypes.length;
   const seriesPlan = useMemo(
     () =>
-      buildCardSeriesPlan({
-        count: cardsCount,
+      buildCardSeriesPlanFromTypes(selectedSeriesTypes, {
         category: effectiveCategory,
         marketplace,
         style,
         productDescription: description,
         headline
       }),
-    [cardsCount, description, effectiveCategory, headline, marketplace, style]
+    [selectedSeriesTypes, description, effectiveCategory, headline, marketplace, style]
   );
   const selectedCountExceedsQuota =
-    persistToServer && remainingGenerations !== null && cardsCount > remainingGenerations;
+    persistToServer && remainingGenerations !== null && plannedGenerationCount > remainingGenerations;
 
   useEffect(() => {
     setHistory(getHistory());
@@ -239,15 +263,25 @@ export function CardGenerator({
     options: {
       planItem?: CardSeriesPlanItem;
       seriesId?: string;
-      seriesCount?: CardSeriesCount;
+      seriesCount?: number;
+      editInstructions?: string;
+      preserveCard?: ProductCardResult;
     } = {}
   ) {
+    const seriesCount = options.seriesCount ?? plannedGenerationCount;
+    const previousCard = options.preserveCard ? buildPreviousCardSnapshot(options.preserveCard) : undefined;
     const requestPayload = options.planItem
       ? {
           ...payload,
-          productDescription: buildSeriesCardDescription(payload, options.planItem, options.seriesCount ?? cardsCount)
+          productDescription: buildSeriesCardDescription(payload, options.planItem, seriesCount),
+          editInstructions: options.editInstructions,
+          previousCard
         }
-      : payload;
+      : {
+          ...payload,
+          editInstructions: options.editInstructions,
+          previousCard
+        };
 
     const response = await fetch("/api/generate-card", {
       method: "POST",
@@ -275,8 +309,10 @@ export function CardGenerator({
 
     const { quota: _quota, error: _error, ...cardPayload } = data;
     const planItem = options.planItem;
+    const preserveCard = options.preserveCard;
     const generatedCard: ProductCardResult = {
       ...(cardPayload as ProductCardResult),
+      id: preserveCard?.id || (cardPayload as ProductCardResult).id,
       title: planItem?.mainHeadline || (cardPayload as ProductCardResult).title,
       shortDescription: planItem?.subheadline || (cardPayload as ProductCardResult).shortDescription,
       benefits: planItem?.bullets.length
@@ -298,11 +334,11 @@ export function CardGenerator({
       price: price.trim() || undefined,
       ctaText: ctaText.trim() || undefined,
       designPreset,
-      seriesId: options.seriesId,
-      seriesIndex: planItem?.index,
-      seriesCount: options.seriesCount,
-      seriesPlanItem: planItem,
-      seriesStyleGuide: options.seriesId ? buildSeriesStyleGuide(style, marketplace) : undefined,
+      seriesId: options.seriesId ?? preserveCard?.seriesId,
+      seriesIndex: planItem?.index ?? preserveCard?.seriesIndex,
+      seriesCount: (options.seriesCount ?? preserveCard?.seriesCount ?? plannedGenerationCount) as CardSeriesCount,
+      seriesPlanItem: planItem ?? preserveCard?.seriesPlanItem,
+      seriesStyleGuide: options.seriesId || preserveCard?.seriesId ? buildSeriesStyleGuide(style, marketplace) : preserveCard?.seriesStyleGuide,
       sourceInput: {
         ...payload,
         headline: planItem?.mainHeadline || headline.trim() || undefined,
@@ -311,7 +347,7 @@ export function CardGenerator({
         designPreset,
         imageMode,
         removeBackground,
-        cardsCount: options.seriesCount ?? cardsCount,
+        cardsCount: (options.seriesCount ?? preserveCard?.seriesCount ?? plannedGenerationCount) as CardSeriesCount,
         seriesIndex: planItem?.index,
         seriesType: planItem?.type
       }
@@ -346,7 +382,7 @@ export function CardGenerator({
 
     if (selectedCountExceedsQuota) {
       setError(
-        `Для серии нужно ${cardsCount} генераций, а доступно ${remainingGenerations}. Уменьшите количество карточек или купите пакет.`
+        `Для серии нужно ${plannedGenerationCount} генераций, а доступно ${remainingGenerations}. Уменьшите количество карточек или купите пакет.`
       );
       setShowPaywall(true);
       return;
@@ -408,15 +444,16 @@ export function CardGenerator({
 
       const seriesId = crypto.randomUUID();
       const completedCards: ProductCardResult[] = [];
+      const seriesTotal = seriesPlan.length;
 
       for (const planItem of seriesPlan) {
         try {
-          setSeriesProgress(`Генерируется карточка ${planItem.index} из ${cardsCount}`);
-          setNotice(`Генерируется карточка ${planItem.index} из ${cardsCount}: ${planItem.title}`);
+          setSeriesProgress(`Генерируется карточка ${planItem.index} из ${seriesTotal}`);
+          setNotice(`Генерируется карточка ${planItem.index} из ${seriesTotal}: ${planItem.title}`);
           const { card: generatedCard } = await createGeneratedProductCard(payload, {
             planItem,
             seriesId,
-            seriesCount: cardsCount
+            seriesCount: seriesTotal
           });
           setCard(generatedCard);
           const finalCard = await generateAiMarketplaceImage(generatedCard);
@@ -434,7 +471,7 @@ export function CardGenerator({
             break;
           }
 
-          completedCards.push(buildFailedSeriesCard(payload, planItem, seriesId, cardsCount, imageUrl, message));
+          completedCards.push(buildFailedSeriesCard(payload, planItem, seriesId, seriesTotal, imageUrl, message));
           setSeriesCards([...completedCards]);
           setError(`Карточка ${planItem.index} не сгенерировалась: ${message}`);
         }
@@ -444,16 +481,16 @@ export function CardGenerator({
 
       if (readyCards.length) {
         setCard(readyCards[readyCards.length - 1]);
-        setNotice(`Готово: создано ${readyCards.length} из ${cardsCount} карточек серии.`);
+        setNotice(`Готово: создано ${readyCards.length} из ${seriesTotal} карточек серии.`);
         trackConversion("generation_complete", {
           marketplace,
           platform: payload.platform || "wildberries",
-          cardsCount
+          cardsCount: seriesTotal
         });
         reachGoal("generate_card", {
           marketplace,
           designPreset,
-          cardsCount,
+          cardsCount: seriesTotal,
           hasImage: readyCards.some(hasGeneratedImage)
         });
       }
@@ -484,6 +521,9 @@ export function CardGenerator({
     setDiscount("");
     setStyle("Премиальный");
     setCardsCount(1);
+    setSelectedSeriesTypes(["hero"]);
+    setEditingCard(null);
+    setEditInstructions("");
     setHeadline("");
     setPrice("");
     setCtaText("");
@@ -614,6 +654,74 @@ export function CardGenerator({
     reachGoal("download_json", { source: "series_zip", count: readyFiles.length });
   }
 
+  async function handleRegenerateCard(cardToEdit: ProductCardResult, instructions: string) {
+    if (!instructions.trim()) {
+      setError("Опишите, что нужно исправить.");
+      return;
+    }
+
+    if (persistToServer && remainingGenerations === 0) {
+      setShowPaywall(true);
+      return;
+    }
+
+    const payload =
+      cardToEdit.sourceInput ??
+      ({
+        productDescription: description,
+        category: effectiveCategory,
+        marketplace,
+        style,
+        includeSeo: true,
+        focusBenefits: true,
+        includeInfographicText: true,
+        imageFileName,
+        platform: marketplaceLabelToPlatform(marketplace),
+        textMode
+      } satisfies ProductCardInput);
+
+    setError("");
+    setNotice("Перегенерируем карточку (1 генерация)…");
+    setIsLoading(true);
+
+    try {
+      const { card: generatedCard } = await createGeneratedProductCard(payload, {
+        planItem: cardToEdit.seriesPlanItem,
+        seriesId: cardToEdit.seriesId,
+        seriesCount: cardToEdit.seriesCount ?? plannedGenerationCount,
+        editInstructions: instructions.trim(),
+        preserveCard: cardToEdit
+      });
+      setCard(generatedCard);
+      const finalCard = await generateAiMarketplaceImage(generatedCard, instructions.trim());
+      const readyCard = finalCard ?? generatedCard;
+
+      setCard(readyCard);
+      if (seriesCards.length) {
+        setSeriesCards((items) => items.map((item) => (item.id === cardToEdit.id ? readyCard : item)));
+      }
+      await persistGeneratedCard(readyCard, { silent: true });
+      setEditingCard(null);
+      setEditInstructions("");
+      setNotice("Карточка обновлена. Списана 1 генерация.");
+      reachGoal("generate_card", {
+        regenerate: true,
+        series: Boolean(cardToEdit.seriesPlanItem),
+        hasEditInstructions: true
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Не удалось перегенерировать карточку.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function openCardEditor(nextCard: ProductCardResult) {
+    setCard(nextCard);
+    setEditingCard(nextCard);
+    setEditInstructions("");
+  }
+
   async function handleRetrySeriesCard(cardToRetry: ProductCardResult) {
     const planItem = cardToRetry.seriesPlanItem;
 
@@ -641,14 +749,15 @@ export function CardGenerator({
     };
 
     setError("");
-    setNotice(`Повторяем карточку ${planItem.index} из ${cardToRetry.seriesCount ?? cardsCount}`);
+    setNotice(`Повторяем карточку ${planItem.index} из ${cardToRetry.seriesCount ?? plannedGenerationCount}`);
     setIsLoading(true);
 
     try {
       const { card: generatedCard } = await createGeneratedProductCard(payload, {
         planItem,
         seriesId: cardToRetry.seriesId,
-        seriesCount: cardToRetry.seriesCount ?? cardsCount
+        seriesCount: cardToRetry.seriesCount ?? plannedGenerationCount,
+        preserveCard: cardToRetry
       });
       setCard(generatedCard);
       const finalCard = await generateAiMarketplaceImage(generatedCard);
@@ -713,7 +822,10 @@ export function CardGenerator({
     return updatedCard;
   }
 
-  async function generateAiMarketplaceImage(cardForImage: ProductCardResult): Promise<ProductCardResult | null> {
+  async function generateAiMarketplaceImage(
+    cardForImage: ProductCardResult,
+    editInstructions?: string
+  ): Promise<ProductCardResult | null> {
     const productImage = imageUrl || cardForImage.imageDataUrl;
 
     if (!productImage) {
@@ -738,7 +850,7 @@ export function CardGenerator({
                 includeSeo: true,
                 focusBenefits: true,
                 includeInfographicText: true
-              }, cardForImage.seriesPlanItem, cardForImage.seriesCount ?? cardsCount)
+              }, cardForImage.seriesPlanItem, cardForImage.seriesCount ?? plannedGenerationCount)
             : description,
           category: cardForImage.category,
           style,
@@ -764,7 +876,8 @@ export function CardGenerator({
           seriesCardType: cardForImage.seriesPlanItem?.type,
           seriesCardGoal: cardForImage.seriesPlanItem?.goal,
           seriesCardVisualIdea: cardForImage.seriesPlanItem?.visualIdea,
-          badges: cardForImage.seriesPlanItem?.badges
+          badges: cardForImage.seriesPlanItem?.badges,
+          editInstructions: editInstructions?.trim() || undefined
         })
       });
       const data = (await response.json()) as GenerateImageResult & { error?: string };
@@ -820,11 +933,9 @@ export function CardGenerator({
           <form className={formClass} onSubmit={handleSubmit}>
             <div className="grid gap-5">
               <div>
-                <p className={`text-xs font-black uppercase tracking-[0.18em] ${darkConsole ? "text-mint" : "text-accent"}`}>
-                  01 · Товар
-                </p>
-                <p className={`mt-2 text-sm ${darkConsole ? "text-white/50" : "text-muted"}`}>
-                  Фото, описание и категория будущей карточки.
+                <p className={`text-sm font-semibold ${labelClass}`}>Товар</p>
+                <p className={`mt-1 text-sm ${darkConsole ? "text-white/45" : "text-muted"}`}>
+                  Фото и описание
                 </p>
               </div>
               <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
@@ -857,9 +968,7 @@ export function CardGenerator({
                 />
               </label>
               <div className={`border-t pt-5 ${darkConsole ? "border-white/10" : "border-clay"}`}>
-                <p className={`text-xs font-black uppercase tracking-[0.18em] ${darkConsole ? "text-mint" : "text-accent"}`}>
-                  02 · Площадка и стиль
-                </p>
+                <p className={`text-sm font-semibold ${labelClass}`}>Площадка и стиль</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
@@ -916,58 +1025,59 @@ export function CardGenerator({
                 label="Убрать фон с фото"
                 onChange={(event) => setRemoveBackground(event.target.checked)}
               />
-              <div className={`rounded-[18px] border p-4 ${darkConsole ? "border-white/10 bg-white/5" : "border-clay bg-paper"}`}>
-                <div className="grid gap-4 md:grid-cols-[0.8fr_1.2fr]">
-                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                    Количество карточек
-                    <Select
-                      onChange={(event) => setCardsCount(Number(event.target.value) as CardSeriesCount)}
-                      value={cardsCount}
-                      variant={selectVariant}
-                    >
-                      {cardCountOptions.map((count) => (
-                        <option key={count} value={count}>
-                          {`${count} ${getCardPlural(count)}`}
-                        </option>
-                      ))}
-                    </Select>
-                  </label>
-                  <div>
-                    <p className={`text-sm font-semibold ${labelClass}`}>Серия карточек товара</p>
-                    <p className={`mt-2 text-sm leading-6 ${darkConsole ? "text-white/50" : "text-muted"}`}>
-                      При выборе нескольких карточек сервис создаст полноценную галерею товара: обложку,
-                      преимущества, характеристики, применение и другие смысловые блоки.
-                    </p>
-                    {selectedCountExceedsQuota ? (
-                      <p className="mt-2 text-sm font-semibold text-red-400">
-                        Для серии нужно {cardsCount} генераций. Доступно сейчас: {remainingGenerations}. Купите пакет или
-                        выберите меньше карточек.
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-                <div className={`mt-4 rounded-[14px] border p-3 ${darkConsole ? "border-white/10 bg-black/10" : "border-clay bg-card"}`}>
-                  <p className={`text-xs font-black uppercase tracking-[0.18em] ${darkConsole ? "text-mint" : "text-accent"}`}>
-                    Состав серии
-                  </p>
-                  <ol className={`mt-3 grid gap-2 text-sm ${darkConsole ? "text-white/70" : "text-muted"}`}>
-                    {seriesPlan.map((item) => (
-                      <li className="grid grid-cols-[2rem_1fr] gap-2" key={`${item.index}-${item.type}`}>
-                        <span className="font-black text-accent">{item.index}.</span>
-                        <span>
-                          <span className={darkConsole ? "font-semibold text-white" : "font-semibold text-ink"}>{item.title}</span>
-                          <span className="block text-xs">{item.goal}</span>
-                        </span>
-                      </li>
+              <div className={`border-t pt-5 ${darkConsole ? "border-white/10" : "border-clay"}`}>
+                <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                  Сколько карточек
+                  <Select
+                    onChange={(event) => setCardsCount(Number(event.target.value) as CardSeriesCount)}
+                    value={cardsCount}
+                    variant={selectVariant}
+                  >
+                    {cardCountOptions.map((count) => (
+                      <option key={count} value={count}>
+                        {count === 1 ? "1 карточка" : `${count} карточки`}
+                      </option>
                     ))}
-                  </ol>
-                </div>
+                  </Select>
+                </label>
+                {cardsCount > 1 ? (
+                  <div className="mt-4 grid gap-3">
+                    <p className={`text-sm ${darkConsole ? "text-white/50" : "text-muted"}`}>
+                      Выбрано <span className="font-semibold text-accent">{plannedGenerationCount}</span> — столько
+                      генераций спишется
+                    </p>
+                    <SeriesTypePicker
+                      category={effectiveCategory}
+                      darkConsole={darkConsole}
+                      marketplace={marketplace}
+                      onChange={setSelectedSeriesTypes}
+                      selectedTypes={selectedSeriesTypes}
+                      style={style}
+                    />
+                  </div>
+                ) : null}
+                {selectedCountExceedsQuota ? (
+                  <p className="mt-3 text-sm text-red-400">
+                    Нужно {plannedGenerationCount} генераций, доступно {remainingGenerations}
+                  </p>
+                ) : null}
               </div>
-              <div className={`rounded-[18px] border p-4 ${darkConsole ? "border-white/10 bg-white/5" : "border-clay bg-paper"}`}>
-                <p className={`text-xs font-black uppercase tracking-[0.18em] ${darkConsole ? "text-mint" : "text-accent"}`}>
-                  03 · Площадка и текст карточки
-                </p>
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <details
+                className={`group rounded-[14px] border ${darkConsole ? "border-white/10 bg-white/[0.03]" : "border-clay bg-paper"}`}
+              >
+                <summary
+                  className={`cursor-pointer list-none px-4 py-3 text-sm font-semibold marker:content-none ${labelClass}`}
+                >
+                  <span className="flex items-center justify-between gap-2">
+                    Дополнительно для текста
+                    <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                      необязательно
+                    </span>
+                  </span>
+                </summary>
+                <div
+                  className={`grid gap-4 border-t px-4 pb-4 pt-3 md:grid-cols-2 ${darkConsole ? "border-white/10" : "border-clay"}`}
+                >
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                     Режим текста
                     <Select
@@ -984,11 +1094,7 @@ export function CardGenerator({
                   </label>
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                     Бренд
-                    <Input onChange={(event) => setBrand(event.target.value)} placeholder="Например: Xiaomi" value={brand} />
-                  </label>
-                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                    Артикул продавца
-                    <Input onChange={(event) => setSellerSku(event.target.value)} placeholder="SKU-12345" value={sellerSku} />
+                    <Input onChange={(event) => setBrand(event.target.value)} placeholder="Xiaomi" value={brand} />
                   </label>
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                     Цвет
@@ -996,19 +1102,11 @@ export function CardGenerator({
                   </label>
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                     Размер
-                    <Input onChange={(event) => setSize(event.target.value)} placeholder="M / 42" value={size} />
+                    <Input onChange={(event) => setSize(event.target.value)} placeholder="M" value={size} />
                   </label>
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                     Материал
                     <Input onChange={(event) => setMaterial(event.target.value)} placeholder="хлопок" value={material} />
-                  </label>
-                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                    Габариты
-                    <Input onChange={(event) => setDimensions(event.target.value)} placeholder="20×15×8 см" value={dimensions} />
-                  </label>
-                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                    Вес
-                    <Input onChange={(event) => setWeight(event.target.value)} placeholder="350 г" value={weight} />
                   </label>
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                     Комплектация
@@ -1019,7 +1117,23 @@ export function CardGenerator({
                     />
                   </label>
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                    Целевая аудитория
+                    Артикул
+                    <Input onChange={(event) => setSellerSku(event.target.value)} placeholder="SKU-12345" value={sellerSku} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Цена в тексте
+                    <Input onChange={(event) => setPrice(event.target.value)} placeholder="7 490 ₽" value={price} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Габариты
+                    <Input onChange={(event) => setDimensions(event.target.value)} placeholder="20×15×8 см" value={dimensions} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Вес
+                    <Input onChange={(event) => setWeight(event.target.value)} placeholder="350 г" value={weight} />
+                  </label>
+                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                    Аудитория
                     <Input
                       onChange={(event) => setTargetAudience(event.target.value)}
                       placeholder="для офиса"
@@ -1027,7 +1141,7 @@ export function CardGenerator({
                     />
                   </label>
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                    Сценарий использования
+                    Сценарий
                     <Input onChange={(event) => setUseCase(event.target.value)} placeholder="для поездок" value={useCase} />
                   </label>
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
@@ -1038,53 +1152,43 @@ export function CardGenerator({
                     Скидка
                     <Input onChange={(event) => setDiscount(event.target.value)} placeholder="-20%" value={discount} />
                   </label>
-                </div>
-              </div>
-              <div className={`rounded-[18px] border p-4 ${darkConsole ? "border-white/10 bg-white/5" : "border-clay bg-paper"}`}>
-                <p className={`text-xs font-black uppercase tracking-[0.18em] ${darkConsole ? "text-mint" : "text-accent"}`}>
-                  04 · Продажа
-                </p>
-                <h4 className={`mt-2 text-sm font-semibold ${labelClass}`}>Заголовок, цена и пресет для обложки</h4>
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                    Заголовок
-                    <Input
-                      onChange={(event) => setHeadline(event.target.value)}
-                      placeholder="ПРЕМИУМ-ТОВАР"
-                      value={headline}
-                    />
-                  </label>
-                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                    Цена
-                    <Input onChange={(event) => setPrice(event.target.value)} placeholder="7 490 ₽" value={price} />
-                  </label>
-                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                    CTA
+                  <label className={`grid gap-2 text-sm font-semibold md:col-span-2 ${labelClass}`}>
+                    CTA на обложке
                     <Input
                       onChange={(event) => setCtaText(event.target.value)}
                       placeholder="ДОБАВИТЬ В КОРЗИНУ"
                       value={ctaText}
                     />
                   </label>
-                  <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                    Пресет дизайна
-                    <Select
-                      onChange={(event) => {
-                        const nextDesignPreset = event.target.value as ImageDesignPreset;
-                        setDesignPreset(nextDesignPreset);
-                        reachGoal("select_design_preset", { designPreset: nextDesignPreset });
-                      }}
-                      value={designPreset}
-                      variant={selectVariant}
-                    >
-                      {designPresets.map((item) => (
-                        <option key={item.value} value={item.value}>
-                          {item.label}
-                        </option>
-                      ))}
-                    </Select>
-                  </label>
                 </div>
+              </details>
+              <div className={`grid gap-4 md:grid-cols-2 ${darkConsole ? "" : ""}`}>
+                <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                  Заголовок на обложке
+                  <Input
+                    onChange={(event) => setHeadline(event.target.value)}
+                    placeholder="ПРЕМИУМ-ТОВАР"
+                    value={headline}
+                  />
+                </label>
+                <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                  Пресет дизайна
+                  <Select
+                    onChange={(event) => {
+                      const nextDesignPreset = event.target.value as ImageDesignPreset;
+                      setDesignPreset(nextDesignPreset);
+                      reachGoal("select_design_preset", { designPreset: nextDesignPreset });
+                    }}
+                    value={designPreset}
+                    variant={selectVariant}
+                  >
+                    {designPresets.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
               </div>
               {error ? <Alert variant="error">{error}</Alert> : null}
               {notice ? <Alert variant="success">{notice}</Alert> : null}
@@ -1102,11 +1206,11 @@ export function CardGenerator({
                 <Button disabled={isWorking || (persistToServer && remainingGenerations === 0)} type="submit">
                   {isWorking ? <Loader2 className="animate-spin" size={17} /> : <Wand2 size={17} />}
                   {isWorking
-                    ? cardsCount > 1
+                    ? plannedGenerationCount > 1
                       ? "Генерируем серию…"
                       : "Генерируем…"
-                    : cardsCount > 1
-                      ? `Сгенерировать ${cardsCount} карточек`
+                    : plannedGenerationCount > 1
+                      ? `Сгенерировать ${plannedGenerationCount} карточек`
                       : "Сгенерировать карточку"}
                 </Button>
                 <Button onClick={handleClear} type="button" variant="secondary">
@@ -1138,9 +1242,15 @@ export function CardGenerator({
                       Готова к загрузке на {card.marketplace}
                     </p>
                   </div>
-                  <Button onClick={handleDownloadBestImage} variant="dark">
-                    Скачать PNG
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={handleDownloadBestImage} variant="dark">
+                      Скачать PNG
+                    </Button>
+                    <Button onClick={() => openCardEditor(card)} type="button" variant="secondary">
+                      <Pencil size={16} />
+                      Редактировать
+                    </Button>
+                  </div>
                 </div>
                 {card.generatedImageIsFallback && card.generatedImageError ? (
                   <div className="mt-4">
@@ -1214,7 +1324,7 @@ export function CardGenerator({
                         className={`rounded-[16px] border p-3 ${darkConsole ? "border-white/10 bg-black/10" : "border-clay bg-paper"}`}
                         key={seriesCard.id}
                       >
-                        <button className="block w-full text-left" onClick={() => setCard(seriesCard)} type="button">
+                        <button className="block w-full text-left" onClick={() => openCardEditor(seriesCard)} type="button">
                           <div className={`overflow-hidden rounded-[12px] border ${darkConsole ? "border-white/10" : "border-clay"}`}>
                             {previewUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -1241,6 +1351,10 @@ export function CardGenerator({
                           <Button onClick={() => handleDownloadSeriesCard(seriesCard, index)} size="sm" variant="secondary">
                             <Download size={15} />
                             PNG
+                          </Button>
+                          <Button onClick={() => openCardEditor(seriesCard)} size="sm" variant="ghost">
+                            <Pencil size={15} />
+                            Редактировать
                           </Button>
                           <Button onClick={() => handleRetrySeriesCard(seriesCard)} size="sm" variant="ghost">
                             <RefreshCcw size={15} />
@@ -1270,6 +1384,21 @@ export function CardGenerator({
             />
           </div>
         ) : null}
+        {editingCard ? (
+          <CardEditPanel
+            card={editingCard}
+            darkConsole={darkConsole}
+            editInstructions={editInstructions}
+            isLoading={isLoading}
+            onClose={() => {
+              setEditingCard(null);
+              setEditInstructions("");
+            }}
+            onEditInstructionsChange={setEditInstructions}
+            onRegenerate={() => handleRegenerateCard(editingCard, editInstructions)}
+            remainingGenerations={remainingGenerations}
+          />
+        ) : null}
       </div>
     </section>
   );
@@ -1279,267 +1408,6 @@ function getCardPlural(count: number) {
   if (count === 1) return "карточка";
   if (count > 1 && count < 5) return "карточки";
   return "карточек";
-}
-
-function buildCardSeriesPlan({
-  count,
-  category,
-  marketplace,
-  style,
-  productDescription,
-  headline
-}: {
-  count: CardSeriesCount;
-  category: string;
-  marketplace: string;
-  style: string;
-  productDescription: string;
-  headline: string;
-}): CardSeriesPlanItem[] {
-  const typeOrder = getSeriesTypeOrder(count, category);
-  const productName = cleanProductName(headline || productDescription);
-
-  return typeOrder.map((type, index) => {
-    const definition = getSeriesDefinition(type, productName, marketplace, style);
-
-    return {
-      index: index + 1,
-      type,
-      ...definition
-    };
-  });
-}
-
-function getSeriesTypeOrder(count: CardSeriesCount, category: string) {
-  const normalizedCategory = category.toLowerCase();
-  const base: Record<CardSeriesCount, string[]> = {
-    1: ["hero"],
-    3: ["hero", "benefits", "features"],
-    5: ["hero", "benefits", "features", "how_to_use", "safety"],
-    7: ["hero", "benefits", "features", "how_to_use", "safety", "compatibility", "assortment"],
-    10: [
-      "hero",
-      "benefits",
-      "features",
-      "ingredients",
-      "how_to_use",
-      "use_cases",
-      "safety",
-      "compatibility",
-      "assortment",
-      "final_cta"
-    ]
-  };
-
-  if (/космет|крем|сыворот|уход|шампун|маск/.test(normalizedCategory) && count === 10) {
-    return ["hero", "benefits", "ingredients", "how_to_use", "texture", "skin_type", "safety", "use_cases", "assortment", "final_cta"];
-  }
-
-  if (/живот|кош|собак|питом/.test(normalizedCategory) && count >= 7) {
-    return base[count].map((type) => (type === "compatibility" ? "hygiene" : type));
-  }
-
-  if (/электрон|гаджет|науш|телефон|техник/.test(normalizedCategory) && count === 10) {
-    return ["hero", "key_specs", "benefits", "use_cases", "comparison", "compatibility", "package", "warranty", "dimensions", "final_cta"];
-  }
-
-  if (/одеж|плать|брюк|футбол|кофт|обув/.test(normalizedCategory) && count === 10) {
-    return ["hero", "material", "fit", "sizes", "styling", "details", "care", "colors", "review", "final_cta"];
-  }
-
-  return base[count];
-}
-
-function getSeriesDefinition(
-  type: string,
-  productName: string,
-  marketplace: string,
-  style: string
-): Omit<CardSeriesPlanItem, "index" | "type"> {
-  const definitions: Record<string, Omit<CardSeriesPlanItem, "index" | "type">> = {
-    hero: {
-      title: "Главная обложка",
-      goal: "Быстро объяснить, что это за товар и почему его стоит открыть.",
-      mainHeadline: productName,
-      subheadline: `Продающая обложка для ${marketplace}`,
-      bullets: ["Крупный товар", "Понятный первый экран", "Акцент на главной выгоде"],
-      badges: ["Хит для каталога", style],
-      visualIdea: "Крупное фото товара, чистый фон, один сильный заголовок и 2-3 аккуратные плашки",
-      textDensity: "medium"
-    },
-    benefits: {
-      title: "Преимущества",
-      goal: "Показать покупателю главные выгоды без повторения обложки.",
-      mainHeadline: "Главные преимущества",
-      subheadline: "Почему товар удобно выбрать",
-      bullets: ["Понятная польза", "Удобство в использовании", "Подходит для ежедневных задач"],
-      badges: ["Польза", "Комфорт"],
-      visualIdea: "Товар в центре, вокруг крупные иконки преимуществ и короткие подписи",
-      textDensity: "medium"
-    },
-    features: {
-      title: "Характеристики",
-      goal: "Собрать важные свойства товара в читаемый блок.",
-      mainHeadline: "Характеристики без лишнего",
-      subheadline: "Ключевые параметры в одном кадре",
-      bullets: ["Материал / состав", "Размер / формат", "Комплектация"],
-      badges: ["Параметры", "Детали"],
-      visualIdea: "Структурная карточка с товаром сбоку и блоком характеристик крупным текстом",
-      textDensity: "high"
-    },
-    ingredients: {
-      title: "Состав / материалы",
-      goal: "Показать состав, материалы или комплектацию без неподтвержденных обещаний.",
-      mainHeadline: "Состав и детали",
-      subheadline: "Что важно знать перед покупкой",
-      bullets: ["Материалы", "Комплектация", "Особенности"],
-      badges: ["Состав", "Детали"],
-      visualIdea: "Крупный товар, рядом аккуратные карточки материалов или элементов комплекта",
-      textDensity: "medium"
-    },
-    how_to_use: {
-      title: "Применение",
-      goal: "Показать, как пользоваться товаром или в каком сценарии он нужен.",
-      mainHeadline: "Как использовать",
-      subheadline: "Простой сценарий для покупателя",
-      bullets: ["Шаг 1", "Шаг 2", "Готовый результат"],
-      badges: ["Инструкция", "Просто"],
-      visualIdea: "Пошаговая композиция с крупными цифрами и товаром в действии",
-      textDensity: "medium"
-    },
-    use_cases: {
-      title: "Сценарии использования",
-      goal: "Показать несколько ситуаций, где товар может быть полезен.",
-      mainHeadline: "Для разных задач",
-      subheadline: "Сценарии использования",
-      bullets: ["Дом", "Работа", "Подарок"],
-      badges: ["Сценарии", "Универсально"],
-      visualIdea: "Три аккуратных мини-сцены вокруг главного товара",
-      textDensity: "medium"
-    },
-    safety: {
-      title: "Доверие / безопасность",
-      goal: "Дать спокойный аргумент качества без фейковых сертификатов и гарантий.",
-      mainHeadline: "Качество без лишних обещаний",
-      subheadline: "Понятные факты перед покупкой",
-      bullets: ["Материалы и уход", "Комплектация без сюрпризов", "Подходит для ежедневного использования"],
-      badges: ["Доверие", "Качество"],
-      visualIdea: "Чистая премиальная карточка с товаром, отметками качества и спокойной палитрой",
-      textDensity: "low"
-    },
-    compatibility: {
-      title: "Кому подходит",
-      goal: "Показать совместимость, аудиторию или ситуации выбора.",
-      mainHeadline: "Кому подойдет",
-      subheadline: "Быстрый ответ перед покупкой",
-      bullets: ["Для выбранной категории", "Для повседневного использования", "Для подарка"],
-      badges: ["Совместимость", "Выбор"],
-      visualIdea: "Товар в центре, рядом 3 портретных или ситуационных блока без лишних деталей",
-      textDensity: "medium"
-    },
-    assortment: {
-      title: "Ассортимент / варианты",
-      goal: "Показать варианты цвета, размера, объема или финальный аргумент серии.",
-      mainHeadline: "Выберите свой вариант",
-      subheadline: "Цвет, размер или формат под вашу задачу",
-      bullets: ["Цвет", "Размер", "Формат"],
-      badges: ["Варианты", "Ассортимент"],
-      visualIdea: "Единая композиция с несколькими вариантами товара или аккуратными свотчами",
-      textDensity: "medium"
-    },
-    final_cta: {
-      title: "Финальная карточка",
-      goal: "Закрыть галерею мягким аргументом покупки без агрессивного CTA.",
-      mainHeadline: "Готово для вашего заказа",
-      subheadline: "Финальный акцент серии",
-      bullets: ["Сравните параметры", "Выберите подходящий вариант", "Добавьте в корзину"],
-      badges: ["Финал", "Выбор"],
-      visualIdea: "Премиальная финальная карточка с товаром, благодарностью и спокойным завершающим блоком",
-      textDensity: "low"
-    }
-  };
-
-  return definitions[type] ?? {
-    title: "Смысловой блок",
-    goal: "Раскрыть товар с новой стороны.",
-    mainHeadline: "Новый аргумент",
-    subheadline: "Отдельный блок серии",
-    bullets: ["Польза", "Детали", "Выбор"],
-    badges: ["Серия", style],
-    visualIdea: "Единая карточка серии с товаром и одним главным сообщением",
-    textDensity: "medium"
-  };
-}
-
-function buildSeriesStyleGuide(style: string, marketplace: string) {
-  return `${style} e-commerce стиль для ${marketplace}: единая палитра, крупная русская типографика, похожие плашки, аккуратные отступы, премиальная карточка 4:5.`;
-}
-
-function buildSeriesCardDescription(
-  payload: ProductCardInput,
-  planItem: CardSeriesPlanItem,
-  seriesCount: CardSeriesCount
-) {
-  return `${payload.productDescription}
-
-Сделай карточку серии ${planItem.index} из ${seriesCount}.
-Тип блока: ${planItem.type}.
-Название блока: ${planItem.title}.
-Цель: ${planItem.goal}.
-Главный заголовок: ${planItem.mainHeadline}.
-Подзаголовок: ${planItem.subheadline}.
-Тезисы: ${planItem.bullets.join("; ")}.
-Бейджи: ${planItem.badges.join("; ")}.
-Визуальная идея: ${planItem.visualIdea}.
-Важно: не повторяй смысл других карточек серии, не придумывай неподтвержденные свойства, пиши коротко и на русском.`;
-}
-
-function buildSeriesInfographicTexts(planItem: CardSeriesPlanItem) {
-  return [planItem.mainHeadline, ...planItem.badges, ...planItem.bullets].filter(Boolean).slice(0, 4);
-}
-
-function buildFailedSeriesCard(
-  payload: ProductCardInput,
-  planItem: CardSeriesPlanItem,
-  seriesId: string,
-  seriesCount: CardSeriesCount,
-  imageDataUrl: string,
-  error: string
-): ProductCardResult {
-  return {
-    id: crypto.randomUUID(),
-    title: planItem.mainHeadline,
-    shortDescription: planItem.subheadline,
-    fullDescription: planItem.goal,
-    benefits: planItem.bullets,
-    characteristics: [],
-    keywords: [],
-    infographicTexts: buildSeriesInfographicTexts(planItem),
-    marketplaceTips: [],
-    visualConcept: planItem.visualIdea,
-    category: payload.category || "",
-    marketplace: payload.marketplace,
-    style: payload.style,
-    generatedAt: new Date().toISOString(),
-    provider: "Series plan",
-    isFallback: true,
-    imageDataUrl,
-    generatedImageIsFallback: true,
-    generatedImageError: error,
-    platform: payload.platform,
-    textMode: payload.textMode,
-    sourceInput: {
-      ...payload,
-      cardsCount: seriesCount,
-      seriesIndex: planItem.index,
-      seriesType: planItem.type
-    },
-    seriesId,
-    seriesIndex: planItem.index,
-    seriesCount,
-    seriesPlanItem: planItem,
-    seriesStyleGuide: buildSeriesStyleGuide(payload.style, payload.marketplace)
-  };
 }
 
 function hasUsableImage(data: GenerateImageResult) {
@@ -1725,12 +1593,6 @@ const CRC32_TABLE = Array.from({ length: 256 }, (_, index) => {
 
   return crc >>> 0;
 });
-
-function cleanProductName(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "Карточка товара";
-  return trimmed.split(/[.,;\n]/)[0]?.slice(0, 48) || "Карточка товара";
-}
 
 function readAsDataUrl(file: Blob) {
   return new Promise<string>((resolve, reject) => {

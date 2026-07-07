@@ -69,7 +69,9 @@ export async function POST(request: Request) {
       useCase: body.useCase?.trim(),
       price: body.price?.trim(),
       oldPrice: body.oldPrice?.trim(),
-      discount: body.discount?.trim()
+      discount: body.discount?.trim(),
+      editInstructions: body.editInstructions?.trim(),
+      previousCard: body.previousCard
     };
 
     const result = await generateProductCard(cardInput);
@@ -94,7 +96,9 @@ export async function POST(request: Request) {
       discount: cardInput.discount,
       advantages: result.benefits,
       characteristics: result.characteristics,
-      keywords: result.keywords
+      keywords: result.keywords,
+      editInstructions: cardInput.editInstructions,
+      previousCard: cardInput.previousCard
     };
 
     const marketplaceText = await generateMarketplaceText(marketplaceInput);
@@ -114,17 +118,6 @@ export async function POST(request: Request) {
     };
 
     const nextQuota = await consumeGeneration(userId);
-
-    if (!nextQuota.canGenerate) {
-      return NextResponse.json(
-        {
-          error: "Бесплатные генерации использованы. Купите пакет, чтобы продолжить.",
-          code: "QUOTA_EXCEEDED",
-          quota: nextQuota
-        },
-        { status: 402 }
-      );
-    }
 
     return NextResponse.json({
       ...enrichedResult,

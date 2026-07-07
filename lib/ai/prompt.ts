@@ -1,6 +1,8 @@
 import type { ProductCardInput } from "@/types/product-card";
+import { buildEditInstructionsBlock } from "@/lib/series/editing";
 
 export function buildCardPrompt(input: ProductCardInput & { category: string }) {
+  const editBlock = buildEditInstructionsBlock(input.editInstructions, input.previousCard);
   const role = getMarketplaceRole(input.marketplace);
   const audience = getAudienceHint(input.category);
   const textRules = getMarketplaceTextRules(input.marketplace);
@@ -64,7 +66,7 @@ JSON должен быть такого вида:
 - infographicTexts 4 короткие фразы до 18 символов каждая
 - marketplaceTips 3 рекомендации
 - Товар из описания должен явно влиять на результат.
-- Никаких вступлений, пояснений, markdown и комментариев вне JSON.`;
+- Никаких вступлений, пояснений, markdown и комментариев вне JSON.${editBlock}`;
 }
 
 function getMarketplaceRole(marketplace: string) {

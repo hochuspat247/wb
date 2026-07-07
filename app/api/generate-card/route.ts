@@ -41,19 +41,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const nextQuota = await consumeGeneration(userId);
-
-    if (nextQuota.used === quota.used) {
-      return NextResponse.json(
-        {
-          error: "Бесплатные генерации использованы. Купите пакет, чтобы продолжить.",
-          code: "QUOTA_EXCEEDED",
-          quota: nextQuota
-        },
-        { status: 402 }
-      );
-    }
-
     const marketplace = body.marketplace || "Wildberries";
     const category = detectCategory(body.productDescription.trim(), body.category?.trim());
     const platform = body.platform ?? marketplaceLabelToPlatform(marketplace);
@@ -125,6 +112,19 @@ export async function POST(request: Request) {
       infographicTexts: marketplaceText.infographicTexts.length ? marketplaceText.infographicTexts : result.infographicTexts,
       marketplaceText
     };
+
+    const nextQuota = await consumeGeneration(userId);
+
+    if (nextQuota.used === quota.used) {
+      return NextResponse.json(
+        {
+          error: "Бесплатные генерации использованы. Купите пакет, чтобы продолжить.",
+          code: "QUOTA_EXCEEDED",
+          quota: nextQuota
+        },
+        { status: 402 }
+      );
+    }
 
     return NextResponse.json({
       ...enrichedResult,

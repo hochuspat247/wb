@@ -17,7 +17,7 @@ const plans = [
     name: "Рост",
     price: "490 ₽",
     unit: "5 шт",
-    billingNote: "в месяц",
+    billingNote: "пакет карточек",
     features: [
       "5 генераций карточек",
       "Доступ к редактору шаблонов",
@@ -40,7 +40,7 @@ const plans = [
     subtitle: "Для активных селлеров",
     price: "1 490 ₽",
     unit: "20 шт",
-    billingNote: "в месяц",
+    billingNote: "пакет карточек",
     features: [
       "20 генераций карточек",
       "Всё из тарифа «Рост»",

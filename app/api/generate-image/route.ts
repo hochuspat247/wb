@@ -186,7 +186,12 @@ async function parseGenerateImageRequest(request: Request): Promise<GenerateImag
       model: getFormString(formData, "model") as "nb2" | "gpt2",
       aspectRatio: getFormString(formData, "aspectRatio"),
       resolution: getFormString(formData, "resolution") as "1k" | "2k" | "4k",
-      outputFormat: getFormString(formData, "outputFormat") as "png" | "jpeg" | "webp"
+      outputFormat: getFormString(formData, "outputFormat") as "png" | "jpeg" | "webp",
+      seriesStyleGuide: getFormString(formData, "seriesStyleGuide"),
+      seriesCardType: getFormString(formData, "seriesCardType"),
+      seriesCardGoal: getFormString(formData, "seriesCardGoal"),
+      seriesCardVisualIdea: getFormString(formData, "seriesCardVisualIdea"),
+      badges: getFormStringArray(formData, "badges")
     };
   }
 
@@ -214,7 +219,12 @@ async function parseGenerateImageRequest(request: Request): Promise<GenerateImag
       model: body.model,
       aspectRatio: body.aspectRatio,
       resolution: body.resolution,
-      outputFormat: body.outputFormat
+      outputFormat: body.outputFormat,
+      seriesStyleGuide: body.seriesStyleGuide,
+      seriesCardType: body.seriesCardType,
+      seriesCardGoal: body.seriesCardGoal,
+      seriesCardVisualIdea: body.seriesCardVisualIdea,
+      badges: body.badges
     };
   }
 
@@ -242,7 +252,12 @@ async function parseGenerateImageRequest(request: Request): Promise<GenerateImag
       model: body.model,
       aspectRatio: body.aspectRatio,
       resolution: body.resolution,
-      outputFormat: body.outputFormat
+      outputFormat: body.outputFormat,
+      seriesStyleGuide: body.seriesStyleGuide,
+      seriesCardType: body.seriesCardType,
+      seriesCardGoal: body.seriesCardGoal,
+      seriesCardVisualIdea: body.seriesCardVisualIdea,
+      badges: body.badges
     };
   }
 

@@ -216,6 +216,18 @@ export function buildPremiumMarketplaceImagePrompt(input: GenerateImageInput): s
 
   const styleDirection = getStyleDirection(style);
   const presetDirection = getPresetDirection(designPreset);
+  const seriesContext = input.seriesCardType
+    ? `
+SERIES CARD CONTEXT:
+This image is one card inside a product gallery series.
+Keep the same visual system across the series, but make this card focus on its own meaning.
+Series style guide: ${cleanText(input.seriesStyleGuide || "единая палитра, похожие плашки, крупная типографика")}
+Card type: ${cleanText(input.seriesCardType)}
+Card goal: ${cleanText(input.seriesCardGoal || "раскрыть один понятный смысловой блок товара")}
+Visual idea: ${cleanText(input.seriesCardVisualIdea || "крупный товар, аккуратные плашки и один главный акцент")}
+Badges to use: ${listToLines(input.badges, ["Ключевой блок", "Для маркетплейса"])}
+`
+    : "";
 
   return `
 Create a premium marketplace product card image in Russian.
@@ -250,6 +262,8 @@ ${specs}
 
 INFOGRAPHIC TEXTS TO USE:
 ${infographicTexts}
+
+${seriesContext}
 
 REQUIRED COMPOSITION:
 1. Large bold Russian headline at the top.

@@ -1,5 +1,20 @@
 import type { MarketplacePlatform, MarketplaceTextMode, MarketplaceTextResult } from "@/types/marketplace";
 
+export type CardSeriesCount = 1 | 3 | 5 | 7 | 10;
+
+export type CardSeriesPlanItem = {
+  index: number;
+  type: string;
+  title: string;
+  goal: string;
+  mainHeadline: string;
+  subheadline: string;
+  bullets: string[];
+  badges: string[];
+  visualIdea: string;
+  textDensity: "low" | "medium" | "high";
+};
+
 export type ProductCardInput = {
   productDescription: string;
   category?: string;
@@ -33,6 +48,9 @@ export type ProductCardSourceInput = ProductCardInput & {
   designPreset?: ImageDesignPreset;
   imageMode?: ImageGenerationMode;
   removeBackground?: boolean;
+  cardsCount?: CardSeriesCount;
+  seriesIndex?: number;
+  seriesType?: string;
 };
 
 export type ProductCharacteristic = {
@@ -79,6 +97,11 @@ export type ProductCardResult = {
   textMode?: MarketplaceTextMode;
   marketplaceText?: MarketplaceTextResult;
   sourceInput?: ProductCardSourceInput;
+  seriesId?: string;
+  seriesIndex?: number;
+  seriesCount?: CardSeriesCount;
+  seriesPlanItem?: CardSeriesPlanItem;
+  seriesStyleGuide?: string;
 };
 
 export type AiProviderName = "Gemini" | "Ollama" | "OpenRouter" | "Hugging Face" | "Smart fallback";
@@ -127,6 +150,11 @@ export type GenerateImageInput = {
   aspectRatio?: string;
   resolution?: "1k" | "2k" | "4k";
   outputFormat?: "png" | "jpeg" | "webp";
+  seriesStyleGuide?: string;
+  seriesCardType?: string;
+  seriesCardGoal?: string;
+  seriesCardVisualIdea?: string;
+  badges?: string[];
 };
 
 export type GenerateImageResult = {

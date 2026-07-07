@@ -223,7 +223,7 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-black text-ink md:text-5xl">Ваша карточка готова 🎉</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-relaxed text-muted">
-            Это демо-версия с водяным знаком. Войдите, чтобы скачать оригинал и создать больше карточек.
+            Это демо с защитной меткой. Войдите, чтобы скачать карточку без водяного знака.
           </p>
         </div>
 
@@ -235,7 +235,7 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
           <aside className="rounded-[22px] border border-clay bg-card p-5">
             {!result.originalAvailable ? (
               <div className="mb-4 rounded-[16px] border border-accent/20 bg-accent/10 p-4 text-sm font-semibold leading-relaxed text-ink">
-                Войдите, чтобы скачать карточку без водяного знака и создать больше вариантов.
+                Войдите, чтобы скачать карточку без водяного знака.
               </div>
             ) : null}
 

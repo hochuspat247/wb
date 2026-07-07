@@ -9,10 +9,78 @@ const rows = [
   ["Масштаб SKU", "сложно", "дорого", "ограничено", "пакеты до 100+"],
   ["Экспорт", "собирать отдельно", "по договорённости", "PNG", "PNG + JSON"],
   ["Правки и версии", "каждый раз вручную", "оплата за версию", "ограничено", "новая версия сразу"],
-  ["Поддержка маркетплейсов", "универсально", "зависит от исполнителя", "универсально", "WB, Ozon, Avito"]
+  ["Поддержка маркетплейсов", "универсально", "зависит от исполнителя", "универсально", "WB, Ozon, Avito"],
 ];
 
 const columns = ["", "Ручная сборка", "Фрилансер", "Canva / шаблоны", "MarketCard AI"];
+const alternatives = columns.slice(1);
+
+function CompareMobileCards() {
+  return (
+    <div className="mt-10 space-y-3 md:hidden">
+      {rows.map((row) => {
+        const [metric, ...values] = row;
+
+        return (
+          <article className="overflow-hidden rounded-container border border-clay bg-card" key={metric}>
+            <h3 className="border-b border-clay px-4 py-3 text-sm font-black text-ink">{metric}</h3>
+
+            <dl className="divide-y divide-clay">
+              {alternatives.map((label, index) => {
+                const isOurs = index === alternatives.length - 1;
+
+                return (
+                  <div
+                    className={`flex items-start justify-between gap-4 px-4 py-3 ${isOurs ? "bg-accent/10" : ""}`}
+                    key={label}
+                  >
+                    <dt className={`shrink-0 text-xs font-bold ${isOurs ? "text-accent" : "text-muted"}`}>{label}</dt>
+                    <dd className={`text-right text-sm font-semibold ${isOurs ? "text-mint" : "text-muted"}`}>
+                      {values[index]}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function CompareDesktopTable() {
+  return (
+    <div className="mt-14 hidden overflow-x-auto rounded-container border border-clay bg-card md:block">
+      <div className="min-w-[920px]">
+        <div className="grid grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_1.05fr] border-b border-clay text-sm font-black text-ink">
+          {columns.map((head, index) => (
+            <div className={`p-4 md:p-5 ${index === 4 ? "bg-accent text-paper" : ""}`} key={head || "metric"}>
+              {head}
+            </div>
+          ))}
+        </div>
+        {rows.map((row, rowIndex) => (
+          <div
+            className="grid grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_1.05fr] border-b border-clay last:border-b-0"
+            key={row[0]}
+          >
+            {row.map((cell, index) => (
+              <div
+                className={`min-h-16 p-4 text-sm font-semibold md:p-5 ${
+                  index === 0 ? "text-ink" : index === 4 ? "bg-white/[0.055] text-ink" : "text-muted"
+                }`}
+                key={`${rowIndex}-${index}`}
+              >
+                {index === 4 ? <span className="text-mint">{cell}</span> : cell}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function CompareSection() {
   return (
@@ -24,31 +92,8 @@ export function CompareSection() {
         />
 
         <Reveal delay={1}>
-          <div className="mt-14 overflow-x-auto rounded-container border border-clay bg-card">
-            <div className="min-w-[920px]">
-              <div className="grid grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_1.05fr] border-b border-clay text-sm font-black text-ink">
-                {columns.map((head, index) => (
-                  <div className={`p-4 md:p-5 ${index === 4 ? "bg-accent text-paper" : ""}`} key={head || "metric"}>
-                    {head}
-                  </div>
-                ))}
-              </div>
-              {rows.map((row, rowIndex) => (
-                <div className="grid grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_1.05fr] border-b border-clay last:border-b-0" key={row[0]}>
-                  {row.map((cell, index) => (
-                    <div
-                      className={`min-h-16 p-4 text-sm font-semibold md:p-5 ${
-                        index === 0 ? "text-ink" : index === 4 ? "bg-white/[0.055] text-ink" : "text-muted"
-                      }`}
-                      key={`${rowIndex}-${index}`}
-                    >
-                      {index === 4 ? <span className="text-mint">{cell}</span> : cell}
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
+          <CompareMobileCards />
+          <CompareDesktopTable />
         </Reveal>
       </div>
     </section>

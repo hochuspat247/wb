@@ -1,4 +1,3 @@
-import { AudienceSection } from "@/components/AudienceSection";
 import { CompareSection } from "@/components/CompareSection";
 import { ExamplesSection } from "@/components/ExamplesSection";
 import { FAQSection } from "@/components/FAQSection";
@@ -12,7 +11,6 @@ import { PricingSection } from "@/components/PricingSection";
 import { RoadmapSection } from "@/components/RoadmapSection";
 import { HomeJsonLd } from "@/components/seo/HomeJsonLd";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
-import { TrustBar } from "@/components/TrustBar";
 import { createPageMetadata } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
@@ -28,13 +26,11 @@ export default function Home() {
       <HomeJsonLd />
       <Header />
       <Hero />
-      <TrustBar />
       <ExamplesSection />
 
       <PainSection />
       <CompareSection />
       <HowItWorks />
-      <AudienceSection />
       <PricingSection />
       <PricingCalculatorSection />
       <TestimonialsSection />

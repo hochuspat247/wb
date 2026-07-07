@@ -89,9 +89,9 @@ export function Header() {
               <Link href="/login">
                 <Button variant="ghost">Войти</Button>
               </Link>
-              <button onClick={handleTryFreeClick} type="button">
-                <Button>Попробовать бесплатно</Button>
-              </button>
+              <Button onClick={handleTryFreeClick} type="button">
+                Попробовать бесплатно
+              </Button>
             </>
           )}
         </div>
@@ -155,9 +155,9 @@ export function Header() {
                       Войти
                     </Button>
                   </Link>
-                  <button className="w-full" onClick={handleTryFreeClick} type="button">
-                    <Button className="w-full">Попробовать бесплатно</Button>
-                  </button>
+                  <Button className="w-full" onClick={handleTryFreeClick} type="button">
+                    Попробовать бесплатно
+                  </Button>
                 </>
               )}
             </div>

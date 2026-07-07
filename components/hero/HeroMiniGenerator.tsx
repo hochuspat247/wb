@@ -192,10 +192,15 @@ export function HeroMiniGenerator() {
   }
 
   const canGenerate = Boolean(imageUrl && description.trim());
+  const submitLabel = !imageUrl
+    ? "Загрузите фото, чтобы продолжить"
+    : !description.trim()
+      ? "Добавьте описание товара"
+      : "Сгенерировать демо";
 
   if (isGenerating) {
     return (
-      <div className="scroll-mt-24 rounded-[24px] border border-clay bg-card p-5 shadow-soft md:p-7" id="hero-mini-generator">
+      <div className="anchor-section scroll-mt-[96px] rounded-[20px] border border-clay bg-card p-4 shadow-soft md:p-5" id="hero-mini-generator">
         <div className="py-6 text-center md:py-10">
           <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-full bg-accent/15 text-accent">
             <Loader2 className="animate-spin" size={28} />
@@ -223,12 +228,12 @@ export function HeroMiniGenerator() {
   }
 
   return (
-    <div className="scroll-mt-24 rounded-[24px] border border-clay bg-card p-5 shadow-soft md:p-7" id="hero-mini-generator">
-      <form className="grid gap-5" id="demo" onSubmit={handleSubmit}>
+    <div className="anchor-section scroll-mt-[96px] rounded-[20px] border border-clay bg-card p-4 shadow-soft md:p-5" id="hero-mini-generator">
+      <form className="grid gap-3" id="demo" onSubmit={handleSubmit}>
         <div>
-          <p className="text-lg font-black text-ink">Попробуйте на своём товаре</p>
-          <p className="mt-1 text-sm font-semibold leading-relaxed text-muted">
-            1 демо-карточка без входа. Оригинал и дополнительные карточки доступны после авторизации.
+          <p className="text-base font-black text-ink md:text-[17px]">Попробуйте на своём товаре</p>
+          <p className="mt-0.5 text-xs font-semibold leading-snug text-muted md:text-sm">
+            1 демо без входа. Оригинал и дополнительные карточки — после авторизации.
           </p>
         </div>
 
@@ -244,7 +249,7 @@ export function HeroMiniGenerator() {
           {imageUrl ? (
             <div className="relative overflow-hidden rounded-[18px] border border-clay bg-paper">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img alt="Загруженное фото товара" className="aspect-[4/5] max-h-56 w-full object-cover" src={imageUrl} />
+              <img alt="Загруженное фото товара" className="aspect-[4/5] max-h-44 w-full object-cover" src={imageUrl} />
               <button
                 className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border border-clay bg-card/95 text-ink transition hover:text-accent"
                 onClick={clearImage}
@@ -255,8 +260,10 @@ export function HeroMiniGenerator() {
             </div>
           ) : (
             <button
-              className={`grid gap-3 rounded-[18px] border border-dashed p-6 text-center transition focus-visible:outline-none ${
-                isDragging ? "border-accent bg-accent/10" : "border-clay bg-paper hover:border-accent/60 hover:bg-accent/5"
+              className={`grid gap-1.5 rounded-[18px] border-2 border-dashed px-4 py-5 text-center transition focus-visible:outline-none ${
+                isDragging
+                  ? "border-accent bg-accent/10 shadow-[0_0_0_4px_rgba(124,255,107,0.12)]"
+                  : "border-clay/90 bg-gradient-to-b from-accent/[0.06] via-paper to-paper hover:border-accent/50 hover:from-accent/[0.1]"
               }`}
               data-hero-upload
               onClick={() => {
@@ -280,45 +287,38 @@ export function HeroMiniGenerator() {
               }}
               type="button"
             >
-              <span className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-accent/12 text-accent">
-                <ImageUp size={22} />
+              <span className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-accent/15 text-accent ring-1 ring-accent/20">
+                <ImageUp size={20} />
               </span>
               <span className="text-base font-black text-ink">Загрузите фото товара</span>
-              <span className="text-sm font-semibold text-muted">Перетащите изображение сюда или нажмите, чтобы выбрать файл</span>
-              <span className="text-xs font-semibold text-muted/80">JPG или PNG, до 10 МБ</span>
+              <span className="mx-auto max-w-[260px] text-xs font-semibold leading-snug text-muted md:text-sm">
+                AI уберёт фон, подберёт стиль и соберёт демо-карточку
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted/75">JPG или PNG, до 10 МБ</span>
             </button>
           )}
         </div>
 
-        <label className="grid gap-2 text-sm font-bold text-ink">
+        <label className="grid gap-1.5 text-sm font-bold text-ink">
           Описание товара
           <Textarea
+            className="min-h-[72px] py-2.5 text-sm"
             onChange={(event) => handleDescriptionChange(event.target.value)}
             placeholder="Например: беспроводные наушники, чёрные, с кейсом"
-            rows={3}
+            rows={2}
             value={description}
           />
         </label>
 
-        {error ? <Alert variant="error">{error}</Alert> : null}
-
-        <div className="grid gap-3">
-          <Button className="w-full py-3.5" disabled={!canGenerate} type="submit">
-            <Wand2 size={17} />
-            Сгенерировать демо
-          </Button>
-          <p className="text-center text-xs font-semibold text-muted">Без входа · без карты · результат с водяным знаком</p>
-        </div>
-
-        <div className="border-t border-clay pt-4">
-          <p className="text-sm font-bold text-ink">Или попробуйте на примере</p>
-          <div className="mt-3 flex flex-wrap gap-2">
+        <div className="rounded-[14px] border border-clay/80 bg-paper/50 px-3 py-2.5">
+          <p className="text-xs font-bold text-ink md:text-sm">Нет фото под рукой? Попробуйте пример:</p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
             {heroDemoExamples.map((example) => (
               <button
-                className={`rounded-full border px-4 py-2 text-sm font-bold transition ${
+                className={`rounded-full border px-3 py-1.5 text-xs font-bold transition md:text-sm ${
                   selectedExampleId === example.id
                     ? "border-accent bg-accent/15 text-ink"
-                    : "border-clay bg-paper text-muted hover:border-accent/50 hover:text-ink"
+                    : "border-clay bg-card text-muted hover:border-accent/50 hover:text-ink"
                 }`}
                 key={example.id}
                 onClick={() => handleExampleSelect(example.id)}
@@ -328,6 +328,16 @@ export function HeroMiniGenerator() {
               </button>
             ))}
           </div>
+        </div>
+
+        {error ? <Alert variant="error">{error}</Alert> : null}
+
+        <div className="grid gap-2 pt-0.5">
+          <Button className="w-full py-3" disabled={!canGenerate} type="submit">
+            <Wand2 size={17} />
+            {submitLabel}
+          </Button>
+          <p className="text-center text-xs font-semibold text-muted">Без входа · без карты · демо с защитной меткой</p>
         </div>
       </form>
     </div>

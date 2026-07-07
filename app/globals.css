@@ -126,6 +126,13 @@ a {
   outline-offset: 3px;
 }
 
+.anchor-section,
+section[id],
+[id="hero-mini-generator"],
+[id="demo"] {
+  scroll-margin-top: 96px;
+}
+
 /* ── Marketplace preview ── */
 .marketplace-card {
   container-type: inline-size;

@@ -1,7 +1,7 @@
 import type { StaticImageData } from "next/image";
 import faceCreamBefore from "@/publick/f0081719-2140-4122-9896-3ad207466049.png";
 import steamerBefore from "@/publick/2f992b7f-7f3c-4871-95b5-252897d799cc.png";
-import headphonesBefore from "@/publick/f5951788-06f3-44ef-8219-4eb442eaa4c9.png";
+import headphonesBefore from "@/publick/hero-demo-headphones.png";
 
 export type HeroDemoExample = {
   id: string;

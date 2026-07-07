@@ -1,32 +1,39 @@
-import Image from "next/image";
-import beforeImage from "@/publick/f5951788-06f3-44ef-8219-4eb442eaa4c9.png";
-import afterImage from "@/publick/7ab15fea-2529-4185-bd93-c8bfff5dee2e.png";
+"use client";
+
+import { ArrowRight } from "lucide-react";
+import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
+import { HeroBenefits } from "@/components/hero/HeroBenefits";
+import { HeroStudioVisual } from "@/components/hero/HeroStudioVisual";
+import { Button } from "@/components/ui/Button";
+import { focusHeroMiniGenerator } from "@/lib/hero/focusMiniGenerator";
 
 export function HeroBeforeAfterPreview() {
+  function handleTryPhoto() {
+    trackMarketingEvent("hero_cta_click", { source: "result_preview" });
+    focusHeroMiniGenerator({ openFilePicker: true });
+  }
+
   return (
-    <div className="rounded-[22px] border border-clay/80 bg-card/45 p-4 md:p-5">
-      <p className="mb-4 text-center text-xs font-bold uppercase tracking-[0.14em] text-muted">До и после</p>
-      <div className="mx-auto grid max-w-2xl items-center gap-4 sm:grid-cols-[1fr_auto_1fr]">
-        <div className="overflow-hidden rounded-[16px] border border-clay bg-paper">
-          <Image
-            alt="Исходное фото товара"
-            className="aspect-[4/5] w-full object-cover"
-            sizes="(max-width: 640px) 42vw, 180px"
-            src={beforeImage}
-          />
-          <p className="px-3 py-2 text-center text-xs font-bold text-muted">Исходное фото</p>
-        </div>
+    <div className="rounded-[20px] border border-clay bg-card p-4 shadow-soft md:p-6 lg:p-7">
+      <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:gap-10 xl:gap-12">
+        <HeroStudioVisual className="lg:max-w-[520px]" />
 
-        <div className="hidden text-sm font-black text-accent sm:block">→</div>
+        <div className="flex flex-col gap-5 lg:py-2">
+          <div>
+            <h2 className="text-xl font-black leading-tight text-ink sm:text-2xl lg:text-[1.75rem]">
+              Из обычного фото — готовая карточка
+            </h2>
+            <p className="mt-3 text-sm font-medium leading-relaxed text-muted md:text-base">
+              Показываем пример результата: исходное фото, обложка 4:5 и тексты для маркетплейсов.
+            </p>
+          </div>
 
-        <div className="overflow-hidden rounded-[16px] border border-accent/40 bg-paper">
-          <Image
-            alt="Готовая карточка товара"
-            className="aspect-[4/5] w-full object-cover object-top"
-            sizes="(max-width: 640px) 42vw, 180px"
-            src={afterImage}
-          />
-          <p className="px-3 py-2 text-center text-xs font-bold text-mint">Готовая карточка 4:5</p>
+          <HeroBenefits className="sm:grid-cols-1" />
+
+          <Button className="w-full sm:w-auto" onClick={handleTryPhoto} type="button" variant="secondary">
+            Попробовать на своём фото
+            <ArrowRight size={16} />
+          </Button>
         </div>
       </div>
     </div>

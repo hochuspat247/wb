@@ -23,18 +23,18 @@ export function HeroActions() {
       </Button>
       <Button
         className="w-full sm:w-auto"
-        data-analytics="examples_click"
+        data-analytics="pricing_click"
         onClick={() => {
-          trackMarketingEvent("examples_click");
-          const target = document.getElementById("examples");
+          trackMarketingEvent("pricing_click");
+          const target = document.getElementById("pricing");
           target?.scrollIntoView({ behavior: "smooth", block: "start" });
-          window.history.replaceState(null, "", "#examples");
+          window.history.replaceState(null, "", "#pricing");
         }}
         size="lg"
         type="button"
         variant="secondary"
       >
-        Посмотреть примеры
+        Посмотреть тарифы
       </Button>
     </div>
   );

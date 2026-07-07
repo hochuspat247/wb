@@ -19,7 +19,16 @@ export async function getUserQuota(userId: string): Promise<UserQuota> {
     throw new Error("User not found");
   }
 
-  const credits = user.generationCredits ?? FREE_TRIAL_CARDS;
+  let credits = user.generationCredits ?? FREE_TRIAL_CARDS;
+
+  if (credits < FREE_TRIAL_CARDS) {
+    credits = FREE_TRIAL_CARDS;
+    await db
+      .update(users)
+      .set({ generationCredits: FREE_TRIAL_CARDS })
+      .where(eq(users.id, userId));
+  }
+
   const used = user.generationsUsed ?? 0;
   const remaining = Math.max(0, credits - used);
 

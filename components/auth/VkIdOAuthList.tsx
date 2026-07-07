@@ -20,30 +20,37 @@ export function VkIdOAuthList({ callbackUrl = "/cabinet" }: VkIdOAuthListProps) 
     }
 
     const container = containerRef.current;
-    const oAuth = new VKID.OAuthList();
 
-    oAuth
-      .render({
-        container,
-        oauthList: [VKID.OAuthName.VK, VKID.OAuthName.MAIL]
-      })
-      .on(VKID.WidgetEvents.ERROR, (vkError: unknown) => {
-        console.error(vkError);
-        setError("Не удалось войти через ВКонтакте.");
-      })
-      .on(VKID.OAuthListInternalEvents.LOGIN_SUCCESS, async (payload: { code: string; device_id: string }) => {
-        try {
-          setError("");
-          await signInWithVk(payload);
-        } catch (vkError) {
+    try {
+      const oAuth = new VKID.OAuthList();
+
+      oAuth
+        .render({
+          container,
+          oauthList: [VKID.OAuthName.VK, VKID.OAuthName.MAIL]
+        })
+        .on(VKID.WidgetEvents.ERROR, (vkError: unknown) => {
           console.error(vkError);
-          setError("Ошибка авторизации VK ID.");
-        }
-      });
+          setError("Не удалось войти через ВКонтакте.");
+        })
+        .on(VKID.OAuthListInternalEvents.LOGIN_SUCCESS, async (payload: { code: string; device_id: string }) => {
+          try {
+            setError("");
+            await signInWithVk(payload);
+          } catch (vkError) {
+            console.error(vkError);
+            setError("Ошибка авторизации VK ID.");
+          }
+        });
 
-    return () => {
-      container.replaceChildren();
-    };
+      return () => {
+        container.replaceChildren();
+      };
+    } catch (vkError) {
+      console.error("[VK ID] widget init failed", vkError);
+      setError("Не удалось загрузить вход через VK.");
+      return undefined;
+    }
   }, [callbackUrl, signInWithVk]);
 
   if (!process.env.NEXT_PUBLIC_VK_APP_ID) {

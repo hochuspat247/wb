@@ -14,11 +14,13 @@ export function HeroBeforeAfterPreview() {
   }
 
   return (
-    <div className="rounded-[20px] border border-clay bg-card p-4 shadow-soft md:p-6 lg:p-7">
-      <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] lg:gap-10 xl:gap-12">
-        <HeroStudioVisual className="lg:max-w-[520px]" />
+    <div className="overflow-hidden rounded-[20px] border border-clay bg-card p-4 shadow-soft md:p-6 lg:p-7">
+      <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-10 xl:gap-12">
+        <div className="min-w-0">
+          <HeroStudioVisual />
+        </div>
 
-        <div className="flex flex-col gap-5 lg:py-2">
+        <div className="flex min-w-0 flex-col gap-5 lg:py-2">
           <div>
             <h2 className="text-xl font-black leading-tight text-ink sm:text-2xl lg:text-[1.75rem]">
               Из обычного фото — готовая карточка
@@ -28,7 +30,7 @@ export function HeroBeforeAfterPreview() {
             </p>
           </div>
 
-          <HeroBenefits className="sm:grid-cols-1" />
+          <HeroBenefits columns={1} />
 
           <Button className="w-full sm:w-auto" onClick={handleTryPhoto} type="button" variant="secondary">
             Попробовать на своём фото

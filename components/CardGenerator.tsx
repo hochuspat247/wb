@@ -1147,12 +1147,16 @@ export function CardGenerator({
   const isWorking = isLoading || isGeneratingAiImage || isRenderingImage || isGeneratingVideo || isDemoGenerating;
   const labelClass = darkConsole ? "text-white/80" : "text-ink";
   const formClass = darkConsole
-    ? "rounded-[22px] border border-white/10 bg-white/[0.06] p-5 md:p-6"
+    ? embedded
+      ? "rounded-[18px] border border-white/10 bg-white/[0.06] p-3 sm:rounded-[22px] sm:p-5 md:p-6"
+      : "rounded-[22px] border border-white/10 bg-white/[0.06] p-5 md:p-6"
     : compactDemoEntry
       ? "rounded-[24px] border border-clay bg-card p-5 shadow-soft md:p-7"
       : "rounded-[22px] border border-clay bg-card p-5 md:p-6";
   const panelClass = darkConsole
-    ? "rounded-[22px] border border-white/10 bg-white/[0.06] p-5"
+    ? embedded
+      ? "rounded-[18px] border border-white/10 bg-white/[0.06] p-3 sm:rounded-[22px] sm:p-5"
+      : "rounded-[22px] border border-white/10 bg-white/[0.06] p-5"
     : "rounded-[22px] border border-clay bg-card p-5";
   const sectionClass = embedded ? "" : compactDemoEntry ? "relative scroll-mt-24 pb-12 pt-2 md:pb-16" : "relative py-24";
   const shellClass = embedded ? undefined : compactDemoEntry ? "section-shell max-w-4xl" : "section-shell";
@@ -1205,9 +1209,9 @@ export function CardGenerator({
     <section className={sectionClass} id={embedded ? undefined : "demo"}>
       <PaywallModal onClose={() => setShowPaywall(false)} open={showPaywall} />
       <div className={shellClass}>
-        <div className={embedded || compactDemoEntry ? "grid gap-8" : "relative z-10 grid gap-8 xl:grid-cols-[0.82fr_1.18fr]"}>
+        <div className={embedded || compactDemoEntry ? "grid gap-5 sm:gap-8" : "relative z-10 grid gap-8 xl:grid-cols-[0.82fr_1.18fr]"}>
           <form className={formClass} onSubmit={handleSubmit}>
-            <div className="grid gap-5">
+            <div className="grid gap-4 sm:gap-5">
               <div>
                 <p className={`text-sm font-semibold ${labelClass}`}>
                   {compactDemoEntry ? "Попробуйте на своём товаре" : "Товар"}
@@ -1491,8 +1495,8 @@ export function CardGenerator({
                   {seriesProgress}
                 </p>
               ) : null}
-              <div className={`flex flex-wrap gap-3 border-t pt-1 ${darkConsole ? "border-white/10" : "border-clay"}`}>
-                <Button disabled={isWorking || (persistToServer && remainingGenerations === 0)} type="submit">
+              <div className={`flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap sm:gap-3 ${darkConsole ? "border-white/10" : "border-clay"}`}>
+                <Button className="w-full sm:w-auto" disabled={isWorking || (persistToServer && remainingGenerations === 0)} type="submit">
                   {isWorking ? <Loader2 className="animate-spin" size={17} /> : <Wand2 size={17} />}
                   {compactDemoEntry
                     ? isWorking
@@ -1507,7 +1511,7 @@ export function CardGenerator({
                       : "Сгенерировать карточку"}
                 </Button>
                 {compactDemoEntry ? null : (
-                <Button onClick={handleClear} type="button" variant="secondary">
+                <Button className="w-full sm:w-auto" onClick={handleClear} type="button" variant="secondary">
                   <RotateCcw size={17} />
                   Очистить
                 </Button>

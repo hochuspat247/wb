@@ -15,6 +15,7 @@ const sqlite = new Database(path.join(dataDir, "marketcard.db"));
 
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
+sqlite.pragma("busy_timeout = 5000");
 migrate(sqlite);
 
 export const db = drizzle(sqlite, { schema });

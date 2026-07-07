@@ -17,18 +17,32 @@ type PresenceBody = {
 };
 
 export async function POST(request: Request) {
+  let body: PresenceBody;
+
+  try {
+    body = (await request.json()) as PresenceBody;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  if (!body.sessionId || !body.path) {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  if (body.path.startsWith("/admin")) {
+    return NextResponse.json({ ok: true, skipped: true });
+  }
+
+  let userId: string | undefined;
+
   try {
     const session = await auth();
-    const body = (await request.json()) as PresenceBody;
+    userId = session?.user?.id;
+  } catch (error) {
+    console.error("[MarketCard AI] presence auth lookup failed", error);
+  }
 
-    if (!body.sessionId || !body.path) {
-      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
-    }
-
-    if (body.path.startsWith("/admin")) {
-      return NextResponse.json({ ok: true, skipped: true });
-    }
-
+  try {
     await upsertVisitorPresence({
       sessionId: body.sessionId,
       path: body.path,
@@ -36,9 +50,9 @@ export async function POST(request: Request) {
       lastAction: body.lastAction,
       lastActionLabel: body.lastActionLabel,
       guestId: body.guestId,
-      userId: session?.user?.id,
+      userId,
       referrer: body.referrer,
-      isAuthed: Boolean(session?.user?.id ?? body.isAuthed),
+      isAuthed: Boolean(userId ?? body.isAuthed),
       isVisible: body.isVisible !== false
     });
 

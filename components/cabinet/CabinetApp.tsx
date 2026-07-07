@@ -186,12 +186,20 @@ export function CabinetApp() {
     settings: "Настройки"
   };
 
+  const tabTitlesMobile: Record<Tab, string> = {
+    create: "Создать карточку",
+    history: "История",
+    examples: "Примеры",
+    compare: "Сравнение",
+    settings: "Настройки"
+  };
+
   const nav = [
-    { id: "create" as const, label: "Создать", icon: Wand2 },
-    { id: "history" as const, label: "История", icon: History },
-    { id: "examples" as const, label: "Примеры", icon: ImageIcon },
-    { id: "compare" as const, label: "Сравнение", icon: Scale },
-    { id: "settings" as const, label: "Настройки", icon: Settings }
+    { id: "create" as const, label: "Создать", shortLabel: "Создать", icon: Wand2 },
+    { id: "history" as const, label: "История", shortLabel: "История", icon: History },
+    { id: "examples" as const, label: "Примеры", shortLabel: "Примеры", icon: ImageIcon },
+    { id: "compare" as const, label: "Сравнение", shortLabel: "Сравн.", icon: Scale },
+    { id: "settings" as const, label: "Настройки", shortLabel: "Ещё", icon: Settings }
   ];
 
   return (
@@ -230,17 +238,24 @@ export function CabinetApp() {
       </aside>
 
       <div className="flex min-h-screen flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 border-b border-clay bg-paper/88 px-5 py-4 backdrop-blur-xl lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 place-items-center rounded-full border border-clay bg-card text-ink lg:hidden">
-              <LayoutDashboard size={18} />
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-clay bg-paper/88 px-3 py-3 backdrop-blur-xl sm:gap-4 sm:px-5 sm:py-4 lg:px-8">
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-clay bg-card text-ink sm:h-10 sm:w-10 lg:hidden">
+              <LayoutDashboard size={17} />
             </div>
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Рабочий кабинет</p>
-              <p className="text-xl font-black text-ink">{tabTitles[tab]}</p>
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.16em] text-muted sm:text-xs">Рабочий кабинет</p>
+              <p className="truncate text-base font-black text-ink sm:text-xl">
+                <span className="sm:hidden">{tabTitlesMobile[tab]}</span>
+                <span className="hidden sm:inline">{tabTitles[tab]}</span>
+              </p>
             </div>
           </div>
-          <div className="hidden items-center gap-3 sm:flex">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="rounded-full border border-clay bg-card px-2.5 py-1 text-xs font-bold text-mint sm:hidden">
+              {remainingGenerations >= 999_000 ? "∞" : remainingGenerations}
+            </div>
+            <div className="hidden items-center gap-3 sm:flex">
             <div className="rounded-full border border-clay bg-card px-4 py-2 text-sm font-bold text-muted">
               AI: {imageSettings.imageMode}
             </div>
@@ -249,10 +264,11 @@ export function CabinetApp() {
               <Plus size={16} />
               Новая карточка
             </Button>
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-5 pb-28 lg:p-8">
+        <main className="flex-1 overflow-y-auto px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-5 sm:py-5 sm:pb-28 lg:p-8">
           {needsEmailVerification ? (
             <div className="mb-6 rounded-[18px] border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100">
               Подтвердите email ({emailDisplay}) — проверьте почту после регистрации.
@@ -260,8 +276,8 @@ export function CabinetApp() {
           ) : null}
 
           {tab === "create" ? (
-            <div className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="hidden gap-3 sm:grid md:grid-cols-3 md:gap-4">
                 {[
                   ["Всего карточек", stats.total],
                   ["За неделю", stats.thisWeek],
@@ -273,21 +289,19 @@ export function CabinetApp() {
                   </div>
                 ))}
               </div>
-              <p className="rounded-[18px] border border-mint/20 bg-mint/10 px-4 py-3 text-sm font-bold text-mint">
+              <p className="rounded-[16px] border border-mint/20 bg-mint/10 px-3 py-2.5 text-xs font-bold text-mint sm:rounded-[18px] sm:px-4 sm:py-3 sm:text-sm">
                 {remainingGenerations >= 999_000
                   ? "Безлимитные генерации для вашего аккаунта."
-                  : `Стартовый оффер: ${FREE_TRIAL_CARDS} карточки бесплатно. Доступно сейчас: ${remainingGenerations}`}
+                  : `Стартовый оффер: ${FREE_TRIAL_CARDS} карточки бесплатно. Доступно: ${remainingGenerations}`}
               </p>
-              <div className="studio-noise relative overflow-hidden rounded-container border border-clay bg-card p-5 shadow-soft md:p-7">
-                <CardGenerator
-                  embedded
-                  hideHistory
-                  darkConsole
-                  onQuotaChange={(quota) => setRemainingGenerations(quota.remaining)}
-                  onSaved={refreshCards}
-                  persistToServer
-                />
-              </div>
+              <CardGenerator
+                embedded
+                hideHistory
+                darkConsole
+                onQuotaChange={(quota) => setRemainingGenerations(quota.remaining)}
+                onSaved={refreshCards}
+                persistToServer
+              />
             </div>
           ) : null}
 
@@ -338,9 +352,7 @@ export function CabinetApp() {
           ) : null}
 
           {tab === "compare" ? (
-            <div className="-mx-5 lg:-mx-8">
-              <CompareSection />
-            </div>
+            <CompareSection embedded />
           ) : null}
 
           {tab === "settings" ? (
@@ -413,18 +425,20 @@ export function CabinetApp() {
         </main>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 border-t border-clay bg-card/95 p-2 backdrop-blur lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 gap-0.5 border-t border-clay bg-card/95 p-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
         {nav.map((item) => (
           <button
-            className={`grid place-items-center gap-1 rounded-[14px] px-2 py-2 text-[11px] font-black ${
+            aria-label={item.label}
+            className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] px-1 py-2 ${
               tab === item.id ? "bg-accent text-paper" : "text-muted"
             }`}
             key={item.id}
             onClick={() => setTab(item.id)}
             type="button"
           >
-            <item.icon size={17} />
-            {item.label}
+            <item.icon size={16} />
+            <span className="max-w-full truncate text-[10px] font-black leading-none sm:hidden">{item.shortLabel}</span>
+            <span className="hidden max-w-full truncate text-[11px] font-black leading-none sm:inline">{item.label}</span>
           </button>
         ))}
       </nav>

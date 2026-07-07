@@ -15,9 +15,9 @@ const rows = [
 const columns = ["", "Ручная сборка", "Фрилансер", "Canva / шаблоны", "MarketCard AI"];
 const alternatives = columns.slice(1);
 
-function CompareMobileCards() {
+function CompareMobileCards({ embedded = false }: { embedded?: boolean }) {
   return (
-    <div className="mt-10 space-y-3 md:hidden">
+    <div className={`space-y-3 md:hidden ${embedded ? "mt-6" : "mt-10"}`}>
       {rows.map((row) => {
         const [metric, ...values] = row;
 
@@ -49,9 +49,9 @@ function CompareMobileCards() {
   );
 }
 
-function CompareDesktopTable() {
+function CompareDesktopTable({ embedded = false }: { embedded?: boolean }) {
   return (
-    <div className="mt-14 hidden overflow-x-auto rounded-container border border-clay bg-card md:block">
+    <div className={`hidden overflow-x-auto rounded-container border border-clay bg-card md:block ${embedded ? "mt-8" : "mt-14"}`}>
       <div className="min-w-[920px]">
         <div className="grid grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_1.05fr] border-b border-clay text-sm font-black text-ink">
           {columns.map((head, index) => (
@@ -82,18 +82,18 @@ function CompareDesktopTable() {
   );
 }
 
-export function CompareSection() {
+export function CompareSection({ embedded = false }: { embedded?: boolean }) {
   return (
-    <section className="py-20 md:py-28" id="compare">
-      <div className="section-shell">
+    <section className={embedded ? "py-8 md:py-12" : "py-20 md:py-28"} id="compare">
+      <div className={embedded ? "px-3 sm:px-5" : "section-shell"}>
         <SectionHeader
           description="Сравнение по скорости, стоимости и функционалу — почему продавцам выгоднее генерировать карточки в MarketCard AI."
           title="Наши преимущества относительно альтернатив"
         />
 
         <Reveal delay={1}>
-          <CompareMobileCards />
-          <CompareDesktopTable />
+          <CompareMobileCards embedded={embedded} />
+          <CompareDesktopTable embedded={embedded} />
         </Reveal>
       </div>
     </section>

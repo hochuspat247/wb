@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
+import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { VkIdCallbackHandler } from "@/components/auth/VkIdCallbackHandler";
 import { rootMetadata } from "@/lib/seo";
@@ -24,6 +25,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <AnalyticsTracker />
+          <YandexMetrika />
           <VkIdCallbackHandler />
         </AuthProvider>
       </body>

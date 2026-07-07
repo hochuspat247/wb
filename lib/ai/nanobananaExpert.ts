@@ -10,18 +10,32 @@ type NanoBananaExpertApiResponse = {
   image_url?: string;
   imageUrl?: string;
   url?: string;
+  resultImageUrl?: string;
+  b64_json?: string;
+  b64Json?: string;
   status?: string;
+  successFlag?: number;
   bananas_spent?: number;
   used_coupon?: boolean;
   seed?: number;
   generation_id?: string;
   id?: string;
-  data?: NanoBananaExpertApiResponse;
+  response?: {
+    resultImageUrl?: string;
+    originImageUrl?: string;
+  };
+  data?: NanoBananaExpertApiResponse | NanoBananaExpertApiResponse[];
   result?: NanoBananaExpertApiResponse;
   output?: NanoBananaExpertApiResponse | string | string[];
   images?: string[];
   error?: string;
   message?: string;
+};
+
+type ExtractedImageAsset = {
+  imageUrl?: string;
+  imageBase64?: string;
+  mimeType?: string;
 };
 
 function getBaseUrl() {
@@ -120,19 +134,21 @@ export async function generateNanoBananaExpertImage(input: GenerateImageInput): 
 
     const data = (await response.json()) as NanoBananaExpertApiResponse;
     const resolvedData = (await resolveNanoBananaImage(data)) ?? data;
-    const imageUrl = extractImageUrl(resolvedData);
+    const asset = await hydrateImageAsset(extractImageAsset(resolvedData), outputFormat);
 
-    if (!imageUrl) {
+    if (!asset) {
       const generationId = extractGenerationId(data);
       const suffix = generationId ? ` generation_id: ${generationId}` : "";
       return createFallbackResult(prompt, `Сервис NanoBanana Expert не вернул готовый image_url.${suffix}`, generatedAt);
     }
 
-    const mimeType = outputFormat === "jpeg" ? "image/jpeg" : outputFormat === "webp" ? "image/webp" : "image/png";
+    const mimeType =
+      asset.mimeType ||
+      (outputFormat === "jpeg" ? "image/jpeg" : outputFormat === "webp" ? "image/webp" : "image/png");
 
     return {
-      imageBase64: null,
-      imageUrl,
+      imageBase64: asset.imageBase64 ?? null,
+      imageUrl: asset.imageUrl ?? null,
       mimeType,
       provider: "NanoBanana Expert",
       model: body.model,
@@ -151,7 +167,7 @@ export async function generateNanoBananaExpertImage(input: GenerateImageInput): 
 }
 
 async function resolveNanoBananaImage(initialData: NanoBananaExpertApiResponse) {
-  if (extractImageUrl(initialData)) {
+  if (extractImageAsset(initialData)) {
     return initialData;
   }
 
@@ -180,11 +196,11 @@ async function resolveNanoBananaImage(initialData: NanoBananaExpertApiResponse) 
 
         const data = (await response.json()) as NanoBananaExpertApiResponse;
 
-        if (extractImageUrl(data)) {
+        if (extractImageAsset(data)) {
           return data;
         }
 
-        if (isTerminalFailedStatus(data.status)) {
+        if (isTerminalFailedStatus(data.status) || data.successFlag === 3) {
           return data;
         }
       } catch {
@@ -202,21 +218,172 @@ function getGenerationStatusPaths(generationId: string) {
 }
 
 function extractGenerationId(data: NanoBananaExpertApiResponse): string | undefined {
-  return data.generation_id || data.id || data.data?.generation_id || data.data?.id || data.result?.generation_id || data.result?.id;
+  if (data.generation_id || data.id) {
+    return data.generation_id || data.id;
+  }
+
+  if (Array.isArray(data.data)) {
+    return extractGenerationId(data.data[0]);
+  }
+
+  if (data.data && !Array.isArray(data.data)) {
+    return data.data.generation_id || data.data.id;
+  }
+
+  return data.result?.generation_id || data.result?.id;
 }
 
-function extractImageUrl(data: NanoBananaExpertApiResponse): string | undefined {
-  if (data.image_url) return data.image_url;
-  if (data.imageUrl) return data.imageUrl;
-  if (data.url) return data.url;
-  if (Array.isArray(data.images) && data.images[0]) return data.images[0];
+function extractImageAsset(data: NanoBananaExpertApiResponse | undefined): ExtractedImageAsset | undefined {
+  if (!data) {
+    return undefined;
+  }
+
+  const directBase64 = data.b64_json || data.b64Json;
+  if (directBase64) {
+    return {
+      imageBase64: stripDataUrlPrefix(directBase64)
+    };
+  }
+
+  const directUrl =
+    data.image_url ||
+    data.imageUrl ||
+    data.url ||
+    data.resultImageUrl ||
+    data.response?.resultImageUrl;
+
+  if (directUrl) {
+    if (directUrl.startsWith("data:")) {
+      const parsed = parseDataUrl(directUrl);
+      return {
+        imageBase64: parsed.base64,
+        mimeType: parsed.mimeType
+      };
+    }
+
+    return { imageUrl: directUrl };
+  }
+
+  if (Array.isArray(data.images) && data.images[0]) {
+    return { imageUrl: data.images[0] };
+  }
+
   const output = data.output;
-  if (Array.isArray(output) && output[0]) return output[0];
-  if (typeof output === "string") return output;
-  if (output && !Array.isArray(output) && typeof output === "object") return extractImageUrl(output);
-  if (data.data) return extractImageUrl(data.data);
-  if (data.result) return extractImageUrl(data.result);
+  if (Array.isArray(output) && output[0]) {
+    return typeof output[0] === "string" ? { imageUrl: output[0] } : extractImageAsset(output[0]);
+  }
+
+  if (typeof output === "string") {
+    return output.startsWith("data:")
+      ? {
+          imageBase64: parseDataUrl(output).base64,
+          mimeType: parseDataUrl(output).mimeType
+        }
+      : { imageUrl: output };
+  }
+
+  if (output && !Array.isArray(output) && typeof output === "object") {
+    return extractImageAsset(output);
+  }
+
+  if (Array.isArray(data.data) && data.data[0]) {
+    return extractImageAsset(data.data[0]);
+  }
+
+  if (data.data && !Array.isArray(data.data)) {
+    return extractImageAsset(data.data);
+  }
+
+  if (data.result) {
+    return extractImageAsset(data.result);
+  }
+
   return undefined;
+}
+
+async function hydrateImageAsset(
+  asset: ExtractedImageAsset | undefined,
+  outputFormat: string
+): Promise<ExtractedImageAsset | undefined> {
+  if (!asset) {
+    return undefined;
+  }
+
+  if (asset.imageBase64) {
+    return asset;
+  }
+
+  if (!asset.imageUrl) {
+    return undefined;
+  }
+
+  const downloaded = await downloadRemoteImageAsBase64(asset.imageUrl);
+
+  if (!downloaded) {
+    return asset;
+  }
+
+  return {
+    imageUrl: asset.imageUrl,
+    imageBase64: downloaded.base64,
+    mimeType: downloaded.mimeType || asset.mimeType || guessMimeType(outputFormat)
+  };
+}
+
+async function downloadRemoteImageAsBase64(imageUrl: string) {
+  try {
+    const response = await fetch(imageUrl, {
+      signal: AbortSignal.timeout(30_000),
+      headers: {
+        Accept: "image/*"
+      }
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const mimeType = (response.headers.get("content-type") || "image/png").split(";")[0].trim();
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    if (!buffer.byteLength || buffer.byteLength > 8 * 1024 * 1024) {
+      return null;
+    }
+
+    return {
+      base64: buffer.toString("base64"),
+      mimeType
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseDataUrl(value: string) {
+  const match = value.match(/^data:([^;]+);base64,(.+)$/);
+
+  if (!match) {
+    return {
+      mimeType: "image/png",
+      base64: stripDataUrlPrefix(value)
+    };
+  }
+
+  return {
+    mimeType: match[1],
+    base64: match[2]
+  };
+}
+
+function stripDataUrlPrefix(value: string) {
+  const match = value.match(/^data:[^;]+;base64,(.+)$/);
+  return match ? match[1] : value;
+}
+
+function guessMimeType(outputFormat: string) {
+  if (outputFormat === "jpeg") return "image/jpeg";
+  if (outputFormat === "webp") return "image/webp";
+  return "image/png";
 }
 
 function isTerminalFailedStatus(status?: string) {

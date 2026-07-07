@@ -5,7 +5,6 @@ import type { ProductCardResult } from "@/types/product-card";
 
 type GeneratedCardPreviewProps = {
   card: ProductCardResult | null;
-  generatedImageUrl?: string;
   imageUrl?: string;
   styleName: string;
 };
@@ -76,9 +75,8 @@ const styleMap: Record<
 };
 
 export const GeneratedCardPreview = forwardRef<HTMLDivElement, GeneratedCardPreviewProps>(
-  ({ card, generatedImageUrl, imageUrl, styleName }, ref) => {
+  ({ card, imageUrl, styleName }, ref) => {
     const theme = styleMap[styleName] ?? styleMap["Минималистичный"];
-    const hasGeneratedImage = Boolean(generatedImageUrl);
     const benefits = card?.benefits?.slice(0, 2).map(shortenBenefit) ?? ["Загрузите фото", "Получите PNG"];
     const infographic = card?.infographicTexts?.slice(0, 3) ?? ["1:1", "SEO", "PNG"];
     const marketplace = card?.marketplace ?? "WB / Ozon";
@@ -88,17 +86,9 @@ export const GeneratedCardPreview = forwardRef<HTMLDivElement, GeneratedCardPrev
 
     return (
       <div
-        className={`marketplace-card relative mx-auto aspect-[4/5] w-full max-w-[560px] overflow-hidden rounded-[24px] border border-ink/15 shadow-soft ${theme.background} ${hasGeneratedImage ? "text-white" : theme.text}`}
+        className={`marketplace-card relative mx-auto aspect-[4/5] w-full max-w-[560px] overflow-hidden rounded-[24px] border border-ink/15 shadow-soft ${theme.background} ${theme.text}`}
         ref={ref}
       >
-        {generatedImageUrl ? (
-          <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img alt="AI-фон карточки" className="absolute inset-0 h-full w-full object-cover" src={generatedImageUrl} />
-            <div className="absolute inset-0 bg-gradient-to-br from-black/48 via-black/12 to-black/44" />
-            <div className="absolute inset-0 bg-white/10" />
-          </>
-        ) : null}
         <div className={`absolute -left-[12%] top-[9%] h-[48%] w-[48%] rounded-full blur-3xl ${theme.glow}`} />
         <div className={`absolute -right-[10%] bottom-[5%] h-[42%] w-[42%] rounded-full blur-3xl ${theme.glow}`} />
 
@@ -112,21 +102,22 @@ export const GeneratedCardPreview = forwardRef<HTMLDivElement, GeneratedCardPrev
           <h3 className="marketplace-title max-w-[11.5em] font-black leading-[0.96] tracking-normal">{title}</h3>
         </div>
 
-        {!hasGeneratedImage ? (
+        {!imageUrl ? (
           <div className={`absolute bottom-[10%] left-[5%] z-10 h-[48%] w-[50%] overflow-hidden rounded-[26px] ${theme.imagePanel}`}>
             <div className="absolute inset-4 rounded-[20px] bg-white/10" />
-            {imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img alt="Загруженный товар" className="relative z-10 h-full w-full object-contain p-[6%] drop-shadow-2xl" src={imageUrl} />
-            ) : (
-              <div className={`relative z-10 grid h-full place-items-center px-6 text-center text-sm font-bold ${theme.muted}`}>
-                Загрузите фото товара
-              </div>
-            )}
+            <div className={`relative z-10 grid h-full place-items-center px-6 text-center text-sm font-bold ${theme.muted}`}>
+              Загрузите фото товара
+            </div>
           </div>
-        ) : null}
+        ) : (
+          <div className={`absolute bottom-[10%] left-[5%] z-10 h-[48%] w-[50%] overflow-hidden rounded-[26px] ${theme.imagePanel}`}>
+            <div className="absolute inset-4 rounded-[20px] bg-white/10" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt="Загруженный товар" className="relative z-10 h-full w-full object-contain p-[6%] drop-shadow-2xl" src={imageUrl} />
+          </div>
+        )}
 
-        <div className={`absolute bottom-[13%] right-[5%] z-20 flex flex-col gap-3 ${hasGeneratedImage ? "w-[46%]" : "w-[40%]"}`}>
+        <div className="absolute bottom-[13%] right-[5%] z-20 flex w-[40%] flex-col gap-3">
           <div className={`rounded-[22px] px-4 py-4 ${theme.panel}`}>
             <p className="marketplace-benefit font-black leading-tight">{mainOffer}</p>
           </div>

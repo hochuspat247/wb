@@ -5,7 +5,7 @@ import type { ImageDesignPreset, ProductCardResult } from "@/types/product-card"
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
-import { base64ToDataUrl } from "@/lib/image";
+import { getGeneratedCoverSrc } from "@/lib/image";
 
 type HistorySectionProps = {
   history: ProductCardResult[];
@@ -17,11 +17,7 @@ type HistorySectionProps = {
 };
 
 function getHistoryThumbnail(card: ProductCardResult) {
-  if (card.generatedImageUrl) return card.generatedImageUrl;
-  if (card.generatedImageBase64 && card.generatedImageMimeType) {
-    return base64ToDataUrl(card.generatedImageBase64, card.generatedImageMimeType);
-  }
-  return card.generatedImageDataUrl || card.imageDataUrl;
+  return getGeneratedCoverSrc(card) || card.imageDataUrl;
 }
 
 function getDesignPresetLabel(preset?: ImageDesignPreset) {

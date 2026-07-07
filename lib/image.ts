@@ -69,6 +69,37 @@ export function base64ToDataUrl(base64: string, mimeType: string) {
   return `data:${mimeType};base64,${base64}`;
 }
 
+export function getGeneratedCoverSrc(card: {
+  generatedImageBase64?: string | null;
+  generatedImageMimeType?: string | null;
+  generatedImageDataUrl?: string;
+  generatedImageUrl?: string | null;
+}) {
+  if (card.generatedImageBase64 && card.generatedImageMimeType) {
+    return base64ToDataUrl(card.generatedImageBase64, card.generatedImageMimeType);
+  }
+
+  if (card.generatedImageDataUrl) {
+    return card.generatedImageDataUrl;
+  }
+
+  if (card.generatedImageUrl) {
+    return card.generatedImageUrl;
+  }
+
+  return null;
+}
+
+export function hasGeneratedAiCover(card: {
+  generatedImageIsFallback?: boolean;
+  generatedImageBase64?: string | null;
+  generatedImageMimeType?: string | null;
+  generatedImageDataUrl?: string;
+  generatedImageUrl?: string | null;
+}) {
+  return Boolean(!card.generatedImageIsFallback && getGeneratedCoverSrc(card));
+}
+
 export async function downloadImageFromUrl(imageUrl: string, fileName: string) {
   try {
     const response = await fetch(imageUrl);

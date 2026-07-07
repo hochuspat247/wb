@@ -24,6 +24,8 @@ import {
   dataUrlToBase64,
   downloadBase64Image,
   downloadImageFromUrl,
+  getGeneratedCoverSrc,
+  hasGeneratedAiCover,
   validateImageFile
 } from "@/lib/image";
 import { clearHistory, getHistory, removeFromHistory, saveToHistory } from "@/lib/storage";
@@ -157,10 +159,7 @@ export function CardGenerator({
       return;
     }
 
-    const cardHasAiCover = Boolean(
-      !card.generatedImageIsFallback &&
-      (card.generatedImageUrl || (card.generatedImageBase64 && card.generatedImageMimeType))
-    );
+    const cardHasAiCover = hasGeneratedAiCover(card);
 
     if (cardHasAiCover) {
       setRenderedImageUrl("");
@@ -667,8 +666,9 @@ export function CardGenerator({
   function applyImageResult(cardForImage: ProductCardResult, data: GenerateImageResult) {
     const hasRemoteImage = Boolean(data.imageUrl);
     const hasBase64Image = Boolean(data.imageBase64 && data.mimeType);
+    const hasUsableImage = hasRemoteImage || hasBase64Image;
 
-    if (data.isFallback || (!hasRemoteImage && !hasBase64Image)) {
+    if (!hasUsableImage) {
       const updatedCard = {
         ...cardForImage,
         generatedImageUrl: null,
@@ -775,7 +775,7 @@ export function CardGenerator({
 
       const updatedCard = applyImageResult(cardForImage, data);
 
-      if (data.isFallback || (!data.imageUrl && !data.imageBase64)) {
+      if (!hasUsableImage(data)) {
         setNotice(
           data.error
             ? `NanoBanana не вернул AI-изображение: ${data.error}. Показан fallback-preview.`
@@ -795,19 +795,9 @@ export function CardGenerator({
     }
   }
 
-  const aiImageUrl =
-    card?.generatedImageUrl ||
-    (card?.generatedImageBase64 && card.generatedImageMimeType
-      ? base64ToDataUrl(card.generatedImageBase64, card.generatedImageMimeType)
-      : card?.generatedImageDataUrl) ||
-    null;
+  const aiImageUrl = card ? getGeneratedCoverSrc(card) : null;
 
-  const hasAiCover = Boolean(
-    card &&
-    !isGeneratingAiImage &&
-    !card.generatedImageIsFallback &&
-    aiImageUrl
-  );
+  const hasAiCover = Boolean(card && !isGeneratingAiImage && hasGeneratedAiCover(card));
 
   const isWorking = isLoading || isGeneratingAiImage || isRenderingImage;
   const labelClass = darkConsole ? "text-white/80" : "text-ink";
@@ -1179,7 +1169,6 @@ export function CardGenerator({
                   ) : (
                     <GeneratedCardPreview
                       card={card}
-                      generatedImageUrl={card.generatedImageUrl || card.generatedImageDataUrl}
                       imageUrl={imageUrl || card.imageDataUrl}
                       ref={previewRef}
                       styleName={style}
@@ -1553,16 +1542,16 @@ function buildFailedSeriesCard(
   };
 }
 
+function hasUsableImage(data: GenerateImageResult) {
+  return Boolean(data.imageUrl || (data.imageBase64 && data.mimeType));
+}
+
 function hasGeneratedImage(card: ProductCardResult) {
   return Boolean(card.generatedImageBase64 || card.generatedImageUrl || card.generatedImageDataUrl || card.imageDataUrl);
 }
 
 function getGeneratedCardImageUrl(card: ProductCardResult) {
-  if (card.generatedImageUrl) return card.generatedImageUrl;
-  if (card.generatedImageBase64 && card.generatedImageMimeType) {
-    return base64ToDataUrl(card.generatedImageBase64, card.generatedImageMimeType);
-  }
-  return card.generatedImageDataUrl || null;
+  return getGeneratedCoverSrc(card);
 }
 
 async function downloadCardImage(card: ProductCardResult, fileName: string) {

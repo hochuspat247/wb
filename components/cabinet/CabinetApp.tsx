@@ -35,7 +35,7 @@ import {
   removeUserCardRemote,
   updateUserProfile
 } from "@/lib/api/user";
-import { base64ToDataUrl, downloadBase64Image, downloadImageFromUrl } from "@/lib/image";
+import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
 import { getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { reachGoal } from "@/lib/metrika";
 import { FREE_TRIAL_CARDS } from "@/lib/pricing";
@@ -45,11 +45,7 @@ import type { ProductCardResult } from "@/types/product-card";
 type Tab = "create" | "history" | "examples" | "compare" | "settings";
 
 function getThumbnail(card: ProductCardResult) {
-  if (card.generatedImageUrl) return card.generatedImageUrl;
-  if (card.generatedImageBase64 && card.generatedImageMimeType) {
-    return base64ToDataUrl(card.generatedImageBase64, card.generatedImageMimeType);
-  }
-  return card.generatedImageDataUrl || card.imageDataUrl || null;
+  return getGeneratedCoverSrc(card) || card.imageDataUrl || null;
 }
 
 export function CabinetApp() {
@@ -157,12 +153,20 @@ export function CabinetApp() {
   }
 
   async function handleDownload(card: ProductCardResult) {
-    if (card.generatedImageUrl) {
-      await downloadImageFromUrl(card.generatedImageUrl, "marketcard-ai.png");
-      return;
-    }
     if (card.generatedImageBase64 && card.generatedImageMimeType) {
       downloadBase64Image(card.generatedImageBase64, card.generatedImageMimeType, "marketcard-ai.png");
+      return;
+    }
+
+    const coverSrc = getGeneratedCoverSrc(card);
+
+    if (coverSrc?.startsWith("data:")) {
+      await downloadImageFromUrl(coverSrc, "marketcard-ai.png");
+      return;
+    }
+
+    if (card.generatedImageUrl) {
+      await downloadImageFromUrl(card.generatedImageUrl, "marketcard-ai.png");
     }
   }
 
@@ -196,7 +200,9 @@ export function CabinetApp() {
         <Logo light href="/cabinet" />
         <div className="mt-8 rounded-[22px] border border-white/10 bg-white/[0.06] p-4">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">Баланс</p>
-          <p className="mt-3 text-3xl font-black text-white">{remainingGenerations}</p>
+          <p className="mt-3 text-3xl font-black text-white">
+            {remainingGenerations >= 999_000 ? "Безлимит" : remainingGenerations}
+          </p>
           <p className="mt-1 text-xs font-semibold text-white/45">генераций доступно</p>
           {remainingGenerations === 0 ? (
             <PaymentButton className="mt-4" count={10} size="sm">
@@ -268,7 +274,9 @@ export function CabinetApp() {
                 ))}
               </div>
               <p className="rounded-[18px] border border-mint/20 bg-mint/10 px-4 py-3 text-sm font-bold text-mint">
-                Стартовый оффер: {FREE_TRIAL_CARDS} карточки бесплатно. Доступно сейчас: {remainingGenerations}
+                {remainingGenerations >= 999_000
+                  ? "Безлимитные генерации для вашего аккаунта."
+                  : `Стартовый оффер: ${FREE_TRIAL_CARDS} карточки бесплатно. Доступно сейчас: ${remainingGenerations}`}
               </p>
               <div className="studio-noise relative overflow-hidden rounded-container border border-clay bg-card p-5 shadow-soft md:p-7">
                 <CardGenerator

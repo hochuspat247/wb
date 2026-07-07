@@ -2,13 +2,27 @@ import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { FREE_TRIAL_CARDS } from "@/lib/pricing";
+import { getUnlimitedRemainingCount, hasUnlimitedGenerations } from "@/lib/server/unlimitedGenerations";
 
 export type UserQuota = {
   credits: number;
   used: number;
   remaining: number;
   canGenerate: boolean;
+  unlimited?: boolean;
 };
+
+function buildUnlimitedQuota(used: number): UserQuota {
+  const remaining = getUnlimitedRemainingCount();
+
+  return {
+    credits: remaining,
+    used,
+    remaining,
+    canGenerate: true,
+    unlimited: true
+  };
+}
 
 export async function getUserQuota(userId: string): Promise<UserQuota> {
   const user = await db.query.users.findFirst({
@@ -17,6 +31,12 @@ export async function getUserQuota(userId: string): Promise<UserQuota> {
 
   if (!user) {
     throw new Error("User not found");
+  }
+
+  const used = user.generationsUsed ?? 0;
+
+  if (hasUnlimitedGenerations(user)) {
+    return buildUnlimitedQuota(used);
   }
 
   let credits = user.generationCredits ?? FREE_TRIAL_CARDS;
@@ -29,7 +49,6 @@ export async function getUserQuota(userId: string): Promise<UserQuota> {
       .where(eq(users.id, userId));
   }
 
-  const used = user.generationsUsed ?? 0;
   const remaining = Math.max(0, credits - used);
 
   return {
@@ -41,6 +60,18 @@ export async function getUserQuota(userId: string): Promise<UserQuota> {
 }
 
 export async function consumeGeneration(userId: string): Promise<UserQuota> {
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId)
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (hasUnlimitedGenerations(user)) {
+    return buildUnlimitedQuota(user.generationsUsed ?? 0);
+  }
+
   const result = await db
     .update(users)
     .set({ generationsUsed: sql`${users.generationsUsed} + 1` })
@@ -56,6 +87,10 @@ export async function consumeGeneration(userId: string): Promise<UserQuota> {
 
 export async function addGenerationCredits(userId: string, amount: number) {
   const quota = await getUserQuota(userId);
+
+  if (quota.unlimited) {
+    return quota;
+  }
 
   await db
     .update(users)

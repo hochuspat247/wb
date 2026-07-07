@@ -115,7 +115,7 @@ export async function POST(request: Request) {
 
     const nextQuota = await consumeGeneration(userId);
 
-    if (nextQuota.used === quota.used) {
+    if (!nextQuota.canGenerate) {
       return NextResponse.json(
         {
           error: "Бесплатные генерации использованы. Купите пакет, чтобы продолжить.",

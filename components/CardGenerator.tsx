@@ -776,14 +776,19 @@ export function CardGenerator({
       const updatedCard = applyImageResult(cardForImage, data);
 
       if (data.isFallback || (!data.imageUrl && !data.imageBase64)) {
-        setNotice("Тексты и превью готовы. Обложку можно скачать кнопкой ниже.");
+        setNotice(
+          data.error
+            ? `NanoBanana не вернул AI-изображение: ${data.error}. Показан fallback-preview.`
+            : "NanoBanana не вернул AI-изображение. Показан fallback-preview."
+        );
         return updatedCard;
       }
 
       setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
       return updatedCard;
-    } catch {
-      setNotice("Тексты готовы. Превью обложки можно скачать кнопкой ниже.");
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : "Неизвестная ошибка генерации изображения";
+      setNotice(`Текст готов, но AI-изображение не создалось: ${message}. Показан fallback-preview.`);
       return cardForImage;
     } finally {
       setIsGeneratingAiImage(false);
@@ -932,7 +937,7 @@ export function CardGenerator({
                     >
                       {cardCountOptions.map((count) => (
                         <option key={count} value={count}>
-                          {count} {getCardPlural(count)}
+                          {`${count} ${getCardPlural(count)}`}
                         </option>
                       ))}
                     </Select>
@@ -1147,6 +1152,13 @@ export function CardGenerator({
                     Скачать PNG
                   </Button>
                 </div>
+                {card.generatedImageIsFallback && card.generatedImageError ? (
+                  <div className="mt-4">
+                    <Alert variant="error">
+                      NanoBanana не вернул AI-изображение: {card.generatedImageError}. Ниже показан fallback-preview.
+                    </Alert>
+                  </div>
+                ) : null}
                 <div className={`mt-4 overflow-hidden rounded-card border ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
                   {isGeneratingAiImage ? (
                     <div className="grid aspect-[4/5] place-items-center gap-4 px-6">

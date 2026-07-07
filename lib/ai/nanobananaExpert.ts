@@ -8,10 +8,18 @@ export type NanoBananaExpertBalance = {
 
 type NanoBananaExpertApiResponse = {
   image_url?: string;
+  imageUrl?: string;
+  url?: string;
+  status?: string;
   bananas_spent?: number;
   used_coupon?: boolean;
   seed?: number;
   generation_id?: string;
+  id?: string;
+  data?: NanoBananaExpertApiResponse;
+  result?: NanoBananaExpertApiResponse;
+  output?: NanoBananaExpertApiResponse | string | string[];
+  images?: string[];
   error?: string;
   message?: string;
 };
@@ -111,31 +119,112 @@ export async function generateNanoBananaExpertImage(input: GenerateImageInput): 
     }
 
     const data = (await response.json()) as NanoBananaExpertApiResponse;
+    const resolvedData = (await resolveNanoBananaImage(data)) ?? data;
+    const imageUrl = extractImageUrl(resolvedData);
 
-    if (!data.image_url) {
-      return createFallbackResult(prompt, "Сервис NanoBanana Expert не вернул image_url", generatedAt);
+    if (!imageUrl) {
+      const generationId = extractGenerationId(data);
+      const suffix = generationId ? ` generation_id: ${generationId}` : "";
+      return createFallbackResult(prompt, `Сервис NanoBanana Expert не вернул готовый image_url.${suffix}`, generatedAt);
     }
 
     const mimeType = outputFormat === "jpeg" ? "image/jpeg" : outputFormat === "webp" ? "image/webp" : "image/png";
 
     return {
       imageBase64: null,
-      imageUrl: data.image_url,
+      imageUrl,
       mimeType,
       provider: "NanoBanana Expert",
       model: body.model,
       prompt,
       generatedAt,
       isFallback: false,
-      bananasSpent: data.bananas_spent,
-      usedCoupon: data.used_coupon,
-      generationId: data.generation_id,
-      seed: data.seed
+      bananasSpent: resolvedData.bananas_spent ?? data.bananas_spent,
+      usedCoupon: resolvedData.used_coupon ?? data.used_coupon,
+      generationId: extractGenerationId(resolvedData) ?? extractGenerationId(data),
+      seed: resolvedData.seed ?? data.seed
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Сервис NanoBanana Expert временно недоступен";
     return createFallbackResult(prompt, message, generatedAt);
   }
+}
+
+async function resolveNanoBananaImage(initialData: NanoBananaExpertApiResponse) {
+  if (extractImageUrl(initialData)) {
+    return initialData;
+  }
+
+  const generationId = extractGenerationId(initialData);
+
+  if (!generationId) {
+    return null;
+  }
+
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await sleep(2500);
+
+    for (const path of getGenerationStatusPaths(generationId)) {
+      try {
+        const response = await fetch(`${getBaseUrl()}${path}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${getApiKey()}`
+          },
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          continue;
+        }
+
+        const data = (await response.json()) as NanoBananaExpertApiResponse;
+
+        if (extractImageUrl(data)) {
+          return data;
+        }
+
+        if (isTerminalFailedStatus(data.status)) {
+          return data;
+        }
+      } catch {
+        // Try the next known status route.
+      }
+    }
+  }
+
+  return null;
+}
+
+function getGenerationStatusPaths(generationId: string) {
+  const id = encodeURIComponent(generationId);
+  return [`/generations/${id}`, `/generation/${id}`, `/generate/${id}`, `/status/${id}`, `/result/${id}`];
+}
+
+function extractGenerationId(data: NanoBananaExpertApiResponse): string | undefined {
+  return data.generation_id || data.id || data.data?.generation_id || data.data?.id || data.result?.generation_id || data.result?.id;
+}
+
+function extractImageUrl(data: NanoBananaExpertApiResponse): string | undefined {
+  if (data.image_url) return data.image_url;
+  if (data.imageUrl) return data.imageUrl;
+  if (data.url) return data.url;
+  if (Array.isArray(data.images) && data.images[0]) return data.images[0];
+  const output = data.output;
+  if (Array.isArray(output) && output[0]) return output[0];
+  if (typeof output === "string") return output;
+  if (output && !Array.isArray(output) && typeof output === "object") return extractImageUrl(output);
+  if (data.data) return extractImageUrl(data.data);
+  if (data.result) return extractImageUrl(data.result);
+  return undefined;
+}
+
+function isTerminalFailedStatus(status?: string) {
+  return Boolean(status && ["failed", "error", "canceled", "cancelled"].includes(status.toLowerCase()));
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function createFallbackResult(prompt: string, error: string, generatedAt: string): GenerateImageResult {

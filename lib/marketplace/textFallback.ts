@@ -46,17 +46,58 @@ function buildAdvantages(input: MarketplaceTextInput, productLabel: string) {
     return input.advantages.slice(0, 5);
   }
 
-  const items = [
-    `${productLabel} для повседневного использования`,
-    input.useCase ? `Подходит для: ${input.useCase}` : "Понятное назначение по описанию",
-    input.targetAudience ? `Для ${input.targetAudience}` : "Удобно для ежедневных задач"
-  ];
+  const lower = `${input.productDescription} ${input.category}`.toLowerCase();
+  const items =
+    lower.includes("органайзер")
+      ? [
+          "Помогает держать косметику и мелочи по местам",
+          "Ящики упрощают сортировку аксессуаров",
+          "Защищает содержимое от пыли",
+          "Подходит для туалетного столика и ванной"
+        ]
+      : [
+          `${productLabel} для повседневного использования`,
+          input.useCase ? `Подходит для: ${input.useCase}` : "Удобно для ежедневных задач",
+          input.targetAudience ? `Для ${input.targetAudience}` : "Легко вписать в привычный сценарий"
+        ];
 
   if (input.packageContents) {
     items.push(`В комплекте: ${input.packageContents}`);
   }
 
   return items.slice(0, 5);
+}
+
+function buildBuyerDescription(input: MarketplaceTextInput, productLabel: string) {
+  const lower = `${input.productDescription} ${input.category}`.toLowerCase();
+  const details: string[] = [];
+
+  if (input.color) details.push(`Цвет: ${input.color}.`);
+  if (input.size) details.push(`Размер: ${input.size}.`);
+  if (input.material) details.push(`Материал: ${input.material}.`);
+  if (input.dimensions) details.push(`Габариты: ${input.dimensions}.`);
+  if (input.packageContents) details.push(`Комплектация: ${input.packageContents}.`);
+
+  if (lower.includes("органайзер")) {
+    return [
+      `${productLabel} помогает аккуратно хранить косметику, украшения, аксессуары и другие мелочи в одном месте.`,
+      "Несколько отделений упрощают сортировку: часто используемые вещи остаются под рукой, а стол или полка выглядят аккуратнее.",
+      input.useCase ? `Подходит для сценария: ${input.useCase}.` : "Подходит для спальни, ванной комнаты, туалетного столика или рабочего места.",
+      ...details
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  return [
+    `${productLabel} подходит для повседневного использования и помогает быстро решить привычную задачу.`,
+    input.productDescription,
+    input.useCase ? `Сценарий использования: ${input.useCase}.` : "",
+    input.targetAudience ? `Подходит для ${input.targetAudience}.` : "",
+    ...details
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function buildKeywords(productName: string, category: string) {
@@ -103,7 +144,7 @@ function buildWildberries(input: MarketplaceTextInput, productLabel: string): Wi
 
   return {
     wbName,
-    wbDescription: `${productLabel}. ${input.productDescription}. ${input.useCase ? `Подходит для сценария: ${input.useCase}.` : "Удобен для повседневного использования."}`,
+    wbDescription: buildBuyerDescription(input, productLabel),
     wbCharacteristics: characteristics,
     wbPhotoRules: [
       "Товар на нейтральном или белом фоне",
@@ -123,10 +164,8 @@ function buildWildberries(input: MarketplaceTextInput, productLabel: string): Wi
 function buildOzon(input: MarketplaceTextInput, productLabel: string): OzonTextData {
   return {
     ozonName: `${productLabel}${input.brand ? `, ${input.brand}` : ""}`.slice(0, 120),
-    ozonAnnotation: `${productLabel} — ${input.productDescription.slice(0, 120)}`,
-    ozonDescription: `Подробное описание товара «${productLabel}». ${input.productDescription}. ${
-      input.useCase ? `Сценарий: ${input.useCase}.` : ""
-    } ${input.packageContents ? `Комплектация: ${input.packageContents}.` : ""}`,
+    ozonAnnotation: `${productLabel} — удобное хранение и порядок каждый день`.slice(0, 120),
+    ozonDescription: buildBuyerDescription(input, productLabel),
     ozonRichContentBlocks: [
       {
         title: "Почему стоит купить",
@@ -134,7 +173,7 @@ function buildOzon(input: MarketplaceTextInput, productLabel: string): OzonTextD
       },
       {
         title: "Сценарии использования",
-        text: input.useCase || `Подходит для повседневного использования: ${input.productDescription.slice(0, 100)}`
+        text: input.useCase || buildAdvantages(input, productLabel).slice(0, 3).join(". ")
       },
       {
         title: "Что в комплекте",
@@ -191,7 +230,7 @@ function buildYandexMarket(input: MarketplaceTextInput, productLabel: string): Y
 
   return {
     yandexName: parts.join(", ").slice(0, 120),
-    yandexDescription: `${productLabel}. ${input.productDescription}. ${input.useCase ? `Подходит для сценария: ${input.useCase}.` : "Подходит для повседневных задач и подарка."}`,
+    yandexDescription: buildBuyerDescription(input, productLabel),
     yandexCharacteristics: buildCharacteristics(input, productLabel),
     yandexImageRules: [
       "Нейтральный фон",

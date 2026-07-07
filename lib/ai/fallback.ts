@@ -57,11 +57,7 @@ export function buildFallbackCard(input: ProductCardInput): ProductCardResult {
   const marketplace = input.marketplace || "Wildberries";
 
   const benefits = [
-    getScenarioBenefit(productName, category),
-    "Подходит для повседневного использования или подарка",
-    input.useCase ? `Удобно для сценария: ${input.useCase}` : "Удобно держать под рукой каждый день",
-    input.packageContents ? `В комплекте: ${input.packageContents}` : "Легко вписать в ежедневные задачи",
-    input.material ? `Материал: ${input.material}` : "Подходит для разных повседневных сценариев"
+    ...getFallbackBenefits(input, productLabel, category)
   ];
 
   const characteristics = [
@@ -76,7 +72,7 @@ export function buildFallbackCard(input: ProductCardInput): ProductCardResult {
     ? getInfographicTexts(productName, category)
     : ["Крупное фото", "1:1 формат", "Без лишнего", "Для витрины"];
 
-  const fullDescription = `${productLabel} помогает быстро закрыть повседневную задачу и понятен покупателю с первого знакомства. ${input.productDescription}. ${input.useCase ? `Подходит для сценария: ${input.useCase}.` : "Подходит для дома, работы, поездок или подарка в зависимости от задачи."} ${input.packageContents ? `Комплектация: ${input.packageContents}.` : ""} ${input.material ? `Материал: ${input.material}.` : ""} ${input.color ? `Цвет: ${input.color}.` : ""}`.trim();
+  const fullDescription = buildFallbackDescription(input, productLabel, category);
 
   return sanitizeProductCardResult({
     id: crypto.randomUUID(),
@@ -101,6 +97,38 @@ export function buildFallbackCard(input: ProductCardInput): ProductCardResult {
 function buildMarketplaceTitle(productLabel: string, category: string) {
   const categoryTail = category === "Другое" ? "" : `, ${category.toLowerCase()}`;
   return `${productLabel}${categoryTail}, для дома и подарка`.slice(0, 120);
+}
+
+function buildFallbackDescription(input: ProductCardInput, productLabel: string, category: string) {
+  const lower = `${input.productDescription} ${category}`.toLowerCase();
+
+  if (lower.includes("органайзер")) {
+    return `${productLabel} помогает навести порядок в косметике, украшениях и небольших аксессуарах. Несколько зон хранения позволяют разложить вещи по категориям, быстрее находить нужное и освободить место на столе или полке. Такой органайзер удобно поставить в ванной, спальне, гардеробной или на рабочем месте. ${input.color ? `Цвет: ${input.color}.` : ""} ${input.material ? `Материал: ${input.material}.` : ""}`.trim();
+  }
+
+  return `${productLabel} подходит для повседневного использования и помогает быстро решить привычную задачу. ${input.useCase ? `Сценарий использования: ${input.useCase}.` : "Подойдёт для дома, работы, поездок или подарка."} ${input.packageContents ? `Комплектация: ${input.packageContents}.` : ""} ${input.material ? `Материал: ${input.material}.` : ""} ${input.color ? `Цвет: ${input.color}.` : ""}`.trim();
+}
+
+function getFallbackBenefits(input: ProductCardInput, productLabel: string, category: string) {
+  const lower = `${input.productDescription} ${category}`.toLowerCase();
+
+  if (lower.includes("органайзер")) {
+    return [
+      "Аккуратное хранение косметики и аксессуаров",
+      "Отделения помогают быстро находить нужное",
+      "Подходит для ванной, спальни или туалетного столика",
+      "Мелочи остаются под рукой и не теряются",
+      "Удобный вариант для себя или подарка"
+    ];
+  }
+
+  return [
+    getScenarioBenefit(productLabel, category),
+    "Подходит для повседневного использования или подарка",
+    input.useCase ? `Удобно для сценария: ${input.useCase}` : "Удобно держать под рукой каждый день",
+    input.packageContents ? `В комплекте: ${input.packageContents}` : "Легко вписать в ежедневные задачи",
+    input.material ? `Материал: ${input.material}` : "Подходит для разных повседневных сценариев"
+  ];
 }
 
 function getScenarioBenefit(productName: string, category: string) {

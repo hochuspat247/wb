@@ -90,6 +90,7 @@ export async function callGigaChatJson(prompt: string, options: GigaChatOptions 
           content: prompt
         }
       ],
+      response_format: { type: "json_object" },
       temperature: options.temperature ?? 0.35,
       max_tokens: options.maxTokens ?? 2200
     }),

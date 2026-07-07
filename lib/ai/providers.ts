@@ -4,20 +4,14 @@ import { buildCardPrompt } from "@/lib/ai/prompt";
 import { callGigaChatJson } from "@/lib/ai/gigachat";
 import { detectCategory } from "@/lib/category";
 import { sanitizeProductCardResult } from "@/lib/contentQuality";
+import { extractJsonObject } from "@/lib/json";
 import type { ProductCardInput, ProductCardResult } from "@/types/product-card";
 
 type LlmResult = Omit<ProductCardResult, "id" | "category" | "marketplace" | "style" | "generatedAt" | "provider" | "isFallback">;
 type ProviderMode = "auto" | "gigachat" | "gemini" | "ollama" | "openrouter" | "huggingface" | "fallback";
 
 function safeParseJson(text: string): LlmResult {
-  const cleaned = text
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/```$/i, "")
-    .trim();
-  const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-  const jsonText = start >= 0 && end >= 0 ? cleaned.slice(start, end + 1) : cleaned;
+  const jsonText = extractJsonObject(text);
   const parsed = JSON.parse(jsonText) as Partial<LlmResult>;
 
   if (!parsed.title || !parsed.shortDescription || !parsed.fullDescription) {
@@ -209,8 +203,9 @@ export async function generateProductCard(input: ProductCardInput): Promise<Prod
   const queue: ProviderMode[] =
     mode === "auto"
       ? ["gigachat", "gemini", "ollama", "openrouter", "huggingface"]
-      : mode === "gigachat" ||
-          mode === "gemini" ||
+      : mode === "gigachat"
+        ? ["gigachat", "openrouter", "huggingface", "ollama"]
+      : mode === "gemini" ||
           mode === "ollama" ||
           mode === "openrouter" ||
           mode === "huggingface"

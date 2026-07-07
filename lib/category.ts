@@ -9,6 +9,18 @@ const CATEGORY_RULES: Array<{ category: string; words: string[] }> = [
   { category: "Кухня", words: ["сковор", "нож", "тарел", "контейнер", "кухон", "чашк"] }
 ];
 
+const PRODUCT_PATTERNS: Array<{ pattern: RegExp; name: string }> = [
+  { pattern: /органайзер/i, name: "органайзер" },
+  { pattern: /косметичк/i, name: "косметичка" },
+  { pattern: /наушник/i, name: "наушники" },
+  { pattern: /заряд/i, name: "зарядное устройство" },
+  { pattern: /рюкзак/i, name: "рюкзак" },
+  { pattern: /сумк/i, name: "сумка" },
+  { pattern: /контейнер/i, name: "контейнер" },
+  { pattern: /бутыл/i, name: "бутылка" },
+  { pattern: /термос/i, name: "термос" }
+];
+
 export function detectCategory(description: string, category?: string) {
   const trimmedCategory = category?.trim();
 
@@ -30,6 +42,19 @@ export function extractProductName(description: string) {
 
   if (!cleaned) {
     return "товар";
+  }
+
+  const matchedProduct = PRODUCT_PATTERNS.find((item) => item.pattern.test(cleaned));
+  const normalized = cleaned.toLowerCase();
+
+  if (matchedProduct?.name === "органайзер") {
+    if (/космет|макияж|уход|кист/.test(normalized)) return "органайзер для косметики";
+    if (/украшен|аксессуар/.test(normalized)) return "органайзер для аксессуаров";
+    return "органайзер для хранения";
+  }
+
+  if (matchedProduct) {
+    return matchedProduct.name;
   }
 
   const words = cleaned.split(" ").filter(Boolean);
@@ -54,7 +79,21 @@ export function extractProductName(description: string) {
     "удобный",
     "удобная",
     "красивый",
-    "красивое"
+    "красивое",
+    "крутой",
+    "крутая",
+    "крутое",
+    "крутые",
+    "крутых",
+    "цель",
+    "цели",
+    "целей",
+    "прочего",
+    "прочее",
+    "там",
+    "куча",
+    "поместится",
+    "поместиться"
   ]);
 
   const meaningful = words.filter((word) => !stopWords.has(word.toLowerCase()));

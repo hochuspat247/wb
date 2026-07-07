@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { callGigaChatJson } from "@/lib/ai/gigachat";
 import { sanitizeMarketplaceTextResult } from "@/lib/contentQuality";
+import { extractJsonObject } from "@/lib/json";
 import { generateMarketplaceTextFallback } from "@/lib/marketplace/textFallback";
 import { buildMarketplaceTextPrompt } from "@/lib/marketplace/textPrompt";
 import { collectTextForModerationScan, scanForbiddenWords } from "@/lib/marketplace/utils";
@@ -35,14 +36,7 @@ function parseCharacteristics(items: unknown) {
 }
 
 function safeParseMarketplaceJson(text: string): RawMarketplaceJson {
-  const cleaned = text
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/```$/i, "")
-    .trim();
-  const start = cleaned.indexOf("{");
-  const end = cleaned.lastIndexOf("}");
-  const jsonText = start >= 0 && end >= 0 ? cleaned.slice(start, end + 1) : cleaned;
+  const jsonText = extractJsonObject(text);
   const parsed = JSON.parse(jsonText) as RawMarketplaceJson;
 
   if (!parsed.title || !parsed.fullDescription) {
@@ -268,8 +262,9 @@ export async function generateMarketplaceText(input: MarketplaceTextInput): Prom
   const queue: ProviderMode[] =
     mode === "auto"
       ? ["gigachat", "gemini", "ollama", "openrouter", "huggingface"]
-      : mode === "gigachat" ||
-          mode === "gemini" ||
+      : mode === "gigachat"
+        ? ["gigachat", "openrouter", "huggingface", "ollama"]
+      : mode === "gemini" ||
           mode === "ollama" ||
           mode === "openrouter" ||
           mode === "huggingface"

@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { MetrikaGoalLink } from "@/components/analytics/MetrikaGoalLink";
 import { HeroStudioPreview } from "@/components/HeroStudioPreview";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -35,12 +36,12 @@ export function Hero() {
 
           <Reveal delay={3}>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Link href="/cabinet#create">
+              <MetrikaGoalLink goal="click_create_card" href="/cabinet#create">
                 <Button className="w-full sm:w-auto" size="lg">
                   Создать карточку бесплатно
                   <ArrowRight size={18} />
                 </Button>
-              </Link>
+              </MetrikaGoalLink>
               <Link href="/#examples">
                 <Button className="w-full sm:w-auto" size="lg" variant="secondary">
                   Смотреть примеры

@@ -1,3 +1,4 @@
+import CabinetMetrikaGoal from "@/components/CabinetMetrikaGoal";
 import { CabinetApp } from "@/components/cabinet/CabinetApp";
 import { createPageMetadata } from "@/lib/seo";
 
@@ -9,5 +10,10 @@ export const metadata = createPageMetadata({
 });
 
 export default function CabinetPage() {
-  return <CabinetApp />;
+  return (
+    <>
+      <CabinetMetrikaGoal />
+      <CabinetApp />
+    </>
+  );
 }

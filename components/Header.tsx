@@ -6,6 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
+import { reachGoal } from "@/lib/metrika";
 
 const links = [
   ["Примеры", "/#examples"],
@@ -33,6 +34,10 @@ export function Header() {
 
   const isAuthed = status === "authenticated";
 
+  function trackCreateCardClick() {
+    reachGoal("click_create_card");
+  }
+
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -48,6 +53,7 @@ export function Header() {
               className="relative px-3 py-2 text-sm font-semibold text-muted transition after:absolute after:bottom-1 after:left-3 after:h-px after:w-0 after:bg-accent after:transition-all hover:text-ink hover:after:w-[calc(100%-1.5rem)]"
               href={href}
               key={href}
+              onClick={href === "/cabinet#create" ? trackCreateCardClick : undefined}
             >
               {label}
             </Link>
@@ -60,7 +66,7 @@ export function Header() {
               <Link href="/cabinet">
                 <Button variant="ghost">{session?.user?.name || "Кабинет"}</Button>
               </Link>
-              <Link href="/cabinet#create">
+              <Link href="/cabinet#create" onClick={trackCreateCardClick}>
                 <Button>Попробовать бесплатно</Button>
               </Link>
               <Button onClick={() => signOut({ callbackUrl: "/" })} variant="secondary">
@@ -72,7 +78,7 @@ export function Header() {
               <Link href="/login">
                 <Button variant="ghost">Войти</Button>
               </Link>
-              <Link href="/register">
+              <Link href="/register" onClick={trackCreateCardClick}>
                 <Button>Попробовать бесплатно</Button>
               </Link>
             </>
@@ -97,7 +103,12 @@ export function Header() {
                 className="rounded-xl px-4 py-3 text-sm font-medium text-ink"
                 href={href}
                 key={href}
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  if (href === "/cabinet#create") {
+                    trackCreateCardClick();
+                  }
+                  setMenuOpen(false);
+                }}
               >
                 {label}
               </Link>
@@ -110,7 +121,13 @@ export function Header() {
                       Кабинет
                     </Button>
                   </Link>
-                  <Link href="/cabinet#create" onClick={() => setMenuOpen(false)}>
+                  <Link
+                    href="/cabinet#create"
+                    onClick={() => {
+                      trackCreateCardClick();
+                      setMenuOpen(false);
+                    }}
+                  >
                     <Button className="w-full">Создать карточку</Button>
                   </Link>
                 </>
@@ -121,7 +138,13 @@ export function Header() {
                       Войти
                     </Button>
                   </Link>
-                  <Link href="/register" onClick={() => setMenuOpen(false)}>
+                  <Link
+                    href="/register"
+                    onClick={() => {
+                      trackCreateCardClick();
+                      setMenuOpen(false);
+                    }}
+                  >
                     <Button className="w-full">Попробовать бесплатно</Button>
                   </Link>
                 </>

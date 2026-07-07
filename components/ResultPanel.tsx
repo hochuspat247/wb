@@ -16,6 +16,7 @@ import {
   downloadPreviewPng
 } from "@/lib/download";
 import { base64ToDataUrl, downloadBase64Image, downloadImageFromUrl } from "@/lib/image";
+import { reachGoal } from "@/lib/metrika";
 import type { MarketplacePlatform } from "@/types/marketplace";
 import type { ImageDesignPreset, ProductCardResult } from "@/types/product-card";
 
@@ -130,6 +131,7 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
   const tabsClass = dark ? "border-white/10 bg-white/5" : "";
 
   async function handleDownloadPng() {
+    reachGoal("download_png");
     const remoteImageUrl = currentCard.generatedImageUrl || null;
     const base64ImageUrl =
       currentCard.generatedImageBase64 && currentCard.generatedImageMimeType
@@ -158,6 +160,31 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
     }
 
     await onDownloadPng();
+  }
+
+  function handleCopyDescription() {
+    reachGoal("copy_description", { source: "description" });
+    void copyCardDescription(currentCard);
+  }
+
+  function handleCopyPlatformText(platformName: MarketplacePlatform) {
+    reachGoal("copy_description", { source: platformName });
+    void copyPlatformText(currentCard, platformName);
+  }
+
+  function handleCopySeoText() {
+    reachGoal("copy_description", { source: "seo" });
+    void copySeoText(currentCard);
+  }
+
+  function handleCopyInfographicText() {
+    reachGoal("copy_description", { source: "infographic" });
+    void copyInfographicText(currentCard);
+  }
+
+  function handleDownloadJson() {
+    reachGoal("download_json");
+    downloadJson(currentCard);
   }
 
   const wb = mt?.platformSpecific.wildberries;
@@ -408,35 +435,35 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
           <Download size={16} />
           Скачать PNG
         </Button>
-        <Button onClick={() => copyCardDescription(currentCard)} size="sm" variant="secondary">
+        <Button onClick={handleCopyDescription} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать описание
         </Button>
-        <Button onClick={() => copyPlatformText(currentCard, "wildberries")} size="sm" variant="secondary">
+        <Button onClick={() => handleCopyPlatformText("wildberries")} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать для WB
         </Button>
-        <Button onClick={() => copyPlatformText(currentCard, "ozon")} size="sm" variant="secondary">
+        <Button onClick={() => handleCopyPlatformText("ozon")} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать для Ozon
         </Button>
-        <Button onClick={() => copyPlatformText(currentCard, "avito")} size="sm" variant="secondary">
+        <Button onClick={() => handleCopyPlatformText("avito")} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать для Avito
         </Button>
-        <Button onClick={() => copyPlatformText(currentCard, "yandex_market")} size="sm" variant="secondary">
+        <Button onClick={() => handleCopyPlatformText("yandex_market")} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать для Яндекс Маркета
         </Button>
-        <Button onClick={() => copySeoText(currentCard)} size="sm" variant="secondary">
+        <Button onClick={handleCopySeoText} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать SEO
         </Button>
-        <Button onClick={() => copyInfographicText(currentCard)} size="sm" variant="secondary">
+        <Button onClick={handleCopyInfographicText} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать тексты для инфографики
         </Button>
-        <Button onClick={() => downloadJson(currentCard)} size="sm" variant="secondary">
+        <Button onClick={handleDownloadJson} size="sm" variant="secondary">
           <FileJson size={16} />
           Скачать JSON
         </Button>

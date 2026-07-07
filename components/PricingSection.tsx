@@ -10,7 +10,8 @@ const plans = [
     unit: "1 шт",
     features: ["1 генерация карточки", "Доступ к редактору шаблонов"],
     cta: "Попробовать",
-    href: "/register"
+    href: "/register",
+    metrikaPlan: "start"
   },
   {
     name: "Рост",
@@ -29,6 +30,7 @@ const plans = [
     ],
     cta: "Подключить",
     href: "/register",
+    metrikaPlan: "seller",
     packageCount: 5,
     highlighted: true,
     badge: "Самый популярный"
@@ -51,6 +53,7 @@ const plans = [
     ],
     cta: "Подключить",
     href: "/register",
+    metrikaPlan: "pro",
     packageCount: 20
   }
 ];

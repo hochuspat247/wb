@@ -3,14 +3,7 @@
 import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef } from "react";
-
-const COUNTER_ID = 110476730;
-
-declare global {
-  interface Window {
-    ym?: (...args: unknown[]) => void;
-  }
-}
+import { trackPageView, YANDEX_METRIKA_ID } from "@/lib/metrika";
 
 function YandexMetrikaPageView() {
   const pathname = usePathname();
@@ -18,7 +11,7 @@ function YandexMetrikaPageView() {
   const previousUrlRef = useRef<string | null>(typeof window === "undefined" ? null : window.location.href);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.ym !== "function") return;
+    if (typeof window === "undefined") return;
 
     const nextUrl = window.location.href;
     const previousUrl = previousUrlRef.current;
@@ -27,15 +20,15 @@ function YandexMetrikaPageView() {
 
     if (!previousUrl || previousUrl === nextUrl) return;
 
-    window.ym(COUNTER_ID, "hit", nextUrl, {
-      referrer: previousUrl
-    });
+    trackPageView(nextUrl);
   }, [pathname, searchParams]);
 
   return null;
 }
 
 export function YandexMetrika() {
+  if (!YANDEX_METRIKA_ID) return null;
+
   return (
     <>
       <Script
@@ -50,9 +43,9 @@ export function YandexMetrika() {
                 if (document.scripts[j].src === r) { return; }
               }
               k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-            })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js?id=${COUNTER_ID}", "ym");
+            })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js?id=${YANDEX_METRIKA_ID}", "ym");
 
-            ym(${COUNTER_ID}, "init", {
+            ym(${YANDEX_METRIKA_ID}, "init", {
               ssr: true,
               webvisor: true,
               clickmap: true,
@@ -72,7 +65,7 @@ export function YandexMetrika() {
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`https://mc.yandex.ru/watch/${COUNTER_ID}`}
+            src={`https://mc.yandex.ru/watch/${YANDEX_METRIKA_ID}`}
             style={{ position: "absolute", left: "-9999px" }}
             alt=""
           />

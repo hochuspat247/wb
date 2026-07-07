@@ -6,6 +6,7 @@ import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { createPayment } from "@/lib/api/user";
+import { reachGoal } from "@/lib/metrika";
 
 type PaymentButtonProps = {
   count: number;
@@ -13,6 +14,7 @@ type PaymentButtonProps = {
   className?: string;
   size?: "default" | "sm" | "lg";
   variant?: "primary" | "secondary" | "ghost" | "dark";
+  metrikaPlan?: string;
 };
 
 function isValidEmail(email: string) {
@@ -24,7 +26,8 @@ export function PaymentButton({
   children,
   className,
   size,
-  variant
+  variant,
+  metrikaPlan
 }: PaymentButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -42,6 +45,7 @@ export function PaymentButton({
 
     try {
       trackConversion("payment_click", { package: count });
+      reachGoal("pricing_click", { plan: metrikaPlan ?? String(count) });
       const payment = await createPayment(count, emailRequired ? customerEmail.trim() : undefined);
       window.location.assign(payment.confirmationUrl);
     } catch (paymentError) {

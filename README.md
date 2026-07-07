@@ -1,5 +1,31 @@
 # MarketCard AI
 
+## Yandex Metrika
+
+Counter: `110476730`
+
+Environment variable:
+
+```env
+NEXT_PUBLIC_YANDEX_METRIKA_ID=110476730
+```
+
+Goals:
+
+- `click_create_card` - create-card CTA click
+- `open_cabinet` - cabinet open
+- `upload_photo` - product photo upload
+- `generate_card` - successful card generation
+- `download_png` - PNG download
+- `download_json` - JSON download
+- `copy_description` - description or marketplace text copy
+- `save_to_history` - card saved to history
+- `select_marketplace` - marketplace selection
+- `select_design_preset` - design preset selection
+- `pricing_click` - pricing plan click
+
+Check in Yandex Metrika: Reports -> Conversions.
+
 MarketCard AI - MVP AI-сервиса для продавцов маркетплейсов. Пользователь загружает фото товара, вводит описание, выбирает маркетплейс, стиль и режим изображения, а сервис генерирует текст карточки, SEO, инфографику, HTML-preview и AI-изображение через NanoBanana Expert или Google Gemini Nano Banana.
 
 ## Запуск

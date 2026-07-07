@@ -21,6 +21,7 @@ import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
 import { base64ToDataUrl, dataUrlToBase64, downloadBase64Image, downloadImageFromUrl, validateImageFile } from "@/lib/image";
 import { clearHistory, getHistory, removeFromHistory, saveToHistory } from "@/lib/storage";
 import { fetchUserQuota, saveUserCardRemote } from "@/lib/api/user";
+import { reachGoal } from "@/lib/metrika";
 import type {
   GenerateImageResult,
   ImageDesignPreset,
@@ -183,6 +184,11 @@ export function CardGenerator({
 
     setError("");
     setImageFileName(file.name);
+    reachGoal("upload_photo", {
+      fileName: file.name,
+      fileType: file.type,
+      fileSize: file.size
+    });
     const dataUrl = await resizeImageToDataUrl(file);
     setImageUrl(dataUrl);
   }
@@ -295,6 +301,16 @@ export function CardGenerator({
       await persistGeneratedCard(finalCard ?? generatedCard);
 
       trackConversion("generation_complete", { marketplace, platform: payload.platform || "wildberries" });
+      reachGoal("generate_card", {
+        marketplace,
+        designPreset,
+        hasImage: Boolean(
+          (finalCard ?? generatedCard).generatedImageBase64 ||
+            (finalCard ?? generatedCard).generatedImageUrl ||
+            (finalCard ?? generatedCard).generatedImageDataUrl ||
+            generatedCard.imageDataUrl
+        )
+      });
 
       if (data.quota?.remaining === 0) {
         setShowPaywall(true);
@@ -355,6 +371,7 @@ export function CardGenerator({
       const saved = await saveUserCardRemote(nextCard);
       setHistory(saved);
       onSaved?.();
+      reachGoal("save_to_history", { automatic: true });
       setNotice("Готово! Карточка сохранена в историю. Скачайте PNG или JSON.");
     } catch {
       setNotice("Карточка создана. Нажмите «Сохранить в историю», если она не появилась автоматически.");
@@ -387,6 +404,7 @@ export function CardGenerator({
     }
 
     onSaved?.();
+    reachGoal("save_to_history");
     setNotice("Карточка сохранена.");
   }
 
@@ -403,6 +421,15 @@ export function CardGenerator({
     setImageUrl(cardFromHistory.imageDataUrl ?? "");
     setImageFileName(cardFromHistory.imageDataUrl ? "Фото из истории" : "");
     setNotice("Карточка открыта.");
+  }
+
+  async function handleDownloadBestImage() {
+    if (!card) {
+      return;
+    }
+
+    reachGoal("download_png");
+    await downloadBestImage(card, renderedImageUrl, previewRef.current);
   }
 
   function applyImageResult(cardForImage: ProductCardResult, data: GenerateImageResult) {
@@ -603,7 +630,15 @@ export function CardGenerator({
                 </label>
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                   Маркетплейс
-                  <Select onChange={(event) => setMarketplace(event.target.value)} value={marketplace} variant={selectVariant}>
+                  <Select
+                    onChange={(event) => {
+                      const nextMarketplace = event.target.value;
+                      setMarketplace(nextMarketplace);
+                      reachGoal("select_marketplace", { marketplace: nextMarketplace });
+                    }}
+                    value={marketplace}
+                    variant={selectVariant}
+                  >
                     {marketplaces.map((item) => (
                       <option key={item}>{item}</option>
                     ))}
@@ -745,7 +780,11 @@ export function CardGenerator({
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                     Пресет дизайна
                     <Select
-                      onChange={(event) => setDesignPreset(event.target.value as ImageDesignPreset)}
+                      onChange={(event) => {
+                        const nextDesignPreset = event.target.value as ImageDesignPreset;
+                        setDesignPreset(nextDesignPreset);
+                        reachGoal("select_design_preset", { designPreset: nextDesignPreset });
+                      }}
                       value={designPreset}
                       variant={selectVariant}
                     >
@@ -799,7 +838,7 @@ export function CardGenerator({
                       Готова к загрузке на {card.marketplace}
                     </p>
                   </div>
-                  <Button onClick={() => downloadBestImage(card, renderedImageUrl, previewRef.current)} variant="dark">
+                  <Button onClick={handleDownloadBestImage} variant="dark">
                     Скачать PNG
                   </Button>
                 </div>

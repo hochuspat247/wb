@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Check } from "lucide-react";
+import { MetrikaGoalLink } from "@/components/analytics/MetrikaGoalLink";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -15,6 +15,7 @@ type PricingCardProps = {
   cta: string;
   href: string;
   packageCount?: number;
+  metrikaPlan?: string;
   highlighted?: boolean;
   badge?: string;
 };
@@ -29,6 +30,7 @@ export function PricingCard({
   cta,
   href,
   packageCount,
+  metrikaPlan,
   highlighted = false,
   badge
 }: PricingCardProps) {
@@ -66,7 +68,7 @@ export function PricingCard({
       </ul>
 
       {packageCount ? (
-        <PaymentButton className="mt-8" count={packageCount} variant={highlighted ? "primary" : "secondary"}>
+        <PaymentButton className="mt-8" count={packageCount} metrikaPlan={metrikaPlan} variant={highlighted ? "primary" : "secondary"}>
           {cta}
         </PaymentButton>
       ) : href.startsWith("http") ? (
@@ -76,11 +78,11 @@ export function PricingCard({
           </Button>
         </a>
       ) : (
-        <Link className="mt-8 block" href={href}>
+        <MetrikaGoalLink className="mt-8 block" goal="pricing_click" href={href} params={{ plan: metrikaPlan ?? name }}>
           <Button className="w-full" variant={highlighted ? "primary" : "secondary"}>
             {cta}
           </Button>
-        </Link>
+        </MetrikaGoalLink>
       )}
     </Card>
   );

@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { payments } from "@/lib/db/schema";
 import { amountToMinorUnits, applyVerifiedPayment } from "@/lib/server/payments";
+import { handleVideoPaymentWebhook } from "@/lib/server/videoPayment";
 import { getYooKassaPayment } from "@/lib/server/yookassa";
 
 export const runtime = "nodejs";
@@ -33,6 +34,17 @@ export async function POST(request: Request) {
     }
 
     const verifiedPayment = await getYooKassaPayment(paymentId);
+    const videoResult = await handleVideoPaymentWebhook(verifiedPayment);
+
+    if (videoResult.handled) {
+      return NextResponse.json({
+        ok: true,
+        event: notification?.event,
+        videoOrderId: videoResult.orderId,
+        videoStatus: videoResult.status
+      });
+    }
+
     const verifiedAmount = amountToMinorUnits(verifiedPayment.amount.value);
 
     if (

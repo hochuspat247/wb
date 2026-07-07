@@ -1,6 +1,15 @@
 import type { AdapterAccountType } from "@auth/core/adapters";
 import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { ProductCardResult } from "@/types/product-card";
+import type {
+  VideoAspectRatio,
+  VideoDuration,
+  VideoGenerationModel,
+  VideoGenerationProvider,
+  VideoGenerationStatus,
+  VideoMotionStyle,
+  VideoQuality
+} from "@/types/video-generation";
 
 export const users = sqliteTable("user", {
   id: text("id")
@@ -13,6 +22,7 @@ export const users = sqliteTable("user", {
   passwordHash: text("passwordHash"),
   generationCredits: integer("generationCredits").notNull().default(3),
   generationsUsed: integer("generationsUsed").notNull().default(0),
+  videoCredits: integer("videoCredits").notNull().default(0),
   createdAt: integer("createdAt", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date())
@@ -138,6 +148,37 @@ export const payments = sqliteTable("payment", {
   confirmationUrl: text("confirmationUrl"),
   idempotenceKey: text("idempotenceKey").notNull(),
   creditedAt: integer("creditedAt", { mode: "timestamp_ms" }),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date())
+});
+
+export const videoGenerationOrders = sqliteTable("video_generation_order", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  sourceGenerationId: text("sourceGenerationId").notNull(),
+  sourceImageUrl: text("sourceImageUrl").notNull(),
+  provider: text("provider").$type<VideoGenerationProvider>().notNull().default("genapi"),
+  model: text("model").$type<VideoGenerationModel>().notNull().default("kling-video-o3"),
+  status: text("status").$type<VideoGenerationStatus>().notNull().default("payment_pending"),
+  duration: text("duration").$type<VideoDuration>().notNull(),
+  aspectRatio: text("aspectRatio").$type<VideoAspectRatio>().notNull(),
+  quality: text("quality").$type<VideoQuality>().notNull(),
+  motionStyle: text("motionStyle").$type<VideoMotionStyle>().notNull(),
+  prompt: text("prompt").notNull(),
+  amountRub: integer("amountRub"),
+  paymentId: text("paymentId"),
+  externalTaskId: text("externalTaskId"),
+  originalVideoUrl: text("originalVideoUrl"),
+  error: text("error"),
+  paidAt: integer("paidAt", { mode: "timestamp_ms" }),
   createdAt: integer("createdAt", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date()),

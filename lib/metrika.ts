@@ -35,7 +35,16 @@ export type MetrikaGoal =
   | "save_to_history"
   | "select_marketplace"
   | "select_design_preset"
-  | "pricing_click";
+  | "pricing_click"
+  | "video_create_click"
+  | "video_modal_open"
+  | "video_order_created"
+  | "video_payment_started"
+  | "video_payment_success"
+  | "video_generation_started"
+  | "video_generation_completed"
+  | "video_generation_failed"
+  | "video_download";
 
 export function reachGoal(goal: MetrikaGoal, params?: Record<string, unknown>) {
   if (typeof window === "undefined") return;

@@ -78,6 +78,12 @@ export function migrate(sqlite: Database.Database) {
     // column already exists
   }
 
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN videoCredits INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // column already exists
+  }
+
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS analytics_event (
       id TEXT PRIMARY KEY NOT NULL,
@@ -140,6 +146,34 @@ export function migrate(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS payment_user_idx ON payment(userId);
     CREATE INDEX IF NOT EXISTS payment_status_idx ON payment(status);
     CREATE INDEX IF NOT EXISTS payment_credited_idx ON payment(creditedAt);
+  `);
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS video_generation_order (
+      id TEXT PRIMARY KEY NOT NULL,
+      userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+      sourceGenerationId TEXT NOT NULL,
+      sourceImageUrl TEXT NOT NULL,
+      provider TEXT NOT NULL DEFAULT 'genapi',
+      model TEXT NOT NULL DEFAULT 'kling-video-o3',
+      status TEXT NOT NULL DEFAULT 'payment_pending',
+      duration TEXT NOT NULL,
+      aspectRatio TEXT NOT NULL,
+      quality TEXT NOT NULL,
+      motionStyle TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      amountRub INTEGER,
+      paymentId TEXT,
+      externalTaskId TEXT,
+      originalVideoUrl TEXT,
+      error TEXT,
+      paidAt INTEGER,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS video_generation_order_user_idx ON video_generation_order(userId);
+    CREATE INDEX IF NOT EXISTS video_generation_order_source_idx ON video_generation_order(sourceGenerationId);
+    CREATE INDEX IF NOT EXISTS video_generation_order_status_idx ON video_generation_order(status);
   `);
 
   sqlite.exec(`

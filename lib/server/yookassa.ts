@@ -23,6 +23,7 @@ type CreatePaymentInput = {
   idempotenceKey: string;
   returnUrl: string;
   userId: string;
+  metadata?: Record<string, string>;
 };
 
 function getCredentials() {
@@ -132,7 +133,8 @@ export async function createYooKassaPayment(input: CreatePaymentInput) {
       receipt: createReceipt(input),
       metadata: {
         userId: input.userId,
-        credits: String(input.credits)
+        credits: String(input.credits),
+        ...input.metadata
       }
     }),
     cache: "no-store"

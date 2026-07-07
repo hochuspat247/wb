@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Download, FileImage, Film, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Video, Wand2 } from "lucide-react";
+import { Archive, Download, FileImage, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Wand2 } from "lucide-react";
 import { CardEditPanel } from "@/components/CardEditPanel";
 import { GeneratedCardPreview } from "@/components/GeneratedCardPreview";
 import { HistorySection } from "@/components/HistorySection";
@@ -10,6 +10,7 @@ import { PaywallModal } from "@/components/PaywallModal";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 import { ResultPanel } from "@/components/ResultPanel";
+import { VideoFromCardFlow } from "@/components/video/VideoFromCardFlow";
 import { SeriesTypePicker } from "@/components/SeriesTypePicker";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
@@ -20,7 +21,6 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { getImageSettings } from "@/lib/imageSettings";
 import { detectCategory } from "@/lib/category";
-import { VIDEO_GENERATION_PRICE_RUB } from "@/lib/pricing";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
 import {
@@ -48,7 +48,6 @@ import {
 } from "@/lib/series/plan";
 import type {
   GenerateImageResult,
-  GenerateVideoResult,
   CardSeriesCount,
   CardSeriesPlanItem,
   ImageDesignPreset,
@@ -100,7 +99,9 @@ export function CardGenerator({
   embedded = false,
   persistToServer = false,
   darkConsole = false,
-  compactDemoEntry = false
+  compactDemoEntry = false,
+  initialVideoOrderId = null,
+  onVideoFlowReset
 }: {
   hideHistory?: boolean;
   onSaved?: () => void;
@@ -109,6 +110,8 @@ export function CardGenerator({
   persistToServer?: boolean;
   darkConsole?: boolean;
   compactDemoEntry?: boolean;
+  initialVideoOrderId?: string | null;
+  onVideoFlowReset?: () => void;
 }) {
   const router = useRouter();
   const [description, setDescription] = useState("");
@@ -150,8 +153,6 @@ export function CardGenerator({
   const [renderedImageUrl, setRenderedImageUrl] = useState("");
   const [isRenderingImage, setIsRenderingImage] = useState(false);
   const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
-  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
-  const [videoError, setVideoError] = useState("");
   const [showPaywall, setShowPaywall] = useState(false);
   const [remainingGenerations, setRemainingGenerations] = useState<number | null>(null);
   const [hasUnlimitedAccess, setHasUnlimitedAccess] = useState(false);
@@ -422,7 +423,6 @@ export function CardGenerator({
     event.preventDefault();
     setError("");
     setNotice("");
-    setVideoError("");
     setSeriesProgress("");
 
     if (!description.trim()) {
@@ -661,7 +661,6 @@ export function CardGenerator({
     setRenderedImageUrl("");
     setError("");
     setNotice("");
-    setVideoError("");
   }
 
   async function persistGeneratedCard(cardToSave: ProductCardResult, options: { silent?: boolean } = {}) {
@@ -1032,119 +1031,11 @@ export function CardGenerator({
     }
   }
 
-  function getVideoSource(cardForVideo: ProductCardResult) {
-    if (cardForVideo.generatedImageBase64 && cardForVideo.generatedImageMimeType) {
-      return {
-        imageBase64: cardForVideo.generatedImageBase64,
-        imageMimeType: cardForVideo.generatedImageMimeType
-      };
-    }
-
-    if (cardForVideo.generatedImageDataUrl) {
-      const image = dataUrlToBase64(cardForVideo.generatedImageDataUrl);
-      return {
-        imageBase64: image.base64,
-        imageMimeType: image.mimeType
-      };
-    }
-
-    if (cardForVideo.generatedImageUrl) {
-      return { imageUrl: cardForVideo.generatedImageUrl };
-    }
-
-    const sourceImage = imageUrl || cardForVideo.imageDataUrl;
-
-    if (sourceImage) {
-      const image = dataUrlToBase64(sourceImage);
-      return {
-        imageBase64: image.base64,
-        imageMimeType: image.mimeType
-      };
-    }
-
-    return {};
-  }
-
-  async function handleGenerateVideo() {
-    if (!card) {
-      return;
-    }
-
-    setIsGeneratingVideo(true);
-    setVideoError("");
-    setNotice(
-      card.generatedVideoTaskId && !card.generatedVideoUrl
-        ? "Проверяем статус видео Kling…"
-        : "Создаём 5-секундное видео Kling…"
-    );
-
-    try {
-      const source = getVideoSource(card);
-      const response = await fetch("/api/generate-video", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          card.generatedVideoTaskId && !card.generatedVideoUrl
-            ? {
-                taskId: card.generatedVideoTaskId,
-                taskType: ("imageUrl" in source && source.imageUrl) || ("imageBase64" in source && source.imageBase64) ? "image2video" : "text2video",
-                prompt: card.generatedVideoPrompt
-              }
-            : {
-                productDescription: description || card.fullDescription || card.shortDescription,
-                title: card.title,
-                style,
-                marketplace,
-                prompt: `${card.visualConcept}\n5-second vertical marketplace product video. Show the product clearly, premium lighting, smooth camera movement.`,
-                aspectRatio: "9:16",
-                ...source
-              }
-        )
-      });
-      const data = (await response.json()) as GenerateVideoResult & { error?: string };
-
-      if (!response.ok) {
-        throw new Error(data.error || "Не удалось создать видео.");
-      }
-
-      const updatedCard: ProductCardResult = {
-        ...card,
-        generatedVideoUrl: data.videoUrl,
-        generatedVideoTaskId: data.taskId,
-        generatedVideoProvider: data.provider,
-        generatedVideoModel: data.model,
-        generatedVideoPrompt: data.prompt,
-        generatedVideoStatus: data.status,
-        generatedVideoStatusMessage: data.statusMessage,
-        generatedVideoDurationSeconds: data.durationSeconds,
-        generatedVideoPriceRub: data.priceRub,
-        generatedVideoIsFree: Boolean(data.isFree || data.priceRub === 0)
-      };
-
-      setCard(updatedCard);
-      await persistGeneratedCard(updatedCard, { silent: true });
-
-      if (data.videoUrl) {
-        setNotice("Видео готово. Его можно скачать или использовать в карточке товара.");
-      } else {
-        setNotice("Видео ещё генерируется. Нажмите «Проверить видео» через минуту.");
-      }
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "Не удалось создать видео.";
-      setVideoError(message);
-      setNotice("");
-    } finally {
-      setIsGeneratingVideo(false);
-    }
-  }
-
   const aiImageUrl = card ? getGeneratedCoverSrc(card) : null;
 
   const hasAiCover = Boolean(card && !isGeneratingAiImage && hasGeneratedAiCover(card));
-  const videoPriceRub = hasUnlimitedAccess ? 0 : card?.generatedVideoPriceRub ?? VIDEO_GENERATION_PRICE_RUB;
-  const videoPriceLabel = videoPriceRub === 0 ? "Бесплатно" : `${VIDEO_GENERATION_PRICE_RUB} ₽`;
 
-  const isWorking = isLoading || isGeneratingAiImage || isRenderingImage || isGeneratingVideo || isDemoGenerating;
+  const isWorking = isLoading || isGeneratingAiImage || isRenderingImage || isDemoGenerating;
   const labelClass = darkConsole ? "text-white/80" : "text-ink";
   const formClass = darkConsole
     ? embedded
@@ -1560,16 +1451,6 @@ export function CardGenerator({
                     <Button className="w-full sm:w-auto" onClick={handleDownloadBestImage} variant="dark">
                       Скачать PNG
                     </Button>
-                    <Button
-                      className="w-full sm:w-auto"
-                      disabled={isGeneratingVideo}
-                      onClick={handleGenerateVideo}
-                      type="button"
-                      variant="secondary"
-                    >
-                      {isGeneratingVideo ? <Loader2 className="animate-spin" size={16} /> : <Video size={16} />}
-                      {card.generatedVideoTaskId && !card.generatedVideoUrl ? "Проверить видео" : `Видео 5 сек · ${videoPriceLabel}`}
-                    </Button>
                     <Button className="w-full sm:w-auto" onClick={() => openCardEditor(card)} type="button" variant="secondary">
                       <Pencil size={16} />
                       Редактировать
@@ -1583,10 +1464,14 @@ export function CardGenerator({
                     </Alert>
                   </div>
                 ) : null}
-                {videoError ? (
-                  <div className="mt-4">
-                    <Alert variant="error">Kling не вернул видео: {videoError}</Alert>
-                  </div>
+                {persistToServer && card ? (
+                  <VideoFromCardFlow
+                    card={card}
+                    darkConsole={darkConsole}
+                    disabled={isWorking}
+                    initialOrderId={initialVideoOrderId}
+                    onFlowReset={onVideoFlowReset}
+                  />
                 ) : null}
                 <div className={`mt-4 overflow-hidden rounded-card border ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
                   {isGeneratingAiImage ? (
@@ -1614,44 +1499,6 @@ export function CardGenerator({
                     />
                   )}
                 </div>
-                {card.generatedVideoUrl || isGeneratingVideo || card.generatedVideoTaskId ? (
-                  <div className={`mt-4 rounded-[18px] border p-4 ${darkConsole ? "border-white/10 bg-black/10" : "border-clay bg-paper"}`}>
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className={`flex items-center gap-2 text-sm font-black ${darkConsole ? "text-white" : "text-ink"}`}>
-                          <Film size={16} />
-                          Видео 5 секунд
-                        </p>
-                        <p className={`mt-1 text-xs font-semibold ${darkConsole ? "text-white/45" : "text-muted"}`}>
-                          Стоимость генерации: {videoPriceLabel}
-                        </p>
-                      </div>
-                      {card.generatedVideoUrl ? (
-                        <Button
-                          onClick={() => triggerBrowserDownload(card.generatedVideoUrl || "", "marketcard-ai-video.mp4")}
-                          size="sm"
-                          type="button"
-                          variant="ghost"
-                        >
-                          <Download size={15} />
-                          MP4
-                        </Button>
-                      ) : null}
-                    </div>
-                    <div className="mt-3 overflow-hidden rounded-[14px] border border-clay bg-ink">
-                      {card.generatedVideoUrl ? (
-                        <video className="aspect-[9/16] max-h-[520px] w-full bg-black object-contain" controls src={card.generatedVideoUrl} />
-                      ) : (
-                        <div className="grid aspect-[9/16] max-h-[520px] place-items-center gap-3 px-5 text-center">
-                          <Loader2 className="animate-spin text-muted" size={26} />
-                          <p className="text-sm font-semibold text-muted">
-                            {card.generatedVideoStatusMessage || "Kling генерирует видео. Обычно это занимает больше времени, чем картинка."}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : null}
               </div>
             ) : !isWorking && !embedded ? (
               <div className={`${panelClass} grid aspect-[4/5] place-items-center text-center`}>

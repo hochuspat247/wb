@@ -30,6 +30,7 @@ export async function GET() {
     emailVerified: Boolean(user.emailVerified),
     needsEmailVerification: needsEmailVerification(user.email, user.emailVerified),
     joinedAt: user.createdAt,
+    videoCredits: user.videoCredits,
     quota: await getUserQuota(userId)
   });
 }

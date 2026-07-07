@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Download,
@@ -18,6 +19,8 @@ import {
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { CardGenerator } from "@/components/CardGenerator";
+import { VideoFromCardFlow } from "@/components/video/VideoFromCardFlow";
+import { VideoHistorySection } from "@/components/video/VideoHistorySection";
 import { CompareSection } from "@/components/CompareSection";
 import { HistorySection } from "@/components/HistorySection";
 import { Logo } from "@/components/Logo";
@@ -50,7 +53,9 @@ function getThumbnail(card: ProductCardResult) {
 
 export function CabinetApp() {
   const { data: session } = useSession();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>("create");
+  const [videoOrderId, setVideoOrderId] = useState<string | null>(searchParams.get("videoOrder"));
   const [cards, setCards] = useState<ProductCardResult[]>([]);
   const [profileName, setProfileName] = useState("Продавец");
   const [userEmail, setUserEmail] = useState("");
@@ -93,7 +98,13 @@ export function CabinetApp() {
     if (window.location.hash === "#create") {
       setTab("create");
     }
-  }, []);
+
+    const pendingVideoOrder = searchParams.get("videoOrder");
+    if (pendingVideoOrder) {
+      setVideoOrderId(pendingVideoOrder);
+      setTab("create");
+    }
+  }, [searchParams]);
 
   function refreshCards() {
     fetchUserCards()
@@ -298,8 +309,13 @@ export function CabinetApp() {
                 embedded
                 hideHistory
                 darkConsole
+                initialVideoOrderId={videoOrderId}
                 onQuotaChange={(quota) => setRemainingGenerations(quota.remaining)}
                 onSaved={refreshCards}
+                onVideoFlowReset={() => {
+                  setVideoOrderId(null);
+                  window.history.replaceState(null, "", "/cabinet#create");
+                }}
                 persistToServer
               />
             </div>
@@ -331,6 +347,15 @@ export function CabinetApp() {
                   onRemove={handleRemove}
                 />
               )}
+              <VideoHistorySection
+                cards={cards}
+                onOpen={(order) => {
+                  const sourceCard = cards.find((item) => item.id === order.sourceGenerationId);
+                  if (sourceCard) {
+                    setSelected(sourceCard);
+                  }
+                }}
+              />
             </div>
           ) : null}
 
@@ -478,6 +503,7 @@ export function CabinetApp() {
                     Создать похожую
                   </Button>
                 </div>
+                <VideoFromCardFlow card={selected} />
               </div>
             </div>
           </Card>

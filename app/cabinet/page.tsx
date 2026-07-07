@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import CabinetMetrikaGoal from "@/components/CabinetMetrikaGoal";
 import { CabinetApp } from "@/components/cabinet/CabinetApp";
+import { Loader } from "@/components/ui/Loader";
 import { createPageMetadata } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
@@ -13,7 +15,9 @@ export default function CabinetPage() {
   return (
     <>
       <CabinetMetrikaGoal />
-      <CabinetApp />
+      <Suspense fallback={<div className="grid min-h-screen place-items-center bg-paper"><Loader label="Загружаем кабинет…" /></div>}>
+        <CabinetApp />
+      </Suspense>
     </>
   );
 }

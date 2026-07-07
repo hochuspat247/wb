@@ -63,7 +63,7 @@ export function Header() {
         <div className="hidden items-center gap-3 lg:flex">
           {isAuthed ? (
             <>
-              <Link href="/cabinet">
+              <Link href="/cabinet" onClick={trackCreateCardClick}>
                 <Button variant="ghost">{session?.user?.name || "Кабинет"}</Button>
               </Link>
               <Link href="/cabinet#create" onClick={trackCreateCardClick}>
@@ -116,7 +116,13 @@ export function Header() {
             <div className="mt-4 grid gap-2 border-t border-clay pt-4">
               {isAuthed ? (
                 <>
-                  <Link href="/cabinet" onClick={() => setMenuOpen(false)}>
+                  <Link
+                    href="/cabinet"
+                    onClick={() => {
+                      trackCreateCardClick();
+                      setMenuOpen(false);
+                    }}
+                  >
                     <Button className="w-full" variant="secondary">
                       Кабинет
                     </Button>

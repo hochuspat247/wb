@@ -26,6 +26,30 @@ Goals:
 
 Check in Yandex Metrika: Reports -> Conversions.
 
+## Yandex Direct And Metrika
+
+Counter: `110476730`
+
+Core goals for ads:
+
+- `click_create_card` - create-card CTA click
+- `open_cabinet` - cabinet open
+- `generate_card` - successful card generation
+- `download_png` - PNG download
+
+Direct quick links:
+
+- `/cabinet`
+- `/#examples`
+- `/#how`
+- `/#pricing`
+
+Direct UTM template:
+
+```text
+utm_source=yandex_direct&utm_medium=cpc&utm_campaign={campaign_id}&utm_content={ad_id}&utm_term={keyword}
+```
+
 MarketCard AI - MVP AI-сервиса для продавцов маркетплейсов. Пользователь загружает фото товара, вводит описание, выбирает маркетплейс, стиль и режим изображения, а сервис генерирует текст карточки, SEO, инфографику, HTML-preview и AI-изображение через NanoBanana Expert или Google Gemini Nano Banana.
 
 ## Запуск

@@ -37,6 +37,8 @@ import {
 } from "@/lib/api/user";
 import { base64ToDataUrl, downloadBase64Image, downloadImageFromUrl } from "@/lib/image";
 import { getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
+import { reachGoal } from "@/lib/metrika";
+import { FREE_TRIAL_CARDS } from "@/lib/pricing";
 import { clearHistory, getHistory } from "@/lib/storage";
 import type { ProductCardResult } from "@/types/product-card";
 
@@ -108,6 +110,7 @@ export function CabinetApp() {
   }
 
   function openCreateTab() {
+    reachGoal("click_create_card");
     setTab("create");
     window.history.replaceState(null, "", "/cabinet#create");
   }
@@ -264,6 +267,9 @@ export function CabinetApp() {
                   </div>
                 ))}
               </div>
+              <p className="rounded-[18px] border border-mint/20 bg-mint/10 px-4 py-3 text-sm font-bold text-mint">
+                Стартовый оффер: {FREE_TRIAL_CARDS} карточки бесплатно. Доступно сейчас: {remainingGenerations}
+              </p>
               <div className="studio-noise relative overflow-hidden rounded-container border border-clay bg-card p-5 shadow-soft md:p-7">
                 <CardGenerator
                   embedded

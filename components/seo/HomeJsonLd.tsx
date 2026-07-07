@@ -3,7 +3,7 @@ import { absoluteUrl, siteConfig } from "@/lib/seo";
 const faq = [
   {
     question: "Можно ли попробовать бесплатно?",
-    answer: "Да, можно создать 1 тестовую карточку без карты."
+    answer: "Да, можно создать 3 тестовые карточки без карты."
   },
   {
     question: "Это уже публикует карточку на WB/Ozon?",
@@ -35,7 +35,7 @@ export function HomeJsonLd() {
           "@type": "Offer",
           price: "0",
           priceCurrency: "RUB",
-          description: "1 бесплатная генерация карточки"
+          description: "3 бесплатные генерации карточек"
         },
         url: absoluteUrl("/cabinet")
       },

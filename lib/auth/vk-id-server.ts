@@ -98,7 +98,7 @@ export async function authenticateVkAccessToken(accessToken: string) {
     name,
     image,
     emailVerified,
-    generationCredits: 1,
+    generationCredits: 3,
     generationsUsed: 0,
     createdAt: new Date()
   });

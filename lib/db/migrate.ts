@@ -51,7 +51,7 @@ export function migrate(sqlite: Database.Database) {
   `);
 
   try {
-    sqlite.exec(`ALTER TABLE user ADD COLUMN generationCredits INTEGER NOT NULL DEFAULT 1`);
+    sqlite.exec(`ALTER TABLE user ADD COLUMN generationCredits INTEGER NOT NULL DEFAULT 3`);
   } catch {
     // column already exists
   }

@@ -40,7 +40,7 @@ export function PaywallModal({ open, onClose }: PaywallModalProps) {
           <X size={16} />
         </button>
 
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Бесплатная генерация использована</p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Бесплатные генерации использованы</p>
         <h3 className="mt-3 text-2xl font-black text-ink">Купите пакет генераций</h3>
         <p className="mt-2 text-sm font-medium text-muted">
           Вы уже протестировали сервис. Выберите пакет — оплата пройдет через защищенную страницу ЮKassa.

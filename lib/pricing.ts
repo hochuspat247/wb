@@ -1,4 +1,4 @@
-export const FREE_TRIAL_CARDS = 1;
+export const FREE_TRIAL_CARDS = 3;
 
 export type GenerationPackage = {
   id: string;

@@ -49,7 +49,7 @@ export function Hero() {
               </Link>
             </div>
             <p className="mt-5 text-sm font-semibold text-muted">
-              Без карты · 1 тестовая карточка · PNG и JSON экспорт
+              3 карточки бесплатно · Без карты · PNG и JSON экспорт
             </p>
           </Reveal>
         </div>

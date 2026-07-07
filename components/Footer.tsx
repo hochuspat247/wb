@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MetrikaGoalLink } from "@/components/analytics/MetrikaGoalLink";
 import { Logo } from "@/components/Logo";
 
 export function Footer() {
@@ -36,9 +37,9 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link className="transition hover:text-white" href="/cabinet">
+                <MetrikaGoalLink className="transition hover:text-white" goal="click_create_card" href="/cabinet">
                   Кабинет
-                </Link>
+                </MetrikaGoalLink>
               </li>
             </ul>
           </div>

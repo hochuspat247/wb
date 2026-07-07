@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     if (!quota.canGenerate) {
       return NextResponse.json(
         {
-          error: "Бесплатная генерация использована. Купите пакет, чтобы продолжить.",
+          error: "Бесплатные генерации использованы. Купите пакет, чтобы продолжить.",
           code: "QUOTA_EXCEEDED",
           quota
         },
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     if (nextQuota.used === quota.used) {
       return NextResponse.json(
         {
-          error: "Бесплатная генерация использована. Купите пакет, чтобы продолжить.",
+          error: "Бесплатные генерации использованы. Купите пакет, чтобы продолжить.",
           code: "QUOTA_EXCEEDED",
           quota: nextQuota
         },

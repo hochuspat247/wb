@@ -69,7 +69,7 @@ export function RegisterForm() {
             <Logo />
           </Link>
           <h1 className="mt-6 text-3xl font-black text-ink">Регистрация</h1>
-          <p className="mt-2 text-muted">1 генерация бесплатно · подтверждение email · вход по паролю</p>
+          <p className="mt-2 text-muted">3 генерации бесплатно · подтверждение email · вход по паролю</p>
         </div>
 
         <div className="rounded-card border border-clay bg-card p-8">

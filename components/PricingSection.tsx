@@ -7,8 +7,8 @@ const plans = [
     name: "Старт",
     subtitle: "Попробовать сервис",
     price: "0 ₽",
-    unit: "1 шт",
-    features: ["1 генерация карточки", "Доступ к редактору шаблонов"],
+    unit: "3 шт",
+    features: ["3 карточки бесплатно", "Тексты и SEO", "Базовая обложка 4:5", "PNG и JSON экспорт"],
     cta: "Попробовать",
     href: "/register",
     metrikaPlan: "start"

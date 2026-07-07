@@ -4,7 +4,7 @@ import { createPageMetadata } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
   title: "Регистрация",
-  description: "Создайте аккаунт MarketCard AI и получите 1 бесплатную генерацию карточки товара.",
+  description: "Создайте аккаунт MarketCard AI и получите 3 бесплатные генерации карточек товара.",
   path: "/register",
   noIndex: true
 });

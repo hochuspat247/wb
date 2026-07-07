@@ -11,7 +11,7 @@ export const users = sqliteTable("user", {
   emailVerified: integer("emailVerified", { mode: "timestamp_ms" }),
   image: text("image"),
   passwordHash: text("passwordHash"),
-  generationCredits: integer("generationCredits").notNull().default(1),
+  generationCredits: integer("generationCredits").notNull().default(3),
   generationsUsed: integer("generationsUsed").notNull().default(0),
   createdAt: integer("createdAt", { mode: "timestamp_ms" })
     .notNull()

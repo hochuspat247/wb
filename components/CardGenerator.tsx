@@ -1470,6 +1470,7 @@ export function CardGenerator({
                 {persistToServer && card ? (
                   <VideoFromCardFlow
                     card={card}
+                    compact={embedded}
                     darkConsole={darkConsole}
                     disabled={isWorking}
                     initialOrderId={initialVideoOrderId}

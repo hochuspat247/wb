@@ -29,6 +29,7 @@ export function HeroActions() {
           const target = document.getElementById("pricing");
           target?.scrollIntoView({ behavior: "smooth", block: "start" });
           window.history.replaceState(null, "", "#pricing");
+          window.dispatchEvent(new HashChangeEvent("hashchange"));
         }}
         size="lg"
         type="button"

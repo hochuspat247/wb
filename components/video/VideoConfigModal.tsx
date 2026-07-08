@@ -2,7 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, X } from "lucide-react";
-import { calculateVideoPriceRub, formatVideoPriceBreakdown, formatVideoPriceRub, VIDEO_DURATION_OPTIONS } from "@/config/video-pricing";
+import {
+  calculateVideoPriceRub,
+  formatVideoPriceBreakdown,
+  formatVideoPriceRub,
+  getVideoDurationOptionLabel,
+  getVideoQualityLabel,
+  VIDEO_DURATION_OPTIONS
+} from "@/config/video-pricing";
+import { getVideoPromptCategoryLabel, detectVideoPromptCategory } from "@/lib/video/videoPrompt";
 import { createVideoOrder } from "@/lib/api/video";
 import { fetchUserProfile } from "@/lib/api/user";
 import { getGeneratedCoverSrc } from "@/lib/image";
@@ -38,7 +46,7 @@ type VideoConfigModalProps = {
 };
 
 export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCreated }: VideoConfigModalProps) {
-  const [duration, setDuration] = useState<VideoDuration>("3");
+  const [duration, setDuration] = useState<VideoDuration>("4");
   const [aspectRatio, setAspectRatio] = useState<VideoAspectRatio>("4:5");
   const [quality, setQuality] = useState<VideoQuality>("standard");
   const [motionStyle, setMotionStyle] = useState<VideoMotionStyle>("premium_parallax");
@@ -51,6 +59,10 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
   const previewSrc = getGeneratedCoverSrc(card) || card.imageDataUrl;
   const amountRub = useMemo(() => calculateVideoPriceRub(duration, quality), [duration, quality]);
   const priceBreakdown = useMemo(() => formatVideoPriceBreakdown(duration, quality), [duration, quality]);
+  const promptCategoryLabel = useMemo(
+    () => getVideoPromptCategoryLabel(detectVideoPromptCategory(card)),
+    [card]
+  );
   const canUseCredit = videoCredits > 0 && !isUnlimited;
   const needsPayment = !isUnlimited && !canUseCredit;
   const showEmailField = needsPayment;
@@ -151,11 +163,11 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
           <X size={16} />
         </button>
 
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Kling Video O3</p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Google Veo 3.1 Fast</p>
         <h3 className="mt-3 text-2xl font-black text-ink">Видео из вашей карточки</h3>
         <p className="mt-2 text-sm font-medium text-muted">
           Мы анимируем уже готовую карточку, сохранив товар, текст, цвета и композицию. Видео всегда без звука. Минимум
-          3 сек — ограничение Kling Video O3.
+          4 сек — ограничение Veo 3.1.
         </p>
 
         <div className="mt-6 grid gap-5 md:grid-cols-[180px_1fr]">
@@ -174,7 +186,7 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
               <Select onChange={(e) => setDuration(e.target.value as VideoDuration)} value={duration}>
                 {VIDEO_DURATION_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {option.label}
+                    {getVideoDurationOptionLabel(option.value, quality)}
                   </option>
                 ))}
               </Select>
@@ -193,8 +205,8 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
             <label className="grid gap-1.5 text-xs font-semibold text-muted">
               Качество
               <Select onChange={(e) => setQuality(e.target.value as VideoQuality)} value={quality}>
-                <option value="standard">Standard</option>
-                <option value="pro">Pro</option>
+                <option value="standard">{getVideoQualityLabel("standard")}</option>
+                <option value="pro">{getVideoQualityLabel("pro")}</option>
               </Select>
             </label>
 
@@ -208,6 +220,11 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
                 ))}
               </Select>
             </label>
+
+            <p className="rounded-[14px] border border-clay bg-paper/40 px-3 py-2 text-[11px] font-medium leading-relaxed text-muted">
+              Premium-промт: {promptCategoryLabel}. Animate this image — плавное движение камеры, свет и фон без
+              искажения текста на карточке.
+            </p>
 
             {showEmailField ? (
               <label className="grid gap-1.5 text-xs font-semibold text-muted">

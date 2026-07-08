@@ -10,22 +10,26 @@ import { fetchVideoCredits } from "@/lib/api/video";
 import { hasGeneratedAiCover } from "@/lib/image";
 import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 
-type VideoFlowPhase = "idle" | "config" | "waiting" | "ready";
+export type VideoFlowPhase = "idle" | "config" | "waiting" | "ready";
 
 type VideoFromCardFlowProps = {
   card: ProductCardResult;
+  compact?: boolean;
   darkConsole?: boolean;
   disabled?: boolean;
   initialOrderId?: string | null;
   onFlowReset?: () => void;
+  onPhaseChange?: (phase: VideoFlowPhase) => void;
 };
 
 export function VideoFromCardFlow({
   card,
+  compact,
   darkConsole,
   disabled,
   initialOrderId,
-  onFlowReset
+  onFlowReset,
+  onPhaseChange
 }: VideoFromCardFlowProps) {
   const [phase, setPhase] = useState<VideoFlowPhase>(initialOrderId ? "waiting" : "idle");
   const [orderId, setOrderId] = useState<string | null>(initialOrderId || null);
@@ -45,6 +49,10 @@ export function VideoFromCardFlow({
     }
   }, [initialOrderId]);
 
+  useEffect(() => {
+    onPhaseChange?.(phase);
+  }, [onPhaseChange, phase]);
+
   if (!hasGeneratedAiCover(card)) {
     return null;
   }
@@ -61,6 +69,7 @@ export function VideoFromCardFlow({
 
       {phase === "waiting" && orderId ? (
         <VideoWaitingScreen
+          compact={compact}
           onDone={(url) => {
             setVideoUrl(url);
             setPhase("ready");
@@ -75,6 +84,7 @@ export function VideoFromCardFlow({
 
       {phase === "ready" && videoUrl && orderId ? (
         <VideoReadyScreen
+          compact={compact}
           onBackToCard={() => {
             setPhase("idle");
             setOrderId(null);

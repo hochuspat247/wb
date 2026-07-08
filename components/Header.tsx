@@ -8,7 +8,7 @@ import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 import { focusHeroMiniGenerator } from "@/lib/hero/focusMiniGenerator";
-import { reachGoal } from "@/lib/metrika";
+import type { MetrikaGoal } from "@/lib/metrika";
 
 const links = [
   ["Примеры", "/#examples"],
@@ -17,7 +17,26 @@ const links = [
   ["Как работает", "/#how"],
   ["Тарифы", "/#pricing"],
   ["FAQ", "/#faq"]
-];
+] as const;
+
+const NAV_LINK_GOALS: Record<string, MetrikaGoal> = {
+  "/#examples": "examples_click",
+  "/#compare": "compare_view",
+  "/#how": "how_view",
+  "/#pricing": "pricing_click",
+  "/#faq": "faq_view"
+};
+
+function trackNavClick(href: string, source: "header" | "mobile") {
+  const goal = NAV_LINK_GOALS[href];
+  if (goal) {
+    trackMarketingEvent(goal, { source });
+  }
+
+  if (href === "/cabinet#create") {
+    trackMarketingEvent("click_create_card", { source });
+  }
+}
 
 export function Header() {
   const { data: session, status } = useSession();
@@ -36,17 +55,17 @@ export function Header() {
 
   const isAuthed = status === "authenticated";
 
-  function trackCreateCardClick() {
-    reachGoal("click_create_card");
+  function trackCreateCardClick(source: "header" | "mobile" = "header") {
+    trackMarketingEvent("click_create_card", { source });
   }
 
   function handleTryFreeClick(event: React.MouseEvent) {
     event.preventDefault();
-    reachGoal("header_try_click");
     trackMarketingEvent("header_try_click");
     focusHeroMiniGenerator({ openFilePicker: true });
     setMenuOpen(false);
     window.history.replaceState(null, "", "#hero-mini-generator");
+    window.dispatchEvent(new HashChangeEvent("hashchange"));
   }
 
   return (
@@ -64,7 +83,12 @@ export function Header() {
               className="relative px-3 py-2 text-sm font-semibold text-muted transition after:absolute after:bottom-1 after:left-3 after:h-px after:w-0 after:bg-accent after:transition-all hover:text-ink hover:after:w-[calc(100%-1.5rem)]"
               href={!isAuthed && href === "/cabinet#create" ? "/#hero-mini-generator" : href}
               key={href}
-              onClick={href === "/cabinet#create" ? trackCreateCardClick : undefined}
+              onClick={() => {
+                trackNavClick(href, "header");
+                if (href === "/cabinet#create") {
+                  trackCreateCardClick("header");
+                }
+              }}
             >
               {label}
             </Link>
@@ -74,10 +98,10 @@ export function Header() {
         <div className="hidden items-center gap-3 lg:flex">
           {isAuthed ? (
             <>
-              <Link href="/cabinet" onClick={trackCreateCardClick}>
+              <Link href="/cabinet" onClick={() => trackCreateCardClick("header")}>
                 <Button variant="ghost">{session?.user?.name || "Кабинет"}</Button>
               </Link>
-              <Link href="/cabinet#create" onClick={trackCreateCardClick}>
+              <Link href="/cabinet#create" onClick={() => trackCreateCardClick("header")}>
                 <Button>Попробовать бесплатно</Button>
               </Link>
               <Button onClick={() => signOut({ callbackUrl: "/" })} variant="secondary">
@@ -115,8 +139,9 @@ export function Header() {
                 href={!isAuthed && href === "/cabinet#create" ? "/#hero-mini-generator" : href}
                 key={href}
                 onClick={() => {
+                  trackNavClick(href, "mobile");
                   if (href === "/cabinet#create") {
-                    trackCreateCardClick();
+                    trackCreateCardClick("mobile");
                   }
                   setMenuOpen(false);
                 }}
@@ -130,7 +155,7 @@ export function Header() {
                   <Link
                     href="/cabinet"
                     onClick={() => {
-                      trackCreateCardClick();
+                      trackCreateCardClick("mobile");
                       setMenuOpen(false);
                     }}
                   >
@@ -141,7 +166,7 @@ export function Header() {
                   <Link
                     href="/cabinet#create"
                     onClick={() => {
-                      trackCreateCardClick();
+                      trackCreateCardClick("mobile");
                       setMenuOpen(false);
                     }}
                   >

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
+import { HashViewTracker } from "@/components/analytics/HashViewTracker";
 import { PresenceTracker } from "@/components/analytics/PresenceTracker";
+import { SectionViewTracker } from "@/components/analytics/SectionViewTracker";
 import { CookieBanner } from "@/components/CookieBanner";
 import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import { AuthProvider } from "@/components/providers/AuthProvider";
@@ -27,6 +29,8 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <AnalyticsTracker />
+          <SectionViewTracker />
+          <HashViewTracker />
           <PresenceTracker />
           <YandexMetrika />
           <VkIdCallbackHandler />

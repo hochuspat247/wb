@@ -3,6 +3,7 @@
 import { Film } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
+import { VIDEO_GENERATION_START_PRICE_RUB, formatVideoPriceRub } from "@/lib/pricing";
 
 type CreateVideoFromCardBlockProps = {
   onCreateClick: () => void;
@@ -32,7 +33,8 @@ export function CreateVideoFromCardBlock({ onCreateClick, disabled, darkConsole 
             движение.
           </p>
           <p className={`mt-2 text-xs font-semibold ${darkConsole ? "text-white/40" : "text-muted/80"}`}>
-            Видео создаётся отдельно после оплаты. Всегда без звука.
+            Видео создаётся отдельно после оплаты — от {formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)} за 4 сек.
+            Всегда без звука.
           </p>
         </div>
         <Button

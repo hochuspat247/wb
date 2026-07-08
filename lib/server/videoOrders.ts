@@ -1,9 +1,10 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { productCards, users, videoGenerationOrders } from "@/lib/db/schema";
-import { createKlingVideoTask, getKlingVideoTaskStatus, normalizeKlingVideoResponse } from "@/lib/video/genapiKlingVideo";
+import { createVeoVideoTask, getVeoVideoTaskStatus, normalizeVeoVideoResponse } from "@/lib/video/genapiVeoVideo";
 import { buildProductCardVideoPrompt } from "@/lib/video/videoPrompt";
 import { buildGenApiCallbackUrl, buildSignedSourceImageUrl, getCardSourceImageData, getSourceImageExtension } from "@/lib/server/videoSourceImage";
+import type { ProductCardResult } from "@/types/product-card";
 import type { CreateVideoOrderInput, VideoGenerationRecord } from "@/types/video-generation";
 
 function mapOrder(row: typeof videoGenerationOrders.$inferSelect): VideoGenerationRecord {
@@ -78,8 +79,12 @@ export async function createVideoOrderRecord(input: {
   paymentId?: string;
   status?: VideoGenerationRecord["status"];
   orderId?: string;
+  cardPayload?: ProductCardResult;
 }) {
-  const prompt = buildProductCardVideoPrompt({ motionStyle: input.params.motionStyle });
+  const prompt = buildProductCardVideoPrompt({
+    motionStyle: input.params.motionStyle,
+    card: input.cardPayload
+  });
   const now = new Date();
   const orderId = input.orderId || crypto.randomUUID();
 
@@ -89,7 +94,7 @@ export async function createVideoOrderRecord(input: {
     sourceGenerationId: input.sourceGenerationId,
     sourceImageUrl: input.sourceImageUrl,
     provider: "genapi",
-    model: "kling-video-o3",
+    model: "veo-3-1-fast",
     status: input.status || "payment_pending",
     duration: input.params.duration,
     aspectRatio: input.params.aspectRatio,
@@ -147,7 +152,7 @@ export async function getUserVideoCredits(userId: string) {
   return user?.videoCredits ?? 0;
 }
 
-export async function startPaidKlingVideoGeneration(orderId: string, siteUrl: string) {
+export async function startPaidVideoGeneration(orderId: string, siteUrl: string) {
   const order = await getVideoOrderById(orderId);
 
   if (!order) {
@@ -177,7 +182,7 @@ export async function startPaidKlingVideoGeneration(orderId: string, siteUrl: st
   );
 
   const callbackUrl = buildGenApiCallbackUrl(siteUrl);
-  const task = await createKlingVideoTask({
+  const task = await createVeoVideoTask({
     prompt: order.prompt,
     startImageUrl: sourceImageUrl,
     duration: order.duration,
@@ -199,6 +204,9 @@ export async function startPaidKlingVideoGeneration(orderId: string, siteUrl: st
   return getVideoOrderById(orderId);
 }
 
+/** @deprecated Используйте startPaidVideoGeneration. */
+export const startPaidKlingVideoGeneration = startPaidVideoGeneration;
+
 export async function refreshVideoOrderStatus(orderId: string) {
   const order = await getVideoOrderById(orderId);
 
@@ -210,7 +218,7 @@ export async function refreshVideoOrderStatus(orderId: string) {
     return order;
   }
 
-  const remote = await getKlingVideoTaskStatus(order.externalTaskId);
+  const remote = await getVeoVideoTaskStatus(order.externalTaskId);
   const now = new Date();
   const nextStatus =
     remote.status === "done"
@@ -247,7 +255,7 @@ export async function applyGenApiCallback(
   }
 
   const remote = callbackPayload
-    ? normalizeKlingVideoResponse({
+    ? normalizeVeoVideoResponse({
         request_id:
           typeof callbackPayload.request_id === "string" || typeof callbackPayload.request_id === "number"
             ? callbackPayload.request_id
@@ -258,7 +266,7 @@ export async function applyGenApiCallback(
         message: typeof callbackPayload.message === "string" ? callbackPayload.message : undefined,
         error: typeof callbackPayload.error === "string" ? callbackPayload.error : undefined
       })
-    : await getKlingVideoTaskStatus(externalTaskId);
+    : await getVeoVideoTaskStatus(externalTaskId);
   const now = new Date();
 
   await db

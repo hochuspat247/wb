@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { CardGenerator } from "@/components/CardGenerator";
-import { VideoFromCardFlow } from "@/components/video/VideoFromCardFlow";
+import { VideoFromCardFlow, type VideoFlowPhase } from "@/components/video/VideoFromCardFlow";
 import { VideoHistorySection } from "@/components/video/VideoHistorySection";
 import { CompareSection } from "@/components/CompareSection";
 import { HistorySection } from "@/components/HistorySection";
@@ -61,6 +61,7 @@ export function CabinetApp() {
   const [userEmail, setUserEmail] = useState("");
   const [editName, setEditName] = useState("Продавец");
   const [selected, setSelected] = useState<ProductCardResult | null>(null);
+  const [videoFlowPhase, setVideoFlowPhase] = useState<VideoFlowPhase>("idle");
   const [loading, setLoading] = useState(true);
   const [imageSettings, setImageSettings] = useState<ImageSettings>(getImageSettings());
   const [remainingGenerations, setRemainingGenerations] = useState(0);
@@ -129,6 +130,10 @@ export function CabinetApp() {
       thisWeek: cards.filter((c) => new Date(c.generatedAt).getTime() > weekAgo).length
     };
   }, [cards]);
+
+  useEffect(() => {
+    setVideoFlowPhase("idle");
+  }, [selected?.id]);
 
   async function handleRemove(id: string) {
     try {
@@ -484,38 +489,54 @@ export function CabinetApp() {
                 <X size={20} />
               </button>
             </div>
-            <div className="min-h-0 overflow-y-auto">
-              <div className="grid items-start gap-5 p-4 sm:gap-6 sm:p-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] lg:gap-8">
-                <div className="mx-auto w-full max-w-[280px] shrink-0 overflow-hidden rounded-card border border-clay bg-paper lg:mx-0">
-                  {getThumbnail(selected) ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      alt=""
-                      className="aspect-[4/5] w-full bg-paper object-contain"
-                      src={getThumbnail(selected)!}
-                    />
-                  ) : (
-                    <div className="grid aspect-[4/5] place-items-center text-sm text-muted">Нет изображения</div>
-                  )}
-                </div>
-                <div className="min-w-0 space-y-4">
-                  <p className="text-sm text-muted">
-                    {selected.marketplace} · {selected.style}
-                  </p>
-                  <p className="text-sm leading-relaxed text-muted">{selected.shortDescription}</p>
-                  {selected.price ? <p className="text-2xl font-bold text-ink">{selected.price}</p> : null}
-                  <p className="text-xs text-muted">{new Date(selected.generatedAt).toLocaleString("ru-RU")}</p>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <Button className="w-full" onClick={() => handleDownload(selected)} size="sm">
-                      <Download size={16} />
-                      Скачать PNG
-                    </Button>
-                    <Button className="w-full" onClick={openCreateTab} size="sm" variant="secondary">
-                      <ExternalLink size={16} />
-                      Создать похожую
-                    </Button>
+            <div className="min-h-0 overflow-x-hidden overflow-y-auto">
+              <div
+                className={
+                  videoFlowPhase === "waiting" || videoFlowPhase === "ready"
+                    ? "p-4 sm:p-6"
+                    : "grid items-start gap-5 p-4 sm:gap-6 sm:p-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] lg:gap-8"
+                }
+              >
+                {videoFlowPhase === "idle" ? (
+                  <div className="mx-auto w-full max-w-[280px] shrink-0 overflow-hidden rounded-card border border-clay bg-paper lg:mx-0">
+                    {getThumbnail(selected) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        alt=""
+                        className="aspect-[4/5] w-full bg-paper object-contain"
+                        src={getThumbnail(selected)!}
+                      />
+                    ) : (
+                      <div className="grid aspect-[4/5] place-items-center text-sm text-muted">Нет изображения</div>
+                    )}
                   </div>
-                  <VideoFromCardFlow card={selected} />
+                ) : null}
+                <div className="min-w-0 space-y-4">
+                  {videoFlowPhase === "idle" ? (
+                    <>
+                      <p className="text-sm text-muted">
+                        {selected.marketplace} · {selected.style}
+                      </p>
+                      <p className="text-sm leading-relaxed text-muted">{selected.shortDescription}</p>
+                      {selected.price ? <p className="text-2xl font-bold text-ink">{selected.price}</p> : null}
+                      <p className="text-xs text-muted">{new Date(selected.generatedAt).toLocaleString("ru-RU")}</p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <Button className="w-full" onClick={() => handleDownload(selected)} size="sm">
+                          <Download size={16} />
+                          Скачать PNG
+                        </Button>
+                        <Button className="w-full" onClick={openCreateTab} size="sm" variant="secondary">
+                          <ExternalLink size={16} />
+                          Создать похожую
+                        </Button>
+                      </div>
+                    </>
+                  ) : null}
+                  <VideoFromCardFlow
+                    card={selected}
+                    compact
+                    onPhaseChange={setVideoFlowPhase}
+                  />
                 </div>
               </div>
             </div>

@@ -1,5 +1,31 @@
+import type { VideoDuration } from "@/types/video-generation";
+import {
+  VIDEO_STANDARD_PRICE_4_SEC,
+  calculateVideoPriceRub,
+  formatVideoPriceBreakdown,
+  formatVideoPriceRub
+} from "@/config/video-pricing";
+
+export {
+  VIDEO_STANDARD_PRICE_4_SEC,
+  VIDEO_RETAIL_RUB_PER_SEC,
+  calculateVideoPriceRub,
+  formatVideoPriceBreakdown,
+  formatVideoPriceRub,
+  getVideoQualityLabel
+} from "@/config/video-pricing";
+
+/** @deprecated Используйте VIDEO_STANDARD_PRICE_4_SEC. */
+export const VIDEO_STANDARD_PRICE_3_SEC = VIDEO_STANDARD_PRICE_4_SEC;
+
 export const FREE_TRIAL_CARDS = 3;
-export const VIDEO_GENERATION_PRICE_RUB = 50;
+export const CARD_GENERATION_PRICE_RUB = 55;
+
+/** Минимальная цена видео (4 сек, standard). */
+export const VIDEO_GENERATION_START_PRICE_RUB = VIDEO_STANDARD_PRICE_4_SEC;
+
+/** @deprecated Используйте VIDEO_GENERATION_START_PRICE_RUB или calculateVideoPriceRub. */
+export const VIDEO_GENERATION_PRICE_RUB = VIDEO_GENERATION_START_PRICE_RUB;
 
 export type GenerationPackage = {
   id: string;
@@ -29,10 +55,12 @@ export const GENERATION_PACKAGES: GenerationPackage[] = [
   }
 ];
 
-const BASE_PRICE_PER_UNIT = 149;
+const BASE_PRICE_PER_UNIT = CARD_GENERATION_PRICE_RUB;
 const PACKAGE_TOTAL_OVERRIDES: Record<number, number> = {
-  5: 490,
-  20: 1490
+  5: CARD_GENERATION_PRICE_RUB * 5,
+  10: 495,
+  20: 990,
+  100: 2860
 };
 
 export function calculatePackagePrice(count: number) {
@@ -49,7 +77,7 @@ export function calculatePackagePrice(count: number) {
   }
 
   const discount = count >= 100 ? 0.52 : count >= 10 ? 0.68 : count >= 5 ? 0.78 : 1;
-  const pricePerUnit = Math.max(49, Math.round(BASE_PRICE_PER_UNIT * discount));
+  const pricePerUnit = Math.max(1, Math.round(BASE_PRICE_PER_UNIT * discount));
   const total = pricePerUnit * count;
 
   return {
@@ -62,4 +90,13 @@ export function calculatePackagePrice(count: number) {
 
 export function formatRub(value: number) {
   return `${value.toLocaleString("ru-RU")} ₽`;
+}
+
+export const VIDEO_MARKETING_DURATIONS: VideoDuration[] = ["4", "6", "8"];
+
+export function getVideoMarketingPrices(quality: "standard" | "pro" = "standard") {
+  return VIDEO_MARKETING_DURATIONS.map((duration) => ({
+    duration,
+    priceRub: calculateVideoPriceRub(duration, quality)
+  }));
 }

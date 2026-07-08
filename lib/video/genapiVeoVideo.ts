@@ -13,6 +13,7 @@ type GenApiCreateResponse = {
 type GenApiStatusResponse = {
   request_id?: number | string;
   status?: string;
+  response_type?: string;
   result?: unknown;
   output?: unknown;
   message?: string;
@@ -26,10 +27,18 @@ export type GenApiVideoTaskResult = {
   error: string | null;
 };
 
+const DEFAULT_MODEL_ID = "veo-3-1-fast";
+
+const VEO_NEGATIVE_PROMPT =
+  "distorted text, unreadable letters, warped packaging, deformed product, chaotic camera movement, watermark, logo artifacts, blur, low quality";
+
 function getGenApiConfig() {
   const apiKey = process.env.GENAPI_API_KEY?.trim();
   const baseUrl = (process.env.GENAPI_BASE_URL || "https://api.gen-api.ru").replace(/\/$/, "");
-  const modelId = process.env.GENAPI_KLING_VIDEO_MODEL_ID || "kling-video-o3";
+  const modelId =
+    process.env.GENAPI_VIDEO_MODEL_ID?.trim() ||
+    process.env.GENAPI_KLING_VIDEO_MODEL_ID?.trim() ||
+    DEFAULT_MODEL_ID;
 
   if (!apiKey) {
     throw new Error("GENAPI_API_KEY is required");
@@ -114,9 +123,9 @@ function normalizeStatus(status?: string): GenApiVideoTaskResult["status"] {
   return "queued";
 }
 
-export function normalizeKlingVideoResponse(response: GenApiStatusResponse): GenApiVideoTaskResult {
+export function normalizeVeoVideoResponse(response: GenApiStatusResponse): GenApiVideoTaskResult {
   const status = normalizeStatus(response.status);
-  const videoUrl = extractVideoUrl(response.result ?? response.output);
+  const videoUrl = extractVideoUrl(response.output ?? response.result);
 
   return {
     externalTaskId: String(response.request_id || ""),
@@ -126,12 +135,24 @@ export function normalizeKlingVideoResponse(response: GenApiStatusResponse): Gen
   };
 }
 
-export function toGenApiAspectRatio(aspectRatio: VideoAspectRatio): "1:1" | "9:16" | "16:9" | null {
-  if (aspectRatio === "4:5") {
-    return null;
+export function toVeoAspectRatio(aspectRatio: VideoAspectRatio): "16:9" | "9:16" | null {
+  if (aspectRatio === "16:9" || aspectRatio === "9:16") {
+    return aspectRatio;
   }
 
-  return aspectRatio;
+  return null;
+}
+
+function toVeoResolution(quality: VideoQuality): "720p" | "1080p" | "4k" {
+  if (quality === "pro") {
+    return "4k";
+  }
+
+  return "1080p";
+}
+
+function formatVeoDuration(duration: VideoDuration): string {
+  return `${duration}s`;
 }
 
 async function callGenApi<T>(path: string, init?: RequestInit): Promise<T> {
@@ -156,7 +177,7 @@ async function callGenApi<T>(path: string, init?: RequestInit): Promise<T> {
   return data as T;
 }
 
-export async function createKlingVideoTask(input: {
+export async function createVeoVideoTask(input: {
   prompt: string;
   startImageUrl: string;
   duration: VideoDuration;
@@ -167,33 +188,29 @@ export async function createKlingVideoTask(input: {
   const config = getGenApiConfig();
 
   if (!input.startImageUrl.startsWith("http")) {
-    throw new Error("GenAPI requires a public HTTPS URL for start_image_url.");
+    throw new Error("GenAPI requires a public HTTPS URL for image_urls.");
   }
 
-  const aspectRatio = toGenApiAspectRatio(input.aspectRatio);
   const duration = String(input.duration);
-
   if (!(GENAPI_VIDEO_DURATIONS as readonly string[]).includes(duration)) {
     throw new Error(`Unsupported video duration: ${duration}. Allowed: ${GENAPI_VIDEO_DURATIONS.join(", ")} sec.`);
   }
 
+  const aspectRatio = toVeoAspectRatio(input.aspectRatio);
+
   const body: Record<string, unknown> = {
     prompt: input.prompt,
-    model: "image-to-video",
-    start_image_url: input.startImageUrl,
-    duration,
-    translate_input: false,
+    image_urls: [input.startImageUrl],
+    duration: formatVeoDuration(input.duration),
+    resolution: toVeoResolution(input.quality),
     generate_audio: false,
-    keep_audio: false,
-    shot_type: "customize"
+    enhance_prompt: false,
+    auto_fix: true,
+    negative_prompt: VEO_NEGATIVE_PROMPT
   };
 
   if (aspectRatio) {
     body.aspect_ratio = aspectRatio;
-  }
-
-  if (input.quality === "pro") {
-    body.pro = true;
   }
 
   if (input.callbackUrl) {
@@ -219,10 +236,14 @@ export async function createKlingVideoTask(input: {
   };
 }
 
-export async function getKlingVideoTaskStatus(externalTaskId: string): Promise<GenApiVideoTaskResult> {
+export async function getVeoVideoTaskStatus(externalTaskId: string): Promise<GenApiVideoTaskResult> {
   const response = await callGenApi<GenApiStatusResponse>(`/api/v1/request/get/${externalTaskId}`, {
     method: "GET"
   });
 
-  return normalizeKlingVideoResponse(response);
+  return normalizeVeoVideoResponse(response);
+}
+
+export function getGenApiVideoModelId() {
+  return getGenApiConfig().modelId;
 }

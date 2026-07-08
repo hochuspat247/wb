@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { createKlingVideo, pollKlingVideo } from "@/lib/ai/klingVideo";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { VIDEO_GENERATION_PRICE_RUB } from "@/lib/pricing";
+import { calculateVideoPriceRub } from "@/config/video-pricing";
 import { hasUnlimitedGenerations } from "@/lib/server/unlimitedGenerations";
 import type { GenerateVideoInput } from "@/types/product-card";
 
@@ -26,7 +26,7 @@ async function getVideoPriceForUser(userId: string) {
   const isFree = Boolean(user && hasUnlimitedGenerations(user));
 
   return {
-    priceRub: isFree ? 0 : VIDEO_GENERATION_PRICE_RUB,
+    priceRub: isFree ? 0 : calculateVideoPriceRub("8", "standard"),
     isFree
   };
 }

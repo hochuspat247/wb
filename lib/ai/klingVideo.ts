@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { calculateVideoPriceRub } from "@/config/video-pricing";
 import type { GenerateVideoInput, GenerateVideoResult } from "@/types/product-card";
 
 type KlingTaskStatus = "submitted" | "processing" | "succeed" | "failed" | string;
@@ -26,7 +27,8 @@ type KlingTaskResponse = {
 };
 
 const KLING_DEFAULT_BASE_URL = "https://api-singapore.klingai.com";
-const KLING_VIDEO_DURATION_SECONDS = 5;
+const KLING_VIDEO_DURATION_SECONDS = 8;
+const KLING_VIDEO_PRICE_RUB = calculateVideoPriceRub("8", "standard");
 
 function isDirectKlingApiKey(key: string) {
   return key.startsWith("api-key-kling-");
@@ -127,7 +129,7 @@ function toVideoResult(response: KlingTaskResponse, prompt: string): GenerateVid
     model: process.env.KLING_VIDEO_MODEL || "kling-v1-6",
     prompt,
     generatedAt: new Date().toISOString(),
-    priceRub: 50
+    priceRub: KLING_VIDEO_PRICE_RUB
   };
 }
 
@@ -197,6 +199,6 @@ export async function pollKlingVideo(
     model: process.env.KLING_VIDEO_MODEL || "kling-v1-6",
     prompt,
     generatedAt: new Date().toISOString(),
-    priceRub: 50
+    priceRub: KLING_VIDEO_PRICE_RUB
   };
 }

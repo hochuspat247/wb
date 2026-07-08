@@ -5,9 +5,12 @@ import { PaymentButton } from "@/components/PaymentButton";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import {
+  CARD_GENERATION_PRICE_RUB,
   GENERATION_PACKAGES,
+  VIDEO_GENERATION_START_PRICE_RUB,
   calculatePackagePrice,
-  formatRub
+  formatRub,
+  formatVideoPriceRub
 } from "@/lib/pricing";
 
 const presetCounts = GENERATION_PACKAGES.map((pack) => pack.count);
@@ -21,7 +24,7 @@ export function PricingCalculatorSection() {
     <section className="border-t border-clay bg-card py-20 md:py-28" id="pricing-calculator">
       <div className="section-shell">
         <SectionHeader
-          description="Выберите объём — система автоматически посчитает стоимость пакета с учётом скидки за объём."
+          description={`Базовая цена — ${formatRub(CARD_GENERATION_PRICE_RUB)} за 1 фото. Видео из готовой карточки оплачивается отдельно, от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}.`}
           title="Калькулятор пакета генераций"
         />
 

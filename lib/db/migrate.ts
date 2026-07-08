@@ -155,7 +155,7 @@ export function migrate(sqlite: Database.Database) {
       sourceGenerationId TEXT NOT NULL,
       sourceImageUrl TEXT NOT NULL,
       provider TEXT NOT NULL DEFAULT 'genapi',
-      model TEXT NOT NULL DEFAULT 'kling-video-o3',
+      model TEXT NOT NULL DEFAULT 'veo-3-1-fast',
       status TEXT NOT NULL DEFAULT 'payment_pending',
       duration TEXT NOT NULL,
       aspectRatio TEXT NOT NULL,

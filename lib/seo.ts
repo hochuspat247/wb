@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
+import {
+  CARD_GENERATION_PRICE_RUB,
+  FREE_TRIAL_CARDS,
+  VIDEO_GENERATION_START_PRICE_RUB,
+  formatRub,
+  formatVideoPriceRub
+} from "@/lib/pricing";
 
 const defaultSiteUrl = "https://marketcard-ai.avenir-team.ru";
 
 export const siteConfig = {
   name: "MarketCard AI",
-  title: "MarketCard AI — карточки товаров для WB, Ozon и Avito за 2 минуты",
-  description:
-    "Загрузите фото товара и получите продающую карточку с текстом, SEO, инфографикой и AI-обложкой для Wildberries, Ozon, Avito и Яндекс Маркета.",
+  title: "MarketCard AI — карточки и видео товаров для WB, Ozon и Avito",
+  description: `Загрузите фото товара — получите карточку с текстом, SEO и AI-обложкой 4:5 для Wildberries, Ozon, Avito и Яндекс Маркета. ${FREE_TRIAL_CARDS} карточки бесплатно, далее ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото. Видео из карточки — от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}.`,
   keywords: [
     "карточка товара",
+    "видео из карточки",
+    "видео товара",
     "wildberries",
     "ozon",
     "avito",
@@ -17,7 +25,11 @@ export const siteConfig = {
     "инфографика",
     "seo описание",
     "маркетплейс",
-    "marketcard ai"
+    "veo 3.1",
+    "google veo",
+    "marketcard ai",
+    "обложка 4:5",
+    "ai карточка товара"
   ],
   locale: "ru_RU",
   url: process.env.AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || defaultSiteUrl

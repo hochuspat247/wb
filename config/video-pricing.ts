@@ -1,19 +1,27 @@
 import type { VideoDuration, VideoQuality } from "@/types/video-generation";
 
-/** GenAPI Kling Video O3: image-to-video, без аудио, с изображением на входе (руб/сек). */
-export const GENAPI_VIDEO_RATES_RUB_PER_SEC: Record<VideoQuality, number> = {
-  standard: 63,
-  pro: 84
+/** Базовая розничная цена: 4 сек standard (1080p fast, без звука) = 152 ₽. */
+export const VIDEO_STANDARD_PRICE_4_SEC = 152;
+
+/** GenAPI Veo 3.1 Fast img2video: 25 ₽/сек (1080p) и 75 ₽/сек (4K), без звука. */
+export const VIDEO_GENAPI_RUB_PER_SEC: Record<VideoQuality, number> = {
+  standard: 25,
+  pro: 75
 };
 
-/** Допустимые значения duration для Kling Video O3 через GenAPI. */
-export const GENAPI_VIDEO_DURATIONS = ["3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"] as const satisfies readonly VideoDuration[];
+/** Розничный тариф для покупателя (руб/сек). */
+export const VIDEO_RETAIL_RUB_PER_SEC: Record<VideoQuality, number> = {
+  standard: VIDEO_STANDARD_PRICE_4_SEC / 4,
+  pro: Math.round((VIDEO_GENAPI_RUB_PER_SEC.pro / VIDEO_GENAPI_RUB_PER_SEC.standard) * (VIDEO_STANDARD_PRICE_4_SEC / 4))
+};
+
+/** Допустимые значения duration для Veo 3.1 Fast через GenAPI. */
+export const GENAPI_VIDEO_DURATIONS = ["4", "6", "8"] as const satisfies readonly VideoDuration[];
 
 export const VIDEO_DURATION_OPTIONS: Array<{ value: VideoDuration; label: string }> = [
-  { value: "3", label: "3 секунды (минимум)" },
-  { value: "5", label: "5 секунд" },
-  { value: "10", label: "10 секунд" },
-  { value: "15", label: "15 секунд (максимум)" }
+  { value: "4", label: "4 секунды (минимум)" },
+  { value: "6", label: "6 секунд" },
+  { value: "8", label: "8 секунд (максимум)" }
 ];
 
 export const VIDEO_DURATION_VALUES = VIDEO_DURATION_OPTIONS.map((option) => option.value);
@@ -27,7 +35,7 @@ export function getVideoDurationSeconds(duration: VideoDuration): number {
 }
 
 export function getVideoRateRubPerSecond(quality: VideoQuality): number {
-  return GENAPI_VIDEO_RATES_RUB_PER_SEC[quality];
+  return VIDEO_RETAIL_RUB_PER_SEC[quality];
 }
 
 export function calculateVideoPriceRub(duration: VideoDuration, quality: VideoQuality): number {
@@ -44,4 +52,15 @@ export function formatVideoPriceBreakdown(duration: VideoDuration, quality: Vide
   const total = calculateVideoPriceRub(duration, quality);
 
   return `${seconds} сек × ${rate} ₽/сек = ${formatVideoPriceRub(total)}`;
+}
+
+export function getVideoDurationOptionLabel(duration: VideoDuration, quality: VideoQuality): string {
+  const base = VIDEO_DURATION_OPTIONS.find((option) => option.value === duration);
+  const price = formatVideoPriceRub(calculateVideoPriceRub(duration, quality));
+
+  return `${base?.label ?? `${duration} сек`} — ${price}`;
+}
+
+export function getVideoQualityLabel(quality: VideoQuality): string {
+  return quality === "pro" ? "Pro · 4K" : "Standard · 1080p";
 }

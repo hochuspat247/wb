@@ -9,24 +9,37 @@ type VideoReadyScreenProps = {
   orderId: string;
   onCreateAnother: () => void;
   onBackToCard: () => void;
+  compact?: boolean;
 };
 
-export function VideoReadyScreen({ videoUrl, orderId, onCreateAnother, onBackToCard }: VideoReadyScreenProps) {
+export function VideoReadyScreen({
+  videoUrl,
+  orderId,
+  onCreateAnother,
+  onBackToCard,
+  compact
+}: VideoReadyScreenProps) {
   return (
-    <div className="rounded-[24px] border border-clay bg-card p-6 md:p-8">
+    <div
+      className={
+        compact
+          ? "min-w-0"
+          : "min-w-0 overflow-hidden rounded-[24px] border border-clay bg-card p-4 sm:p-6 md:p-8"
+      }
+    >
       <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Готово</p>
-      <h3 className="mt-3 text-2xl font-black text-ink">Видео готово 🎬</h3>
+      <h3 className={`mt-2 font-black text-ink ${compact ? "text-xl" : "mt-3 text-2xl"}`}>Видео готово 🎬</h3>
       <p className="mt-2 text-sm font-medium text-muted">
         Скачайте ролик и используйте его в рекламе, соцсетях или карточке товара.
       </p>
 
-      <div className="mt-6 overflow-hidden rounded-[18px] border border-clay bg-ink">
-        <video className="aspect-[4/5] max-h-[560px] w-full bg-black object-contain" controls src={videoUrl} />
+      <div className="mx-auto mt-5 w-full max-w-[280px] overflow-hidden rounded-[16px] border border-clay bg-black">
+        <video className="aspect-[4/5] w-full object-contain" controls playsInline src={videoUrl} />
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <div className="mt-5 grid gap-2">
         <Button
-          className="flex-1"
+          className="w-full"
           onClick={() => {
             trackMarketingEvent("video_download", { orderId });
             window.open(`/api/video/orders/${orderId}/download`, "_blank");
@@ -36,11 +49,11 @@ export function VideoReadyScreen({ videoUrl, orderId, onCreateAnother, onBackToC
           <Download size={16} />
           Скачать видео
         </Button>
-        <Button className="flex-1" onClick={onCreateAnother} type="button" variant="secondary">
+        <Button className="w-full" onClick={onCreateAnother} type="button" variant="secondary">
           <Film size={16} />
           Создать ещё видео
         </Button>
-        <Button className="flex-1" onClick={onBackToCard} type="button" variant="ghost">
+        <Button className="w-full" onClick={onBackToCard} type="button" variant="ghost">
           <RotateCcw size={16} />
           Вернуться к карточке
         </Button>

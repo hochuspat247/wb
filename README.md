@@ -95,9 +95,18 @@ KLING_VIDEO_MODE=std
 
 Секретные ключи храните только в `.env.local`. Не добавляйте реальные ключи в `.env.example`.
 
-## Kling video
+## Veo 3.1 video (GenAPI)
 
-Видео создаётся через Kling AI Open Platform. Длительность зафиксирована на 5 секунд, цена одной video-генерации в интерфейсе и API — 50 ₽. Для пользователей из `UNLIMITED_GENERATION_NAMES` или `UNLIMITED_GENERATION_EMAILS` видео бесплатно.
+Видео из готовой карточки создаётся через **Google Veo 3.1 Fast** (GenAPI, network id `veo-3-1-fast`, img2video через `image_urls`). Длительность — 4, 6 или 8 секунд, без звука. Розничные тарифы: standard (1080p) — 38 ₽/сек (4 сек = 152 ₽), pro (4K) — 114 ₽/сек. Карточка — 55 ₽ за одну генерацию фото.
+
+```env
+GENAPI_API_KEY=
+GENAPI_BASE_URL=https://api.gen-api.ru
+GENAPI_VIDEO_MODEL_ID=veo-3-1-fast
+GENAPI_CALLBACK_SECRET=
+```
+
+## Legacy Kling video (direct API)
 
 Для включения добавьте в `.env.local` один из вариантов.
 

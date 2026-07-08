@@ -107,7 +107,8 @@ export async function POST(request: Request) {
       sourceImageUrl,
       params,
       amountRub,
-      orderId
+      orderId,
+      cardPayload
     });
 
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });

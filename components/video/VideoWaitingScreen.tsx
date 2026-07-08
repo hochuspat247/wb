@@ -8,7 +8,7 @@ import type { VideoGenerationStatus } from "@/types/video-generation";
 
 const WAITING_STEPS = [
   "Готовим карточку",
-  "Передаём изображение в Kling Video O3",
+  "Передаём изображение в Google Veo 3.1",
   "Добавляем плавное движение",
   "Проверяем, чтобы текст не поплыл",
   "Готовим видео",
@@ -22,13 +22,14 @@ type VideoWaitingScreenProps = {
   orderId: string;
   onDone: (videoUrl: string) => void;
   onError: (message: string) => void;
+  compact?: boolean;
 };
 
 function isProcessingStatus(status: VideoGenerationStatus) {
   return status === "payment_pending" || status === "paid" || status === "queued" || status === "processing";
 }
 
-export function VideoWaitingScreen({ orderId, onDone, onError }: VideoWaitingScreenProps) {
+export function VideoWaitingScreen({ orderId, onDone, onError, compact }: VideoWaitingScreenProps) {
   const [status, setStatus] = useState<VideoGenerationStatus>("queued");
   const [progress, setProgress] = useState(8);
   const [stepIndex, setStepIndex] = useState(0);
@@ -98,12 +99,18 @@ export function VideoWaitingScreen({ orderId, onDone, onError }: VideoWaitingScr
   }, [orderId, onDone, onError, startedAt]);
 
   return (
-    <div className="rounded-[24px] border border-clay bg-card p-6 md:p-8">
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">GenAPI · Kling Video O3</p>
-      <h3 className="mt-3 text-2xl font-black text-ink">Оживляем карточку</h3>
+    <div
+      className={
+        compact
+          ? "min-w-0"
+          : "min-w-0 overflow-hidden rounded-[24px] border border-clay bg-card p-4 sm:p-6 md:p-8"
+      }
+    >
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">GenAPI · Veo 3.1 Fast</p>
+      <h3 className={`font-black text-ink ${compact ? "mt-2 text-xl" : "mt-3 text-2xl"}`}>Оживляем карточку</h3>
       <p className="mt-2 text-sm font-medium text-muted">Видео уже создаётся. Обычно это занимает 2–3 минуты.</p>
 
-      <div className="mt-6">
+      <div className="mt-5">
         <div className="h-2 overflow-hidden rounded-full bg-paper">
           <div className="h-full rounded-full bg-accent transition-all duration-700" style={{ width: `${progress}%` }} />
         </div>

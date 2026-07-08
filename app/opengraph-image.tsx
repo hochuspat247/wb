@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { CARD_GENERATION_PRICE_RUB, formatRub } from "@/lib/pricing";
 import { siteConfig } from "@/lib/seo";
 
 export const runtime = "edge";
@@ -26,10 +27,12 @@ export default function OpenGraphImage() {
         <div>
           <div style={{ fontSize: 72, fontWeight: 800, lineHeight: 1.05 }}>MarketCard AI</div>
           <div style={{ marginTop: 24, fontSize: 34, maxWidth: 900, lineHeight: 1.3 }}>
-            Карточки для WB, Ozon, Avito и Яндекс Маркета за 2 минуты
+            Карточки и видео для WB, Ozon, Avito за 2 минуты
           </div>
         </div>
-        <div style={{ fontSize: 24, opacity: 0.85 }}>Текст · SEO · Инфографика · AI-обложка</div>
+        <div style={{ fontSize: 24, opacity: 0.85 }}>
+          Текст · SEO · Обложка 4:5 · Видео из карточки · от {formatRub(CARD_GENERATION_PRICE_RUB)}/фото
+        </div>
       </div>
     ),
     size

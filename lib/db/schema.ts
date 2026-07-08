@@ -166,7 +166,7 @@ export const videoGenerationOrders = sqliteTable("video_generation_order", {
   sourceGenerationId: text("sourceGenerationId").notNull(),
   sourceImageUrl: text("sourceImageUrl").notNull(),
   provider: text("provider").$type<VideoGenerationProvider>().notNull().default("genapi"),
-  model: text("model").$type<VideoGenerationModel>().notNull().default("kling-video-o3"),
+  model: text("model").$type<VideoGenerationModel>().notNull().default("veo-3-1-fast"),
   status: text("status").$type<VideoGenerationStatus>().notNull().default("payment_pending"),
   duration: text("duration").$type<VideoDuration>().notNull(),
   aspectRatio: text("aspectRatio").$type<VideoAspectRatio>().notNull(),

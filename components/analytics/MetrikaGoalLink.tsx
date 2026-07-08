@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import type { MouseEvent, ReactNode } from "react";
-import { reachGoal, type MetrikaGoal } from "@/lib/metrika";
+import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
+import type { MetrikaGoal } from "@/lib/metrika";
 
 type MetrikaGoalLinkProps = {
   href: string;
   goal: MetrikaGoal;
-  params?: Record<string, unknown>;
+  params?: Record<string, string | number | boolean>;
   children: ReactNode;
   className?: string;
   onClick?: (event: MouseEvent<HTMLAnchorElement>) => void;
@@ -26,7 +27,7 @@ export function MetrikaGoalLink({
       className={className}
       href={href}
       onClick={(event) => {
-        reachGoal(goal, params);
+        trackMarketingEvent(goal, params);
         onClick?.(event);
       }}
     >

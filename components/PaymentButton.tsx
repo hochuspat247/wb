@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { trackConversion } from "@/components/analytics/AnalyticsTracker";
+import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { createPayment } from "@/lib/api/user";
-import { reachGoal } from "@/lib/metrika";
 
 type PaymentButtonProps = {
   count: number;
@@ -44,8 +43,10 @@ export function PaymentButton({
     setError("");
 
     try {
-      trackConversion("payment_click", { package: count });
-      reachGoal("pricing_click", { plan: metrikaPlan ?? String(count) });
+      trackMarketingEvent("payment_click", {
+        package: count,
+        plan: metrikaPlan ?? String(count)
+      });
       const payment = await createPayment(count, emailRequired ? customerEmail.trim() : undefined);
       window.location.assign(payment.confirmationUrl);
     } catch (paymentError) {

@@ -27,7 +27,7 @@ export function Hero() {
             <Reveal delay={2}>
               <p className="mt-4 max-w-xl text-base font-medium leading-relaxed text-muted md:text-lg">
                 Загрузите фото — MarketCard AI создаст обложку 4:5, описание, SEO-ключи и тексты для WB, Ozon, Avito и
-                Яндекс Маркета.
+                Яндекс Маркета. После карточки можно оживить её в короткое видео без звука прямо из кабинета.
               </p>
             </Reveal>
 

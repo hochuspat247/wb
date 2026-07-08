@@ -57,11 +57,30 @@ export function AnalyticsTracker() {
         eventType: "page_view",
         eventName: "page_view",
         metadata: {
-          authed: Boolean(session?.user?.id)
+          authed: Boolean(session?.user?.id),
+          hash: typeof window !== "undefined" ? window.location.hash : ""
         }
       }
     ]);
   }, [pathname, session?.user?.id]);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      void sendEvents([
+        {
+          eventType: "page_view",
+          eventName: "anchor_view",
+          metadata: {
+            hash: window.location.hash,
+            path: window.location.pathname
+          }
+        }
+      ]);
+    };
+
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   const handleClick = useCallback((event: MouseEvent) => {
     const target = event.target as HTMLElement | null;

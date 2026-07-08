@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
@@ -42,7 +42,7 @@ import {
 } from "@/lib/api/user";
 import { GUEST_ID_KEY } from "@/lib/guest";
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
-import { getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
+import { DEFAULT_IMAGE_SETTINGS, getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { reachGoal } from "@/lib/metrika";
 import { FREE_TRIAL_CARDS } from "@/lib/pricing";
 import { clearHistory, getHistory } from "@/lib/storage";
@@ -66,12 +66,20 @@ export function CabinetApp() {
   const [selected, setSelected] = useState<ProductCardResult | null>(null);
   const [videoFlowPhase, setVideoFlowPhase] = useState<VideoFlowPhase>("idle");
   const [loading, setLoading] = useState(true);
-  const [imageSettings, setImageSettings] = useState<ImageSettings>(getImageSettings());
+  const [imageSettings, setImageSettings] = useState<ImageSettings>(DEFAULT_IMAGE_SETTINGS);
   const [remainingGenerations, setRemainingGenerations] = useState(0);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
   const [emailDisplay, setEmailDisplay] = useState("");
   const [verificationMessage, setVerificationMessage] = useState("");
   const [resendingVerification, setResendingVerification] = useState(false);
+
+  const handleQuotaChange = useCallback((quota: { remaining: number }) => {
+    setRemainingGenerations(quota.remaining);
+  }, []);
+
+  useEffect(() => {
+    setImageSettings(getImageSettings());
+  }, []);
 
   useEffect(() => {
     async function loadCabinet() {
@@ -374,7 +382,7 @@ export function CabinetApp() {
                 hideHistory
                 darkConsole
                 initialVideoOrderId={videoOrderId}
-                onQuotaChange={(quota) => setRemainingGenerations(quota.remaining)}
+                onQuotaChange={handleQuotaChange}
                 onSaved={refreshCards}
                 onVideoFlowReset={() => {
                   setVideoOrderId(null);

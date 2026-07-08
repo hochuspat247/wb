@@ -451,7 +451,7 @@ export function CardGenerator({
       id: preserveCard?.id || (cardPayload as ProductCardResult).id,
       title: planItem?.mainHeadline || (cardPayload as ProductCardResult).title,
       shortDescription: planItem?.subheadline || (cardPayload as ProductCardResult).shortDescription,
-      benefits: planItem?.bullets.length
+      benefits: planItem?.bullets?.length
         ? planItem.bullets
         : Array.isArray((data as ProductCardResult).benefits)
           ? (data as ProductCardResult).benefits

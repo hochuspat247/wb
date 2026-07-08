@@ -57,7 +57,7 @@ ${card.marketplaceTips.map((tip) => `- ${tip}`).join("\n")}`;
 }
 
 export function formatWildberriesText(card: ProductCardResult) {
-  const wb = card.marketplaceText?.platformSpecific.wildberries;
+  const wb = card.marketplaceText?.platformSpecific?.wildberries;
   if (!wb) return formatCardText(card);
 
   return `Название WB:
@@ -80,7 +80,7 @@ ${(card.marketplaceText?.exportChecklist ?? []).map((t) => `- ${t}`).join("\n")}
 }
 
 export function formatOzonText(card: ProductCardResult) {
-  const oz = card.marketplaceText?.platformSpecific.ozon;
+  const oz = card.marketplaceText?.platformSpecific?.ozon;
   if (!oz) return formatCardText(card);
 
   return `Название Ozon:
@@ -103,7 +103,7 @@ ${oz.ozonMediaTips.map((t) => `- ${t}`).join("\n")}`;
 }
 
 export function formatAvitoText(card: ProductCardResult) {
-  const av = card.marketplaceText?.platformSpecific.avito;
+  const av = card.marketplaceText?.platformSpecific?.avito;
   if (!av) return formatCardText(card);
 
   return `Заголовок объявления:
@@ -129,7 +129,7 @@ ${av.avitoQuestionsAnswers.map((qa) => `В: ${qa.question}\nО: ${qa.answer}`).j
 }
 
 export function formatYandexMarketText(card: ProductCardResult) {
-  const ym = card.marketplaceText?.platformSpecific.yandexMarket;
+  const ym = card.marketplaceText?.platformSpecific?.yandexMarket;
   if (!ym) return formatCardText(card);
 
   return `Название Яндекс Маркет:
@@ -190,7 +190,7 @@ export function formatInfographicText(card: ProductCardResult) {
     }
   }
 
-  const wb = mt?.platformSpecific.wildberries;
+  const wb = mt?.platformSpecific?.wildberries;
   if (wb?.wbSafeImageTexts.length) {
     lines.push("", "WB safe-тексты:");
     for (const text of wb.wbSafeImageTexts) {
@@ -198,7 +198,7 @@ export function formatInfographicText(card: ProductCardResult) {
     }
   }
 
-  const ym = mt?.platformSpecific.yandexMarket;
+  const ym = mt?.platformSpecific?.yandexMarket;
   if (ym?.yandexSafeImageTexts.length) {
     lines.push("", "Яндекс Маркет safe-тексты:");
     for (const text of ym.yandexSafeImageTexts) {

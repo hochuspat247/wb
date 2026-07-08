@@ -85,7 +85,7 @@ function ModerationBadge({ textMode }: { textMode?: ProductCardResult["textMode"
   return null;
 }
 
-function CharList({ items, dark }: { items: { key: string; value: string }[]; dark?: boolean }) {
+function CharList({ items = [], dark }: { items?: { key: string; value: string }[]; dark?: boolean }) {
   return (
     <ul className={`mt-2 space-y-1 text-sm ${dark ? "text-white/60" : "text-muted"}`}>
       {items.map((c) => (
@@ -97,7 +97,7 @@ function CharList({ items, dark }: { items: { key: string; value: string }[]; da
   );
 }
 
-function TextList({ items, dark }: { items: string[]; dark?: boolean }) {
+function TextList({ items = [], dark }: { items?: string[]; dark?: boolean }) {
   return (
     <ul className={`mt-2 space-y-1 text-sm ${dark ? "text-white/60" : "text-muted"}`}>
       {items.map((item) => (
@@ -188,10 +188,10 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
     downloadJson(currentCard);
   }
 
-  const wb = mt?.platformSpecific.wildberries;
-  const oz = mt?.platformSpecific.ozon;
-  const av = mt?.platformSpecific.avito;
-  const ym = mt?.platformSpecific.yandexMarket;
+  const wb = mt?.platformSpecific?.wildberries;
+  const oz = mt?.platformSpecific?.ozon;
+  const av = mt?.platformSpecific?.avito;
+  const ym = mt?.platformSpecific?.yandexMarket;
 
   return (
     <Card className={`min-w-0 max-w-full overflow-hidden ${dark ? "border-white/10 bg-white/5 text-white" : ""}`} padding="md">
@@ -270,7 +270,7 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
               <div>
                 <h4 className={headingClass}>Rich-content блоки</h4>
                 <div className="mt-2 space-y-3">
-                  {oz.ozonRichContentBlocks.map((block) => (
+                  {(oz.ozonRichContentBlocks ?? []).map((block) => (
                     <div key={block.title}>
                       <p className={`text-sm font-semibold ${dark ? "text-white" : "text-ink"}`}>{block.title}</p>
                       <p className={textClass}>{block.text}</p>
@@ -318,7 +318,7 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
               <div>
                 <h4 className={headingClass}>Частые вопросы и ответы</h4>
                 <div className="mt-2 space-y-3">
-                  {av.avitoQuestionsAnswers.map((qa) => (
+                  {(av.avitoQuestionsAnswers ?? []).map((qa) => (
                     <div key={qa.question}>
                       <p className={`text-sm font-semibold ${dark ? "text-white" : "text-ink"}`}>{qa.question}</p>
                       <p className={textClass}>{qa.answer}</p>

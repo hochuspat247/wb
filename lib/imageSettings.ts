@@ -10,6 +10,8 @@ const defaults: ImageSettings = {
   imageMode: "pro"
 };
 
+export const DEFAULT_IMAGE_SETTINGS = defaults;
+
 export function getImageSettings(): ImageSettings {
   if (typeof window === "undefined") {
     return defaults;

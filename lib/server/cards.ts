@@ -1,7 +1,12 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { productCards } from "@/lib/db/schema";
 import { hydrateUserCardsWithVideos } from "@/lib/server/cardVideos";
+import {
+  getUserDownloadAccess,
+  isGenerationDownloadUnlocked,
+  registerGenerationForCleanDownload
+} from "@/lib/server/downloadAccess";
 import type { ProductCardResult } from "@/types/product-card";
 
 const CARD_LIMIT = 50;
@@ -13,19 +18,75 @@ function normalizeCard(card: ProductCardResult): ProductCardResult | null {
   return card;
 }
 
-export async function getUserCards(userId: string) {
+function sanitizeCardForClient(
+  card: ProductCardResult,
+  access: Awaited<ReturnType<typeof getUserDownloadAccess>>
+): ProductCardResult {
+  const downloadUnlocked = isGenerationDownloadUnlocked(access, card.id);
+  const previewImageUrl = `/api/cards/${card.id}/image?variant=preview`;
+  const imageDownloadUrl = downloadUnlocked ? `/api/cards/${card.id}/image?variant=original` : undefined;
+
+  if (downloadUnlocked) {
+    return {
+      ...card,
+      downloadUnlocked: true,
+      watermarkLocked: false,
+      previewImageUrl,
+      imageDownloadUrl
+    };
+  }
+
+  return {
+    ...card,
+    generatedImageBase64: null,
+    generatedImageDataUrl: undefined,
+    generatedImageUrl: null,
+    downloadUnlocked: false,
+    watermarkLocked: true,
+    previewImageUrl,
+    imageDownloadUrl
+  };
+}
+
+export async function getUserCards(userId: string): Promise<ProductCardResult[]> {
   const rows = await db
     .select()
     .from(productCards)
     .where(eq(productCards.userId, userId))
     .orderBy(desc(productCards.createdAt));
 
-  return hydrateUserCardsWithVideos(
+  const cards = await hydrateUserCardsWithVideos(
     userId,
     rows
       .map((row) => normalizeCard(row.payload))
       .filter((item): item is ProductCardResult => item !== null)
   );
+
+  const access = await getUserDownloadAccess(userId);
+  return cards.map((card) => sanitizeCardForClient(card, access));
+}
+
+export async function getUserCardImagePayload(userId: string, cardId: string) {
+  const row = await db.query.productCards.findFirst({
+    where: and(eq(productCards.id, cardId), eq(productCards.userId, userId))
+  });
+
+  if (!row) {
+    return null;
+  }
+
+  const card = normalizeCard(row.payload);
+  if (!card) {
+    return null;
+  }
+
+  const access = await getUserDownloadAccess(userId);
+  const downloadUnlocked = isGenerationDownloadUnlocked(access, card.id);
+
+  return {
+    card,
+    downloadUnlocked
+  };
 }
 
 export async function saveUserCard(userId: string, card: ProductCardResult) {
@@ -34,21 +95,25 @@ export async function saveUserCard(userId: string, card: ProductCardResult) {
     throw new Error("INVALID_CARD");
   }
 
+  const createdAt = new Date(normalized.generatedAt || Date.now());
+
   await db
     .insert(productCards)
     .values({
       id: normalized.id,
       userId,
       payload: normalized,
-      createdAt: new Date(normalized.generatedAt || Date.now())
+      createdAt
     })
     .onConflictDoUpdate({
       target: productCards.id,
       set: {
         payload: normalized,
-        createdAt: new Date(normalized.generatedAt || Date.now())
+        createdAt
       }
     });
+
+  await registerGenerationForCleanDownload(userId, normalized.id, createdAt);
 
   const all = await getUserCards(userId);
   if (all.length <= CARD_LIMIT) {

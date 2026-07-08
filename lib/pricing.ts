@@ -18,7 +18,9 @@ export {
 /** @deprecated Используйте VIDEO_STANDARD_PRICE_4_SEC. */
 export const VIDEO_STANDARD_PRICE_3_SEC = VIDEO_STANDARD_PRICE_4_SEC;
 
-export const FREE_TRIAL_CARDS = 3;
+export const FREE_DEMO_CARDS = 1;
+export const FREE_TRIAL_CARDS = 2;
+export const FREE_TOTAL_MARKETING_CARDS = FREE_DEMO_CARDS + FREE_TRIAL_CARDS;
 export const CARD_GENERATION_PRICE_RUB = 55;
 
 /** Минимальная цена видео (4 сек, standard). */

@@ -19,10 +19,12 @@ import { Input } from "@/components/ui/Input";
 import { SkeletonBlock } from "@/components/ui/Loader";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
+import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
 import { getImageSettings } from "@/lib/imageSettings";
 import { resolveCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
+import { downloadCardImageAsset } from "@/lib/client/cardImage";
 import {
   base64ToBlob,
   base64ToDataUrl,
@@ -223,7 +225,11 @@ export function CardGenerator({
   const [demoProgress, setDemoProgress] = useState(0);
   const [isDemoGenerating, setIsDemoGenerating] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
+  const videoUpsellRef = useRef<HTMLDivElement>(null);
   const descriptionTrackedRef = useRef(false);
+  const videoUpsellTrackedRef = useRef<string | null>(null);
+  const [emphasizeVideoOffer, setEmphasizeVideoOffer] = useState(false);
+  const [requestVideoConfig, setRequestVideoConfig] = useState(false);
 
   useEffect(() => {
     if (!persistToServer) return;
@@ -335,6 +341,22 @@ export function CardGenerator({
       window.clearTimeout(timer);
     };
   }, [card, imageUrl, style, isLoading]);
+
+  useEffect(() => {
+    if (!persistToServer || !card || isGeneratingAiImage || isLoading) {
+      return;
+    }
+
+    if (!hasGeneratedAiCover(card)) {
+      return;
+    }
+
+    setEmphasizeVideoOffer(true);
+    if (videoUpsellTrackedRef.current !== card.id) {
+      videoUpsellTrackedRef.current = card.id;
+      trackMarketingEvent("video_upsell_view", { source: "generation_complete" });
+    }
+  }, [card?.id, persistToServer, isGeneratingAiImage, isLoading, card]);
 
   async function handleImage(file?: File) {
     if (!file) {
@@ -501,6 +523,8 @@ export function CardGenerator({
     setError("");
     setNotice("");
     setSeriesProgress("");
+    setEmphasizeVideoOffer(false);
+    videoUpsellTrackedRef.current = null;
 
     if (!description.trim()) {
       setError("Опишите товар — хотя бы в двух словах.");
@@ -767,6 +791,11 @@ export function CardGenerator({
     try {
       const saved = await saveUserCardRemote(nextCard);
       setHistory(saved);
+      const savedCard = saved.find((item) => item.id === nextCard.id);
+      if (savedCard) {
+        setCard((current) => (current?.id === savedCard.id ? savedCard : current));
+        setSeriesCards((items) => items.map((item) => (item.id === savedCard.id ? savedCard : item)));
+      }
       onSaved?.();
       reachGoal("save_to_history", { automatic: true });
       if (!options.silent) {
@@ -887,11 +916,28 @@ export function CardGenerator({
     }
 
     reachGoal("download_png");
+    trackConversion("download_png", {
+      source: persistToServer ? "cabinet" : "local",
+      series: Boolean(card.seriesId)
+    });
     await downloadBestImage(card, renderedImageUrl, previewRef.current);
+
+    if (card.watermarkLocked) {
+      setNotice("Скачана версия с демо-меткой. Без водяного знака — первая карточка или после покупки пакета.");
+    }
+
+    if (persistToServer && hasGeneratedAiCover(card)) {
+      setEmphasizeVideoOffer(true);
+      trackMarketingEvent("video_upsell_view", { source: "png_download" });
+      window.requestAnimationFrame(() => {
+        videoUpsellRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    }
   }
 
   async function handleDownloadSeriesCard(seriesCard: ProductCardResult, index: number) {
     reachGoal("download_png", { source: "series", seriesIndex: seriesCard.seriesIndex ?? index + 1 });
+    trackConversion("download_png", { source: "series", seriesIndex: seriesCard.seriesIndex ?? index + 1 });
     await downloadCardImage(seriesCard, `marketcard-series-${seriesCard.seriesIndex ?? index + 1}.png`);
   }
 
@@ -1300,7 +1346,22 @@ export function CardGenerator({
 
   return (
     <section className={sectionClass} id={embedded ? undefined : "demo"}>
-      <PaywallModal onClose={() => setShowPaywall(false)} open={showPaywall} />
+      <PaywallModal
+        onClose={() => setShowPaywall(false)}
+        onCreateVideo={
+          card && hasGeneratedAiCover(card)
+            ? () => {
+                setShowPaywall(false);
+                setEmphasizeVideoOffer(true);
+                setRequestVideoConfig(true);
+                window.requestAnimationFrame(() => {
+                  videoUpsellRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+                });
+              }
+            : undefined
+        }
+        open={showPaywall}
+      />
       <div className={shellClass}>
         <div className={embeddedLayoutClass}>
           <form className={`${formClass} min-w-0`} onSubmit={handleSubmit}>
@@ -1665,18 +1726,7 @@ export function CardGenerator({
                     </Alert>
                   </div>
                 ) : null}
-                {persistToServer && card ? (
-                  <VideoFromCardFlow
-                    card={card}
-                    compact={embedded}
-                    darkConsole={darkConsole}
-                    disabled={isWorking}
-                    initialOrderId={initialVideoOrderId}
-                    onFlowReset={onVideoFlowReset}
-                    onVideoReady={onSaved}
-                  />
-                ) : null}
-                <div className={`mt-4 overflow-hidden rounded-card border ${previewFrameClass} ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
+                <div className={`relative mt-4 overflow-hidden rounded-card border ${previewFrameClass} ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
                   {isGeneratingAiImage ? (
                     <div className="grid aspect-[4/5] max-h-[360px] place-items-center gap-4 px-6">
                       <Loader2 className="animate-spin text-muted" size={28} />
@@ -1702,7 +1752,14 @@ export function CardGenerator({
                       styleName={style}
                     />
                   )}
+                  {card.watermarkLocked ? <WatermarkOverlay /> : null}
                 </div>
+                {card.watermarkLocked ? (
+                  <p className={`mt-3 text-sm font-semibold leading-relaxed ${darkConsole ? "text-white/55" : "text-muted"}`}>
+                    Карточка с демо-меткой. Скачать без водяного знака можно для первой генерации или после покупки
+                    пакета.
+                  </p>
+                ) : null}
                 {shouldShowGenerationRatingPrompt ? (
                   <GenerationRatingPrompt
                     darkConsole={darkConsole}
@@ -1710,6 +1767,22 @@ export function CardGenerator({
                     onDismiss={handleDismissGenerationRating}
                     onRate={handleRateGeneration}
                   />
+                ) : null}
+                {persistToServer && card ? (
+                  <div ref={videoUpsellRef}>
+                    <VideoFromCardFlow
+                      card={card}
+                      compact={embedded}
+                      darkConsole={darkConsole}
+                      disabled={isWorking}
+                      initialOrderId={initialVideoOrderId}
+                      onConfigRequestHandled={() => setRequestVideoConfig(false)}
+                      onFlowReset={onVideoFlowReset}
+                      onVideoReady={onSaved}
+                      openConfigRequest={requestVideoConfig}
+                      prominent={emphasizeVideoOffer && hasAiCover}
+                    />
+                  </div>
                 ) : null}
               </div>
             ) : !isWorking && !embedded ? (
@@ -1868,22 +1941,31 @@ function getGeneratedCardImageUrl(card: ProductCardResult) {
 }
 
 async function downloadCardImage(card: ProductCardResult, fileName: string) {
+  const result = await downloadCardImageAsset(card, fileName);
+  if (!result.missing) {
+    return;
+  }
+
   if (card.generatedImageUrl) {
     await downloadImageFromUrl(card.generatedImageUrl, fileName);
-    return;
-  }
-
-  if (card.generatedImageBase64 && card.generatedImageMimeType) {
-    downloadBase64Image(card.generatedImageBase64, card.generatedImageMimeType, fileName);
-    return;
-  }
-
-  if (card.generatedImageDataUrl) {
-    await downloadImageFromUrl(card.generatedImageDataUrl, fileName);
   }
 }
 
 async function getCardImageBlob(card: ProductCardResult) {
+  if (card.previewImageUrl || card.imageDownloadUrl) {
+    const url = card.imageDownloadUrl || card.previewImageUrl;
+    if (url) {
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (response.ok) {
+          return response.blob();
+        }
+      } catch {
+        return null;
+      }
+    }
+  }
+
   if (card.generatedImageBase64 && card.generatedImageMimeType) {
     return base64ToBlob(card.generatedImageBase64, card.generatedImageMimeType);
   }
@@ -2100,6 +2182,11 @@ async function downloadGeneratedImage(dataUrl: string, title: string, fallbackNo
 }
 
 async function downloadBestImage(card: ProductCardResult, renderedDataUrl: string, fallbackNode: HTMLElement | null) {
+  const remoteResult = await downloadCardImageAsset(card, "marketcard-ai.png");
+  if (!remoteResult.missing) {
+    return;
+  }
+
   if (card.generatedImageUrl) {
     await downloadImageFromUrl(card.generatedImageUrl, "marketcard-ai.png");
     return;

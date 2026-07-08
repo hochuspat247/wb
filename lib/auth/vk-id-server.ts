@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accounts, users } from "@/lib/db/schema";
+import { FREE_TRIAL_CARDS } from "@/lib/pricing";
 
 type VkUserInfoResponse = {
   user?: {
@@ -98,7 +99,7 @@ export async function authenticateVkAccessToken(accessToken: string) {
     name,
     image,
     emailVerified,
-    generationCredits: 3,
+    generationCredits: FREE_TRIAL_CARDS,
     generationsUsed: 0,
     createdAt: new Date()
   });

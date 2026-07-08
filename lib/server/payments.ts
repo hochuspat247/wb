@@ -2,6 +2,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { payments, users } from "@/lib/db/schema";
 import type { YooKassaPayment } from "@/lib/server/yookassa";
+import { unlockAllDownloadsForUser } from "@/lib/server/downloadAccess";
 
 export function amountToMinorUnits(value: string | number) {
   const numericValue = typeof value === "number" ? value : Number(value);
@@ -49,6 +50,8 @@ export async function applyVerifiedPayment(payment: YooKassaPayment) {
       generationCredits: sql`${users.generationCredits} + ${creditedPayment.credits}`
     })
     .where(eq(users.id, creditedPayment.userId));
+
+  await unlockAllDownloadsForUser(creditedPayment.userId);
 
   return { credited: true, credits: creditedPayment.credits };
 }

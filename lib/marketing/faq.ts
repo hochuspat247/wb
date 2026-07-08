@@ -1,5 +1,6 @@
 import {
   CARD_GENERATION_PRICE_RUB,
+  FREE_TOTAL_MARKETING_CARDS,
   FREE_TRIAL_CARDS,
   formatRub,
   formatVideoPriceRub,
@@ -27,7 +28,13 @@ export function getMarketingFaqItems(): MarketingFaqItem[] {
     {
       id: "free",
       question: "Можно ли попробовать бесплатно?",
-      answer: `Да, можно создать ${FREE_TRIAL_CARDS} тестовые карточки без карты. Далее — ${formatRub(CARD_GENERATION_PRICE_RUB)} за одну генерацию фото.`
+      answer: `Да, 1 демо без входа и ${FREE_TRIAL_CARDS} карточки после регистрации — всего ${FREE_TOTAL_MARKETING_CARDS} бесплатно. Без водяного знака скачивается только первая генерация. Далее — ${formatRub(CARD_GENERATION_PRICE_RUB)} за одну генерацию фото.`
+    },
+    {
+      id: "watermark",
+      question: "Почему на карточке есть демо-метка?",
+      answer:
+        "Все бесплатные карточки показываются с защитной меткой, кроме первой — её можно скачать без водяного знака. После покупки пакета все ранее созданные карточки в истории разблокируются."
     },
     {
       id: "pricing",

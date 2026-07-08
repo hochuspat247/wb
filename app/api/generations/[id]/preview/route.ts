@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { canReadPreview, getDemoGeneration } from "@/lib/server/demo-generations";
+import { canReadPreview, getDemoGeneration, getDemoPreviewBuffer } from "@/lib/server/demo-generations";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -21,9 +21,11 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json({ error: userId ? "Forbidden" : "Unauthorized" }, { status: userId ? 403 : 401 });
   }
 
-  return new Response(Buffer.from(row.previewImageBase64, "base64"), {
+  const preview = await getDemoPreviewBuffer(row, userId);
+
+  return new Response(preview.buffer, {
     headers: {
-      "Content-Type": row.previewImageMimeType,
+      "Content-Type": preview.mimeType,
       "Cache-Control": "private, no-store",
       "Content-Disposition": `inline; filename="marketcard-demo-${row.id}.png"`
     }

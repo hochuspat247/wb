@@ -20,9 +20,13 @@ export const users = sqliteTable("user", {
   emailVerified: integer("emailVerified", { mode: "timestamp_ms" }),
   image: text("image"),
   passwordHash: text("passwordHash"),
-  generationCredits: integer("generationCredits").notNull().default(3),
+  generationCredits: integer("generationCredits").notNull().default(2),
   generationsUsed: integer("generationsUsed").notNull().default(0),
   videoCredits: integer("videoCredits").notNull().default(0),
+  freeCleanDownloadGenerationId: text("freeCleanDownloadGenerationId"),
+  hasPurchasedGenerationCredits: integer("hasPurchasedGenerationCredits", { mode: "boolean" })
+    .notNull()
+    .default(false),
   createdAt: integer("createdAt", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date())

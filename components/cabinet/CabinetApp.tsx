@@ -41,10 +41,11 @@ import {
   updateUserProfile
 } from "@/lib/api/user";
 import { GUEST_ID_KEY } from "@/lib/guest";
+import { downloadCardImageAsset } from "@/lib/client/cardImage";
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
 import { DEFAULT_IMAGE_SETTINGS, getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { reachGoal } from "@/lib/metrika";
-import { FREE_TRIAL_CARDS } from "@/lib/pricing";
+import { FREE_TRIAL_CARDS, FREE_TOTAL_MARKETING_CARDS } from "@/lib/pricing";
 import { clearHistory, getHistory } from "@/lib/storage";
 import type { ProductCardResult } from "@/types/product-card";
 
@@ -52,6 +53,24 @@ type Tab = "create" | "history" | "examples" | "compare" | "settings";
 
 function getThumbnail(card: ProductCardResult) {
   return getGeneratedCoverSrc(card) || card.imageDataUrl || null;
+}
+
+function CabinetPricingLink({
+  className = "",
+  onLight = false
+}: {
+  className?: string;
+  onLight?: boolean;
+}) {
+  return (
+    <Link
+      className={`cabinet-pricing-cta shrink-0 ${onLight ? "cabinet-pricing-cta--on-light" : ""} ${className}`.trim()}
+      href="/#pricing-calculator"
+    >
+      Тарифы и покупка
+      <ExternalLink size={13} />
+    </Link>
+  );
 }
 
 export function CabinetApp() {
@@ -226,8 +245,9 @@ export function CabinetApp() {
   }
 
   async function handleDownload(card: ProductCardResult) {
-    if (card.generatedImageBase64 && card.generatedImageMimeType) {
-      downloadBase64Image(card.generatedImageBase64, card.generatedImageMimeType, "marketcard-ai.png");
+    const result = await downloadCardImageAsset(card, "marketcard-ai.png");
+
+    if (!result.missing) {
       return;
     }
 
@@ -289,7 +309,9 @@ export function CabinetApp() {
             <PaymentButton className="mt-4" count={10} size="sm">
               Купить пакет
             </PaymentButton>
-          ) : null}
+          ) : (
+            <CabinetPricingLink className="mt-4 w-full" />
+          )}
         </div>
         <nav className="mt-6 grid gap-1">
           {nav.map((item) => (
@@ -372,11 +394,14 @@ export function CabinetApp() {
                   </div>
                 ))}
               </div>
-              <p className="rounded-[16px] border border-mint/20 bg-mint/10 px-3 py-2.5 text-xs font-bold text-mint sm:rounded-[18px] sm:px-4 sm:py-3 sm:text-sm">
-                {remainingGenerations >= 999_000
-                  ? "Безлимитные генерации для вашего аккаунта."
-                  : `Стартовый оффер: ${FREE_TRIAL_CARDS} карточки бесплатно. Доступно: ${remainingGenerations}`}
-              </p>
+              <div className="flex flex-col gap-3 rounded-[16px] border border-mint/20 bg-mint/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-3">
+                <p className="text-xs font-bold text-mint sm:text-sm">
+                  {remainingGenerations >= 999_000
+                    ? "Безлимитные генерации для вашего аккаунта."
+                    : `${FREE_TOTAL_MARKETING_CARDS} карточки бесплатно (1 демо + ${FREE_TRIAL_CARDS} после входа). Доступно: ${remainingGenerations}`}
+                </p>
+                <CabinetPricingLink className="self-start sm:self-auto" onLight />
+              </div>
               <CardGenerator
                 embedded
                 hideHistory

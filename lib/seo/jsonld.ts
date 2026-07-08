@@ -3,6 +3,7 @@ import { getMarketingFaqItems } from "@/lib/marketing/faq";
 import { PRODUCT_CARD_VIDEO_DEMO } from "@/lib/marketing/videoExample";
 import {
   CARD_GENERATION_PRICE_RUB,
+  FREE_TOTAL_MARKETING_CARDS,
   FREE_TRIAL_CARDS,
   VIDEO_GENERATION_START_PRICE_RUB,
   calculatePackagePrice,
@@ -22,7 +23,7 @@ function buildOfferCatalog() {
     itemListElement: [
       {
         "@type": "Offer",
-        name: `${FREE_TRIAL_CARDS} бесплатные карточки`,
+        name: `${FREE_TOTAL_MARKETING_CARDS} бесплатные карточки`,
         price: "0",
         priceCurrency: "RUB",
         description: "Тестовый доступ без карты",
@@ -128,7 +129,7 @@ export function buildHomeJsonLd() {
           highPrice: String(CARD_GENERATION_PRICE_RUB),
           priceCurrency: "RUB",
           offerCount: String(3 + getVideoMarketingPrices("standard").length),
-          description: `${FREE_TRIAL_CARDS} бесплатно, далее от ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото, видео от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}`
+          description: `${FREE_TOTAL_MARKETING_CARDS} бесплатно, далее от ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото, видео от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}`
         },
         featureList: [
           "Генерация карточки товара по фото",

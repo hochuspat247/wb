@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { demoGenerations } from "@/lib/db/schema";
-import { canReadPreview, getDemoGeneration } from "@/lib/server/demo-generations";
+import { canReadOriginal, canReadPreview, getDemoGeneration } from "@/lib/server/demo-generations";
 import { eq } from "drizzle-orm";
 
 type RouteContext = {
@@ -24,7 +24,7 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json({ error: userId ? "Forbidden" : "Unauthorized" }, { status: userId ? 403 : 401 });
   }
 
-  const originalAvailable = Boolean(userId && row.userId === userId);
+  const originalAvailable = Boolean(userId && row.userId === userId && (await canReadOriginal(row, userId)));
 
   return NextResponse.json({
     id: row.id,
@@ -32,7 +32,8 @@ export async function GET(request: Request, context: RouteContext) {
     card: row.payload,
     previewUrl: `/api/generations/${row.id}/preview`,
     downloadOriginalUrl: originalAvailable ? `/api/generations/${row.id}/original` : undefined,
-    originalAvailable
+    originalAvailable,
+    watermarkLocked: Boolean(userId && row.userId === userId && !originalAvailable)
   });
 }
 
@@ -72,11 +73,15 @@ export async function PATCH(request: Request, context: RouteContext) {
     .set({ payload: nextPayload })
     .where(eq(demoGenerations.id, row.id));
 
+  const originalAvailable = Boolean(userId && row.userId === userId && (await canReadOriginal(row, userId)));
+
   return NextResponse.json({
     id: row.id,
     status: row.status,
     card: nextPayload,
     previewUrl: `/api/generations/${row.id}/preview`,
-    originalAvailable: Boolean(userId && row.userId === userId)
+    downloadOriginalUrl: originalAvailable ? `/api/generations/${row.id}/original` : undefined,
+    originalAvailable,
+    watermarkLocked: Boolean(userId && row.userId === userId && !originalAvailable)
   });
 }

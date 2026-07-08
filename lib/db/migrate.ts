@@ -107,6 +107,26 @@ export function migrate(sqlite: Database.Database) {
     // column already exists
   }
 
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN freeCleanDownloadGenerationId TEXT`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN hasPurchasedGenerationCredits INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // column already exists
+  }
+
+  sqlite.exec(`
+    UPDATE user
+    SET hasPurchasedGenerationCredits = 1
+    WHERE id IN (
+      SELECT DISTINCT userId FROM payment WHERE paid = 1 AND creditedAt IS NOT NULL
+    )
+  `);
+
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS analytics_event (
       id TEXT PRIMARY KEY NOT NULL,

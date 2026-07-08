@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart3, Eye, Film, LogOut, MousePointerClick, RefreshCw, Star, Users, X } from "lucide-react";
+import { Funnel7dPanel } from "@/components/admin/Funnel7dPanel";
 import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
 import { CollapsibleAdminSection } from "@/components/admin/CollapsibleAdminSection";
 import { DemoErrorsPanel } from "@/components/admin/DemoErrorsPanel";
@@ -16,6 +17,7 @@ import { formatAccountEmail, getEmailVerificationLabel } from "@/lib/auth/email-
 import { hasCardGeneratedVideo } from "@/lib/cardVideos";
 import type { ProductCardResult } from "@/types/product-card";
 import type { SessionDurationStats } from "@/lib/server/session-duration";
+import type { Funnel7dStep } from "@/lib/server/funnel7d";
 
 type AdminStats = {
   overview: {
@@ -34,6 +36,7 @@ type AdminStats = {
     paywallViews: number;
     paymentClicks: number;
   };
+  funnel7d: Funnel7dStep[];
   heatmap: { x: number; y: number; count: number }[];
   topClicks: { label: string; count: number }[];
   signupsByDay: { day: string; value: number }[];
@@ -139,11 +142,6 @@ type AdminDemoDetail = {
 };
 
 const PATHS = ["/", "/login", "/register", "/cabinet"];
-
-function pct(value: number, total: number) {
-  if (!total) return "0%";
-  return `${Math.round((value / total) * 100)}%`;
-}
 
 async function readJsonResponse(response: Response): Promise<any> {
   const text = await response.text();
@@ -532,7 +530,7 @@ export function AdminDashboard() {
         throw new Error(data.error || "Не удалось загрузить статистику");
       }
 
-      if (!data.overview || !data.funnel) {
+      if (!data.overview || !data.funnel7d) {
         throw new Error("Админка вернула пустой ответ. Попробуйте войти заново.");
       }
 
@@ -611,16 +609,6 @@ export function AdminDashboard() {
   }
 
   if (!stats) return null;
-
-  const funnel = [
-    ["Просмотры", stats.funnel.pageViews],
-    ["CTA клики", stats.funnel.ctaClicks],
-    ["Регистрации", stats.funnel.registrations],
-    ["Входы", stats.funnel.logins],
-    ["Генерации", stats.funnel.generations],
-    ["Paywall", stats.funnel.paywallViews],
-    ["Оплата", stats.funnel.paymentClicks]
-  ] as const;
 
   return (
     <div className="min-h-screen bg-paper">
@@ -766,31 +754,7 @@ export function AdminDashboard() {
           </div>
         </CollapsibleAdminSection>
 
-        <CollapsibleAdminSection
-          description="За последние 30 дней"
-          icon={<MousePointerClick className="text-accent" size={20} />}
-          id="funnel"
-          title="Воронка конверсий"
-        >
-          <div className="space-y-3">
-            {funnel.map(([label, value]) => (
-              <div key={label}>
-                <div className="mb-1 flex items-start justify-between gap-3 text-sm">
-                  <span className="font-semibold text-ink">{label}</span>
-                  <span className="shrink-0 text-muted">
-                    {value} · {pct(value, stats.funnel.pageViews || value)}
-                  </span>
-                </div>
-                <div className="h-2 rounded-full bg-paper">
-                  <div
-                    className="h-2 rounded-full bg-accent"
-                    style={{ width: pct(value, Math.max(stats.funnel.pageViews, value)) }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </CollapsibleAdminSection>
+        <Funnel7dPanel steps={stats.funnel7d} />
 
         <UserJourneysMapPanel
           heatmap={stats.heatmap}

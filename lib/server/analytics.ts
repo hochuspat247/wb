@@ -2,6 +2,7 @@ import { and, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { analyticsEvents, demoGenerations, productCards, users, videoGenerationOrders, visitorPresence } from "@/lib/db/schema";
 import { buildSessionDurationStats } from "@/lib/server/session-duration";
+import { getFunnel7d, type Funnel7dStep } from "@/lib/server/funnel7d";
 
 export type AnalyticsTrackInput = {
   eventType: "page_view" | "click" | "conversion";
@@ -381,6 +382,7 @@ export async function getAdminAnalytics(pathFilter = "/") {
         )
       : [];
   const videoCountMap = new Map(videoCountRows.map((row) => [row.sourceGenerationId, row.value]));
+  const funnel7d = await safeAnalyticsQuery("funnel 7d", getFunnel7d(), [] as Funnel7dStep[]);
 
   return {
     overview: {
@@ -391,6 +393,7 @@ export async function getAdminAnalytics(pathFilter = "/") {
       events7d: events7d?.value ?? 0
     },
     funnel,
+    funnel7d,
     heatmap: heatmapRows
       .filter((row) => row.xPercent != null && row.yPercent != null)
       .map((row) => ({

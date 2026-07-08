@@ -52,6 +52,7 @@ export const ACTION_LABELS: Record<string, string> = {
   demo_result_view: "Смотрит результат демо",
   download_original_click: "Скачать оригинал",
   auth_started_from_result: "Пошёл на авторизацию",
+  video_upsell_view: "Увидел оффер видео",
   link_click: "Клик по ссылке",
   ui_click: "Клик по элементу",
   page_view: "Открыл страницу"

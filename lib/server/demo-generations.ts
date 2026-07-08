@@ -1,8 +1,9 @@
 import { and, eq, isNull } from "drizzle-orm";
-import sharp from "sharp";
 import { db } from "@/lib/db";
 import { demoGenerations } from "@/lib/db/schema";
 import { saveUserCard } from "@/lib/server/cards";
+import { getUserDownloadAccess, isGenerationDownloadUnlocked, registerGenerationForCleanDownload } from "@/lib/server/downloadAccess";
+import { addWatermarkToImageBuffer } from "@/lib/server/watermark";
 import type { ProductCardResult } from "@/types/product-card";
 
 const PREVIEW_MIME_TYPE = "image/png";
@@ -18,7 +19,7 @@ export async function createDemoGeneration(input: {
   originalImageMimeType: string;
 }) {
   const originalBuffer = Buffer.from(input.originalImageBase64, "base64");
-  const previewBuffer = await addDemoWatermark(originalBuffer);
+  const previewBuffer = await addWatermarkToImageBuffer(originalBuffer);
   const now = new Date();
 
   const [row] = await db
@@ -62,6 +63,7 @@ export async function attachGuestGenerationsToUser(guestId: string, userId: stri
     .where(and(eq(demoGenerations.guestId, guestId), isNull(demoGenerations.userId)));
 
   for (const row of rows) {
+    await registerGenerationForCleanDownload(userId, row.id, row.createdAt);
     await saveUserCard(userId, {
       ...row.payload,
       id: row.payload.id || row.id,
@@ -83,51 +85,28 @@ export function canReadPreview(row: DemoGenerationRecord, identity: { guestId?: 
   return Boolean(identity.guestId && row.guestId === identity.guestId);
 }
 
-export function canReadOriginal(row: DemoGenerationRecord, userId?: string | null) {
-  return Boolean(userId && row.userId === userId);
+export async function canReadOriginal(row: DemoGenerationRecord, userId?: string | null) {
+  if (!userId || row.userId !== userId) {
+    return false;
+  }
+
+  const access = await getUserDownloadAccess(userId);
+  return isGenerationDownloadUnlocked(access, row.id);
 }
 
-async function addDemoWatermark(originalBuffer: Buffer) {
-  const image = sharp(originalBuffer, { failOn: "none" }).rotate();
-  const metadata = await image.metadata();
-  const width = metadata.width || 1200;
-  const height = metadata.height || 1500;
-  const watermark = buildWatermarkSvg(width, height);
-
-  return image
-    .resize({ width, height, fit: "inside", withoutEnlargement: true })
-    .composite([{ input: Buffer.from(watermark), blend: "over" }])
-    .png()
-    .toBuffer();
-}
-
-function buildWatermarkSvg(width: number, height: number) {
-  const stepX = Math.max(220, Math.round(width / 3));
-  const stepY = Math.max(160, Math.round(height / 5));
-  const fontSize = Math.max(42, Math.round(width / 12));
-  const labels: string[] = [];
-
-  for (let y = -height; y < height * 2; y += stepY) {
-    for (let x = -width; x < width * 2; x += stepX) {
-      labels.push(`<text x="${x}" y="${y}" class="demo-mark">DEMO</text>`);
+export async function getDemoPreviewBuffer(row: DemoGenerationRecord, userId?: string | null) {
+  if (userId && row.userId === userId) {
+    const access = await getUserDownloadAccess(userId);
+    if (isGenerationDownloadUnlocked(access, row.id)) {
+      return {
+        buffer: Buffer.from(row.originalImageBase64, "base64"),
+        mimeType: row.originalImageMimeType
+      };
     }
   }
 
-  return `
-    <svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">
-      <style>
-        .demo-mark {
-          fill: #f8fafc;
-          fill-opacity: 0.13;
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: ${fontSize}px;
-          font-weight: 900;
-          letter-spacing: 8px;
-        }
-      </style>
-      <g transform="rotate(-32 ${width / 2} ${height / 2})">
-        ${labels.join("")}
-      </g>
-    </svg>
-  `;
+  return {
+    buffer: Buffer.from(row.previewImageBase64, "base64"),
+    mimeType: row.previewImageMimeType
+  };
 }

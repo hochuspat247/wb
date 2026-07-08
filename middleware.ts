@@ -11,10 +11,10 @@ export function middleware(request: NextRequest) {
   const hasSessionCookie = sessionCookieNames.some((name) => request.cookies.has(name));
 
   if (!hasSessionCookie) {
-    const loginUrl = new URL("/login", request.nextUrl.origin);
+    const registerUrl = new URL("/register", request.nextUrl.origin);
     const callback = `${request.nextUrl.pathname}${request.nextUrl.search}`;
-    loginUrl.searchParams.set("callbackUrl", callback);
-    return NextResponse.redirect(loginUrl);
+    registerUrl.searchParams.set("callbackUrl", callback);
+    return NextResponse.redirect(registerUrl);
   }
 
   return NextResponse.next();

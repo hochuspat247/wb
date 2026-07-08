@@ -132,6 +132,10 @@ export type ProductCardResult = {
   generationRating?: 1 | 2 | 3 | 4 | 5;
   generationRatedAt?: string;
   generationRatingDismissedAt?: string;
+  downloadUnlocked?: boolean;
+  watermarkLocked?: boolean;
+  previewImageUrl?: string;
+  imageDownloadUrl?: string;
   price?: string;
   ctaText?: string;
   headline?: string;

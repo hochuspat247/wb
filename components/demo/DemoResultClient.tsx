@@ -22,6 +22,7 @@ type DemoResult = {
   previewUrl: string;
   downloadOriginalUrl?: string;
   originalAvailable: boolean;
+  watermarkLocked?: boolean;
 };
 
 type IntendedAction = "downloadOriginal" | "moreCards" | "createNew";
@@ -58,9 +59,9 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
     if (!result) return "";
     const params = new URLSearchParams();
     if (guestId) params.set("guestId", guestId);
-    params.set("v", result.originalAvailable ? "auth" : "demo");
+    params.set("v", isAuthenticated && result.originalAvailable ? "auth" : "demo");
     return `${result.previewUrl}?${params.toString()}`;
-  }, [guestId, result]);
+  }, [guestId, isAuthenticated, result]);
 
   const loadResult = useCallback(async () => {
     if (!guestId && !isAuthenticated) return;
@@ -156,31 +157,47 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
   }, [autoActionDone, generationId, isAuthenticated, result?.originalAvailable, router, searchParams]);
 
   async function downloadOriginal() {
+    if (!isAuthenticated) {
+      requireAuth("downloadOriginal");
+      return;
+    }
+
+    if (!result) {
+      return;
+    }
+
     trackMarketingEvent("download_original_click", {
       generationId,
-      authenticated: isAuthenticated
+      authenticated: true
     });
 
-    if (!result?.downloadOriginalUrl) {
-      requireAuth("downloadOriginal");
+    if (result.downloadOriginalUrl) {
+      const response = await fetch(result.downloadOriginalUrl, { cache: "no-store" });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        triggerBlobDownload(blob, `marketcard-original-${generationId}.png`);
+        reachGoal("download_png", { source: "original_after_auth" });
+        return;
+      }
+    }
+
+    const params = new URLSearchParams();
+    if (guestId) params.set("guestId", guestId);
+    const previewResponse = await fetch(`${result.previewUrl}?${params.toString()}`, {
+      cache: "no-store",
+      headers: guestId ? { "x-marketcard-guest-id": guestId } : undefined
+    });
+
+    if (previewResponse.ok) {
+      const blob = await previewResponse.blob();
+      triggerBlobDownload(blob, `marketcard-demo-${generationId}.png`);
+      reachGoal("download_png", { source: "demo_watermarked" });
+      setError("");
       return;
     }
 
-    const response = await fetch(result.downloadOriginalUrl, { cache: "no-store" });
-
-    if (response.status === 401) {
-      requireAuth("downloadOriginal");
-      return;
-    }
-
-    if (!response.ok) {
-      setError("Не удалось скачать оригинал.");
-      return;
-    }
-
-    const blob = await response.blob();
-    triggerBlobDownload(blob, `marketcard-original-${generationId}.png`);
-    reachGoal("download_png", { source: "original_after_auth" });
+    setError("Не удалось скачать карточку.");
   }
 
   function requireAuth(action: IntendedAction) {
@@ -192,7 +209,7 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
     }
 
     trackMarketingEvent("auth_started_from_result", { generationId, action });
-    router.push(`/login?callbackUrl=${encodeURIComponent(`/generations/${generationId}?afterAuth=${action}`)}`);
+    router.push(`/register?callbackUrl=${encodeURIComponent(`/generations/${generationId}?afterAuth=${action}`)}`);
   }
 
   async function updateDemoRating(payload: { generationRating?: 1 | 2 | 3 | 4 | 5; generationRatingDismissed?: boolean }) {
@@ -264,19 +281,42 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-black text-ink md:text-5xl">Ваша карточка готова 🎉</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base font-semibold leading-relaxed text-muted">
-            Это демо с защитной меткой. Войдите, чтобы скачать карточку без водяного знака.
+            {!isAuthenticated
+              ? "Это демо с защитной меткой. Скачивание и копирование недоступны — зарегистрируйтесь, чтобы скачать эту карточку без водяного знака."
+              : result.originalAvailable
+                ? "Это ваша первая карточка — можно скачать без водяного знака."
+                : "Карточка с демо-меткой. Без водяного знака доступна только первая генерация или покупка пакета."}
           </p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-start">
           <div className="rounded-[22px] border border-clay bg-card p-4 shadow-soft md:p-5">
-            <ProtectedDemoImage alt={result.card?.title || "Демо-карточка MarketCard AI"} className="mx-auto max-w-[620px]" src={previewSrc} />
+            {!isAuthenticated || !result.originalAvailable ? (
+              <ProtectedDemoImage
+                alt={result.card?.title || "Демо-карточка MarketCard AI"}
+                className="mx-auto max-w-[620px]"
+                src={previewSrc}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={result.card?.title || "Карточка MarketCard AI"}
+                className="mx-auto block max-w-[620px] rounded-[24px]"
+                src={previewSrc}
+              />
+            )}
           </div>
 
           <aside className="rounded-[22px] border border-clay bg-card p-5">
-            {!result.originalAvailable ? (
+            {!isAuthenticated ? (
               <div className="mb-4 rounded-[16px] border border-accent/20 bg-accent/10 p-4 text-sm font-semibold leading-relaxed text-ink">
-                Войдите, чтобы скачать карточку без водяного знака.
+                Скачивание и скриншот недоступны без регистрации. После входа эту карточку можно скачать без
+                водяного знака.
+              </div>
+            ) : !result.originalAvailable ? (
+              <div className="mb-4 rounded-[16px] border border-accent/20 bg-accent/10 p-4 text-sm font-semibold leading-relaxed text-ink">
+                Скачивание без водяного знака доступно для первой карточки. Сейчас можно скачать версию с
+                демо-меткой или купить пакет.
               </div>
             ) : null}
 
@@ -325,10 +365,17 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
             ) : null}
 
             <div className="grid gap-3">
-              <Button onClick={downloadOriginal} type="button">
-                <Download size={17} />
-                Скачать оригинал
-              </Button>
+              {!isAuthenticated ? (
+                <Button onClick={() => requireAuth("downloadOriginal")} type="button">
+                  <Download size={17} />
+                  Зарегистрироваться и скачать
+                </Button>
+              ) : (
+                <Button onClick={() => void downloadOriginal()} type="button">
+                  <Download size={17} />
+                  {result.originalAvailable ? "Скачать без водяного знака" : "Скачать с демо-меткой"}
+                </Button>
+              )}
               <Button
                 onClick={() => {
                   if (!result.originalAvailable) {

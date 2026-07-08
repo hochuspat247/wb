@@ -51,7 +51,8 @@ export function PaymentButton({
       window.location.assign(payment.confirmationUrl);
     } catch (paymentError) {
       if (paymentError instanceof Error && paymentError.message === "UNAUTHORIZED") {
-        window.location.assign(`/login?callbackUrl=${encodeURIComponent(window.location.pathname)}`);
+        const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        window.location.assign(`/register?callbackUrl=${encodeURIComponent(returnTo)}`);
         return;
       }
 

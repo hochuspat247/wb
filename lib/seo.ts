@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import {
   CARD_GENERATION_PRICE_RUB,
-  FREE_TRIAL_CARDS,
+  FREE_TOTAL_MARKETING_CARDS,
   VIDEO_GENERATION_START_PRICE_RUB,
   formatRub,
   formatVideoPriceRub
@@ -12,7 +12,7 @@ const defaultSiteUrl = "https://marketcard-ai.avenir-team.ru";
 export const siteConfig = {
   name: "MarketCard AI",
   title: "MarketCard AI — карточки и видео товаров для WB, Ozon и Avito",
-  description: `Загрузите фото товара — получите карточку с текстом, SEO и AI-обложкой 4:5 для Wildberries, Ozon, Avito и Яндекс Маркета. ${FREE_TRIAL_CARDS} карточки бесплатно, далее ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото. Видео из карточки — от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}.`,
+  description: `Загрузите фото товара — получите карточку с текстом, SEO и AI-обложкой 4:5 для Wildberries, Ozon, Avito и Яндекс Маркета. ${FREE_TOTAL_MARKETING_CARDS} карточки бесплатно (1 демо + 2 после входа), далее ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото. Видео из карточки — от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}.`,
   keywords: [
     "карточка товара",
     "видео из карточки",

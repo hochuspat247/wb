@@ -4,6 +4,8 @@ import { PricingCard } from "@/components/ui/PricingCard";
 import { getVideoRateRubPerSecond } from "@/config/video-pricing";
 import {
   CARD_GENERATION_PRICE_RUB,
+  FREE_TOTAL_MARKETING_CARDS,
+  FREE_TRIAL_CARDS,
   VIDEO_GENERATION_START_PRICE_RUB,
   calculatePackagePrice,
   formatRub,
@@ -21,9 +23,11 @@ const plans = [
     name: "Старт",
     subtitle: "Попробовать сервис",
     price: "0 ₽",
-    unit: "3 шт",
+    unit: `${FREE_TOTAL_MARKETING_CARDS} шт`,
     features: [
-      "3 карточки бесплатно",
+      "1 демо без входа",
+      `${FREE_TRIAL_CARDS} карточки после регистрации`,
+      "Без водяного знака — первая карточка",
       "Тексты и SEO",
       "Базовая обложка 4:5",
       "PNG и JSON экспорт",

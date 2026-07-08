@@ -20,8 +20,14 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (!canReadOriginal(row, userId)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await canReadOriginal(row, userId))) {
+    return NextResponse.json(
+      {
+        error: "Скачивание без водяного знака доступно для первой карточки или после покупки пакета.",
+        code: "WATERMARK_LOCKED"
+      },
+      { status: 402 }
+    );
   }
 
   const extension = row.originalImageMimeType.includes("jpeg")

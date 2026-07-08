@@ -50,6 +50,7 @@ export type MetrikaGoal =
   | "pricing_calculator_view"
   | "faq_view"
   | "video_create_click"
+  | "video_upsell_view"
   | "video_modal_open"
   | "video_order_created"
   | "video_payment_started"

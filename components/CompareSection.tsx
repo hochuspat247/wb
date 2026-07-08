@@ -2,6 +2,7 @@ import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import {
   CARD_GENERATION_PRICE_RUB,
+  FREE_TOTAL_MARKETING_CARDS,
   FREE_TRIAL_CARDS,
   VIDEO_GENERATION_START_PRICE_RUB,
   formatRub,
@@ -15,7 +16,7 @@ const rows = [
     "внутренний ресурс",
     "от 1 500 ₽",
     "от 990 ₽ за пакет",
-    `${FREE_TRIAL_CARDS} бесплатно, далее ${formatRub(CARD_GENERATION_PRICE_RUB)}/фото`
+    `${FREE_TOTAL_MARKETING_CARDS} бесплатно, далее ${formatRub(CARD_GENERATION_PRICE_RUB)}/фото`
   ],
   [
     "Видео из карточки",

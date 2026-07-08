@@ -17,7 +17,10 @@ type VideoFromCardFlowProps = {
   compact?: boolean;
   darkConsole?: boolean;
   disabled?: boolean;
+  prominent?: boolean;
   initialOrderId?: string | null;
+  openConfigRequest?: boolean;
+  onConfigRequestHandled?: () => void;
   onFlowReset?: () => void;
   onPhaseChange?: (phase: VideoFlowPhase) => void;
   onVideoReady?: () => void;
@@ -28,7 +31,10 @@ export function VideoFromCardFlow({
   compact,
   darkConsole,
   disabled,
+  prominent,
   initialOrderId,
+  openConfigRequest,
+  onConfigRequestHandled,
   onFlowReset,
   onPhaseChange,
   onVideoReady
@@ -55,6 +61,15 @@ export function VideoFromCardFlow({
     onPhaseChange?.(phase);
   }, [onPhaseChange, phase]);
 
+  useEffect(() => {
+    if (!openConfigRequest || phase !== "idle") {
+      return;
+    }
+
+    setPhase("config");
+    onConfigRequestHandled?.();
+  }, [openConfigRequest, onConfigRequestHandled, phase]);
+
   if (!hasGeneratedAiCover(card)) {
     return null;
   }
@@ -66,6 +81,7 @@ export function VideoFromCardFlow({
           darkConsole={darkConsole}
           disabled={disabled}
           onCreateClick={() => setPhase("config")}
+          prominent={prominent}
         />
       ) : null}
 

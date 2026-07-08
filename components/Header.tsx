@@ -110,8 +110,8 @@ export function Header() {
             </>
           ) : (
             <>
-              <Link href="/login">
-                <Button variant="ghost">Войти</Button>
+              <Link href="/register">
+                <Button variant="ghost">Регистрация</Button>
               </Link>
               <Button onClick={handleTryFreeClick} type="button">
                 Попробовать бесплатно
@@ -175,9 +175,9 @@ export function Header() {
                 </>
               ) : (
                 <>
-                  <Link href="/login" onClick={() => setMenuOpen(false)}>
+                  <Link href="/register" onClick={() => setMenuOpen(false)}>
                     <Button className="w-full" variant="secondary">
-                      Войти
+                      Регистрация
                     </Button>
                   </Link>
                   <Button className="w-full" onClick={handleTryFreeClick} type="button">

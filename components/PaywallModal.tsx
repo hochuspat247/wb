@@ -2,22 +2,29 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { Film, Sparkles, X } from "lucide-react";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { PaymentButton } from "@/components/PaymentButton";
 import { Button } from "@/components/ui/Button";
 import {
-  GENERATION_PACKAGES,
+  FREE_TRIAL_CARDS,
   calculatePackagePrice,
   formatRub
 } from "@/lib/pricing";
+import {
+  VIDEO_RESULT_UPSELL_DURATION_LABEL,
+  VIDEO_RESULT_UPSELL_PRICE_LABEL
+} from "@/lib/marketing/videoUpsell";
 
 type PaywallModalProps = {
   open: boolean;
   onClose: () => void;
+  onCreateVideo?: () => void;
 };
 
-export function PaywallModal({ open, onClose }: PaywallModalProps) {
+export function PaywallModal({ open, onClose, onCreateVideo }: PaywallModalProps) {
+  const pack10 = calculatePackagePrice(10);
+
   useEffect(() => {
     if (open) {
       trackConversion("paywall_view");
@@ -25,6 +32,8 @@ export function PaywallModal({ open, onClose }: PaywallModalProps) {
   }, [open]);
 
   if (!open) return null;
+
+  const trialLabel = `${FREE_TRIAL_CARDS} бесплатные карточки после входа`;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -40,44 +49,53 @@ export function PaywallModal({ open, onClose }: PaywallModalProps) {
           <X size={16} />
         </button>
 
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Бесплатные генерации использованы</p>
-        <h3 className="mt-3 text-2xl font-black text-ink">Купите пакет генераций</h3>
-        <p className="mt-2 text-sm font-medium text-muted">
-          Вы уже протестировали сервис. Выберите пакет — оплата пройдет через защищенную страницу ЮKassa.
-        </p>
-
-        <div className="mt-6 grid gap-3">
-          {GENERATION_PACKAGES.map((pack) => {
-            const price = calculatePackagePrice(pack.count);
-
-            return (
-              <div
-                className="grid gap-4 rounded-[18px] border border-clay bg-paper/40 px-4 py-4 sm:grid-cols-[1fr_auto]"
-                key={pack.id}
-              >
-                <div>
-                  <p className="font-black text-ink">{pack.label}</p>
-                  <p className="mt-1 text-xs font-medium text-muted">{pack.description}</p>
-                </div>
-                <div className="text-left sm:text-right">
-                  <p className="text-lg font-black text-ink">{formatRub(price.total)}</p>
-                  <p className="text-xs font-semibold text-muted">{formatRub(price.pricePerUnit)} / шт</p>
-                  <PaymentButton className="mt-3 min-w-36" count={pack.count} size="sm">
-                    Купить
-                  </PaymentButton>
-                </div>
-              </div>
-            );
-          })}
+        <div className="flex items-start gap-3">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-accent/15 text-accent">
+            <Sparkles size={20} />
+          </div>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Лимит использован</p>
+            <h3 className="mt-2 text-2xl font-black leading-snug text-ink">
+              Вы использовали {trialLabel} 🎉
+            </h3>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-muted">
+              Если результат понравился — докупите пакет карточек. Все ранее созданные карточки станут доступны без
+              водяного знака. Или оживите готовую обложку в короткое видео для рекламы и соцсетей.
+            </p>
+          </div>
         </div>
 
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <PaymentButton className="flex-1" count={10}>
-            Купить пакет
-          </PaymentButton>
+        <div className="mt-6 grid gap-3">
+          <div className="rounded-[18px] border border-accent/25 bg-accent/10 p-4">
+            <p className="text-sm font-black text-ink">10 карточек — {formatRub(pack10.total)}</p>
+            <p className="mt-1 text-xs font-semibold text-muted">
+              {formatRub(pack10.pricePerUnit)} за карточку · серии, варианты и история
+            </p>
+            <PaymentButton className="mt-4" count={10} metrikaPlan="paywall_pack10">
+              Купить 10 карточек
+            </PaymentButton>
+          </div>
+
+          {onCreateVideo ? (
+            <div className="rounded-[18px] border border-clay bg-paper/50 p-4">
+              <p className="flex items-center gap-2 text-sm font-black text-ink">
+                <Film size={16} />
+                Видео из карточки — от {VIDEO_RESULT_UPSELL_PRICE_LABEL}
+              </p>
+              <p className="mt-1 text-xs font-semibold text-muted">
+                Короткий ролик {VIDEO_RESULT_UPSELL_DURATION_LABEL} для рекламы, соцсетей и карточки товара
+              </p>
+              <Button className="mt-4 w-full" onClick={onCreateVideo} type="button" variant="secondary">
+                Создать видео из этой карточки
+              </Button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <Link className="flex-1" href="/#pricing-calculator" onClick={onClose}>
-            <Button className="w-full" variant="secondary">
-              Рассчитать пакет
+            <Button className="w-full" variant="ghost">
+              Все тарифы
             </Button>
           </Link>
         </div>

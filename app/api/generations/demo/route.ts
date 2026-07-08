@@ -8,7 +8,7 @@ import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
 import { createDemoGeneration } from "@/lib/server/demo-generations";
 import { getErrorMessage, logDemoGenerationError } from "@/lib/server/demo-errors";
-import { reserveGuestDemoGeneration } from "@/lib/server/demoRateLimit";
+import { checkGuestDemoGenerationAllowed, commitGuestDemoGeneration } from "@/lib/server/demoRateLimit";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import type {
   GenerateImageInput,
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
         );
       }
     } else {
-      const limit = await reserveGuestDemoGeneration(request, guestId);
+      const limit = await checkGuestDemoGenerationAllowed(request, guestId);
 
       if (!limit.allowed) {
         await logDemoGenerationError({
@@ -151,6 +151,10 @@ export async function POST(request: Request) {
       originalImageMimeType: original.mimeType
     });
     const nextQuota = userId ? await consumeGeneration(userId) : undefined;
+
+    if (!userId) {
+      await commitGuestDemoGeneration(request, guestId);
+    }
 
     return NextResponse.json({
       id: demo.id,

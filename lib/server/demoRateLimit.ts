@@ -21,33 +21,39 @@ type LimitIdentity = {
   limit: number;
 };
 
-export async function reserveGuestDemoGeneration(request: Request, guestId: string): Promise<DemoRateLimitResult> {
+function buildLimitIdentities(request: Request, guestId: string) {
   const dailyGuestLimit = getPositiveIntegerEnv("DEMO_FREE_DAILY_LIMIT", 1);
   const dailyFingerprintLimit = getPositiveIntegerEnv("DEMO_FREE_FINGERPRINT_DAILY_LIMIT", 1);
   const dailyIpLimit = getPositiveIntegerEnv("DEMO_FREE_IP_DAILY_LIMIT", 5);
 
   const clientIp = getClientIp(request);
   const userAgent = normalizeHeader(request.headers.get("user-agent"), 220);
-  const now = new Date();
-  const since = new Date(now.getTime() - ONE_DAY_MS);
-  const cleanupBefore = new Date(now.getTime() - CLEANUP_AFTER_MS);
-  const identities: LimitIdentity[] = [
-    {
-      type: "guest",
-      hash: hashIdentity(guestId),
-      limit: dailyGuestLimit
-    },
-    {
-      type: "fingerprint",
-      hash: hashIdentity(`${clientIp}|${userAgent}`),
-      limit: dailyFingerprintLimit
-    },
-    {
-      type: "ip",
-      hash: hashIdentity(clientIp),
-      limit: dailyIpLimit
-    }
-  ];
+
+  return {
+    identities: [
+      {
+        type: "guest",
+        hash: hashIdentity(guestId),
+        limit: dailyGuestLimit
+      },
+      {
+        type: "fingerprint",
+        hash: hashIdentity(`${clientIp}|${userAgent}`),
+        limit: dailyFingerprintLimit
+      },
+      {
+        type: "ip",
+        hash: hashIdentity(clientIp),
+        limit: dailyIpLimit
+      }
+    ] satisfies LimitIdentity[]
+  };
+}
+
+export async function checkGuestDemoGenerationAllowed(request: Request, guestId: string): Promise<DemoRateLimitResult> {
+  const { identities } = buildLimitIdentities(request, guestId);
+  const since = new Date(Date.now() - ONE_DAY_MS);
+  const cleanupBefore = new Date(Date.now() - CLEANUP_AFTER_MS);
 
   await db.delete(demoGenerationAttempts).where(lt(demoGenerationAttempts.createdAt, cleanupBefore));
 
@@ -65,6 +71,13 @@ export async function reserveGuestDemoGeneration(request: Request, guestId: stri
     }
   }
 
+  return { allowed: true };
+}
+
+export async function commitGuestDemoGeneration(request: Request, guestId: string) {
+  const { identities } = buildLimitIdentities(request, guestId);
+  const now = new Date();
+
   await db.insert(demoGenerationAttempts).values(
     identities.map((identity) => ({
       id: randomUUID(),
@@ -73,8 +86,26 @@ export async function reserveGuestDemoGeneration(request: Request, guestId: stri
       createdAt: now
     }))
   );
+}
 
-  return { allowed: true };
+/** @deprecated Use checkGuestDemoGenerationAllowed + commitGuestDemoGeneration */
+export async function beginGuestDemoGeneration(request: Request, guestId: string) {
+  const result = await checkGuestDemoGenerationAllowed(request, guestId);
+  if (!result.allowed) {
+    return result;
+  }
+
+  return { allowed: true as const, attemptIds: [] as string[] };
+}
+
+/** @deprecated No-op kept for backwards compatibility */
+export async function releaseGuestDemoGeneration(_attemptIds: string[]) {
+  return;
+}
+
+/** @deprecated Use checkGuestDemoGenerationAllowed */
+export async function reserveGuestDemoGeneration(request: Request, guestId: string) {
+  return checkGuestDemoGenerationAllowed(request, guestId);
 }
 
 async function countRecentAttempts(identity: LimitIdentity, since: Date) {

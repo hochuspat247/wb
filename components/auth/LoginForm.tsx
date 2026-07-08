@@ -138,7 +138,7 @@ export function LoginForm() {
             </div>
 
             {info ? <p className="text-sm font-semibold text-mint">{info}</p> : null}
-            {error ? <p className="text-sm font-semibold text-accent">{error}</p> : null}
+            {error ? <p className="text-sm font-semibold text-red-400">{error}</p> : null}
 
             {showResend ? (
               <Button disabled={resending} onClick={() => void handleResendVerification()} type="button" variant="secondary">

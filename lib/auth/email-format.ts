@@ -1,7 +1,7 @@
 import { isPlaceholderOAuthEmail } from "@/lib/auth/email-utils";
 
 const EMAIL_FORMAT_RE =
-  /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+\.[a-z]{2,63}$/i;
+  /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,63}$/i;
 
 export function normalizeEmail(email: string) {
   return email.trim().toLowerCase();

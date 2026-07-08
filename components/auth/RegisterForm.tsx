@@ -163,7 +163,7 @@ export function RegisterForm() {
               />
             </label>
 
-            {error ? <p className="text-sm font-semibold text-accent">{error}</p> : null}
+            {error ? <p className="text-sm font-semibold text-red-400">{error}</p> : null}
 
             <Button className="w-full py-3" disabled={loading} type="submit">
               {loading ? <Loader2 className="animate-spin" size={18} /> : null}

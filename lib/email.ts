@@ -30,7 +30,12 @@ export async function sendEmail({ to, subject, html }: SendEmailInput) {
 }
 
 export function appUrl(path: string) {
-  const base = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || "http://localhost:3000";
+  const base =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.AUTH_URL ||
+    process.env.NEXTAUTH_URL ||
+    process.env.VERCEL_URL ||
+    "http://localhost:3000";
   const normalized = base.startsWith("http") ? base : `https://${base}`;
   return `${normalized.replace(/\/$/, "")}${path}`;
 }

@@ -1439,9 +1439,14 @@ export function CardGenerator({
                 </Button>
                 )}
                 {compactDemoEntry ? (
-                  <p className="w-full text-sm font-semibold leading-relaxed text-muted">
-                    1 демо-карточка без входа. Оригинал и дополнительные карточки доступны после авторизации.
-                  </p>
+                  <div className="w-full rounded-[14px] border border-accent/20 bg-accent/10 px-3 py-2.5">
+                    <p className="text-sm font-semibold leading-relaxed text-ink">
+                      1 демо-карточка без входа. Хотите карусель из нескольких фото и карточек товара?
+                    </p>
+                    <a className="mt-1 inline-flex text-sm font-black text-accent underline-offset-4 hover:underline" href="/#pricing">
+                      Перейти к тарифам и собрать серию
+                    </a>
+                  </div>
                 ) : null}
               </div>
             </div>

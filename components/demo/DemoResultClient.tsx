@@ -243,6 +243,16 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
               </div>
             ) : null}
 
+            <div className="mb-4 rounded-[18px] border border-clay bg-paper/70 p-4">
+              <p className="text-base font-black text-ink">Соберите карусель для товара</p>
+              <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">
+                Сделайте серию из нескольких карточек: обложка, преимущества, характеристики и сценарии применения.
+              </p>
+              <Link className="mt-3 inline-flex text-sm font-black text-accent underline-offset-4 hover:underline" href="/#pricing">
+                Посмотреть тарифы
+              </Link>
+            </div>
+
             <div className="grid gap-3">
               <Button onClick={downloadOriginal} type="button">
                 <Download size={17} />
@@ -259,7 +269,7 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
                 type="button"
                 variant="secondary"
               >
-                Сделать ещё карточки
+                Собрать карусель
                 <ArrowRight size={17} />
               </Button>
               <Button

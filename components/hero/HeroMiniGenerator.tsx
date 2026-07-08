@@ -236,6 +236,13 @@ export function HeroMiniGenerator() {
           <p className="mt-0.5 text-xs font-semibold leading-snug text-muted md:text-sm">
             1 демо без входа. Оригинал и дополнительные карточки — после авторизации.
           </p>
+          <p className="mt-2 rounded-[14px] border border-accent/20 bg-accent/10 px-3 py-2 text-xs font-bold leading-relaxed text-ink md:text-sm">
+            Нужна карусель из нескольких фото и карточек товара?{" "}
+            <a className="text-accent underline-offset-4 hover:underline" href="/#pricing">
+              Выберите пакет
+            </a>{" "}
+            и соберите серию для WB/Ozon в кабинете.
+          </p>
         </div>
 
         <div className="grid gap-2">

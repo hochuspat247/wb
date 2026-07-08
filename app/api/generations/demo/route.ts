@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
+import { buildFallbackCard } from "@/lib/ai/fallback";
 import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
-import { generateProductCard } from "@/lib/ai/providers";
 import { detectCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
-import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
+import { generateMarketplaceTextFallback } from "@/lib/marketplace/textFallback";
 import { createDemoGeneration } from "@/lib/server/demo-generations";
 import { getErrorMessage, logDemoGenerationError } from "@/lib/server/demo-errors";
 import { checkGuestDemoGenerationAllowed, commitGuestDemoGeneration } from "@/lib/server/demoRateLimit";
@@ -119,8 +119,8 @@ export async function POST(request: Request) {
       textMode
     };
 
-    const generatedText = await generateProductCard(cardInput);
-    const marketplaceText = await generateMarketplaceText(buildMarketplaceInput(cardInput, generatedText));
+    const generatedText = buildFallbackCard(cardInput);
+    const marketplaceText = generateMarketplaceTextFallback(buildMarketplaceInput(cardInput, generatedText));
     const card = enrichCard(generatedText, marketplaceText, cardInput, {
       headline: body.headline,
       price: body.price,
@@ -210,7 +210,7 @@ function buildMarketplaceInput(cardInput: ProductCardInput, result: ProductCardR
 
 function enrichCard(
   result: ProductCardResult,
-  marketplaceText: Awaited<ReturnType<typeof generateMarketplaceText>>,
+  marketplaceText: ReturnType<typeof generateMarketplaceTextFallback>,
   input: ProductCardInput,
   design: {
     headline?: string;

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BarChart3, Eye, Film, LogOut, MousePointerClick, RefreshCw, Star, Users, X } from "lucide-react";
 import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
 import { DemoErrorsPanel } from "@/components/admin/DemoErrorsPanel";
+import { UserJourneysMapPanel } from "@/components/admin/UserJourneysMapPanel";
 import { CardSavedVideosPanel } from "@/components/video/CardSavedVideosPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -151,33 +152,6 @@ async function readJsonResponse(response: Response): Promise<any> {
   } catch {
     return {};
   }
-}
-
-function Heatmap({ points }: { points: AdminStats["heatmap"] }) {
-  const max = useMemo(() => Math.max(1, ...points.map((point) => point.count)), [points]);
-
-  return (
-    <div className="relative aspect-[4/3] overflow-hidden rounded-card border border-clay bg-paper sm:aspect-[16/10]">
-      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(15,23,42,0.03),transparent)]" />
-      {points.map((point) => (
-        <span
-          className="absolute h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full"
-          key={`${point.x}-${point.y}-${point.count}`}
-          style={{
-            left: `${point.x}%`,
-            top: `${point.y}%`,
-            opacity: Math.min(0.9, 0.2 + point.count / max),
-            background: `radial-gradient(circle, rgba(255,107,74,${0.25 + point.count / max}) 0%, rgba(255,107,74,0) 70%)`,
-            transform: `translate(-50%, -50%) scale(${0.8 + point.count / max})`
-          }}
-          title={`${point.count} кликов`}
-        />
-      ))}
-      {!points.length ? (
-        <div className="grid h-full place-items-center text-sm font-medium text-muted">Пока нет кликов для этой страницы</div>
-      ) : null}
-    </div>
-  );
 }
 
 function MiniBars({ rows, label }: { rows: { day: string; value: number }[]; label: string }) {
@@ -776,68 +750,39 @@ export function AdminDashboard() {
           </div>
         </Card>
 
-        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <Card padding="lg">
-            <div className="grid gap-4 sm:flex sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <h2 className="text-lg font-bold text-ink">Тепловая карта кликов</h2>
-                <p className="mt-1 text-sm text-muted">Агрегация кликов за 30 дней</p>
-              </div>
-              <select
-                className="min-h-11 w-full rounded-button border border-clay bg-paper px-4 py-2 text-sm font-semibold text-ink outline-none focus:border-accent/60 sm:w-auto"
-                onChange={(event) => setPath(event.target.value)}
-                value={path}
-              >
-                {PATHS.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="mt-5">
-              <Heatmap points={stats.heatmap} />
-            </div>
-          </Card>
-
-          <Card padding="lg">
-            <h2 className="text-lg font-bold text-ink">Воронка конверсий</h2>
-            <p className="mt-1 text-sm text-muted">За последние 30 дней</p>
-            <div className="mt-5 space-y-3">
-              {funnel.map(([label, value]) => (
-                <div key={label}>
-                  <div className="mb-1 flex items-start justify-between gap-3 text-sm">
-                    <span className="font-semibold text-ink">{label}</span>
-                    <span className="shrink-0 text-muted">
-                      {value} · {pct(value, stats.funnel.pageViews || value)}
-                    </span>
-                  </div>
-                  <div className="h-2 rounded-full bg-paper">
-                    <div
-                      className="h-2 rounded-full bg-accent"
-                      style={{ width: pct(value, Math.max(stats.funnel.pageViews, value)) }}
-                    />
-                  </div>
+        <Card padding="lg">
+          <h2 className="text-lg font-bold text-ink">Воронка конверсий</h2>
+          <p className="mt-1 text-sm text-muted">За последние 30 дней</p>
+          <div className="mt-5 space-y-3">
+            {funnel.map(([label, value]) => (
+              <div key={label}>
+                <div className="mb-1 flex items-start justify-between gap-3 text-sm">
+                  <span className="font-semibold text-ink">{label}</span>
+                  <span className="shrink-0 text-muted">
+                    {value} · {pct(value, stats.funnel.pageViews || value)}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </Card>
-        </div>
+                <div className="h-2 rounded-full bg-paper">
+                  <div
+                    className="h-2 rounded-full bg-accent"
+                    style={{ width: pct(value, Math.max(stats.funnel.pageViews, value)) }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <UserJourneysMapPanel
+          heatmap={stats.heatmap}
+          journeys={stats.userJourneys}
+          onPathChange={setPath}
+          paths={PATHS}
+          selectedPath={path}
+          topClicks={stats.topClicks}
+        />
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card padding="lg">
-            <h2 className="text-lg font-bold text-ink">Топ кликов</h2>
-            <div className="mt-4 space-y-2">
-              {stats.topClicks.map((item) => (
-                <div className="flex items-start justify-between gap-3 rounded-[14px] border border-clay px-4 py-3 text-sm" key={`${item.label}-${item.count}`}>
-                  <span className="min-w-0 break-words font-medium text-ink">{item.label}</span>
-                  <span className="shrink-0 font-black text-accent">{item.count}</span>
-                </div>
-              ))}
-              {!stats.topClicks.length ? <p className="text-sm text-muted">Клики ещё не собраны</p> : null}
-            </div>
-          </Card>
-
           <Card padding="lg">
             <div className="grid gap-6 md:grid-cols-2">
               <MiniBars label="Регистрации по дням" rows={stats.signupsByDay} />
@@ -881,56 +826,6 @@ export function AdminDashboard() {
               </button>
             ))}
             {!stats.recentDemos.length ? <p className="text-sm text-muted">Демо-генераций пока нет</p> : null}
-          </div>
-        </Card>
-
-        <Card padding="lg">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-bold text-ink">Пути пользователей</h2>
-              <p className="mt-1 text-sm text-muted">Последние сессии: заходы, клики, генерации и страницы</p>
-            </div>
-            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
-              {stats.userJourneys.length} сессий
-            </span>
-          </div>
-          <div className="mt-4 grid gap-3">
-            {stats.userJourneys.map((journey) => (
-              <div className="rounded-card border border-clay bg-paper/40 p-4" key={journey.sessionId}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-bold text-ink">
-                      {journey.guestId ? `Гость ${journey.guestId.slice(0, 8)}` : journey.userId ? `User ${journey.userId.slice(0, 8)}` : `Session ${journey.sessionId.slice(0, 8)}`}
-                    </p>
-                    <p className="mt-1 text-xs font-semibold text-muted">
-                      {new Date(journey.firstSeenAt).toLocaleString("ru-RU")} → {new Date(journey.lastSeenAt).toLocaleString("ru-RU")}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 text-xs font-black text-ink">
-                    <span className="rounded-full bg-card px-3 py-1">Заходы: {journey.pageViews}</span>
-                    <span className="rounded-full bg-card px-3 py-1">Клики: {journey.clicks}</span>
-                    <span className="rounded-full bg-card px-3 py-1">Генерации/события: {journey.conversions}</span>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {journey.paths.map((pathItem) => (
-                    <span className="rounded-full border border-clay bg-card px-3 py-1 text-xs font-semibold text-muted" key={pathItem}>
-                      {pathItem}
-                    </span>
-                  ))}
-                </div>
-                <div className="mt-3 grid gap-2">
-                  {journey.events.map((event) => (
-                    <div className="grid gap-1 rounded-[12px] border border-clay/70 bg-card/60 px-3 py-2 text-xs sm:grid-cols-[130px_1fr_auto]" key={`${journey.sessionId}-${event.createdAt}-${event.eventName}`}>
-                      <span className="font-black text-accent">{event.eventName}</span>
-                      <span className="min-w-0 truncate text-muted">{event.label || event.path}</span>
-                      <span className="text-muted">{new Date(event.createdAt).toLocaleTimeString("ru-RU")}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-            {!stats.userJourneys.length ? <p className="text-sm text-muted">Пути пока не собраны</p> : null}
           </div>
         </Card>
 

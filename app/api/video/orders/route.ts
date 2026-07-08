@@ -13,7 +13,7 @@ import {
   markVideoOrderPaid,
   startPaidKlingVideoGeneration
 } from "@/lib/server/videoOrders";
-import { buildSignedSourceImageUrl } from "@/lib/server/videoSourceImage";
+import { buildSignedSourceImageUrl, getCardSourceImageData, getSourceImageExtension } from "@/lib/server/videoSourceImage";
 import { recordVideoPayment } from "@/lib/server/videoPayment";
 import { hasUnlimitedGenerations } from "@/lib/server/unlimitedGenerations";
 import { createYooKassaPayment } from "@/lib/server/yookassa";
@@ -88,13 +88,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    await assertCardOwnership(userId, body.sourceGenerationId!);
+    const cardPayload = await assertCardOwnership(userId, body.sourceGenerationId!);
     const siteUrl = getSiteUrl(request);
     const amountRub = calculateVideoPriceRub(body.duration!, body.quality!);
     const params = body as CreateVideoOrderInput;
 
     const orderId = crypto.randomUUID();
-    const sourceImageUrl = buildSignedSourceImageUrl(siteUrl, orderId);
+    const sourceImage = getCardSourceImageData(cardPayload);
+    const sourceImageUrl = buildSignedSourceImageUrl(
+      siteUrl,
+      orderId,
+      getSourceImageExtension(sourceImage?.mimeType || "image/png")
+    );
 
     const order = await createVideoOrderRecord({
       userId,

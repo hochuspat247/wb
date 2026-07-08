@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { productCards, users, videoGenerationOrders } from "@/lib/db/schema";
 import { createKlingVideoTask, getKlingVideoTaskStatus, normalizeKlingVideoResponse } from "@/lib/video/genapiKlingVideo";
 import { buildProductCardVideoPrompt } from "@/lib/video/videoPrompt";
-import { buildGenApiCallbackUrl, buildSignedSourceImageUrl } from "@/lib/server/videoSourceImage";
+import { buildGenApiCallbackUrl, buildSignedSourceImageUrl, getCardSourceImageData, getSourceImageExtension } from "@/lib/server/videoSourceImage";
 import type { CreateVideoOrderInput, VideoGenerationRecord } from "@/types/video-generation";
 
 function mapOrder(row: typeof videoGenerationOrders.$inferSelect): VideoGenerationRecord {
@@ -166,10 +166,20 @@ export async function startPaidKlingVideoGeneration(orderId: string, siteUrl: st
     return order;
   }
 
+  const card = await db.query.productCards.findFirst({
+    where: eq(productCards.id, order.sourceGenerationId)
+  });
+  const sourceImage = card ? getCardSourceImageData(card.payload) : null;
+  const sourceImageUrl = buildSignedSourceImageUrl(
+    siteUrl,
+    order.id,
+    getSourceImageExtension(sourceImage?.mimeType || "image/png")
+  );
+
   const callbackUrl = buildGenApiCallbackUrl(siteUrl);
   const task = await createKlingVideoTask({
     prompt: order.prompt,
-    startImageUrl: buildSignedSourceImageUrl(siteUrl, order.id),
+    startImageUrl: sourceImageUrl,
     duration: order.duration,
     aspectRatio: order.aspectRatio,
     quality: order.quality,

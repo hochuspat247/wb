@@ -32,15 +32,34 @@ export function getCardSourceImageData(card: ProductCardResult): { base64: strin
   return null;
 }
 
-export function buildSignedSourceImageUrl(siteUrl: string, orderId: string) {
+export function getSourceImageExtension(mimeType: string): "png" | "jpg" | "jpeg" | "webp" {
+  const normalized = mimeType.toLowerCase();
+
+  if (normalized === "image/jpeg" || normalized === "image/jpg") {
+    return "jpg";
+  }
+
+  if (normalized === "image/webp") {
+    return "webp";
+  }
+
+  return "png";
+}
+
+export function parseSourceImageOrderId(orderIdOrFilename: string) {
+  return orderIdOrFilename.replace(/\.(png|jpe?g|webp)$/i, "");
+}
+
+export function buildSignedSourceImageUrl(siteUrl: string, orderId: string, extension: string = "png") {
   const expires = Date.now() + DEFAULT_TTL_MS;
   const signature = createHmac("sha256", getSecret()).update(`${orderId}:${expires}`).digest("hex");
   const params = new URLSearchParams({
     expires: String(expires),
     sig: signature
   });
+  const safeExtension = extension.replace(/^\./, "");
 
-  return `${siteUrl.replace(/\/$/, "")}/api/video/source-image/${orderId}?${params.toString()}`;
+  return `${siteUrl.replace(/\/$/, "")}/api/video/source-image/${orderId}.${safeExtension}?${params.toString()}`;
 }
 
 export function verifySignedSourceImageAccess(orderId: string, expires: string, signature: string) {

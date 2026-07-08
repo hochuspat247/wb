@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { productCards, videoGenerationOrders } from "@/lib/db/schema";
-import { getCardSourceImageData, verifySignedSourceImageAccess } from "@/lib/server/videoSourceImage";
+import { getCardSourceImageData, parseSourceImageOrderId, verifySignedSourceImageAccess } from "@/lib/server/videoSourceImage";
 
 export const runtime = "nodejs";
 
@@ -11,7 +11,8 @@ type RouteContext = {
 };
 
 export async function GET(request: Request, context: RouteContext) {
-  const { orderId } = await context.params;
+  const { orderId: orderIdParam } = await context.params;
+  const orderId = parseSourceImageOrderId(orderIdParam);
   const url = new URL(request.url);
   const expires = url.searchParams.get("expires") || "";
   const signature = url.searchParams.get("sig") || "";

@@ -8,7 +8,7 @@ import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { generateMarketplaceTextFallback } from "@/lib/marketplace/textFallback";
 import { createDemoGeneration } from "@/lib/server/demo-generations";
 import { getErrorMessage, logDemoGenerationError } from "@/lib/server/demo-errors";
-import { checkGuestDemoGenerationAllowed, commitGuestDemoGeneration } from "@/lib/server/demoRateLimit";
+import { checkGuestDemoGenerationAllowed, hashDemoClientIp } from "@/lib/server/demoRateLimit";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import type {
   GenerateImageInput,
@@ -133,6 +133,7 @@ export async function POST(request: Request) {
     const demo = await createDemoGeneration({
       guestId,
       userId,
+      clientIpHash: hashDemoClientIp(request),
       card: {
         ...card,
         generatedImageProvider: generatedImage.provider,
@@ -151,10 +152,6 @@ export async function POST(request: Request) {
       originalImageMimeType: original.mimeType
     });
     const nextQuota = userId ? await consumeGeneration(userId) : undefined;
-
-    if (!userId) {
-      await commitGuestDemoGeneration(request, guestId);
-    }
 
     return NextResponse.json({
       id: demo.id,

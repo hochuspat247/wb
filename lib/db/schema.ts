@@ -87,6 +87,7 @@ export const demoGenerations = sqliteTable("demo_generation", {
   id: text("id").primaryKey(),
   guestId: text("guestId").notNull(),
   userId: text("userId").references(() => users.id, { onDelete: "cascade" }),
+  clientIpHash: text("clientIpHash"),
   status: text("status").notNull().default("done"),
   payload: text("payload", { mode: "json" }).$type<ProductCardResult>().notNull(),
   originalImageBase64: text("originalImageBase64").notNull(),

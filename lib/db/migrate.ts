@@ -205,6 +205,20 @@ export function migrate(sqlite: Database.Database) {
     // column already exists
   }
 
+  try {
+    sqlite.exec(`ALTER TABLE demo_generation ADD COLUMN clientIpHash TEXT`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`CREATE INDEX IF NOT EXISTS demo_generation_ip_hash_idx ON demo_generation(clientIpHash)`);
+  } catch {
+    // index already exists
+  }
+
+  sqlite.exec(`DELETE FROM demo_generation_attempt`);
+
   sqlite.exec(`
     UPDATE user
     SET emailVerified = CAST(strftime('%s','now') AS INTEGER) * 1000

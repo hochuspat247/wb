@@ -25,6 +25,7 @@ const GENERATE_BUTTON_CLASS =
 export function HeroMiniGenerator() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isSubmittingRef = useRef(false);
   const uploadViewTrackedRef = useRef(false);
   const descriptionStartedRef = useRef(false);
   const descriptionFilledRef = useRef(false);
@@ -144,6 +145,8 @@ export function HeroMiniGenerator() {
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
+    if (isSubmittingRef.current) return;
+
     setError("");
 
     if (!imageUrl) {
@@ -165,6 +168,7 @@ export function HeroMiniGenerator() {
     });
 
     const startedAt = Date.now();
+    isSubmittingRef.current = true;
     setIsGenerating(true);
     setDemoProgress(0);
     setDemoStatusIndex(0);
@@ -199,8 +203,9 @@ export function HeroMiniGenerator() {
       setError(message);
       setIsGenerating(false);
       setDemoProgress(0);
-      trackMarketingEvent("hero_demo_generate_error", { message, source: "hero" });
       trackMarketingEvent("demo_generation_error", { message, source: "hero" });
+    } finally {
+      isSubmittingRef.current = false;
     }
   }
 

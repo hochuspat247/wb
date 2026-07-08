@@ -12,6 +12,7 @@ export type DemoGenerationRecord = typeof demoGenerations.$inferSelect;
 export async function createDemoGeneration(input: {
   guestId: string;
   userId?: string | null;
+  clientIpHash?: string | null;
   card: ProductCardResult;
   originalImageBase64: string;
   originalImageMimeType: string;
@@ -26,6 +27,7 @@ export async function createDemoGeneration(input: {
       id: crypto.randomUUID(),
       guestId: input.guestId,
       userId: input.userId ?? null,
+      clientIpHash: input.clientIpHash ?? null,
       status: "done",
       payload: input.card,
       originalImageBase64: input.originalImageBase64,

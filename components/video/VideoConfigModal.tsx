@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, X } from "lucide-react";
-import { calculateVideoPriceRub, formatVideoPriceRub } from "@/config/video-pricing";
+import { calculateVideoPriceRub, formatVideoPriceBreakdown, formatVideoPriceRub, VIDEO_DURATION_OPTIONS } from "@/config/video-pricing";
 import { createVideoOrder } from "@/lib/api/video";
 import { fetchUserProfile } from "@/lib/api/user";
 import { getGeneratedCoverSrc } from "@/lib/image";
@@ -50,6 +50,7 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
 
   const previewSrc = getGeneratedCoverSrc(card) || card.imageDataUrl;
   const amountRub = useMemo(() => calculateVideoPriceRub(duration, quality), [duration, quality]);
+  const priceBreakdown = useMemo(() => formatVideoPriceBreakdown(duration, quality), [duration, quality]);
   const canUseCredit = videoCredits > 0 && !isUnlimited;
   const needsPayment = !isUnlimited && !canUseCredit;
   const showEmailField = needsPayment;
@@ -168,10 +169,13 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
 
           <div className="grid gap-3">
             <label className="grid gap-1.5 text-xs font-semibold text-muted">
-              Длительность
+              Длительность видео
               <Select onChange={(e) => setDuration(e.target.value as VideoDuration)} value={duration}>
-                <option value="5">5 секунд</option>
-                <option value="10">10 секунд</option>
+                {VIDEO_DURATION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </Select>
             </label>
 
@@ -225,6 +229,9 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
 
         <div className="mt-6 rounded-[18px] border border-clay bg-paper/50 px-4 py-4">
           <p className="text-sm font-black text-ink">Стоимость: {priceLabel}</p>
+          {!isUnlimited ? (
+            <p className="mt-1 text-xs font-semibold text-muted">{priceBreakdown}</p>
+          ) : null}
           {isUnlimited ? (
             <p className="mt-1 text-xs font-semibold text-mint">Безлимитный аккаунт — оплата не требуется</p>
           ) : null}

@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { isPlaceholderOAuthEmail } from "@/lib/auth/email-utils";
 import { db } from "@/lib/db";
 import { users, videoGenerationOrders } from "@/lib/db/schema";
-import { calculateVideoPriceRub } from "@/config/video-pricing";
+import { calculateVideoPriceRub, VIDEO_DURATION_VALUES } from "@/config/video-pricing";
 import {
   assertCardOwnership,
   consumeVideoCredit,
@@ -43,7 +43,7 @@ function validateInput(body: Partial<CreateVideoOrderInput>) {
     return "sourceGenerationId is required";
   }
 
-  if (!body.duration || !["5", "10"].includes(body.duration)) {
+  if (!body.duration || !VIDEO_DURATION_VALUES.includes(body.duration as (typeof VIDEO_DURATION_VALUES)[number])) {
     return "Invalid duration";
   }
 

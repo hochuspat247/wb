@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
-import { buildFallbackCard } from "@/lib/ai/fallback";
 import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
+import { generateProductCard } from "@/lib/ai/providers";
 import { detectCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { generateMarketplaceTextFallback } from "@/lib/marketplace/textFallback";
@@ -119,7 +119,7 @@ export async function POST(request: Request) {
       textMode
     };
 
-    const generatedText = buildFallbackCard(cardInput);
+    const generatedText = await generateProductCard(cardInput);
     const marketplaceText = generateMarketplaceTextFallback(buildMarketplaceInput(cardInput, generatedText));
     const card = enrichCard(generatedText, marketplaceText, cardInput, {
       headline: body.headline,

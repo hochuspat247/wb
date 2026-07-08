@@ -287,7 +287,7 @@ export function CabinetApp() {
           ) : null}
 
           {tab === "create" ? (
-            <div className="space-y-4 sm:space-y-6">
+            <div className="mx-auto max-w-6xl space-y-4 sm:space-y-6">
               <div className="hidden gap-3 sm:grid md:grid-cols-3 md:gap-4">
                 {[
                   ["Всего карточек", stats.total],
@@ -469,41 +469,54 @@ export function CabinetApp() {
       </nav>
 
       {selected ? (
-        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-4 backdrop-blur-sm sm:items-center">
-          <Card className="w-full max-w-2xl overflow-hidden p-0" padding="none">
-            <div className="flex items-center justify-between border-b border-clay px-6 py-4">
-              <h3 className="font-bold text-ink">{selected.headline || selected.title}</h3>
-              <button className="text-muted hover:text-ink" onClick={() => setSelected(null)} type="button">
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 p-3 backdrop-blur-sm sm:items-center sm:p-4">
+          <Card className="flex max-h-[min(92vh,900px)] w-full max-w-3xl flex-col overflow-hidden p-0" padding="none">
+            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-clay px-4 py-4 sm:px-6">
+              <h3 className="min-w-0 flex-1 pr-2 text-base font-bold leading-snug text-ink sm:text-lg">
+                {selected.headline || selected.title}
+              </h3>
+              <button
+                aria-label="Закрыть"
+                className="shrink-0 rounded-full p-1 text-muted transition hover:text-ink"
+                onClick={() => setSelected(null)}
+                type="button"
+              >
                 <X size={20} />
               </button>
             </div>
-            <div className="grid gap-6 p-6 md:grid-cols-2">
-              <div className="overflow-hidden rounded-card bg-paper">
-                {getThumbnail(selected) ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img alt="" className="aspect-[4/5] w-full object-cover" src={getThumbnail(selected)!} />
-                ) : (
-                  <div className="grid aspect-[4/5] place-items-center text-muted">Нет изображения</div>
-                )}
-              </div>
-              <div className="space-y-4">
-                <p className="text-sm text-muted">
-                  {selected.marketplace} · {selected.style}
-                </p>
-                <p className="text-sm leading-relaxed text-muted">{selected.shortDescription}</p>
-                {selected.price ? <p className="text-2xl font-bold text-ink">{selected.price}</p> : null}
-                <p className="text-xs text-muted">{new Date(selected.generatedAt).toLocaleString("ru-RU")}</p>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <Button onClick={() => handleDownload(selected)} size="sm">
-                    <Download size={16} />
-                    Скачать PNG
-                  </Button>
-                  <Button onClick={openCreateTab} size="sm" variant="secondary">
-                    <ExternalLink size={16} />
-                    Создать похожую
-                  </Button>
+            <div className="min-h-0 overflow-y-auto">
+              <div className="grid items-start gap-5 p-4 sm:gap-6 sm:p-6 lg:grid-cols-[minmax(0,280px)_minmax(0,1fr)] lg:gap-8">
+                <div className="mx-auto w-full max-w-[280px] shrink-0 overflow-hidden rounded-card border border-clay bg-paper lg:mx-0">
+                  {getThumbnail(selected) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      alt=""
+                      className="aspect-[4/5] w-full bg-paper object-contain"
+                      src={getThumbnail(selected)!}
+                    />
+                  ) : (
+                    <div className="grid aspect-[4/5] place-items-center text-sm text-muted">Нет изображения</div>
+                  )}
                 </div>
-                <VideoFromCardFlow card={selected} />
+                <div className="min-w-0 space-y-4">
+                  <p className="text-sm text-muted">
+                    {selected.marketplace} · {selected.style}
+                  </p>
+                  <p className="text-sm leading-relaxed text-muted">{selected.shortDescription}</p>
+                  {selected.price ? <p className="text-2xl font-bold text-ink">{selected.price}</p> : null}
+                  <p className="text-xs text-muted">{new Date(selected.generatedAt).toLocaleString("ru-RU")}</p>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <Button className="w-full" onClick={() => handleDownload(selected)} size="sm">
+                      <Download size={16} />
+                      Скачать PNG
+                    </Button>
+                    <Button className="w-full" onClick={openCreateTab} size="sm" variant="secondary">
+                      <ExternalLink size={16} />
+                      Создать похожую
+                    </Button>
+                  </div>
+                  <VideoFromCardFlow card={selected} />
+                </div>
               </div>
             </div>
           </Card>

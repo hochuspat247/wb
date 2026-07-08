@@ -1059,6 +1059,15 @@ export function CardGenerator({
   const selectVariant = darkConsole ? "dark" : "default";
 
   const showPreviewColumn = !compactDemoEntry && (!embedded || Boolean(card) || isWorking);
+  const embeddedLayoutClass =
+    embedded && showPreviewColumn
+      ? "grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_340px]"
+      : embedded || compactDemoEntry
+        ? "grid min-w-0 gap-5 sm:gap-8"
+        : "relative z-10 grid min-w-0 gap-8 xl:grid-cols-[0.82fr_1.18fr]";
+  const previewFrameClass = embedded
+    ? "mx-auto w-full max-w-[280px] lg:mx-0 lg:max-w-none"
+    : "w-full";
 
   if (isDemoGenerating) {
     return (
@@ -1104,13 +1113,7 @@ export function CardGenerator({
     <section className={sectionClass} id={embedded ? undefined : "demo"}>
       <PaywallModal onClose={() => setShowPaywall(false)} open={showPaywall} />
       <div className={shellClass}>
-        <div
-          className={
-            embedded || compactDemoEntry
-              ? "grid min-w-0 gap-5 sm:gap-8"
-              : "relative z-10 grid min-w-0 gap-8 xl:grid-cols-[0.82fr_1.18fr]"
-          }
-        >
+        <div className={embeddedLayoutClass}>
           <form className={`${formClass} min-w-0`} onSubmit={handleSubmit}>
             <div className="grid gap-4 sm:gap-5">
               <div>
@@ -1426,13 +1429,13 @@ export function CardGenerator({
             </div>
           </form>
           {showPreviewColumn ? (
-          <div className="grid min-w-0 gap-5 sm:gap-6">
+          <div className="grid min-w-0 gap-5 sm:gap-6 lg:sticky lg:top-24">
             {isWorking && !card ? (
               <div className={panelClass}>
                 <p className={`mb-4 text-sm font-semibold ${darkConsole ? "text-white/70" : "text-muted"}`}>
                   {seriesProgress || "Подготавливаем карточку…"}
                 </p>
-                <SkeletonBlock className={`w-full ${embedded ? "h-48" : "aspect-[4/5]"}`} />
+                <SkeletonBlock className={`w-full ${embedded ? "mx-auto aspect-[4/5] max-w-[280px]" : "aspect-[4/5]"}`} />
               </div>
             ) : null}
             {card ? (
@@ -1473,9 +1476,9 @@ export function CardGenerator({
                     onFlowReset={onVideoFlowReset}
                   />
                 ) : null}
-                <div className={`mt-4 overflow-hidden rounded-card border ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
+                <div className={`mt-4 overflow-hidden rounded-card border ${previewFrameClass} ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
                   {isGeneratingAiImage ? (
-                    <div className="grid aspect-[4/5] place-items-center gap-4 px-6">
+                    <div className="grid aspect-[4/5] max-h-[360px] place-items-center gap-4 px-6">
                       <Loader2 className="animate-spin text-muted" size={28} />
                       <p className="text-center text-sm font-medium text-muted">Создаём обложку…</p>
                     </div>
@@ -1483,16 +1486,17 @@ export function CardGenerator({
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       alt="Готовая обложка"
-                      className="aspect-[4/5] w-full object-cover"
+                      className={`aspect-[4/5] w-full ${embedded ? "object-contain" : "object-cover"}`}
                       src={aiImageUrl}
                     />
                   ) : isRenderingImage ? (
-                    <div className="grid aspect-[4/5] place-items-center">
+                    <div className="grid aspect-[4/5] max-h-[360px] place-items-center">
                       <SkeletonBlock className="h-full w-full rounded-none" />
                     </div>
                   ) : (
                     <GeneratedCardPreview
                       card={card}
+                      compact={embedded}
                       imageUrl={imageUrl || card.imageDataUrl}
                       ref={previewRef}
                       styleName={style}

@@ -21,13 +21,13 @@ export function CreateVideoFromCardBlock({ onCreateClick, disabled, darkConsole 
         darkConsole ? "border-white/10 bg-black/10" : "border-clay bg-paper/60"
       }`}
     >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex min-w-0 flex-col gap-4">
+        <div className="min-w-0">
           <p className={`flex items-center gap-2 text-sm font-black ${darkConsole ? "text-white" : "text-ink"}`}>
             <Film size={16} />
             Оживите карточку в видео
           </p>
-          <p className={`mt-1 text-sm ${darkConsole ? "text-white/50" : "text-muted"}`}>
+          <p className={`mt-1 text-sm leading-relaxed ${darkConsole ? "text-white/50" : "text-muted"}`}>
             Создадим короткий ролик из этой карточки: плавный zoom, parallax, мягкая подсветка товара и аккуратное
             движение.
           </p>
@@ -36,7 +36,7 @@ export function CreateVideoFromCardBlock({ onCreateClick, disabled, darkConsole 
           </p>
         </div>
         <Button
-          className="w-full shrink-0 sm:w-auto"
+          className="w-full"
           disabled={disabled}
           onClick={() => {
             trackMarketingEvent("video_create_click");

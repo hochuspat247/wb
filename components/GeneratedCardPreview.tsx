@@ -7,6 +7,7 @@ type GeneratedCardPreviewProps = {
   card: ProductCardResult | null;
   imageUrl?: string;
   styleName: string;
+  compact?: boolean;
 };
 
 const styleMap: Record<
@@ -75,7 +76,7 @@ const styleMap: Record<
 };
 
 export const GeneratedCardPreview = forwardRef<HTMLDivElement, GeneratedCardPreviewProps>(
-  ({ card, imageUrl, styleName }, ref) => {
+  ({ card, imageUrl, styleName, compact }, ref) => {
     const theme = styleMap[styleName] ?? styleMap["Минималистичный"];
     const benefits = card?.benefits?.slice(0, 2).map(shortenBenefit) ?? ["Загрузите фото", "Получите PNG"];
     const infographic = card?.infographicTexts?.slice(0, 3) ?? ["1:1", "SEO", "PNG"];
@@ -86,7 +87,7 @@ export const GeneratedCardPreview = forwardRef<HTMLDivElement, GeneratedCardPrev
 
     return (
       <div
-        className={`marketplace-card relative mx-auto aspect-[4/5] w-full max-w-[560px] overflow-hidden rounded-[24px] border border-ink/15 shadow-soft ${theme.background} ${theme.text}`}
+        className={`marketplace-card relative mx-auto aspect-[4/5] w-full overflow-hidden rounded-[24px] border border-ink/15 shadow-soft ${compact ? "max-w-[280px]" : "max-w-[560px]"} ${theme.background} ${theme.text}`}
         ref={ref}
       >
         <div className={`absolute -left-[12%] top-[9%] h-[48%] w-[48%] rounded-full blur-3xl ${theme.glow}`} />

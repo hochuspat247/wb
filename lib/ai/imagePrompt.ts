@@ -7,6 +7,49 @@ function cleanText(value: unknown): string {
   return value.replace(/\s+/g, " ").trim();
 }
 
+const FORBIDDEN_VISIBLE_TEXT_PATTERNS = [
+  /\bphotos?\b/gi,
+  /\bimages?\b/gi,
+  /\bpictures?\b/gi,
+  /\bhigh\s+quality\b/gi,
+  /\bhigh\s+resolution\b/gi,
+  /\bhd\b/gi,
+  /\b4k\b/gi,
+  /фотографи[а-яё]*/giu,
+  /(^|[^а-яё])фото(?=$|[^а-яё])/giu,
+  /картинк[а-яё]*/giu,
+  /изображени[а-яё]*/giu,
+  /в\s+высок[а-яё]*\s+качеств[а-яё]*/giu,
+  /в\s+хорош[а-яё]*\s+качеств[а-яё]*/giu,
+  /высок[а-яё]*\s+качеств[а-яё]*/giu,
+  /хорош[а-яё]*\s+качеств[а-яё]*/giu,
+  /в\s+высок[а-яё]*\s+разрешени[а-яё]*/giu,
+  /высок[а-яё]*\s+разрешени[а-яё]*/giu,
+  /hd[-\s]?качеств[а-яё]*/giu,
+  /4k[-\s]?качеств[а-яё]*/giu,
+];
+
+function sanitizeVisibleImageText(value: unknown): string {
+  let text = cleanText(value);
+
+  for (const pattern of FORBIDDEN_VISIBLE_TEXT_PATTERNS) {
+    text = text.replace(pattern, (match, prefix: string | undefined) => {
+      if (typeof prefix === "string" && prefix.length > 0 && !/[а-яё]/iu.test(prefix)) {
+        return prefix;
+      }
+
+      return "";
+    });
+  }
+
+  return text
+    .replace(/\s+([,.:;!?])/g, "$1")
+    .replace(/[|/\\]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/^[\s,.:;!?-]+|[\s,.:;!?-]+$/g, "")
+    .trim();
+}
+
 function truncateText(value: string, maxLength: number): string {
   const clean = cleanText(value);
   if (clean.length <= maxLength) return clean;
@@ -15,8 +58,12 @@ function truncateText(value: string, maxLength: number): string {
 
 function listToLines(items: string[] | undefined, fallback: string[], maxItems = 5): string {
   const source = Array.isArray(items) && items.length > 0 ? items : fallback;
-  return source
-    .filter(Boolean)
+  const sanitized = source
+    .map(sanitizeVisibleImageText)
+    .filter(Boolean);
+  const safeSource = sanitized.length > 0 ? sanitized : fallback.map(sanitizeVisibleImageText).filter(Boolean);
+
+  return safeSource
     .slice(0, maxItems)
     .map((item) => `- ${truncateText(item, 90)}`)
     .join("\n");
@@ -28,18 +75,39 @@ function characteristicsToLines(
   maxItems = 5,
 ): string {
   if (!Array.isArray(characteristics) || characteristics.length === 0) {
-    return fallback.slice(0, maxItems).map((item) => `- ${item}`).join("\n");
+    return fallback
+      .map(sanitizeVisibleImageText)
+      .filter(Boolean)
+      .slice(0, maxItems)
+      .map((item) => `- ${item}`)
+      .join("\n");
   }
 
-  return characteristics
+  const safeCharacteristics = characteristics
     .filter((item) => item && item.key && item.value)
+    .map((item) => ({
+      key: sanitizeVisibleImageText(item.key),
+      value: sanitizeVisibleImageText(item.value),
+    }))
+    .filter((item) => item.key && item.value);
+
+  if (!safeCharacteristics.length) {
+    return fallback
+      .map(sanitizeVisibleImageText)
+      .filter(Boolean)
+      .slice(0, maxItems)
+      .map((item) => `- ${item}`)
+      .join("\n");
+  }
+
+  return safeCharacteristics
     .slice(0, maxItems)
     .map((item) => `- ${truncateText(item.key, 40)}: ${truncateText(item.value, 60)}`)
     .join("\n");
 }
 
 function detectSafeCategory(productDescription: string, category: string): string {
-  const explicitCategory = cleanText(category);
+  const explicitCategory = sanitizeVisibleImageText(category);
   if (explicitCategory) return explicitCategory;
 
   const text = productDescription.toLowerCase();
@@ -68,11 +136,11 @@ function detectSafeCategory(productDescription: string, category: string): strin
 }
 
 function buildHeadline(input: GenerateImageInput): string {
-  const explicitHeadline = cleanText(input.headline);
+  const explicitHeadline = sanitizeVisibleImageText(input.headline);
   if (explicitHeadline) return truncateText(explicitHeadline, 80);
 
-  const title = cleanText(input.title);
-  const product = cleanText(input.productDescription);
+  const title = sanitizeVisibleImageText(input.title);
+  const product = sanitizeVisibleImageText(input.productDescription);
   const category = detectSafeCategory(product, input.category);
 
   if (title) {
@@ -80,7 +148,7 @@ function buildHeadline(input: GenerateImageInput): string {
   }
 
   if (product) {
-    return truncateText(`ПРЕМИУМ-КАРТОЧКА: ${product}`.toUpperCase(), 80);
+    return truncateText(product.toUpperCase(), 80);
   }
 
   return truncateText(`ПРЕМИУМ-ТОВАР: ${category}`.toUpperCase(), 80);
@@ -190,11 +258,11 @@ The image must look like an expensive, conversion-focused premium marketplace ad
 }
 
 export function buildPremiumMarketplaceImagePrompt(input: GenerateImageInput): string {
-  const productDescription = cleanText(input.productDescription) || "товар";
+  const productDescription = sanitizeVisibleImageText(input.productDescription) || "товар";
   const category = detectSafeCategory(productDescription, input.category);
   const marketplace = cleanText(input.marketplace) || "Wildberries / Ozon / Avito";
   const style = cleanText(input.style) || "Премиальный";
-  const title = cleanText(input.title) || productDescription;
+  const title = sanitizeVisibleImageText(input.title) || productDescription;
   const headline = buildHeadline(input);
   const designPreset = input.designPreset || "premium-marketplace";
 
@@ -329,6 +397,9 @@ TYPOGRAPHY:
 - Keep line lengths short and balanced.
 - Do not render paragraph-like blocks of tiny copy.
 - Do not use awkward literal labels like "Категория:", "Материал:", "Размер:" if a cleaner premium phrasing would look better.
+- Never put SEO/search-query text on the image.
+- Never render phrases like "фотографии", "фото", "картинки", "изображения", "в высоком качестве", "в хорошем качестве", "в высоком разрешении", "HD", or "4K" as visible text, even if the user provided them.
+- If the user provided a search-like phrase such as "фотографии автопарфюма в высоком качестве", extract only the actual product name and write a clean product headline like "АВТОПАРФЮМ".
 
 PREMIUM VISUAL REQUIREMENTS:
 - expensive

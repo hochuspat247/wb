@@ -1230,13 +1230,14 @@ export function CardGenerator({
 
   const showPreviewColumn = !compactDemoEntry && (!embedded || Boolean(card) || isWorking);
   const embeddedLayoutClass =
-    embedded && showPreviewColumn
-      ? "grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_340px]"
-      : embedded || compactDemoEntry
-        ? "grid min-w-0 gap-5 sm:gap-8"
-        : "relative z-10 grid min-w-0 gap-8 xl:grid-cols-[0.82fr_1.18fr]";
+    embedded || compactDemoEntry
+      ? "grid min-w-0 gap-5 sm:gap-8"
+      : "relative z-10 grid min-w-0 gap-8 xl:grid-cols-[0.82fr_1.18fr]";
+  const previewColumnClass = embedded
+    ? "grid min-w-0 gap-5 sm:gap-6"
+    : "grid min-w-0 gap-5 sm:gap-6 lg:sticky lg:top-24";
   const previewFrameClass = embedded
-    ? "mx-auto w-full max-w-[280px] lg:mx-0 lg:max-w-none"
+    ? "mx-auto w-full max-w-sm"
     : "w-full";
 
   if (isDemoGenerating) {
@@ -1608,13 +1609,13 @@ export function CardGenerator({
             </div>
           </form>
           {showPreviewColumn ? (
-          <div className="grid min-w-0 gap-5 sm:gap-6 lg:sticky lg:top-24">
+          <div className={previewColumnClass}>
             {isWorking && !card ? (
               <div className={panelClass}>
                 <p className={`mb-4 text-sm font-semibold ${darkConsole ? "text-white/70" : "text-muted"}`}>
                   {seriesProgress || "Подготавливаем карточку…"}
                 </p>
-                <SkeletonBlock className={`w-full ${embedded ? "mx-auto aspect-[4/5] max-w-[280px]" : "aspect-[4/5]"}`} />
+                <SkeletonBlock className={`w-full ${embedded ? "mx-auto aspect-[4/5] max-w-sm" : "aspect-[4/5]"}`} />
               </div>
             ) : null}
             {card ? (
@@ -1774,8 +1775,27 @@ export function CardGenerator({
                 </div>
               </div>
             ) : null}
-            <ResultPanel card={card} compact={embedded} dark={darkConsole} onDownloadPng={() => downloadPreviewPng(previewRef.current, card?.title)} onSave={handleSave} previewRef={previewRef} />
+            {!embedded && card ? (
+              <ResultPanel
+                card={card}
+                compact={embedded}
+                dark={darkConsole}
+                onDownloadPng={() => downloadPreviewPng(previewRef.current, card?.title)}
+                onSave={handleSave}
+                previewRef={previewRef}
+              />
+            ) : null}
           </div>
+          ) : null}
+          {embedded && showPreviewColumn && card ? (
+            <ResultPanel
+              card={card}
+              compact={embedded}
+              dark={darkConsole}
+              onDownloadPng={() => downloadPreviewPng(previewRef.current, card?.title)}
+              onSave={handleSave}
+              previewRef={previewRef}
+            />
           ) : null}
         </div>
         {!hideHistory ? (

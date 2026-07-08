@@ -35,6 +35,7 @@ import {
 } from "@/lib/image";
 import { clearHistory, getHistory, removeFromHistory, saveToHistory } from "@/lib/storage";
 import { fetchUserQuota, saveUserCardRemote } from "@/lib/api/user";
+import { DEMO_GENERATION_ERROR, parseJsonResponse, toUserFacingError } from "@/lib/api/parseJsonResponse";
 import { getOrCreateGuestId } from "@/lib/guest";
 import { reachGoal } from "@/lib/metrika";
 import { buildPreviousCardSnapshot } from "@/lib/series/editing";
@@ -602,10 +603,10 @@ export function CardGenerator({
           designPreset
         })
       });
-      const data = (await response.json()) as { id?: string; error?: string };
+      const data = await parseJsonResponse<{ id?: string; error?: string }>(response);
 
       if (!response.ok || !data.id) {
-        throw new Error(data.error || "Не получилось создать карточку. Попробуйте ещё раз или загрузите другое фото.");
+        throw new Error(data.error || DEMO_GENERATION_ERROR);
       }
 
       const remainingDelay = Math.max(0, DEMO_MIN_LOADING_MS - (Date.now() - startedAt));
@@ -617,7 +618,7 @@ export function CardGenerator({
       });
       router.push(`/generations/${data.id}?guestId=${encodeURIComponent(guestId)}`);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Не получилось создать карточку. Попробуйте ещё раз или загрузите другое фото.");
+      setError(toUserFacingError(caught));
       setIsDemoGenerating(false);
       setIsLoading(false);
       setDemoProgress(0);

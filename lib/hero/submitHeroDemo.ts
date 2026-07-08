@@ -1,3 +1,4 @@
+import { DEMO_GENERATION_ERROR, parseJsonResponse } from "@/lib/api/parseJsonResponse";
 import { getImageSettings } from "@/lib/imageSettings";
 import { getOrCreateGuestId } from "@/lib/guest";
 import { dataUrlToBase64 } from "@/lib/image";
@@ -49,10 +50,10 @@ export async function submitHeroDemo({
       designPreset
     })
   });
-  const data = (await response.json()) as { id?: string; error?: string };
+  const data = await parseJsonResponse<{ id?: string; error?: string }>(response);
 
   if (!response.ok || !data.id) {
-    throw new Error(data.error || "Не получилось создать карточку. Попробуйте ещё раз или загрузите другое фото.");
+    throw new Error(data.error || DEMO_GENERATION_ERROR);
   }
 
   return {

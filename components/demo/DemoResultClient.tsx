@@ -9,6 +9,7 @@ import { ProtectedDemoImage } from "@/components/ProtectedDemoImage";
 import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
+import { parseJsonResponse, toUserFacingError } from "@/lib/api/parseJsonResponse";
 import { AUTH_FROM_RESULT_KEY, GUEST_ID_KEY, INTENDED_ACTION_KEY, INTENDED_GENERATION_KEY } from "@/lib/guest";
 import { reachGoal } from "@/lib/metrika";
 import { useBlockUnauthenticatedImageShortcuts } from "@/components/demo/useBlockUnauthenticatedImageShortcuts";
@@ -73,7 +74,10 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
         headers: guestId ? { "x-marketcard-guest-id": guestId } : undefined,
         cache: "no-store"
       });
-      const data = (await response.json()) as DemoResult & { error?: string };
+      const data = await parseJsonResponse<DemoResult & { error?: string }>(
+        response,
+        "Не удалось открыть демо-результат. Попробуйте обновить страницу."
+      );
 
       if (!response.ok) {
         throw new Error(data.error || "Не удалось открыть демо-результат.");
@@ -88,7 +92,7 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
         });
       }
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Не удалось открыть демо-результат.");
+      setError(toUserFacingError(caught, "Не удалось открыть демо-результат. Попробуйте обновить страницу."));
     } finally {
       setLoading(false);
     }

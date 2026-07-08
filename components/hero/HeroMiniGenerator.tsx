@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import { detectCategory } from "@/lib/category";
 import { heroDemoExamples, loadExampleImageDataUrl } from "@/lib/hero/demoExamples";
+import { toUserFacingError } from "@/lib/api/parseJsonResponse";
 import { HERO_DEMO_LOADING_STATUSES, HERO_DEMO_MIN_LOADING_MS, submitHeroDemo } from "@/lib/hero/submitHeroDemo";
 import { HERO_IMAGE_MAX_BYTES, resizeImageToDataUrl, validateImageFile } from "@/lib/image";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
@@ -183,7 +184,7 @@ export function HeroMiniGenerator() {
       trackMarketingEvent("demo_generation_completed", { generationId, source: "hero" });
       router.push(`/generations/${generationId}?guestId=${encodeURIComponent(guestId)}`);
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "Не получилось создать карточку.";
+      const message = toUserFacingError(caught);
       setError(message);
       setIsGenerating(false);
       setDemoProgress(0);

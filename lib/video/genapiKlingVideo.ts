@@ -125,20 +125,12 @@ export function normalizeKlingVideoResponse(response: GenApiStatusResponse): Gen
   };
 }
 
-function resolveStartImageInput(input: {
-  startImageUrl?: string;
-  startImageBase64?: string;
-  startImageMimeType?: string;
-}) {
-  if (input.startImageBase64 && input.startImageMimeType) {
-    return `data:${input.startImageMimeType};base64,${input.startImageBase64}`;
+export function toGenApiAspectRatio(aspectRatio: VideoAspectRatio): "1:1" | "9:16" | "16:9" | null {
+  if (aspectRatio === "4:5") {
+    return null;
   }
 
-  if (input.startImageUrl) {
-    return input.startImageUrl;
-  }
-
-  throw new Error("Source image is required for image-to-video generation.");
+  return aspectRatio;
 }
 
 async function callGenApi<T>(path: string, init?: RequestInit): Promise<T> {
@@ -165,27 +157,33 @@ async function callGenApi<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function createKlingVideoTask(input: {
   prompt: string;
-  startImageUrl?: string;
-  startImageBase64?: string;
-  startImageMimeType?: string;
+  startImageUrl: string;
   duration: VideoDuration;
   aspectRatio: VideoAspectRatio;
   quality: VideoQuality;
   callbackUrl?: string;
 }): Promise<GenApiVideoTaskResult> {
   const config = getGenApiConfig();
-  const startImage = resolveStartImageInput(input);
+
+  if (!input.startImageUrl.startsWith("http")) {
+    throw new Error("GenAPI requires a public HTTPS URL for start_image_url.");
+  }
+
+  const aspectRatio = toGenApiAspectRatio(input.aspectRatio);
 
   const body: Record<string, unknown> = {
     prompt: input.prompt,
     model: "image-to-video",
-    start_image_url: startImage,
+    start_image_url: input.startImageUrl,
     duration: input.duration,
-    aspect_ratio: input.aspectRatio,
     translate_input: false,
     generate_audio: false,
     shot_type: "customize"
   };
+
+  if (aspectRatio) {
+    body.aspect_ratio = aspectRatio;
+  }
 
   if (input.quality === "pro") {
     body.pro = true;

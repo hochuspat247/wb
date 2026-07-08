@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { productCards, users, videoGenerationOrders } from "@/lib/db/schema";
 import { createKlingVideoTask, getKlingVideoTaskStatus, normalizeKlingVideoResponse } from "@/lib/video/genapiKlingVideo";
 import { buildProductCardVideoPrompt } from "@/lib/video/videoPrompt";
-import { buildGenApiCallbackUrl, buildSignedSourceImageUrl, getCardSourceImageData } from "@/lib/server/videoSourceImage";
+import { buildGenApiCallbackUrl, buildSignedSourceImageUrl } from "@/lib/server/videoSourceImage";
 import type { CreateVideoOrderInput, VideoGenerationRecord } from "@/types/video-generation";
 
 function mapOrder(row: typeof videoGenerationOrders.$inferSelect): VideoGenerationRecord {
@@ -166,22 +166,10 @@ export async function startPaidKlingVideoGeneration(orderId: string, siteUrl: st
     return order;
   }
 
-  const card = await db.query.productCards.findFirst({
-    where: eq(productCards.id, order.sourceGenerationId)
-  });
-  const sourceImage = card ? getCardSourceImageData(card.payload) : null;
-  const maxInlineImageBytes = 4 * 1024 * 1024;
-  const inlineImage =
-    sourceImage && Buffer.byteLength(sourceImage.base64, "base64") <= maxInlineImageBytes
-      ? sourceImage
-      : null;
-
   const callbackUrl = buildGenApiCallbackUrl(siteUrl);
   const task = await createKlingVideoTask({
     prompt: order.prompt,
-    startImageBase64: inlineImage?.base64,
-    startImageMimeType: inlineImage?.mimeType,
-    startImageUrl: inlineImage ? undefined : buildSignedSourceImageUrl(siteUrl, order.id),
+    startImageUrl: buildSignedSourceImageUrl(siteUrl, order.id),
     duration: order.duration,
     aspectRatio: order.aspectRatio,
     quality: order.quality,

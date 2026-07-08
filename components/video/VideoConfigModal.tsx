@@ -178,7 +178,7 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
             <label className="grid gap-1.5 text-xs font-semibold text-muted">
               Формат
               <Select onChange={(e) => setAspectRatio(e.target.value as VideoAspectRatio)} value={aspectRatio}>
-                <option value="4:5">4:5</option>
+                <option value="4:5">4:5 (как карточка)</option>
                 <option value="1:1">1:1</option>
                 <option value="9:16">9:16</option>
                 <option value="16:9">16:9</option>

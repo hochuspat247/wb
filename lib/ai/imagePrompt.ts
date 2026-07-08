@@ -257,6 +257,95 @@ The image must look like an expensive, conversion-focused premium marketplace ad
 - not a simple product listing`;
 }
 
+type BackgroundReplacementRequest = {
+  request: string;
+  allowVisibleText: boolean;
+};
+
+const BACKGROUND_TARGET_PATTERNS = [
+  /(?:replace|change|swap|remove)[^.!?\n]{0,80}\bbackground\b[^.!?\n]{0,80}\b(?:with|to|for)\b\s+([^.!?\n]+)/i,
+  /\bbackground\b[^.!?\n]{0,40}(?:replace|change|swap)[^.!?\n]{0,40}\b(?:with|to|for)\b\s+([^.!?\n]+)/i,
+  /(?:\u0437\u0430\u043c\u0435\u043d(?:\u0438|\u0438\u0442\u044c|\u0438\u0442\u0435)|\u043f\u043e\u043c\u0435\u043d(?:\u044f\u0439|\u044f\u0442\u044c|\u044f\u0439\u0442\u0435)|\u0441\u043c\u0435\u043d(?:\u0438|\u0438\u0442\u044c|\u0438\u0442\u0435)|\u0443\u0431\u0435\u0440(?:\u0438|\u0430\u0442\u044c|\u0438\u0442\u0435)|\u0443\u0434\u0430\u043b(?:\u0438|\u0438\u0442\u044c|\u0438\u0442\u0435))[^.!?\n]{0,80}(?:\u0444\u043e\u043d|\u0437\u0430\u0434\u043d[^\s.!?]*\s+\u0444\u043e\u043d)[^.!?\n]{0,80}\s+\u043d\u0430\s+([^.!?\n]+)/iu,
+  /(?:\u0444\u043e\u043d|\u0437\u0430\u0434\u043d[^\s.!?]*\s+\u0444\u043e\u043d)[^.!?\n]{0,50}(?:\u0437\u0430\u043c\u0435\u043d(?:\u0438|\u0438\u0442\u044c|\u0438\u0442\u0435)|\u043f\u043e\u043c\u0435\u043d(?:\u044f\u0439|\u044f\u0442\u044c|\u044f\u0439\u0442\u0435)|\u0441\u043c\u0435\u043d(?:\u0438|\u0438\u0442\u044c|\u0438\u0442\u0435))[^.!?\n]{0,50}\s+\u043d\u0430\s+([^.!?\n]+)/iu,
+];
+
+const VISIBLE_TEXT_REQUEST_PATTERN =
+  /\b(?:text|caption|label|headline|title|write|add\s+words)\b|(?:\u0442\u0435\u043a\u0441\u0442|\u043d\u0430\u0434\u043f\u0438\u0441|\u0437\u0430\u0433\u043e\u043b\u043e\u0432|\u043d\u0430\u043f\u0438\u0448|\u0434\u043e\u0431\u0430\u0432[^\s]*\s+\u0441\u043b\u043e\u0432|\u0434\u043e\u0431\u0430\u0432[^\s]*\s+\u0444\u0440\u0430\u0437)/iu;
+
+const NO_VISIBLE_TEXT_PATTERN =
+  /\b(?:no\s+text|without\s+text|do\s+not\s+add\s+text)\b|(?:\u0431\u0435\u0437\s+\u0442\u0435\u043a\u0441\u0442|\u043d\u0435\s+\u0434\u043e\u0431\u0430\u0432[^\s]*\s+\u0442\u0435\u043a\u0441\u0442|\u0442\u0435\u043a\u0441\u0442\s+\u043d\u0435\s+\u0434\u043e\u0431\u0430\u0432)/iu;
+
+function getBackgroundReplacementRequest(input: GenerateImageInput): BackgroundReplacementRequest | null {
+  const candidates = [
+    input.editInstructions,
+    input.productDescription,
+    input.headline,
+    input.title
+  ]
+    .map(cleanText)
+    .filter(Boolean);
+
+  for (const candidate of candidates) {
+    for (const pattern of BACKGROUND_TARGET_PATTERNS) {
+      const match = candidate.match(pattern);
+      const target = cleanText(match?.[1]);
+
+      if (target.length >= 2) {
+        return {
+          request: candidate,
+          allowVisibleText: VISIBLE_TEXT_REQUEST_PATTERN.test(candidate) && !NO_VISIBLE_TEXT_PATTERN.test(candidate)
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+function buildBackgroundReplacementPrompt(input: GenerateImageInput, backgroundRequest: BackgroundReplacementRequest): string {
+  const aspectRatio = cleanText(input.aspectRatio) || "4:5";
+  const outputStyle = cleanText(input.style) || "premium natural photo edit";
+  const visibleTextRule = backgroundRequest.allowVisibleText
+    ? "Only add the exact visible text explicitly requested by the user. Do not invent extra labels, side descriptions, specs, badges, icons, UI panels, or marketing copy."
+    : "Do not add any visible text at all: no headline, no labels, no side descriptions, no badges, no specs, no UI panels, no infographics.";
+
+  return `
+Edit the uploaded image as a clean background replacement.
+
+USER BACKGROUND REQUEST:
+${backgroundRequest.request}
+
+MAIN TASK:
+- Isolate the main foreground subject from the uploaded reference image.
+- Remove the original background completely.
+- Replace it with the background requested by the user.
+- Keep the main subject recognizable and faithful to the uploaded image.
+- Preserve identity, face, pose, clothing, product shape, materials, colors, proportions, and important details.
+- Do not turn the result into a marketplace card, brochure, flyer, poster, service ad, or template.
+- Do not add side information blocks or explanatory design elements unless the user explicitly requested them.
+
+BACKGROUND AND LIGHTING:
+- Match the new background to the subject with realistic scale, perspective, shadows, reflections, and color temperature.
+- If the requested background is a plain color or simple studio background, make it clean, seamless, and professional.
+- If the requested background is a scene, make it photorealistic and believable without distracting from the subject.
+- Keep the final composition natural, polished, and commercially usable.
+- Visual style: ${outputStyle}.
+- Aspect ratio: ${aspectRatio}.
+
+STRICT RULES:
+- ${visibleTextRule}
+- No random extra people, products, thumbnails, icons, arrows, frames, screenshots, or collage elements.
+- No visible watermarks, QR codes, marketplace logos, prices, buy buttons, or fake UI.
+- No descriptions beside the subject.
+- No before/after layout.
+
+FINAL OUTPUT:
+Generate only the edited final image.
+No explanations.
+No mockup frame outside the image.
+`.trim();
+}
+
 export function buildPremiumMarketplaceImagePrompt(input: GenerateImageInput): string {
   const productDescription = sanitizeVisibleImageText(input.productDescription) || "товар";
   const category = detectSafeCategory(productDescription, input.category);
@@ -483,5 +572,11 @@ Only the premium product card creative.
 }
 
 export function buildImagePrompt(input: GenerateImageInput): string {
+  const backgroundReplacementRequest = getBackgroundReplacementRequest(input);
+
+  if (backgroundReplacementRequest) {
+    return buildBackgroundReplacementPrompt(input, backgroundReplacementRequest);
+  }
+
   return buildPremiumMarketplaceImagePrompt(input);
 }

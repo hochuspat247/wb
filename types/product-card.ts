@@ -125,6 +125,9 @@ export type ProductCardResult = {
   usedCoupon?: boolean;
   generationId?: string;
   seed?: number;
+  generationRating?: 1 | 2 | 3 | 4 | 5;
+  generationRatedAt?: string;
+  generationRatingDismissedAt?: string;
   price?: string;
   ctaText?: string;
   headline?: string;

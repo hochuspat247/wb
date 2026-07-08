@@ -21,7 +21,7 @@ import type {
 import type { MarketplaceTextInput } from "@/types/marketplace";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 240;
 
 const MAX_DEMO_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const SUPPORTED_DEMO_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];

@@ -43,6 +43,25 @@ export async function migrateLocalCards(cards: ProductCardResult[]) {
   return data.cards;
 }
 
+export async function migrateGuestGenerations(guestId: string) {
+  if (!guestId.trim()) {
+    return 0;
+  }
+
+  const response = await fetch("/api/generations/migrate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ guestId })
+  });
+
+  if (!response.ok) {
+    throw new Error("FAILED_TO_MIGRATE_GUEST_GENERATIONS");
+  }
+
+  const data = (await response.json()) as { migrated: number };
+  return data.migrated;
+}
+
 export async function removeUserCardRemote(id: string) {
   const response = await fetch(`/api/cards/${id}`, { method: "DELETE" });
   if (!response.ok) {

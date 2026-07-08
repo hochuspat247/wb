@@ -10,9 +10,17 @@ import { Textarea } from "@/components/ui/Textarea";
 import { detectCategory } from "@/lib/category";
 import { heroDemoExamples, loadExampleImageDataUrl } from "@/lib/hero/demoExamples";
 import { toUserFacingError } from "@/lib/api/parseJsonResponse";
-import { HERO_DEMO_LOADING_STATUSES, HERO_DEMO_MIN_LOADING_MS, submitHeroDemo } from "@/lib/hero/submitHeroDemo";
+import {
+  HERO_DEMO_LOADING_STATUSES,
+  HERO_DEMO_MIN_LOADING_MS,
+  HERO_DEMO_PROGRESS_DURATION_MS,
+  submitHeroDemo
+} from "@/lib/hero/submitHeroDemo";
 import { HERO_IMAGE_MAX_BYTES, resizeImageToDataUrl, validateImageFile } from "@/lib/image";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
+
+const GENERATE_BUTTON_CLASS =
+  "relative overflow-hidden bg-[linear-gradient(135deg,#7cff6b_0%,#9bff8d_48%,#52f66a_100%)] text-ink ring-2 ring-accent/35 shadow-[0_0_0_5px_rgba(124,255,107,0.16),0_18px_46px_rgba(124,255,107,0.34)] hover:bg-[linear-gradient(135deg,#9bff8d_0%,#7cff6b_52%,#b9ff7a_100%)] hover:ring-accent/65 hover:shadow-[0_0_0_7px_rgba(124,255,107,0.22),0_22px_58px_rgba(124,255,107,0.44)] disabled:ring-accent/15 disabled:shadow-none";
 
 export function HeroMiniGenerator() {
   const router = useRouter();
@@ -43,8 +51,11 @@ export function HeroMiniGenerator() {
     const startedAt = Date.now();
     const timer = window.setInterval(() => {
       const elapsed = Date.now() - startedAt;
-      const progress = Math.min(95, Math.round((elapsed / 55_000) * 95));
-      const statusIndex = Math.min(HERO_DEMO_LOADING_STATUSES.length - 1, Math.floor(elapsed / 5_500));
+      const progress = Math.min(95, Math.round((elapsed / HERO_DEMO_PROGRESS_DURATION_MS) * 95));
+      const statusIndex = Math.min(
+        HERO_DEMO_LOADING_STATUSES.length - 1,
+        Math.floor(elapsed / (HERO_DEMO_PROGRESS_DURATION_MS / HERO_DEMO_LOADING_STATUSES.length))
+      );
       setDemoProgress(progress);
       setDemoStatusIndex(statusIndex);
     }, 450);
@@ -341,7 +352,7 @@ export function HeroMiniGenerator() {
         {error ? <Alert variant="error">{error}</Alert> : null}
 
         <div className="grid gap-2 pt-0.5">
-          <Button className="w-full py-3" disabled={!canGenerate} type="submit">
+          <Button className={`w-full py-3 ${GENERATE_BUTTON_CLASS}`} disabled={!canGenerate} type="submit">
             <Wand2 size={17} />
             {submitLabel}
           </Button>

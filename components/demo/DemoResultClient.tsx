@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ArrowRight, Download, Loader2, RefreshCcw } from "lucide-react";
+import { ArrowRight, Download, Loader2, RefreshCcw, Star, X } from "lucide-react";
 import { ProtectedDemoImage } from "@/components/ProtectedDemoImage";
 import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 import { Alert } from "@/components/ui/Alert";
@@ -37,6 +37,7 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
   const [loading, setLoading] = useState(true);
   const [migrating, setMigrating] = useState(false);
   const [autoActionDone, setAutoActionDone] = useState(false);
+  const [ratingSaving, setRatingSaving] = useState(false);
   const resultViewTrackedRef = useRef(false);
 
   useBlockUnauthenticatedImageShortcuts(isAuthenticated);
@@ -194,6 +195,42 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
     router.push(`/login?callbackUrl=${encodeURIComponent(`/generations/${generationId}?afterAuth=${action}`)}`);
   }
 
+  async function updateDemoRating(payload: { generationRating?: 1 | 2 | 3 | 4 | 5; generationRatingDismissed?: boolean }) {
+    if (!result) return;
+
+    setRatingSaving(true);
+
+    try {
+      const params = new URLSearchParams();
+      if (guestId) params.set("guestId", guestId);
+      const response = await fetch(`/api/generations/${generationId}/result?${params.toString()}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(guestId ? { "x-marketcard-guest-id": guestId } : {})
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await parseJsonResponse<DemoResult & { error?: string }>(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Не удалось сохранить оценку.");
+      }
+
+      setResult(data);
+      if (payload.generationRating) {
+        trackMarketingEvent("demo_generation_rating", {
+          generationId,
+          rating: payload.generationRating
+        });
+      }
+    } catch {
+      setError("Не удалось сохранить оценку. Попробуйте ещё раз.");
+    } finally {
+      setRatingSaving(false);
+    }
+  }
+
   if (loading || migrating) {
     return (
       <div className="grid min-h-screen place-items-center bg-paper px-5">
@@ -252,6 +289,40 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
                 Посмотреть тарифы
               </Link>
             </div>
+
+            {result.card && !result.card.generationRating && !result.card.generationRatingDismissedAt ? (
+              <div className="mb-4 rounded-[18px] border border-clay bg-paper/70 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-base font-black text-ink">Оцените результат</p>
+                    <p className="mt-1 text-sm font-semibold text-muted">Можно закрыть, если не хотите.</p>
+                  </div>
+                  <button
+                    aria-label="Закрыть оценку"
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted hover:bg-card hover:text-ink"
+                    disabled={ratingSaving}
+                    onClick={() => void updateDemoRating({ generationRatingDismissed: true })}
+                    type="button"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="mt-3 flex gap-1">
+                  {([1, 2, 3, 4, 5] as const).map((rating) => (
+                    <button
+                      aria-label={`Оценить на ${rating} из 5`}
+                      className="grid h-9 w-9 place-items-center rounded-full transition hover:scale-105 hover:bg-card disabled:opacity-50"
+                      disabled={ratingSaving}
+                      key={rating}
+                      onClick={() => void updateDemoRating({ generationRating: rating })}
+                      type="button"
+                    >
+                      <Star className="fill-accent text-accent" size={21} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className="grid gap-3">
               <Button onClick={downloadOriginal} type="button">

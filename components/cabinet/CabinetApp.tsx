@@ -35,10 +35,12 @@ import {
   clearUserCardsRemote,
   fetchUserCards,
   fetchUserProfile,
+  migrateGuestGenerations,
   migrateLocalCards,
   removeUserCardRemote,
   updateUserProfile
 } from "@/lib/api/user";
+import { GUEST_ID_KEY } from "@/lib/guest";
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
 import { getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { reachGoal } from "@/lib/metrika";
@@ -80,13 +82,24 @@ export function CabinetApp() {
         setNeedsEmailVerification(Boolean(profile.needsEmailVerification));
         setEmailDisplay(profile.emailDisplay || profile.email);
 
+        let nextRemoteCards = remoteCards;
+        const guestId = window.localStorage.getItem(GUEST_ID_KEY);
+
+        if (guestId) {
+          const migratedCount = await migrateGuestGenerations(guestId).catch(() => 0);
+
+          if (migratedCount > 0) {
+            nextRemoteCards = await fetchUserCards();
+          }
+        }
+
         const localCards = getHistory();
-        if (localCards.length > 0 && remoteCards.length === 0) {
+        if (localCards.length > 0 && nextRemoteCards.length === 0) {
           const migrated = await migrateLocalCards(localCards);
           setCards(migrated);
           clearHistory();
         } else {
-          setCards(remoteCards);
+          setCards(nextRemoteCards);
         }
       } catch {
         setCards(getHistory());

@@ -1,4 +1,4 @@
-import { buildPremiumMarketplaceImagePrompt } from "@/lib/ai/imagePrompt";
+import { buildImagePrompt } from "@/lib/ai/imagePrompt";
 import type { GenerateImageInput, GenerateImageResult } from "@/types/product-card";
 
 export type NanoBananaExpertBalance = {
@@ -50,6 +50,11 @@ function isApiKeyConfigured() {
   return Boolean(getApiKey());
 }
 
+function getPositiveEnvNumber(name: string, fallback: number) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 export function isNanoBananaExpertConfigured() {
   return isApiKeyConfigured();
 }
@@ -92,7 +97,7 @@ export async function checkNanoBananaExpertBalance(): Promise<
 }
 
 export async function generateNanoBananaExpertImage(input: GenerateImageInput): Promise<GenerateImageResult> {
-  const prompt = buildPremiumMarketplaceImagePrompt(input);
+  const prompt = buildImagePrompt(input);
   const generatedAt = new Date().toISOString();
 
   if (!isApiKeyConfigured()) {
@@ -177,9 +182,11 @@ async function resolveNanoBananaImage(initialData: NanoBananaExpertApiResponse) 
     return null;
   }
 
-  for (let attempt = 0; attempt < 10; attempt += 1) {
-    await sleep(2500);
+  const maxPollMs = getPositiveEnvNumber("NANOBANANA_EXPERT_MAX_POLL_MS", 210_000);
+  const pollIntervalMs = getPositiveEnvNumber("NANOBANANA_EXPERT_POLL_INTERVAL_MS", 3_000);
+  const startedAt = Date.now();
 
+  while (Date.now() - startedAt <= maxPollMs) {
     for (const path of getGenerationStatusPaths(generationId)) {
       try {
         const response = await fetch(`${getBaseUrl()}${path}`, {
@@ -207,6 +214,8 @@ async function resolveNanoBananaImage(initialData: NanoBananaExpertApiResponse) 
         // Try the next known status route.
       }
     }
+
+    await sleep(pollIntervalMs);
   }
 
   return null;

@@ -4,6 +4,7 @@ import { useCallback, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { getAnalyticsSessionId } from "@/lib/analytics/session";
+import { GUEST_ID_KEY } from "@/lib/guest";
 import { recordPresenceAction } from "@/lib/presence/client-state";
 
 function getSessionId() {
@@ -22,6 +23,8 @@ type TrackPayload = {
 async function sendEvents(events: TrackPayload[]) {
   if (!events.length || typeof window === "undefined") return;
 
+  const guestId = window.localStorage.getItem(GUEST_ID_KEY) || undefined;
+
   await fetch("/api/analytics", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -29,6 +32,10 @@ async function sendEvents(events: TrackPayload[]) {
     body: JSON.stringify({
       events: events.map((event) => ({
         ...event,
+        metadata: {
+          ...(event.metadata || {}),
+          ...(guestId ? { guestId } : {})
+        },
         path: window.location.pathname + window.location.hash,
         referrer: document.referrer || undefined,
         viewportWidth: window.innerWidth,

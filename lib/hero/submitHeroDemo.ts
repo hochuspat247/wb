@@ -18,6 +18,7 @@ export const HERO_DEMO_LOADING_STATUSES = [
 ];
 
 export const HERO_DEMO_MIN_LOADING_MS = 20_000;
+export const HERO_DEMO_PROGRESS_DURATION_MS = 140_000;
 
 type SubmitHeroDemoInput = {
   imageUrl: string;

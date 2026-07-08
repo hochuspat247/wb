@@ -1,6 +1,6 @@
 import { and, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { analyticsEvents, productCards, users, videoGenerationOrders } from "@/lib/db/schema";
+import { analyticsEvents, demoGenerations, productCards, users, videoGenerationOrders, visitorPresence } from "@/lib/db/schema";
 
 export type AnalyticsTrackInput = {
   eventType: "page_view" | "click" | "conversion";
@@ -54,6 +54,7 @@ export async function getAdminAnalytics(pathFilter = "/") {
 
   const [userCount] = await safeAnalyticsQuery("user count", db.select({ value: count() }).from(users), [{ value: 0 }]);
   const [cardCount] = await safeAnalyticsQuery("card count", db.select({ value: count() }).from(productCards), [{ value: 0 }]);
+  const [demoCount] = await safeAnalyticsQuery("demo count", db.select({ value: count() }).from(demoGenerations), [{ value: 0 }]);
   const [generationsSum] = await safeAnalyticsQuery(
     "generations sum",
     db.select({ value: sql<number>`coalesce(sum(${users.generationsUsed}), 0)` }).from(users),
@@ -221,6 +222,86 @@ export async function getAdminAnalytics(pathFilter = "/") {
     []
   );
 
+  const recentDemos = await safeAnalyticsQuery(
+    "recent demo generations",
+    db
+      .select({
+        id: demoGenerations.id,
+        guestId: demoGenerations.guestId,
+        userId: demoGenerations.userId,
+        status: demoGenerations.status,
+        payload: demoGenerations.payload,
+        createdAt: demoGenerations.createdAt,
+        userName: users.name,
+        userEmail: users.email
+      })
+      .from(demoGenerations)
+      .leftJoin(users, eq(demoGenerations.userId, users.id))
+      .orderBy(desc(demoGenerations.createdAt))
+      .limit(20),
+    []
+  );
+
+  const journeySessions = await safeAnalyticsQuery(
+    "journey sessions",
+    db
+      .select({
+        sessionId: analyticsEvents.sessionId,
+        firstSeenAt: sql<Date>`min(${analyticsEvents.createdAt})`,
+        lastSeenAt: sql<Date>`max(${analyticsEvents.createdAt})`,
+        eventsCount: count(),
+        pageViews: sql<number>`sum(case when ${analyticsEvents.eventType} = 'page_view' then 1 else 0 end)`,
+        clicks: sql<number>`sum(case when ${analyticsEvents.eventType} = 'click' then 1 else 0 end)`,
+        conversions: sql<number>`sum(case when ${analyticsEvents.eventType} = 'conversion' then 1 else 0 end)`
+      })
+      .from(analyticsEvents)
+      .where(gte(analyticsEvents.createdAt, since30d))
+      .groupBy(analyticsEvents.sessionId)
+      .orderBy(desc(sql`max(${analyticsEvents.createdAt})`))
+      .limit(15),
+    []
+  );
+
+  const journeySessionIds = journeySessions.map((row) => row.sessionId);
+  const [journeyEvents, journeyPresenceRows] =
+    journeySessionIds.length > 0
+      ? await Promise.all([
+          safeAnalyticsQuery(
+            "journey events",
+            db
+              .select({
+                sessionId: analyticsEvents.sessionId,
+                eventType: analyticsEvents.eventType,
+                eventName: analyticsEvents.eventName,
+                path: analyticsEvents.path,
+                label: analyticsEvents.label,
+                userId: analyticsEvents.userId,
+                metadata: analyticsEvents.metadata,
+                createdAt: analyticsEvents.createdAt
+              })
+              .from(analyticsEvents)
+              .where(inArray(analyticsEvents.sessionId, journeySessionIds))
+              .orderBy(analyticsEvents.createdAt),
+            []
+          ),
+          safeAnalyticsQuery(
+            "journey presence",
+            db
+              .select({
+                sessionId: visitorPresence.sessionId,
+                guestId: visitorPresence.guestId,
+                userId: visitorPresence.userId,
+                pathLabel: visitorPresence.pathLabel,
+                lastActionLabel: visitorPresence.lastActionLabel
+              })
+              .from(visitorPresence)
+              .where(inArray(visitorPresence.sessionId, journeySessionIds)),
+            []
+          )
+        ])
+      : [[], []];
+  const journeyPresenceMap = new Map(journeyPresenceRows.map((row) => [row.sessionId, row]));
+
   const cardIds = recentCards.map((row) => row.id);
   const videoCountRows =
     cardIds.length > 0
@@ -249,6 +330,7 @@ export async function getAdminAnalytics(pathFilter = "/") {
     overview: {
       users: userCount?.value ?? 0,
       cards: cardCount?.value ?? 0,
+      demoGenerations: demoCount?.value ?? 0,
       totalGenerations: Number(generationsSum?.value ?? 0),
       events7d: events7d?.value ?? 0
     },
@@ -285,8 +367,53 @@ export async function getAdminAnalytics(pathFilter = "/") {
       category: row.payload.category,
       generatedAt: row.payload.generatedAt,
       createdAt: row.createdAt,
+      generationRating: row.payload.generationRating,
       videoCount: videoCountMap.get(row.id) ?? row.payload.generatedVideos?.length ?? (row.payload.generatedVideoUrl ? 1 : 0)
     })),
+    recentDemos: recentDemos.map((row) => ({
+      id: row.id,
+      guestId: row.guestId,
+      userId: row.userId,
+      userName: row.userName,
+      userEmail: row.userEmail,
+      status: row.status,
+      title: row.payload.title,
+      category: row.payload.category,
+      marketplace: row.payload.marketplace,
+      productDescription: row.payload.sourceInput?.productDescription || row.payload.shortDescription,
+      generatedAt: row.payload.generatedAt,
+      createdAt: row.createdAt,
+      generationRating: row.payload.generationRating,
+      generationRatingDismissedAt: row.payload.generationRatingDismissedAt,
+      provider: row.payload.generatedImageProvider || row.payload.provider
+    })),
+    userJourneys: journeySessions.map((session) => {
+      const events = journeyEvents.filter((event) => event.sessionId === session.sessionId);
+      const presence = journeyPresenceMap.get(session.sessionId);
+      const paths = Array.from(new Set(events.map((event) => event.path))).slice(0, 8);
+
+      return {
+        sessionId: session.sessionId,
+        guestId: presence?.guestId ?? null,
+        userId: presence?.userId ?? events.find((event) => event.userId)?.userId ?? null,
+        firstSeenAt: session.firstSeenAt,
+        lastSeenAt: session.lastSeenAt,
+        eventsCount: session.eventsCount,
+        pageViews: Number(session.pageViews ?? 0),
+        clicks: Number(session.clicks ?? 0),
+        conversions: Number(session.conversions ?? 0),
+        currentPathLabel: presence?.pathLabel ?? null,
+        lastActionLabel: presence?.lastActionLabel ?? null,
+        paths,
+        events: events.slice(-12).map((event) => ({
+          eventType: event.eventType,
+          eventName: event.eventName,
+          path: event.path,
+          label: event.label,
+          createdAt: event.createdAt
+        }))
+      };
+    }),
     trackedFunnelEvents: funnelNames
   };
 }

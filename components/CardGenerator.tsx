@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Download, FileImage, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Wand2 } from "lucide-react";
+import { Archive, Download, FileImage, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Star, Wand2, X } from "lucide-react";
 import { CardEditPanel } from "@/components/CardEditPanel";
 import { GeneratedCardPreview } from "@/components/GeneratedCardPreview";
 import { HistorySection } from "@/components/HistorySection";
@@ -62,6 +62,7 @@ const marketplaces = ["Wildberries", "Ozon", "Avito", "Яндекс Маркет
 const styles = ["Минималистичный", "Премиальный", "Яркий", "Нежный", "Технологичный"];
 const cardCountOptions: CardSeriesCount[] = [1, 3, 5, 7, 10];
 const DEMO_MIN_LOADING_MS = 20_000;
+const DEMO_PROGRESS_DURATION_MS = 140_000;
 const DEMO_LOADING_STATUSES = [
   "Загружаем фото",
   "Определяем товар",
@@ -92,6 +93,65 @@ const textModes: Array<{ label: string; value: MarketplaceTextMode }> = [
   { label: "SEO-описание", value: "seo" },
   { label: "Полная карточка", value: "full_listing" }
 ];
+
+const GENERATE_BUTTON_CLASS =
+  "relative overflow-hidden bg-[linear-gradient(135deg,#7cff6b_0%,#9bff8d_48%,#52f66a_100%)] text-ink ring-2 ring-accent/35 shadow-[0_0_0_5px_rgba(124,255,107,0.16),0_18px_46px_rgba(124,255,107,0.34)] hover:bg-[linear-gradient(135deg,#9bff8d_0%,#7cff6b_52%,#b9ff7a_100%)] hover:ring-accent/65 hover:shadow-[0_0_0_7px_rgba(124,255,107,0.22),0_22px_58px_rgba(124,255,107,0.44)] disabled:ring-accent/15 disabled:shadow-none";
+
+function GenerationRatingPrompt({
+  darkConsole,
+  disabled,
+  onDismiss,
+  onRate
+}: {
+  darkConsole: boolean;
+  disabled: boolean;
+  onDismiss: () => void;
+  onRate: (rating: 1 | 2 | 3 | 4 | 5) => void;
+}) {
+  return (
+    <div
+      className={`mt-4 rounded-[16px] border px-4 py-3 ${
+        darkConsole ? "border-white/10 bg-white/[0.06]" : "border-clay bg-paper/70"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className={`text-sm font-bold ${darkConsole ? "text-white" : "text-ink"}`}>Оцените генерацию</p>
+          <p className={`mt-0.5 text-xs ${darkConsole ? "text-white/55" : "text-muted"}`}>
+            Это поможет улучшить результат. Можно просто закрыть.
+          </p>
+        </div>
+        <button
+          aria-label="Закрыть оценку"
+          className={`grid h-8 w-8 shrink-0 place-items-center rounded-full transition ${
+            darkConsole ? "text-white/60 hover:bg-white/10 hover:text-white" : "text-muted hover:bg-card hover:text-ink"
+          }`}
+          disabled={disabled}
+          onClick={onDismiss}
+          type="button"
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <div className="mt-3 flex gap-1">
+        {([1, 2, 3, 4, 5] as const).map((rating) => (
+          <button
+            aria-label={`Оценить на ${rating} из 5`}
+            className={`grid h-9 w-9 place-items-center rounded-full transition hover:scale-105 ${
+              darkConsole ? "hover:bg-white/10" : "hover:bg-card"
+            }`}
+            disabled={disabled}
+            key={rating}
+            onClick={() => onRate(rating)}
+            type="button"
+          >
+            <Star className="fill-accent text-accent" size={21} />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function CardGenerator({
   hideHistory = false,
@@ -154,6 +214,8 @@ export function CardGenerator({
   const [renderedImageUrl, setRenderedImageUrl] = useState("");
   const [isRenderingImage, setIsRenderingImage] = useState(false);
   const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
+  const [ratingPromptCardId, setRatingPromptCardId] = useState<string | null>(null);
+  const [isSavingGenerationRating, setIsSavingGenerationRating] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [remainingGenerations, setRemainingGenerations] = useState<number | null>(null);
   const [hasUnlimitedAccess, setHasUnlimitedAccess] = useState(false);
@@ -183,8 +245,11 @@ export function CardGenerator({
     const startedAt = Date.now();
     const timer = window.setInterval(() => {
       const elapsed = Date.now() - startedAt;
-      const progress = Math.min(95, Math.round((elapsed / 55_000) * 95));
-      const statusIndex = Math.min(DEMO_LOADING_STATUSES.length - 1, Math.floor(elapsed / 5_500));
+      const progress = Math.min(95, Math.round((elapsed / DEMO_PROGRESS_DURATION_MS) * 95));
+      const statusIndex = Math.min(
+        DEMO_LOADING_STATUSES.length - 1,
+        Math.floor(elapsed / (DEMO_PROGRESS_DURATION_MS / DEMO_LOADING_STATUSES.length))
+      );
 
       setDemoProgress(progress);
       setDemoStatusIndex(statusIndex);
@@ -457,6 +522,7 @@ export function CardGenerator({
 
     setIsLoading(true);
     setSeriesCards([]);
+    setRatingPromptCardId(null);
     const payload: ProductCardInput = {
       productDescription: description,
       category: effectiveCategory,
@@ -660,6 +726,7 @@ export function CardGenerator({
     setImageFileName("");
     setCard(null);
     setSeriesCards([]);
+    setRatingPromptCardId(null);
     setSeriesProgress("");
     setRenderedImageUrl("");
     setError("");
@@ -724,8 +791,65 @@ export function CardGenerator({
     setNotice("Карточка сохранена.");
   }
 
+  async function updateGenerationRating(nextCard: ProductCardResult, options: { rating?: number; dismissed?: boolean }) {
+    setCard(nextCard);
+    setSeriesCards((items) => items.map((item) => (item.id === nextCard.id ? nextCard : item)));
+    setRatingPromptCardId(null);
+    setIsSavingGenerationRating(true);
+
+    try {
+      if (persistToServer) {
+        const saved = await saveUserCardRemote(nextCard);
+        setHistory(saved);
+        onSaved?.();
+      } else {
+        setHistory(saveToHistory(nextCard));
+      }
+
+      if (options.rating) {
+        reachGoal("generation_rating", { rating: options.rating });
+        setNotice("Спасибо, оценка сохранена.");
+      }
+    } catch {
+      setError("Не удалось сохранить оценку генерации.");
+    } finally {
+      setIsSavingGenerationRating(false);
+    }
+  }
+
+  function handleRateGeneration(rating: 1 | 2 | 3 | 4 | 5) {
+    if (!card) {
+      return;
+    }
+
+    void updateGenerationRating(
+      {
+        ...card,
+        generationRating: rating,
+        generationRatedAt: new Date().toISOString(),
+        generationRatingDismissedAt: undefined
+      },
+      { rating }
+    );
+  }
+
+  function handleDismissGenerationRating() {
+    if (!card) {
+      return;
+    }
+
+    void updateGenerationRating(
+      {
+        ...card,
+        generationRatingDismissedAt: new Date().toISOString()
+      },
+      { dismissed: true }
+    );
+  }
+
   function handleOpenHistory(cardFromHistory: ProductCardResult) {
     setCard(cardFromHistory);
+    setRatingPromptCardId(null);
     setMarketplace(cardFromHistory.marketplace);
     setTextMode(cardFromHistory.textMode ?? "marketplace_safe");
     setStyle(cardFromHistory.style);
@@ -918,7 +1042,10 @@ export function CardGenerator({
         bananasSpent: data.bananasSpent,
         usedCoupon: data.usedCoupon,
         generationId: data.generationId,
-        seed: data.seed
+        seed: data.seed,
+        generationRating: undefined,
+        generationRatedAt: undefined,
+        generationRatingDismissedAt: undefined
       };
       setCard(updatedCard);
       return updatedCard;
@@ -942,9 +1069,13 @@ export function CardGenerator({
       bananasSpent: data.bananasSpent,
       usedCoupon: data.usedCoupon,
       generationId: data.generationId,
-      seed: data.seed
+      seed: data.seed,
+      generationRating: undefined,
+      generationRatedAt: undefined,
+      generationRatingDismissedAt: undefined
     };
     setCard(updatedCard);
+    setRatingPromptCardId(updatedCard.id);
     return updatedCard;
   }
 
@@ -1052,6 +1183,13 @@ export function CardGenerator({
   const aiImageUrl = card ? getGeneratedCoverSrc(card) : null;
 
   const hasAiCover = Boolean(card && !isGeneratingAiImage && hasGeneratedAiCover(card));
+  const shouldShowGenerationRatingPrompt = Boolean(
+    card &&
+      hasAiCover &&
+      ratingPromptCardId === card.id &&
+      !card.generationRating &&
+      !card.generationRatingDismissedAt
+  );
 
   const isWorking = isLoading || isGeneratingAiImage || isRenderingImage || isDemoGenerating;
   const labelClass = darkConsole ? "text-white/80" : "text-ink";
@@ -1418,7 +1556,11 @@ export function CardGenerator({
                 </p>
               ) : null}
               <div className={`flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap sm:gap-3 ${darkConsole ? "border-white/10" : "border-clay"}`}>
-                <Button className="w-full sm:w-auto" disabled={isWorking || (persistToServer && remainingGenerations === 0)} type="submit">
+                <Button
+                  className={`w-full sm:w-auto ${GENERATE_BUTTON_CLASS}`}
+                  disabled={isWorking || (persistToServer && remainingGenerations === 0)}
+                  type="submit"
+                >
                   {isWorking ? <Loader2 className="animate-spin" size={17} /> : <Wand2 size={17} />}
                   {compactDemoEntry
                     ? isWorking
@@ -1528,6 +1670,14 @@ export function CardGenerator({
                     />
                   )}
                 </div>
+                {shouldShowGenerationRatingPrompt ? (
+                  <GenerationRatingPrompt
+                    darkConsole={darkConsole}
+                    disabled={isSavingGenerationRating}
+                    onDismiss={handleDismissGenerationRating}
+                    onRate={handleRateGeneration}
+                  />
+                ) : null}
               </div>
             ) : !isWorking && !embedded ? (
               <div className={`${panelClass} grid aspect-[4/5] place-items-center text-center`}>

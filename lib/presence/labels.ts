@@ -47,6 +47,7 @@ export const ACTION_LABELS: Record<string, string> = {
   description_filled: "Заполнил описание",
   demo_generation_started: "Генерация демо",
   demo_generation_completed: "Демо готово",
+  demo_generation_rating: "Оценил демо",
   demo_result_view: "Смотрит результат демо",
   download_original_click: "Скачать оригинал",
   auth_started_from_result: "Пошёл на авторизацию",

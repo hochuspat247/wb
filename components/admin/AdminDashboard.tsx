@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart3, Eye, Film, LogOut, MousePointerClick, RefreshCw, Users, X } from "lucide-react";
+import { BarChart3, Eye, Film, LogOut, MousePointerClick, RefreshCw, Star, Users, X } from "lucide-react";
 import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
 import { CardSavedVideosPanel } from "@/components/video/CardSavedVideosPanel";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +16,7 @@ type AdminStats = {
   overview: {
     users: number;
     cards: number;
+    demoGenerations: number;
     totalGenerations: number;
     events7d: number;
   };
@@ -51,7 +52,46 @@ type AdminStats = {
     category: string;
     generatedAt: string;
     createdAt: Date;
+    generationRating?: 1 | 2 | 3 | 4 | 5;
     videoCount: number;
+  }[];
+  recentDemos: {
+    id: string;
+    guestId: string;
+    userId: string | null;
+    userName: string | null;
+    userEmail: string | null;
+    status: string;
+    title: string;
+    category: string;
+    marketplace: string;
+    productDescription: string;
+    generatedAt: string;
+    createdAt: Date;
+    generationRating?: 1 | 2 | 3 | 4 | 5;
+    generationRatingDismissedAt?: string;
+    provider?: string;
+  }[];
+  userJourneys: {
+    sessionId: string;
+    guestId: string | null;
+    userId: string | null;
+    firstSeenAt: Date;
+    lastSeenAt: Date;
+    eventsCount: number;
+    pageViews: number;
+    clicks: number;
+    conversions: number;
+    currentPathLabel: string | null;
+    lastActionLabel: string | null;
+    paths: string[];
+    events: {
+      eventType: string;
+      eventName: string;
+      path: string;
+      label: string | null;
+      createdAt: Date;
+    }[];
   }[];
 };
 
@@ -62,6 +102,19 @@ type AdminCardDetail = {
   userEmail: string | null;
   createdAt: Date;
   payload: ProductCardResult;
+};
+
+type AdminDemoDetail = {
+  id: string;
+  guestId: string;
+  userId: string | null;
+  userName: string | null;
+  userEmail: string | null;
+  status: string;
+  createdAt: Date;
+  payload: ProductCardResult;
+  originalImageDataUrl: string;
+  previewImageDataUrl: string;
 };
 
 const PATHS = ["/", "/login", "/register", "/cabinet"];
@@ -134,13 +187,60 @@ function MiniBars({ rows, label }: { rows: { day: string; value: number }[]; lab
   );
 }
 
-function getCardImage(card: ProductCardResult) {
+function getUploadedImage(card: ProductCardResult) {
+  return card.imageDataUrl || null;
+}
+
+function getGeneratedImage(card: ProductCardResult) {
   if (card.generatedImageUrl) return card.generatedImageUrl;
   if (card.generatedImageDataUrl) return card.generatedImageDataUrl;
   if (card.generatedImageBase64 && card.generatedImageMimeType) {
     return `data:${card.generatedImageMimeType};base64,${card.generatedImageBase64}`;
   }
-  return card.imageDataUrl || null;
+  return null;
+}
+
+function ImagePair({
+  uploadedSrc,
+  generatedSrc,
+  title,
+  generatedFallbackLabel
+}: {
+  uploadedSrc?: string | null;
+  generatedSrc?: string | null;
+  title: string;
+  generatedFallbackLabel?: string;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-muted">Загрузил пользователь</p>
+        <div className="overflow-hidden rounded-card border border-clay bg-paper">
+          {uploadedSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt={`${title} — загрузка`} className="aspect-[4/5] w-full object-cover" src={uploadedSrc} />
+          ) : (
+            <div className="grid aspect-[4/5] place-items-center px-4 text-center text-sm font-semibold text-muted">
+              Фото не сохранилось
+            </div>
+          )}
+        </div>
+      </div>
+      <div>
+        <p className="mb-2 text-[10px] font-black uppercase tracking-[0.14em] text-muted">Результат генерации</p>
+        <div className="overflow-hidden rounded-card border border-clay bg-paper">
+          {generatedSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img alt={`${title} — результат`} className="aspect-[4/5] w-full object-cover" src={generatedSrc} />
+          ) : (
+            <div className="grid aspect-[4/5] place-items-center px-4 text-center text-sm font-semibold text-muted">
+              {generatedFallbackLabel || "AI-обложка ещё не готова"}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function DetailField({ label, value }: { label: string; value?: string | number | boolean | null }) {
@@ -151,6 +251,25 @@ function DetailField({ label, value }: { label: string; value?: string | number 
       <p className="text-[10px] font-black uppercase tracking-[0.14em] text-muted">{label}</p>
       <p className="mt-1 break-words text-sm font-semibold text-ink">{String(value)}</p>
     </div>
+  );
+}
+
+function RatingValue({ rating }: { rating?: number | null }) {
+  if (!rating) {
+    return <span className="text-sm font-semibold text-muted">Без оценки</span>;
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 text-sm font-black text-ink">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <Star
+          className={index < rating ? "fill-accent text-accent" : "text-clay"}
+          key={index}
+          size={16}
+        />
+      ))}
+      <span className="ml-1">{rating}/5</span>
+    </span>
   );
 }
 
@@ -197,7 +316,11 @@ function CardDetailModal({
 
   const card = detail?.payload;
   const source = card?.sourceInput;
-  const imageUrl = card ? getCardImage(card) : null;
+  const uploadedImage = card ? getUploadedImage(card) : null;
+  const generatedImage = card ? getGeneratedImage(card) : null;
+  const generatedFallbackLabel = card?.generatedImageIsFallback
+    ? card.generatedImageError || "NanoBanana не вернул AI-обложку"
+    : undefined;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-4 backdrop-blur-sm md:items-center">
@@ -219,20 +342,26 @@ function CardDetailModal({
         ) : card && detail ? (
           <div className="grid max-h-[calc(92vh-78px)] gap-6 overflow-y-auto p-5 lg:grid-cols-[360px_1fr]">
             <div className="space-y-4">
-              <div className="overflow-hidden rounded-card border border-clay bg-paper">
-                {imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img alt={card.title} className="aspect-[4/5] w-full object-cover" src={imageUrl} />
-                ) : (
-                  <div className="grid aspect-[4/5] place-items-center text-sm font-semibold text-muted">Нет изображения</div>
-                )}
-              </div>
+              <ImagePair
+                generatedFallbackLabel={generatedFallbackLabel}
+                generatedSrc={generatedImage}
+                title={card.title}
+                uploadedSrc={uploadedImage}
+              />
               <div className="grid gap-3">
                 <DetailField label="Пользователь" value={detail.userName || "Без имени"} />
                 <DetailField label="Email" value={detail.userEmail ? formatAccountEmail(detail.userEmail) : "Нет email"} />
                 <DetailField label="Дата" value={new Date(detail.createdAt).toLocaleString("ru-RU")} />
                 <DetailField label="Провайдер" value={card.generatedImageProvider || card.provider} />
                 <DetailField label="Fallback" value={card.generatedImageIsFallback ?? card.isFallback} />
+                <div className="rounded-[14px] border border-clay bg-paper/40 px-4 py-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-muted">Оценка генерации</p>
+                  <div className="mt-1">
+                    <RatingValue rating={card.generationRating} />
+                  </div>
+                </div>
+                <DetailField label="Оценено" value={card.generationRatedAt ? new Date(card.generationRatedAt).toLocaleString("ru-RU") : null} />
+                <DetailField label="Окно оценки закрыто" value={card.generationRatingDismissedAt ? new Date(card.generationRatingDismissedAt).toLocaleString("ru-RU") : null} />
               </div>
             </div>
 
@@ -301,6 +430,87 @@ function CardDetailModal({
   );
 }
 
+function DemoDetailModal({
+  detail,
+  loading,
+  onClose
+}: {
+  detail: AdminDemoDetail | null;
+  loading: boolean;
+  onClose: () => void;
+}) {
+  if (!detail && !loading) return null;
+
+  const card = detail?.payload;
+  const source = card?.sourceInput;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-4 backdrop-blur-sm md:items-center">
+      <Card className="max-h-[92vh] w-full max-w-6xl overflow-hidden p-0" padding="none">
+        <div className="flex items-center justify-between gap-4 border-b border-clay px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-accent">Демо гостя</p>
+            <h3 className="mt-1 truncate text-lg font-black text-ink">{card?.title || "Загрузка..."}</h3>
+          </div>
+          <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-paper" onClick={onClose} type="button">
+            <X size={20} />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="grid min-h-80 place-items-center">
+            <Loader label="Загружаем демо..." />
+          </div>
+        ) : card && detail ? (
+          <div className="grid max-h-[calc(92vh-78px)] gap-6 overflow-y-auto p-5 lg:grid-cols-[380px_1fr]">
+            <div className="space-y-4">
+              <ImagePair
+                generatedSrc={detail.previewImageDataUrl}
+                title={card.title}
+                uploadedSrc={detail.originalImageDataUrl}
+              />
+              <div className="grid gap-3">
+                <DetailField label="Гость" value={detail.guestId} />
+                <DetailField label="Пользователь" value={detail.userName || (detail.userEmail ? formatAccountEmail(detail.userEmail) : "Не зарегистрирован")} />
+                <DetailField label="Дата" value={new Date(detail.createdAt).toLocaleString("ru-RU")} />
+                <DetailField label="Статус" value={detail.status} />
+                <DetailField label="Провайдер" value={card.generatedImageProvider || card.provider} />
+                <div className="rounded-[14px] border border-clay bg-paper/40 px-4 py-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.14em] text-muted">Оценка генерации</p>
+                  <div className="mt-1">
+                    <RatingValue rating={card.generationRating} />
+                  </div>
+                </div>
+                <DetailField label="Оценено" value={card.generationRatedAt ? new Date(card.generationRatedAt).toLocaleString("ru-RU") : null} />
+                <DetailField label="Оценка закрыта" value={card.generationRatingDismissedAt ? new Date(card.generationRatingDismissedAt).toLocaleString("ru-RU") : null} />
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <DetailField label="Маркетплейс" value={card.marketplace} />
+                <DetailField label="Категория" value={card.category} />
+                <DetailField label="Стиль" value={card.style} />
+                <DetailField label="Пресет" value={card.designPreset} />
+                <DetailField label="Режим текста" value={card.textMode} />
+                <DetailField label="Fallback" value={card.generatedImageIsFallback ?? card.isFallback} />
+              </div>
+
+              <TextBlock label="Что ввёл пользователь" value={source?.productDescription || card.shortDescription} />
+              <TextBlock label="Короткое описание" value={card.shortDescription} />
+              <TextBlock label="Полное описание" value={card.fullDescription} />
+              <ListBlock label="Преимущества" items={card.benefits} />
+              <ListBlock label="Тексты для инфографики" items={card.infographicTexts} />
+              <TextBlock label="Промпт изображения" value={card.generatedImagePrompt} />
+              <TextBlock label="Ошибка генерации" value={card.generatedImageError} />
+            </div>
+          </div>
+        ) : null}
+      </Card>
+    </div>
+  );
+}
+
 export function AdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -309,6 +519,8 @@ export function AdminDashboard() {
   const [error, setError] = useState("");
   const [selectedCard, setSelectedCard] = useState<AdminCardDetail | null>(null);
   const [cardLoading, setCardLoading] = useState(false);
+  const [selectedDemo, setSelectedDemo] = useState<AdminDemoDetail | null>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   async function load(nextPath = path) {
     setLoading(true);
@@ -359,6 +571,26 @@ export function AdminDashboard() {
       setError(caught instanceof Error ? caught.message : "Не удалось загрузить карточку");
     } finally {
       setCardLoading(false);
+    }
+  }
+
+  async function openDemo(demoId: string) {
+    setDemoLoading(true);
+    setSelectedDemo(null);
+
+    try {
+      const response = await fetch(`/api/admin/demo-generations/${encodeURIComponent(demoId)}`, { cache: "no-store" });
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Не удалось загрузить демо");
+      }
+
+      setSelectedDemo(data as AdminDemoDetail);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Не удалось загрузить демо");
+    } finally {
+      setDemoLoading(false);
     }
   }
 
@@ -426,7 +658,7 @@ export function AdminDashboard() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-5 p-4 sm:p-5 lg:space-y-6 lg:p-8">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
           <Card className="min-w-0" padding="md">
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0">
@@ -443,6 +675,15 @@ export function AdminDashboard() {
                 <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.cards}</p>
               </div>
               <BarChart3 className="shrink-0 text-accent" size={22} />
+            </div>
+          </Card>
+          <Card className="min-w-0" padding="md">
+            <div className="flex min-w-0 items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Демо гостей</p>
+                <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.demoGenerations}</p>
+              </div>
+              <Eye className="shrink-0 text-accent" size={22} />
             </div>
           </Card>
           <Card className="min-w-0" padding="md">
@@ -540,8 +781,96 @@ export function AdminDashboard() {
         <Card padding="lg">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
+              <h2 className="text-lg font-bold text-ink">Демо-генерации гостей</h2>
+              <p className="mt-1 text-sm text-muted">Фото, ввод пользователя и оценка даже без регистрации</p>
+            </div>
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+              {stats.recentDemos.length} последних
+            </span>
+          </div>
+          <div className="mt-4 grid gap-3">
+            {stats.recentDemos.map((demo) => (
+              <button
+                className="grid gap-3 rounded-card border border-clay bg-paper/40 p-4 text-left transition hover:border-accent/45 hover:bg-paper md:grid-cols-[1fr_auto] md:items-center"
+                key={demo.id}
+                onClick={() => void openDemo(demo.id)}
+                type="button"
+              >
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-ink">{demo.title || "Демо без названия"}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted">{demo.productDescription}</p>
+                  <p className="mt-1 text-xs font-semibold text-muted">
+                    {new Date(demo.createdAt).toLocaleString("ru-RU")} · {demo.userEmail ? formatAccountEmail(demo.userEmail) : `гость ${demo.guestId.slice(0, 8)}`} · {demo.provider || "provider unknown"}
+                  </p>
+                  <div className="mt-2">
+                    <RatingValue rating={demo.generationRating} />
+                  </div>
+                </div>
+                <span className="inline-flex items-center justify-center gap-2 rounded-button border border-clay bg-card px-4 py-2 text-sm font-bold text-ink">
+                  <Eye size={16} />
+                  Смотреть
+                </span>
+              </button>
+            ))}
+            {!stats.recentDemos.length ? <p className="text-sm text-muted">Демо-генераций пока нет</p> : null}
+          </div>
+        </Card>
+
+        <Card padding="lg">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-bold text-ink">Пути пользователей</h2>
+              <p className="mt-1 text-sm text-muted">Последние сессии: заходы, клики, генерации и страницы</p>
+            </div>
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+              {stats.userJourneys.length} сессий
+            </span>
+          </div>
+          <div className="mt-4 grid gap-3">
+            {stats.userJourneys.map((journey) => (
+              <div className="rounded-card border border-clay bg-paper/40 p-4" key={journey.sessionId}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-bold text-ink">
+                      {journey.guestId ? `Гость ${journey.guestId.slice(0, 8)}` : journey.userId ? `User ${journey.userId.slice(0, 8)}` : `Session ${journey.sessionId.slice(0, 8)}`}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-muted">
+                      {new Date(journey.firstSeenAt).toLocaleString("ru-RU")} → {new Date(journey.lastSeenAt).toLocaleString("ru-RU")}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs font-black text-ink">
+                    <span className="rounded-full bg-card px-3 py-1">Заходы: {journey.pageViews}</span>
+                    <span className="rounded-full bg-card px-3 py-1">Клики: {journey.clicks}</span>
+                    <span className="rounded-full bg-card px-3 py-1">Генерации/события: {journey.conversions}</span>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {journey.paths.map((pathItem) => (
+                    <span className="rounded-full border border-clay bg-card px-3 py-1 text-xs font-semibold text-muted" key={pathItem}>
+                      {pathItem}
+                    </span>
+                  ))}
+                </div>
+                <div className="mt-3 grid gap-2">
+                  {journey.events.map((event) => (
+                    <div className="grid gap-1 rounded-[12px] border border-clay/70 bg-card/60 px-3 py-2 text-xs sm:grid-cols-[130px_1fr_auto]" key={`${journey.sessionId}-${event.createdAt}-${event.eventName}`}>
+                      <span className="font-black text-accent">{event.eventName}</span>
+                      <span className="min-w-0 truncate text-muted">{event.label || event.path}</span>
+                      <span className="text-muted">{new Date(event.createdAt).toLocaleTimeString("ru-RU")}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+            {!stats.userJourneys.length ? <p className="text-sm text-muted">Пути пока не собраны</p> : null}
+          </div>
+        </Card>
+
+        <Card padding="lg">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
               <h2 className="text-lg font-bold text-ink">Последние карточки пользователей</h2>
-              <p className="mt-1 text-sm text-muted">Нажмите на карточку, чтобы увидеть результат и исходные вводные</p>
+              <p className="mt-1 text-sm text-muted">Нажмите на карточку, чтобы сравнить загрузку пользователя и результат генерации</p>
             </div>
             <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
               {stats.recentCards.length} последних
@@ -564,6 +893,9 @@ export function AdminDashboard() {
                     {new Date(card.createdAt).toLocaleString("ru-RU")}
                     {card.videoCount > 0 ? ` · ${card.videoCount} видео` : ""}
                   </p>
+                  <div className="mt-2">
+                    <RatingValue rating={card.generationRating} />
+                  </div>
                 </div>
                 <span className="inline-flex items-center justify-center gap-2 rounded-button border border-clay bg-card px-4 py-2 text-sm font-bold text-ink">
                   {card.videoCount > 0 ? <Film size={16} /> : <Eye size={16} />}
@@ -626,6 +958,14 @@ export function AdminDashboard() {
         onClose={() => {
           setSelectedCard(null);
           setCardLoading(false);
+        }}
+      />
+      <DemoDetailModal
+        detail={selectedDemo}
+        loading={demoLoading}
+        onClose={() => {
+          setSelectedDemo(null);
+          setDemoLoading(false);
         }}
       />
     </div>

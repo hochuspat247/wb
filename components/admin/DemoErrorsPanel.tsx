@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { Card } from "@/components/ui/Card";
+import { CollapsibleAdminSection } from "@/components/admin/CollapsibleAdminSection";
 
 type DemoErrorItem = {
   id: string;
@@ -26,19 +26,18 @@ function formatSource(source: string | null) {
 
 export function DemoErrorsPanel({ errors }: { errors: DemoErrorItem[] }) {
   return (
-    <Card padding="lg">
-      <div className="flex items-center gap-2">
-        <AlertTriangle className="text-accent" size={20} />
-        <div>
-          <h2 className="text-lg font-bold text-ink">Ошибки демо</h2>
-          <p className="mt-1 text-sm text-muted">Последние сбои демо-генерации с текстом ошибки</p>
-        </div>
-        <span className="ml-auto rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+    <CollapsibleAdminSection
+      badge={
+        <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
           {errors.length}
         </span>
-      </div>
-
-      <div className="mt-5 overflow-x-auto rounded-[18px] border border-clay">
+      }
+      description="Последние сбои демо-генерации с текстом ошибки"
+      icon={<AlertTriangle className="text-accent" size={20} />}
+      id="demo-errors"
+      title="Ошибки демо"
+    >
+      <div className="overflow-x-auto rounded-[18px] border border-clay">
         <table className="min-w-full text-left text-sm">
           <thead className="bg-paper/60 text-xs font-black uppercase tracking-[0.12em] text-muted">
             <tr>
@@ -80,6 +79,6 @@ export function DemoErrorsPanel({ errors }: { errors: DemoErrorItem[] }) {
           </tbody>
         </table>
       </div>
-    </Card>
+    </CollapsibleAdminSection>
   );
 }

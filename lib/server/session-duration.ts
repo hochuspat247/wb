@@ -8,19 +8,36 @@ export type SessionDurationBucket = {
   value: number;
 };
 
+export type ActiveHourBucket = {
+  label: string;
+  hour: number;
+  value: number;
+};
+
 export type SessionDurationStats = {
   periodDays: number;
   totalSessions: number;
   averageSeconds: number;
   medianSeconds: number;
   buckets: SessionDurationBucket[];
+  activeHours: ActiveHourBucket[];
+  peakHourLabel: string | null;
 };
 
 type SessionDurationRow = {
   durationMs: number;
 };
 
-export function buildSessionDurationStats(rows: SessionDurationRow[], periodDays: number): SessionDurationStats {
+type ActiveHourRow = {
+  hour: number | string | null;
+  value: number;
+};
+
+export function buildSessionDurationStats(
+  rows: SessionDurationRow[],
+  activeHourRows: ActiveHourRow[],
+  periodDays: number
+): SessionDurationStats {
   const durationsSeconds = rows.map((row) => Math.max(0, Math.round(Number(row.durationMs ?? 0) / 1000)));
   const buckets = createEmptyBuckets();
 
@@ -33,13 +50,37 @@ export function buildSessionDurationStats(rows: SessionDurationRow[], periodDays
     buckets[bucketIndex].value += 1;
   }
 
+  const activeHours = buildActiveHourBuckets(activeHourRows);
+  const peakHour = activeHours.reduce<ActiveHourBucket | null>(
+    (best, bucket) => (!best || bucket.value > best.value ? bucket : best),
+    null
+  );
+
   return {
     periodDays,
     totalSessions: durationsSeconds.length,
     averageSeconds: average(durationsSeconds),
     medianSeconds: median(durationsSeconds),
-    buckets
+    buckets,
+    activeHours,
+    peakHourLabel: peakHour && peakHour.value > 0 ? peakHour.label : null
   };
+}
+
+export function buildActiveHourBuckets(rows: ActiveHourRow[]): ActiveHourBucket[] {
+  const buckets = Array.from({ length: 24 }, (_, hour) => ({
+    label: `${String(hour).padStart(2, "0")}:00`,
+    hour,
+    value: 0
+  }));
+
+  for (const row of rows) {
+    const hour = Number(row.hour);
+    if (!Number.isFinite(hour) || hour < 0 || hour > 23) continue;
+    buckets[hour].value = Number(row.value ?? 0);
+  }
+
+  return buckets;
 }
 
 export function formatDurationLabel(seconds: number) {

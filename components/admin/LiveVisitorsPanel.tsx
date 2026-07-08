@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Activity, Eye, EyeOff, MapPin, RefreshCw } from "lucide-react";
+import { CollapsibleAdminSection } from "@/components/admin/CollapsibleAdminSection";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 
 type LiveVisitor = {
   sessionId: string;
@@ -75,28 +75,25 @@ export function LiveVisitorsPanel() {
   }, []);
 
   return (
-    <Card padding="lg">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <Activity className="text-mint" size={20} />
-            <h2 className="text-lg font-bold text-ink">Сейчас на сайте</h2>
-            <span className="rounded-full bg-mint/15 px-2.5 py-1 text-xs font-black text-mint">
-              {data?.activeCount ?? 0}
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-muted">
-            Активны за последние {data?.activeWindowSec ?? 90} секунд. Обновление каждые 10 секунд.
-          </p>
-        </div>
+    <CollapsibleAdminSection
+      badge={
+        <span className="rounded-full bg-mint/15 px-2.5 py-1 text-xs font-black text-mint">
+          {data?.activeCount ?? 0}
+        </span>
+      }
+      description={`Активны за последние ${data?.activeWindowSec ?? 90} секунд. Обновление каждые 10 секунд.`}
+      icon={<Activity className="text-mint" size={20} />}
+      id="live-visitors"
+      title="Сейчас на сайте"
+    >
+      <div className="mb-4 flex justify-end">
         <Button onClick={() => void load()} size="sm" variant="secondary">
           <RefreshCw size={16} />
           Обновить
         </Button>
       </div>
-
       {data?.sections.length ? (
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="mb-5 flex flex-wrap gap-2">
           {data.sections.map((section) => (
             <span
               className="rounded-full border border-clay bg-paper px-3 py-1.5 text-xs font-bold text-ink"
@@ -108,9 +105,9 @@ export function LiveVisitorsPanel() {
         </div>
       ) : null}
 
-      {error ? <p className="mt-4 text-sm font-semibold text-accent">{error}</p> : null}
+      {error ? <p className="mb-4 text-sm font-semibold text-accent">{error}</p> : null}
 
-      <div className="mt-5 overflow-x-auto rounded-[18px] border border-clay">
+      <div className="overflow-x-auto rounded-[18px] border border-clay">
         <table className="min-w-full text-left text-sm">
           <thead className="bg-paper/60 text-xs font-black uppercase tracking-[0.12em] text-muted">
             <tr>
@@ -172,6 +169,6 @@ export function LiveVisitorsPanel() {
           </tbody>
         </table>
       </div>
-    </Card>
+    </CollapsibleAdminSection>
   );
 }

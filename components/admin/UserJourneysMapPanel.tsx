@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowRight, MapPin, MousePointerClick, Route, X } from "lucide-react";
-import { Card } from "@/components/ui/Card";
+import { CollapsibleAdminSection } from "@/components/admin/CollapsibleAdminSection";
 import { getPathLabel } from "@/lib/presence/labels";
 
 export type UserJourney = {
@@ -215,18 +215,16 @@ export function UserJourneysMapPanel({ journeys, heatmap, topClicks, paths, sele
   const totalClicks = journeys.reduce((sum, journey) => sum + journey.clicks, 0);
 
   return (
-    <Card padding="lg">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <Route className="text-accent" size={20} />
-            <h2 className="text-lg font-bold text-ink">Пути пользователей</h2>
-            <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-black text-accent">{journeys.length}</span>
-          </div>
-          <p className="mt-1 text-sm text-muted">
-            Карта кликов и перемещений по сайту. Нажмите на пользователя, чтобы открыть его сессию.
-          </p>
-        </div>
+    <CollapsibleAdminSection
+      badge={
+        <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-black text-accent">{journeys.length}</span>
+      }
+      description="Карта кликов и перемещений по сайту. Нажмите на пользователя, чтобы открыть его сессию."
+      icon={<Route className="text-accent" size={20} />}
+      id="user-journeys"
+      title="Пути пользователей"
+    >
+      <div className="mb-5 flex justify-end">
         <select
           className="min-h-11 rounded-button border border-clay bg-paper px-4 py-2 text-sm font-semibold text-ink outline-none focus:border-accent/60"
           onChange={(event) => onPathChange(event.target.value)}
@@ -240,7 +238,7 @@ export function UserJourneysMapPanel({ journeys, heatmap, topClicks, paths, sele
         </select>
       </div>
 
-      <div className="mt-5 grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         <div>
           <p className="mb-2 text-xs font-black uppercase tracking-[0.14em] text-muted">Карта кликов — {selectedPath}</p>
           <ClickHeatmap points={heatmap} />
@@ -341,6 +339,6 @@ export function UserJourneysMapPanel({ journeys, heatmap, topClicks, paths, sele
       ) : (
         <p className="mt-5 text-sm font-semibold text-muted">Выберите пользователя на карте, чтобы посмотреть его путь по сайту.</p>
       )}
-    </Card>
+    </CollapsibleAdminSection>
   );
 }

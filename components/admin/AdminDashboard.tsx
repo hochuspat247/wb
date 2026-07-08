@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart3, Eye, Film, LogOut, MousePointerClick, RefreshCw, Star, Users, X } from "lucide-react";
 import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
+import { CollapsibleAdminSection } from "@/components/admin/CollapsibleAdminSection";
 import { DemoErrorsPanel } from "@/components/admin/DemoErrorsPanel";
 import { SessionDurationPanel } from "@/components/admin/SessionDurationPanel";
 import { UserJourneysMapPanel } from "@/components/admin/UserJourneysMapPanel";
@@ -651,7 +652,13 @@ export function AdminDashboard() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-5 p-4 sm:p-5 lg:space-y-6 lg:p-8">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
+        <CollapsibleAdminSection
+          description="Ключевые метрики проекта"
+          icon={<BarChart3 className="text-accent" size={20} />}
+          id="overview"
+          title="Обзор"
+        >
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
           <Card className="min-w-0" padding="md">
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0">
@@ -697,7 +704,8 @@ export function AdminDashboard() {
               <BarChart3 className="shrink-0 text-accent" size={22} />
             </div>
           </Card>
-        </div>
+          </div>
+        </CollapsibleAdminSection>
 
         <LiveVisitorsPanel />
 
@@ -705,10 +713,13 @@ export function AdminDashboard() {
 
         {stats ? <DemoErrorsPanel errors={stats.recentDemoErrors ?? []} /> : null}
 
-        <Card padding="lg">
-          <h2 className="text-lg font-bold text-ink">Последние пользователи</h2>
-          <p className="mt-1 text-sm text-muted">Email и квота сохраняются в SQLite</p>
-          <div className="mt-4 grid gap-3 md:hidden">
+        <CollapsibleAdminSection
+          description="Email и квота сохраняются в SQLite"
+          icon={<Users className="text-accent" size={20} />}
+          id="recent-users"
+          title="Последние пользователи"
+        >
+          <div className="grid gap-3 md:hidden">
             {stats.recentUsers.map((user) => (
               <div className="rounded-card border border-clay bg-paper/40 p-4" key={user.id}>
                 <div className="flex items-start justify-between gap-3">
@@ -727,7 +738,7 @@ export function AdminDashboard() {
               </div>
             ))}
           </div>
-          <div className="mt-4 hidden overflow-x-auto md:block">
+          <div className="hidden overflow-x-auto md:block">
             <table className="min-w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-clay text-muted">
@@ -753,12 +764,15 @@ export function AdminDashboard() {
               </tbody>
             </table>
           </div>
-        </Card>
+        </CollapsibleAdminSection>
 
-        <Card padding="lg">
-          <h2 className="text-lg font-bold text-ink">Воронка конверсий</h2>
-          <p className="mt-1 text-sm text-muted">За последние 30 дней</p>
-          <div className="mt-5 space-y-3">
+        <CollapsibleAdminSection
+          description="За последние 30 дней"
+          icon={<MousePointerClick className="text-accent" size={20} />}
+          id="funnel"
+          title="Воронка конверсий"
+        >
+          <div className="space-y-3">
             {funnel.map(([label, value]) => (
               <div key={label}>
                 <div className="mb-1 flex items-start justify-between gap-3 text-sm">
@@ -776,7 +790,7 @@ export function AdminDashboard() {
               </div>
             ))}
           </div>
-        </Card>
+        </CollapsibleAdminSection>
 
         <UserJourneysMapPanel
           heatmap={stats.heatmap}
@@ -787,26 +801,30 @@ export function AdminDashboard() {
           topClicks={stats.topClicks}
         />
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Card padding="lg">
-            <div className="grid gap-6 md:grid-cols-2">
-              <MiniBars label="Регистрации по дням" rows={stats.signupsByDay} />
-              <MiniBars label="Генерации по дням" rows={stats.generationsByDay} />
-            </div>
-          </Card>
-        </div>
+        <CollapsibleAdminSection
+          description="Динамика за последние дни"
+          icon={<BarChart3 className="text-accent" size={20} />}
+          id="charts-daily"
+          title="Графики по дням"
+        >
+          <div className="grid gap-6 md:grid-cols-2">
+            <MiniBars label="Регистрации по дням" rows={stats.signupsByDay} />
+            <MiniBars label="Генерации по дням" rows={stats.generationsByDay} />
+          </div>
+        </CollapsibleAdminSection>
 
-        <Card padding="lg">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-bold text-ink">Демо-генерации гостей</h2>
-              <p className="mt-1 text-sm text-muted">Фото, ввод пользователя и оценка даже без регистрации</p>
-            </div>
+        <CollapsibleAdminSection
+          badge={
             <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
               {stats.recentDemos.length} последних
             </span>
-          </div>
-          <div className="mt-4 grid gap-3">
+          }
+          description="Фото, ввод пользователя и оценка даже без регистрации"
+          icon={<Eye className="text-accent" size={20} />}
+          id="recent-demos"
+          title="Демо-генерации гостей"
+        >
+          <div className="grid gap-3">
             {stats.recentDemos.map((demo) => (
               <button
                 className="grid gap-3 rounded-card border border-clay bg-paper/40 p-4 text-left transition hover:border-accent/45 hover:bg-paper md:grid-cols-[1fr_auto] md:items-center"
@@ -832,19 +850,20 @@ export function AdminDashboard() {
             ))}
             {!stats.recentDemos.length ? <p className="text-sm text-muted">Демо-генераций пока нет</p> : null}
           </div>
-        </Card>
+        </CollapsibleAdminSection>
 
-        <Card padding="lg">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-bold text-ink">Последние карточки пользователей</h2>
-              <p className="mt-1 text-sm text-muted">Нажмите на карточку, чтобы сравнить загрузку пользователя и результат генерации</p>
-            </div>
+        <CollapsibleAdminSection
+          badge={
             <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
               {stats.recentCards.length} последних
             </span>
-          </div>
-          <div className="mt-4 grid gap-3">
+          }
+          description="Нажмите на карточку, чтобы сравнить загрузку пользователя и результат генерации"
+          icon={<Film className="text-accent" size={20} />}
+          id="recent-cards"
+          title="Последние карточки пользователей"
+        >
+          <div className="grid gap-3">
             {stats.recentCards.map((card) => (
               <button
                 className="grid gap-3 rounded-card border border-clay bg-paper/40 p-4 text-left transition hover:border-accent/45 hover:bg-paper md:grid-cols-[1fr_auto] md:items-center"
@@ -873,7 +892,7 @@ export function AdminDashboard() {
             ))}
             {!stats.recentCards.length ? <p className="text-sm text-muted">Карточки еще не сохранены</p> : null}
           </div>
-        </Card>
+        </CollapsibleAdminSection>
       </main>
       <CardDetailModal
         detail={selectedCard}

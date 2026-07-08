@@ -343,7 +343,21 @@ export async function getAdminAnalytics(pathFilter = "/") {
     []
   );
 
-  const sessionDuration = buildSessionDurationStats(sessionDurationRows, 30);
+  const moscowHour = sql<number>`cast(strftime('%H', ${analyticsEvents.createdAt} / 1000, 'unixepoch', '+3 hours') as integer)`;
+  const activeHourRows = await safeAnalyticsQuery(
+    "active hours",
+    db
+      .select({
+        hour: moscowHour,
+        value: count()
+      })
+      .from(analyticsEvents)
+      .where(gte(analyticsEvents.createdAt, since30d))
+      .groupBy(moscowHour),
+    []
+  );
+
+  const sessionDuration = buildSessionDurationStats(sessionDurationRows, activeHourRows, 30);
 
   const videoCountRows =
     cardIds.length > 0

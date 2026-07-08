@@ -286,6 +286,7 @@ export function CardGenerator({
   );
   const selectedCountExceedsQuota =
     persistToServer && remainingGenerations !== null && plannedGenerationCount > remainingGenerations;
+  const showQuotaExceededWarning = selectedCountExceedsQuota && !isLoading;
 
   useEffect(() => {
     setHistory(getHistory());
@@ -319,7 +320,7 @@ export function CardGenerator({
           setRenderedImageUrl(dataUrl);
         }
       } catch {
-        if (!cancelled) {
+        if (!cancelled && !isLoading) {
           setNotice("Карточка готова. Нажмите «Скачать PNG», чтобы сохранить файл.");
         }
       } finally {
@@ -333,7 +334,7 @@ export function CardGenerator({
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [card, imageUrl, style]);
+  }, [card, imageUrl, style, isLoading]);
 
   async function handleImage(file?: File) {
     if (!file) {
@@ -1101,6 +1102,7 @@ export function CardGenerator({
     editInstructions?: string,
     imageGenerationTicket?: string
   ): Promise<ProductCardResult | null> {
+    const inSeriesBatch = Boolean(cardForImage.seriesCount && cardForImage.seriesCount > 1 && isLoading);
     const productImage = imageUrl || cardForImage.imageDataUrl;
 
     if (!productImage) {
@@ -1185,19 +1187,25 @@ export function CardGenerator({
       const updatedCard = applyImageResult(cardForImage, data);
 
       if (!hasUsableImage(data)) {
-        setNotice(
-          data.error
-            ? `NanoBanana не вернул AI-изображение: ${data.error}. Показан fallback-preview.`
-            : "NanoBanana не вернул AI-изображение. Показан fallback-preview."
-        );
+        if (!inSeriesBatch) {
+          setNotice(
+            data.error
+              ? `NanoBanana не вернул AI-изображение: ${data.error}. Показан fallback-preview.`
+              : "NanoBanana не вернул AI-изображение. Показан fallback-preview."
+          );
+        }
         return updatedCard;
       }
 
-      setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
+      if (!inSeriesBatch) {
+        setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
+      }
       return updatedCard;
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Неизвестная ошибка генерации изображения";
-      setNotice(`Текст готов, но AI-изображение не создалось: ${message}. Показан fallback-preview.`);
+      if (!inSeriesBatch) {
+        setNotice(`Текст готов, но AI-изображение не создалось: ${message}. Показан fallback-preview.`);
+      }
       return cardForImage;
     } finally {
       setIsGeneratingAiImage(false);
@@ -1432,7 +1440,7 @@ export function CardGenerator({
                     />
                   </div>
                 ) : null}
-                {selectedCountExceedsQuota ? (
+                {showQuotaExceededWarning ? (
                   <p className="mt-3 text-sm text-red-400">
                     Нужно {plannedGenerationCount} генераций, доступно {remainingGenerations}
                   </p>
@@ -1570,14 +1578,14 @@ export function CardGenerator({
               ) : null}
               {error ? <Alert variant="error">{error}</Alert> : null}
               {notice ? <Alert variant="success">{notice}</Alert> : null}
-              {persistToServer && remainingGenerations !== null ? (
-                <p className="text-sm font-semibold text-muted">
-                  Доступно генераций: <span className="text-accent">{remainingGenerations}</span>
-                </p>
-              ) : null}
               {seriesProgress ? (
                 <p className={`text-sm font-semibold ${darkConsole ? "text-mint" : "text-accent"}`}>
                   {seriesProgress}
+                </p>
+              ) : null}
+              {persistToServer && remainingGenerations !== null && !isLoading ? (
+                <p className="text-sm font-semibold text-muted">
+                  Доступно генераций: <span className="text-accent">{remainingGenerations}</span>
                 </p>
               ) : null}
               <div className={`flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap sm:gap-3 ${darkConsole ? "border-white/10" : "border-clay"}`}>

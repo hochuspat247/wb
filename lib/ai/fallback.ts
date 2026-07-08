@@ -52,7 +52,7 @@ function keywordSet(productName: string, category: string) {
 
 export function buildFallbackCard(input: ProductCardInput): ProductCardResult {
   const category = detectCategory(input.productDescription, input.category);
-  const productName = extractProductName(input.productDescription);
+  const productName = input.identifiedProductName || extractProductName(input.productDescription);
   const productLabel = sentenceCase(productName);
   const marketplace = input.marketplace || "Wildberries";
 

@@ -294,7 +294,7 @@ function resolveDescription(input: MarketplaceTextInput, platformSpecific: Marke
 
 export function generateMarketplaceTextFallback(input: MarketplaceTextInput): MarketplaceTextResult {
   const category = input.category || detectCategory(input.productDescription);
-  const productName = extractProductName(input.productDescription);
+  const productName = input.identifiedProductName || extractProductName(input.productDescription);
   const productLabel = sentenceCase(productName);
   const profile = getPlatformProfile(input.platform);
   const platformSpecific = buildPlatformSpecific(input, productLabel);

@@ -47,6 +47,10 @@ export type ProductCardInput = {
   focusBenefits: boolean;
   includeInfographicText: boolean;
   imageFileName?: string;
+  imageBase64?: string;
+  imageMimeType?: string;
+  sellerWishes?: string;
+  identifiedProductName?: string;
   platform?: MarketplacePlatform;
   textMode?: MarketplaceTextMode;
   brand?: string;

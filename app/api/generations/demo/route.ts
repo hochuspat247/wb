@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
 import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
+import { resolveProductContextFromImage } from "@/lib/ai/productVision";
 import { generateProductCard } from "@/lib/ai/providers";
-import { detectCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { generateMarketplaceTextFallback } from "@/lib/marketplace/textFallback";
 import { createDemoGeneration } from "@/lib/server/demo-generations";
@@ -103,12 +103,19 @@ export async function POST(request: Request) {
     }
 
     const marketplace = requestedCardInput.marketplace || "Wildberries";
-    const category = detectCategory(requestedCardInput.productDescription.trim(), requestedCardInput.category?.trim());
+    const productContext = await resolveProductContextFromImage({
+      productDescription: requestedCardInput.productDescription.trim(),
+      category: requestedCardInput.category?.trim(),
+      brand: requestedCardInput.brand?.trim(),
+      imageBase64: body.imageBase64,
+      imageMimeType: body.imageMimeType
+    });
+    const category = productContext.category;
     const platform = requestedCardInput.platform ?? marketplaceLabelToPlatform(marketplace);
     const textMode = requestedCardInput.textMode ?? "marketplace_safe";
     const cardInput: ProductCardInput = {
       ...requestedCardInput,
-      productDescription: requestedCardInput.productDescription.trim(),
+      productDescription: productContext.productDescription,
       category,
       marketplace,
       style: requestedCardInput.style || "Премиальный",
@@ -116,7 +123,10 @@ export async function POST(request: Request) {
       focusBenefits: true,
       includeInfographicText: true,
       platform,
-      textMode
+      textMode,
+      brand: productContext.brand,
+      sellerWishes: productContext.sellerWishes,
+      identifiedProductName: productContext.identifiedProductName
     };
 
     const generatedText = await generateProductCard(cardInput);
@@ -186,6 +196,8 @@ function buildMarketplaceInput(cardInput: ProductCardInput, result: ProductCardR
     mode: cardInput.textMode ?? "marketplace_safe",
     productDescription: cardInput.productDescription,
     category: cardInput.category ?? result.category,
+    sellerWishes: cardInput.sellerWishes,
+    identifiedProductName: cardInput.identifiedProductName,
     brand: cardInput.brand,
     sellerSku: cardInput.sellerSku,
     color: cardInput.color,
@@ -247,7 +259,7 @@ function enrichCard(
 
 async function generateDemoImage(card: ProductCardResult, body: DemoGenerationRequest): Promise<GenerateImageResult> {
   const input: GenerateImageInput = {
-    productDescription: body.cardInput?.productDescription || card.shortDescription,
+    productDescription: card.sourceInput?.productDescription || card.shortDescription,
     category: card.category,
     marketplace: card.marketplace,
     style: card.style || "Премиальный",

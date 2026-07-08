@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { generateProductCard } from "@/lib/ai/providers";
+import { resolveProductContextFromImage } from "@/lib/ai/productVision";
 import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
-import { detectCategory } from "@/lib/category";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import { createImageGenerationTicket } from "@/lib/server/imageGenerationTickets";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
@@ -55,22 +55,31 @@ export async function POST(request: Request) {
     }
 
     const marketplace = body.marketplace || "Wildberries";
-    const category = detectCategory(body.productDescription.trim(), body.category?.trim());
+    const productContext = await resolveProductContextFromImage({
+      productDescription: body.productDescription.trim(),
+      category: body.category?.trim(),
+      brand: body.brand?.trim(),
+      imageBase64: body.imageBase64,
+      imageMimeType: body.imageMimeType
+    });
+    const category = productContext.category;
     const platform = body.platform ?? marketplaceLabelToPlatform(marketplace);
     const textMode = body.textMode ?? "marketplace_safe";
 
     const cardInput: ProductCardInput = {
-      productDescription: body.productDescription.trim(),
-      category: body.category?.trim(),
+      productDescription: productContext.productDescription,
+      category,
       marketplace,
       style: body.style || "Минималистичный",
       includeSeo: Boolean(body.includeSeo),
       focusBenefits: Boolean(body.focusBenefits),
       includeInfographicText: Boolean(body.includeInfographicText),
       imageFileName: body.imageFileName,
+      sellerWishes: productContext.sellerWishes,
+      identifiedProductName: productContext.identifiedProductName,
       platform,
       textMode,
-      brand: body.brand?.trim(),
+      brand: productContext.brand,
       sellerSku: body.sellerSku?.trim(),
       color: body.color?.trim(),
       size: body.size?.trim(),
@@ -94,6 +103,8 @@ export async function POST(request: Request) {
       mode: textMode,
       productDescription: cardInput.productDescription,
       category,
+      sellerWishes: cardInput.sellerWishes,
+      identifiedProductName: cardInput.identifiedProductName,
       brand: cardInput.brand,
       sellerSku: cardInput.sellerSku,
       color: cardInput.color,

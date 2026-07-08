@@ -20,7 +20,7 @@ import { SkeletonBlock } from "@/components/ui/Loader";
 import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { getImageSettings } from "@/lib/imageSettings";
-import { detectCategory } from "@/lib/category";
+import { resolveCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
 import {
@@ -258,7 +258,10 @@ export function CardGenerator({
     return () => window.clearInterval(timer);
   }, [isDemoGenerating]);
 
-  const effectiveCategory = useMemo(() => detectCategory(description, category), [category, description]);
+  const effectiveCategory = useMemo(
+    () => resolveCategory({ description, category }),
+    [category, description]
+  );
 
   useEffect(() => {
     if (cardsCount === 1) {
@@ -441,6 +444,7 @@ export function CardGenerator({
     const { quota: _quota, error: _error, imageGenerationTicket, ...cardPayload } = data;
     const planItem = options.planItem;
     const preserveCard = options.preserveCard;
+    const { imageBase64: _imageBase64, imageMimeType: _imageMimeType, ...sourceInputPayload } = requestPayload;
     const generatedCard: ProductCardResult = {
       ...(cardPayload as ProductCardResult),
       id: preserveCard?.id || (cardPayload as ProductCardResult).id,
@@ -471,7 +475,7 @@ export function CardGenerator({
       seriesPlanItem: planItem ?? preserveCard?.seriesPlanItem,
       seriesStyleGuide: options.seriesId || preserveCard?.seriesId ? buildSeriesStyleGuide(style, marketplace) : preserveCard?.seriesStyleGuide,
       sourceInput: {
-        ...payload,
+        ...sourceInputPayload,
         headline: planItem?.mainHeadline || headline.trim() || undefined,
         price: price.trim() || undefined,
         ctaText: ctaText.trim() || undefined,
@@ -527,6 +531,7 @@ export function CardGenerator({
     setIsLoading(true);
     setSeriesCards([]);
     setRatingPromptCardId(null);
+    const imagePayload = imageUrl ? dataUrlToBase64(imageUrl) : null;
     const payload: ProductCardInput = {
       productDescription: description,
       category: effectiveCategory,
@@ -536,6 +541,8 @@ export function CardGenerator({
       focusBenefits: true,
       includeInfographicText: true,
       imageFileName,
+      imageBase64: imagePayload?.base64,
+      imageMimeType: imagePayload?.mimeType,
       platform: marketplaceLabelToPlatform(marketplace),
       textMode,
       brand: brand.trim() || undefined,
@@ -1105,21 +1112,24 @@ export function CardGenerator({
 
     try {
       const image = dataUrlToBase64(productImage);
+      const baseCardInput =
+        cardForImage.sourceInput ??
+        ({
+          productDescription: description,
+          category: cardForImage.category,
+          marketplace,
+          style,
+          includeSeo: true,
+          focusBenefits: true,
+          includeInfographicText: true
+        } satisfies ProductCardInput);
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           productDescription: cardForImage.seriesPlanItem
-            ? buildSeriesCardDescription(cardForImage.sourceInput ?? {
-                productDescription: description,
-                category: cardForImage.category,
-                marketplace,
-                style,
-                includeSeo: true,
-                focusBenefits: true,
-                includeInfographicText: true
-              }, cardForImage.seriesPlanItem, cardForImage.seriesCount ?? plannedGenerationCount)
-            : description,
+            ? buildSeriesCardDescription(baseCardInput, cardForImage.seriesPlanItem, cardForImage.seriesCount ?? plannedGenerationCount)
+            : baseCardInput.productDescription,
           category: cardForImage.category,
           style,
           marketplace,

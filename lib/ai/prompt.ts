@@ -1,6 +1,27 @@
 import type { ProductCardInput } from "@/types/product-card";
 import { buildEditInstructionsBlock } from "@/lib/series/editing";
 
+function buildProductContextBlock(input: ProductCardInput & { category: string }) {
+  const lines = [
+    `Описание товара (факты): ${input.productDescription}`,
+    `Категория: ${input.category}`
+  ];
+
+  if (input.identifiedProductName) {
+    lines.push(`Определено по фото: ${input.identifiedProductName}`);
+  }
+
+  if (input.sellerWishes?.trim()) {
+    lines.push(
+      `Пожелания продавца к карточке: ${input.sellerWishes.trim()}`,
+      "ВАЖНО: пожелания продавца — это акценты, визуальные идеи или сценарий подачи. Они НЕ меняют тип товара.",
+      "Если пожелания звучат метафорично или шутливо, интерпретируй их только в рамках реального товара с фото."
+    );
+  }
+
+  return lines.join("\n");
+}
+
 export function buildCardPrompt(input: ProductCardInput & { category: string }) {
   const editBlock = buildEditInstructionsBlock(input.editInstructions, input.previousCard);
   const role = getMarketplaceRole(input.marketplace);
@@ -16,8 +37,7 @@ export function buildCardPrompt(input: ProductCardInput & { category: string }) 
 Верни только валидный JSON без markdown.
 
 Входные данные:
-Описание товара: ${input.productDescription}
-Категория: ${input.category}
+${buildProductContextBlock(input)}
 Маркетплейс: ${input.marketplace}
 Стиль карточки: ${input.style}
 Предполагаемая аудитория: ${audience}

@@ -17,6 +17,8 @@ export type MarketplaceTextInput = {
   mode: MarketplaceTextMode;
   productDescription: string;
   category: string;
+  sellerWishes?: string;
+  identifiedProductName?: string;
   brand?: string;
   sellerSku?: string;
   color?: string;

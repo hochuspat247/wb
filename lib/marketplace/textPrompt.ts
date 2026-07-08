@@ -11,10 +11,21 @@ const MODE_LABELS: Record<MarketplaceTextInput["mode"], string> = {
 
 function formatInputFields(input: MarketplaceTextInput): string {
   const lines: string[] = [
-    `Описание товара: ${input.productDescription}`,
+    `Описание товара (факты): ${input.productDescription}`,
     `Категория: ${input.category}`,
     `Режим текста: ${MODE_LABELS[input.mode]}`
   ];
+
+  if (input.identifiedProductName) {
+    lines.push(`Определено по фото: ${input.identifiedProductName}`);
+  }
+
+  if (input.sellerWishes?.trim()) {
+    lines.push(
+      `Пожелания продавца к карточке: ${input.sellerWishes.trim()}`,
+      "ВАЖНО: пожелания продавца не заменяют товар. Пиши про товар с фото, а пожелания используй только как акценты подачи."
+    );
+  }
 
   const optional: [string, string | undefined][] = [
     ["Бренд", input.brand],

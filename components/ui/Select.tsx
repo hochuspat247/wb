@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Lock } from "lucide-react";
 import {
   Children,
   isValidElement,
@@ -21,6 +21,7 @@ type SelectOption = {
 
 type SelectProps = Omit<SelectHTMLAttributes<HTMLSelectElement>, "onChange"> & {
   onChange?: (event: ChangeEvent<HTMLSelectElement>) => void;
+  onDisabledOptionClick?: (value: string) => void;
   variant?: "default" | "dark";
 };
 
@@ -51,6 +52,7 @@ export function Select({
   children,
   value,
   onChange,
+  onDisabledOptionClick,
   variant = "default",
   disabled,
   name
@@ -139,7 +141,10 @@ export function Select({
             disabled={option.disabled}
             key={option.value}
             onClick={() => {
-              if (option.disabled) return;
+              if (option.disabled) {
+                onDisabledOptionClick?.(option.value);
+                return;
+              }
 
               onChange?.({
                 target: { value: option.value }
@@ -150,7 +155,10 @@ export function Select({
             style={{ transitionDelay: open ? `${index * 24}ms` : "0ms" }}
             type="button"
           >
-            {option.label}
+            <span className="flex items-center justify-between gap-3">
+              <span className="truncate">{option.label}</span>
+              {option.disabled ? <Lock className="shrink-0 opacity-70" size={14} /> : null}
+            </span>
           </button>
         ))}
       </div>

@@ -90,6 +90,8 @@ export async function fetchUserQuota() {
     remaining: number;
     canGenerate: boolean;
     unlimited?: boolean;
+    cleanDownloadGenerationId?: string | null;
+    downloadsFullyUnlocked?: boolean;
   }>;
 }
 

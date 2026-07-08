@@ -25,6 +25,7 @@ import { resolveCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
 import { downloadCardImageAsset } from "@/lib/client/cardImage";
+import { applyDownloadPolicyToCard, type DownloadPolicy } from "@/lib/client/watermarkPolicy";
 import {
   base64ToBlob,
   base64ToDataUrl,
@@ -63,6 +64,27 @@ import type { MarketplaceTextMode } from "@/types/marketplace";
 const marketplaces = ["Wildberries", "Ozon", "Avito", "Яндекс Маркет"];
 const styles = ["Минималистичный", "Премиальный", "Яркий", "Нежный", "Технологичный"];
 const cardCountOptions: CardSeriesCount[] = [1, 3, 5, 7, 10];
+
+function getRequiredGenerationsForCardsCount(count: CardSeriesCount, category: string) {
+  if (count === 1) {
+    return 1;
+  }
+
+  return getDefaultSeriesTypes(count, category).length;
+}
+
+function isCardCountOptionLocked(
+  count: CardSeriesCount,
+  remaining: number | null,
+  persistToServer: boolean,
+  category: string
+) {
+  if (!persistToServer || remaining === null || remaining >= 999_000) {
+    return false;
+  }
+
+  return getRequiredGenerationsForCardsCount(count, category) > remaining;
+}
 const DEMO_MIN_LOADING_MS = 20_000;
 const DEMO_PROGRESS_DURATION_MS = 140_000;
 const DEMO_LOADING_STATUSES = [
@@ -220,6 +242,7 @@ export function CardGenerator({
   const [isSavingGenerationRating, setIsSavingGenerationRating] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [remainingGenerations, setRemainingGenerations] = useState<number | null>(null);
+  const [downloadPolicy, setDownloadPolicy] = useState<DownloadPolicy | null>(null);
   const [hasUnlimitedAccess, setHasUnlimitedAccess] = useState(false);
   const [demoStatusIndex, setDemoStatusIndex] = useState(0);
   const [demoProgress, setDemoProgress] = useState(0);
@@ -234,14 +257,23 @@ export function CardGenerator({
   useEffect(() => {
     if (!persistToServer) return;
 
-    fetchUserQuota()
-      .then((quota) => {
-        setRemainingGenerations(quota.remaining);
-        setHasUnlimitedAccess(Boolean(quota.unlimited));
-        onQuotaChange?.(quota);
-      })
-      .catch(() => setRemainingGenerations(null));
+    refreshDownloadPolicy().catch(() => {
+      setRemainingGenerations(null);
+      setDownloadPolicy(null);
+    });
   }, [persistToServer, onQuotaChange]);
+
+  async function refreshDownloadPolicy() {
+    const quota = await fetchUserQuota();
+    setRemainingGenerations(quota.remaining);
+    setHasUnlimitedAccess(Boolean(quota.unlimited));
+    setDownloadPolicy({
+      cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
+      downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
+    });
+    onQuotaChange?.(quota);
+    return quota;
+  }
 
   useEffect(() => {
     if (!isDemoGenerating) {
@@ -277,6 +309,23 @@ export function CardGenerator({
 
     setSelectedSeriesTypes(getDefaultSeriesTypes(cardsCount, effectiveCategory));
   }, [cardsCount, effectiveCategory]);
+
+  useEffect(() => {
+    if (!persistToServer || remainingGenerations === null || remainingGenerations >= 999_000) {
+      return;
+    }
+
+    if (getRequiredGenerationsForCardsCount(cardsCount, effectiveCategory) <= remainingGenerations) {
+      return;
+    }
+
+    const fallback =
+      [...cardCountOptions]
+        .reverse()
+        .find((count) => getRequiredGenerationsForCardsCount(count, effectiveCategory) <= remainingGenerations) ?? 1;
+
+    setCardsCount(fallback);
+  }, [cardsCount, effectiveCategory, persistToServer, remainingGenerations]);
 
   const plannedGenerationCount = cardsCount === 1 ? 1 : selectedSeriesTypes.length;
   const seriesPlan = useMemo(
@@ -796,6 +845,7 @@ export function CardGenerator({
         setCard((current) => (current?.id === savedCard.id ? savedCard : current));
         setSeriesCards((items) => items.map((item) => (item.id === savedCard.id ? savedCard : item)));
       }
+      await refreshDownloadPolicy();
       onSaved?.();
       reachGoal("save_to_history", { automatic: true });
       if (!options.silent) {
@@ -911,22 +961,22 @@ export function CardGenerator({
   }
 
   async function handleDownloadBestImage() {
-    if (!card) {
+    if (!displayCard) {
       return;
     }
 
     reachGoal("download_png");
     trackConversion("download_png", {
       source: persistToServer ? "cabinet" : "local",
-      series: Boolean(card.seriesId)
+      series: Boolean(displayCard.seriesId)
     });
-    await downloadBestImage(card, renderedImageUrl, previewRef.current);
+    await downloadBestImage(displayCard, renderedImageUrl, previewRef.current);
 
-    if (card.watermarkLocked) {
+    if (displayCard.watermarkLocked) {
       setNotice("Скачана версия с демо-меткой. Без водяного знака — первая карточка или после покупки пакета.");
     }
 
-    if (persistToServer && hasGeneratedAiCover(card)) {
+    if (persistToServer && hasGeneratedAiCover(displayCard)) {
       setEmphasizeVideoOffer(true);
       trackMarketingEvent("video_upsell_view", { source: "png_download" });
       window.requestAnimationFrame(() => {
@@ -936,14 +986,19 @@ export function CardGenerator({
   }
 
   async function handleDownloadSeriesCard(seriesCard: ProductCardResult, index: number) {
+    const displaySeriesCard =
+      persistToServer && downloadPolicy
+        ? applyDownloadPolicyToCard(seriesCard, downloadPolicy, persistToServer)
+        : seriesCard;
+
     reachGoal("download_png", { source: "series", seriesIndex: seriesCard.seriesIndex ?? index + 1 });
     trackConversion("download_png", { source: "series", seriesIndex: seriesCard.seriesIndex ?? index + 1 });
-    await downloadCardImage(seriesCard, `marketcard-series-${seriesCard.seriesIndex ?? index + 1}.png`);
+    await downloadCardImage(displaySeriesCard, `marketcard-series-${seriesCard.seriesIndex ?? index + 1}.png`);
   }
 
   async function handleDownloadSeriesZip() {
     const files = await Promise.all(
-      seriesCards.map(async (seriesCard, index) => {
+      displaySeriesCards.map(async (seriesCard, index) => {
         const blob = await getCardImageBlob(seriesCard);
 
         if (!blob) return null;
@@ -1258,15 +1313,24 @@ export function CardGenerator({
     }
   }
 
-  const aiImageUrl = card ? getGeneratedCoverSrc(card) : null;
+  const displayCard =
+    card && persistToServer ? applyDownloadPolicyToCard(card, downloadPolicy, persistToServer) : card;
+  const displaySeriesCards = useMemo(
+    () =>
+      persistToServer
+        ? seriesCards.map((seriesCard) => applyDownloadPolicyToCard(seriesCard, downloadPolicy, persistToServer))
+        : seriesCards,
+    [downloadPolicy, persistToServer, seriesCards]
+  );
+  const aiImageUrl = displayCard ? getGeneratedCoverSrc(displayCard) : null;
 
-  const hasAiCover = Boolean(card && !isGeneratingAiImage && hasGeneratedAiCover(card));
+  const hasAiCover = Boolean(displayCard && !isGeneratingAiImage && hasGeneratedAiCover(displayCard));
   const shouldShowGenerationRatingPrompt = Boolean(
-    card &&
+    displayCard &&
       hasAiCover &&
-      ratingPromptCardId === card.id &&
-      !card.generationRating &&
-      !card.generationRatingDismissedAt
+      ratingPromptCardId === displayCard.id &&
+      !displayCard.generationRating &&
+      !displayCard.generationRatingDismissedAt
   );
 
   const isWorking = isLoading || isGeneratingAiImage || isRenderingImage || isDemoGenerating;
@@ -1475,16 +1539,38 @@ export function CardGenerator({
                   Сколько карточек
                   <Select
                     onChange={(event) => setCardsCount(Number(event.target.value) as CardSeriesCount)}
+                    onDisabledOptionClick={() => setShowPaywall(true)}
                     value={cardsCount}
                     variant={selectVariant}
                   >
-                    {cardCountOptions.map((count) => (
-                      <option key={count} value={count}>
-                        {count === 1 ? "1 карточка" : `${count} карточки`}
-                      </option>
-                    ))}
+                    {cardCountOptions.map((count) => {
+                      const locked = isCardCountOptionLocked(
+                        count,
+                        remainingGenerations,
+                        persistToServer,
+                        effectiveCategory
+                      );
+
+                      return (
+                        <option disabled={locked} key={count} value={count}>
+                          {count === 1 ? "1 карточка" : `${count} карточки`}
+                          {locked ? " · после оплаты" : ""}
+                        </option>
+                      );
+                    })}
                   </Select>
                 </label>
+                {persistToServer &&
+                remainingGenerations !== null &&
+                remainingGenerations < 999_000 &&
+                cardCountOptions.some((count) =>
+                  isCardCountOptionLocked(count, remainingGenerations, persistToServer, effectiveCategory)
+                ) ? (
+                  <p className={`mt-2 text-xs font-semibold leading-relaxed ${darkConsole ? "text-white/45" : "text-muted"}`}>
+                    Серии из 3+ карточек доступны после покупки пакета. Сейчас можно сгенерировать до{" "}
+                    {remainingGenerations} {remainingGenerations === 1 ? "карточку" : "карточки"}.
+                  </p>
+                ) : null}
                 {cardsCount > 1 ? (
                   <div className="mt-4 grid gap-3">
                     <p className={`text-sm ${darkConsole ? "text-white/50" : "text-muted"}`}>
@@ -1652,7 +1738,11 @@ export function CardGenerator({
               <div className={`flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap sm:gap-3 ${darkConsole ? "border-white/10" : "border-clay"}`}>
                 <Button
                   className={`w-full sm:w-auto ${GENERATE_BUTTON_CLASS}`}
-                  disabled={isWorking || (persistToServer && remainingGenerations === 0)}
+                  disabled={
+                    isWorking ||
+                    (persistToServer && remainingGenerations === 0) ||
+                    selectedCountExceedsQuota
+                  }
                   type="submit"
                 >
                   {isWorking ? <Loader2 className="animate-spin" size={17} /> : <Wand2 size={17} />}
@@ -1745,16 +1835,16 @@ export function CardGenerator({
                     </div>
                   ) : (
                     <GeneratedCardPreview
-                      card={card}
+                      card={displayCard ?? card}
                       compact={embedded}
                       imageUrl={imageUrl || card.imageDataUrl}
                       ref={previewRef}
                       styleName={style}
                     />
                   )}
-                  {card.watermarkLocked ? <WatermarkOverlay /> : null}
+                  {displayCard?.watermarkLocked ? <WatermarkOverlay /> : null}
                 </div>
-                {card.watermarkLocked ? (
+                {displayCard?.watermarkLocked ? (
                   <p className={`mt-3 text-sm font-semibold leading-relaxed ${darkConsole ? "text-white/55" : "text-muted"}`}>
                     Карточка с демо-меткой. Скачать без водяного знака можно для первой генерации или после покупки
                     пакета.
@@ -1814,7 +1904,7 @@ export function CardGenerator({
                   </Button>
                 </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  {seriesCards.map((seriesCard, index) => {
+                  {displaySeriesCards.map((seriesCard, index) => {
                     const previewUrl = getGeneratedCardImageUrl(seriesCard);
                     const itemError = seriesCard.generatedImageError;
 
@@ -1826,12 +1916,15 @@ export function CardGenerator({
                         <button className="block w-full text-left" onClick={() => openCardEditor(seriesCard)} type="button">
                           <div className={`overflow-hidden rounded-[12px] border ${darkConsole ? "border-white/10" : "border-clay"}`}>
                             {previewUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                alt={seriesCard.title}
-                                className="aspect-[4/5] w-full object-cover"
-                                src={previewUrl}
-                              />
+                              <div className="relative">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  alt={seriesCard.title}
+                                  className="aspect-[4/5] w-full object-cover"
+                                  src={previewUrl}
+                                />
+                                {seriesCard.watermarkLocked ? <WatermarkOverlay /> : null}
+                              </div>
                             ) : (
                               <div className="grid aspect-[4/5] place-items-center px-4 text-center text-sm font-semibold text-muted">
                                 {itemError ? "Не удалось сгенерировать" : "Карточка готовится"}

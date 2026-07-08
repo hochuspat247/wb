@@ -4,11 +4,11 @@ import { demoGenerations, payments, productCards, users } from "@/lib/db/schema"
 
 export type UserDownloadAccess = {
   freeCleanDownloadGenerationId: string | null;
-  hasPurchasedGenerationCredits: boolean;
+  downloadsFullyUnlocked: boolean;
 };
 
 export function isGenerationDownloadUnlocked(access: UserDownloadAccess, generationId: string) {
-  if (access.hasPurchasedGenerationCredits) {
+  if (access.downloadsFullyUnlocked) {
     return true;
   }
 
@@ -30,8 +30,40 @@ export async function getUserDownloadAccess(userId: string): Promise<UserDownloa
 
   return {
     freeCleanDownloadGenerationId: user.freeCleanDownloadGenerationId ?? null,
-    hasPurchasedGenerationCredits: Boolean(user.hasPurchasedGenerationCredits)
+    downloadsFullyUnlocked: Boolean(user.hasPurchasedGenerationCredits)
   };
+}
+
+async function findEarliestUserGeneration(userId: string) {
+  const demos = await db
+    .select({
+      id: demoGenerations.id,
+      createdAt: demoGenerations.createdAt
+    })
+    .from(demoGenerations)
+    .where(eq(demoGenerations.userId, userId));
+
+  const cards = await db
+    .select({
+      id: productCards.id,
+      createdAt: productCards.createdAt
+    })
+    .from(productCards)
+    .where(eq(productCards.userId, userId));
+
+  const all = [...demos, ...cards];
+
+  if (!all.length) {
+    return null;
+  }
+
+  return all.reduce<(typeof all)[number] | null>((earliest, item) => {
+    if (!earliest) {
+      return item;
+    }
+
+    return item.createdAt < earliest.createdAt ? item : earliest;
+  }, null);
 }
 
 export async function registerGenerationForCleanDownload(
@@ -53,9 +85,15 @@ export async function registerGenerationForCleanDownload(
   const currentId = user.freeCleanDownloadGenerationId;
 
   if (!currentId) {
+    const earliest = await findEarliestUserGeneration(userId);
+    const winner =
+      !earliest || createdAt.getTime() <= earliest.createdAt.getTime()
+        ? { id: generationId, createdAt }
+        : earliest;
+
     await db
       .update(users)
-      .set({ freeCleanDownloadGenerationId: generationId })
+      .set({ freeCleanDownloadGenerationId: winner.id })
       .where(eq(users.id, userId));
     return;
   }
@@ -72,6 +110,32 @@ export async function registerGenerationForCleanDownload(
       .set({ freeCleanDownloadGenerationId: generationId })
       .where(eq(users.id, userId));
   }
+}
+
+export async function backfillCleanDownloadGeneration(userId: string) {
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: {
+      freeCleanDownloadGenerationId: true
+    }
+  });
+
+  if (!user || user.freeCleanDownloadGenerationId) {
+    return user?.freeCleanDownloadGenerationId ?? null;
+  }
+
+  const earliest = await findEarliestUserGeneration(userId);
+
+  if (!earliest) {
+    return null;
+  }
+
+  await db
+    .update(users)
+    .set({ freeCleanDownloadGenerationId: earliest.id })
+    .where(eq(users.id, userId));
+
+  return earliest.id;
 }
 
 export async function unlockAllDownloadsForUser(userId: string) {

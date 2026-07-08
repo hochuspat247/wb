@@ -1,6 +1,10 @@
-import { and, count, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, count, eq, gte, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { analyticsEvents, payments, users, videoGenerationOrders } from "@/lib/db/schema";
+import {
+  getExcludedAnalyticsSessionIds,
+  getInternalUserIds
+} from "@/lib/server/internalAnalytics";
 
 export type Funnel7dStep = {
   id: string;
@@ -14,11 +18,14 @@ function daysAgo(days: number) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 }
 
-async function countDistinctSessions(filters: {
-  since: Date;
-  eventNames?: string[];
-  eventType?: "page_view" | "click" | "conversion";
-}) {
+async function countDistinctSessions(
+  filters: {
+    since: Date;
+    eventNames?: string[];
+    eventType?: "page_view" | "click" | "conversion";
+  },
+  excludedSessionIds: string[]
+) {
   const conditions = [gte(analyticsEvents.createdAt, filters.since)];
 
   if (filters.eventType) {
@@ -27,6 +34,10 @@ async function countDistinctSessions(filters: {
 
   if (filters.eventNames?.length) {
     conditions.push(inArray(analyticsEvents.eventName, filters.eventNames));
+  }
+
+  if (excludedSessionIds.length) {
+    conditions.push(notInArray(analyticsEvents.sessionId, excludedSessionIds));
   }
 
   const [row] = await db
@@ -56,6 +67,18 @@ function buildStepPercents(steps: Array<{ id: string; label: string; count: numb
 
 export async function getFunnel7d(): Promise<Funnel7dStep[]> {
   const since7d = daysAgo(7);
+  const internalUserIds = await getInternalUserIds();
+  const excludedSessionIds = await getExcludedAnalyticsSessionIds(since7d, internalUserIds);
+
+  const paymentConditions = [isNotNull(payments.creditedAt), gte(payments.creditedAt, since7d)];
+  const videoPaymentConditions = [isNotNull(videoGenerationOrders.paidAt), gte(videoGenerationOrders.paidAt, since7d)];
+  const newUserConditions = [gte(users.createdAt, since7d)];
+
+  if (internalUserIds.length) {
+    paymentConditions.push(notInArray(payments.userId, internalUserIds));
+    videoPaymentConditions.push(notInArray(videoGenerationOrders.userId, internalUserIds));
+    newUserConditions.push(notInArray(users.id, internalUserIds));
+  }
 
   const [
     visitors,
@@ -71,66 +94,93 @@ export async function getFunnel7d(): Promise<Funnel7dStep[]> {
     generationPayments,
     videoPayments
   ] = await Promise.all([
-    countDistinctSessions({ since: since7d, eventType: "page_view" }),
-    countDistinctSessions({
-      since: since7d,
-      eventType: "conversion",
-      eventNames: ["click_create_card", "header_try_click", "hero_cta_click", "hero_demo_generate_click"]
-    }),
-    countDistinctSessions({
-      since: since7d,
-      eventType: "conversion",
-      eventNames: ["photo_uploaded", "hero_file_selected", "upload_photo"]
-    }),
-    countDistinctSessions({
-      since: since7d,
-      eventType: "conversion",
-      eventNames: ["description_filled", "hero_description_filled"]
-    }),
-    countDistinctSessions({
-      since: since7d,
-      eventType: "conversion",
-      eventNames: ["demo_generation_started"]
-    }),
-    countDistinctSessions({
-      since: since7d,
-      eventType: "conversion",
-      eventNames: ["demo_generation_completed", "generation_complete"]
-    }),
-    countDistinctSessions({
-      since: since7d,
-      eventType: "conversion",
-      eventNames: ["register_complete", "auth_completed_from_result"]
-    }),
-    countDistinctSessions({
-      since: since7d,
-      eventType: "conversion",
-      eventNames: ["download_png", "download_original_click"]
-    }),
-    countDistinctSessions({
-      since: since7d,
-      eventType: "conversion",
-      eventNames: ["video_create_click"]
-    }),
-    countDistinctSessions({
-      since: since7d,
-      eventType: "conversion",
-      eventNames: ["payment_click", "video_payment_started"]
-    }),
+    countDistinctSessions({ since: since7d, eventType: "page_view" }, excludedSessionIds),
+    countDistinctSessions(
+      {
+        since: since7d,
+        eventType: "conversion",
+        eventNames: ["click_create_card", "header_try_click", "hero_cta_click", "hero_demo_generate_click"]
+      },
+      excludedSessionIds
+    ),
+    countDistinctSessions(
+      {
+        since: since7d,
+        eventType: "conversion",
+        eventNames: ["photo_uploaded", "hero_file_selected", "upload_photo"]
+      },
+      excludedSessionIds
+    ),
+    countDistinctSessions(
+      {
+        since: since7d,
+        eventType: "conversion",
+        eventNames: ["description_filled", "hero_description_filled"]
+      },
+      excludedSessionIds
+    ),
+    countDistinctSessions(
+      {
+        since: since7d,
+        eventType: "conversion",
+        eventNames: ["demo_generation_started"]
+      },
+      excludedSessionIds
+    ),
+    countDistinctSessions(
+      {
+        since: since7d,
+        eventType: "conversion",
+        eventNames: ["demo_generation_completed", "generation_complete"]
+      },
+      excludedSessionIds
+    ),
+    countDistinctSessions(
+      {
+        since: since7d,
+        eventType: "conversion",
+        eventNames: ["register_complete", "auth_completed_from_result"]
+      },
+      excludedSessionIds
+    ),
+    countDistinctSessions(
+      {
+        since: since7d,
+        eventType: "conversion",
+        eventNames: ["download_png", "download_original_click"]
+      },
+      excludedSessionIds
+    ),
+    countDistinctSessions(
+      {
+        since: since7d,
+        eventType: "conversion",
+        eventNames: ["video_create_click"]
+      },
+      excludedSessionIds
+    ),
+    countDistinctSessions(
+      {
+        since: since7d,
+        eventType: "conversion",
+        eventNames: ["payment_click", "video_payment_started"]
+      },
+      excludedSessionIds
+    ),
     db
       .select({ value: count() })
       .from(payments)
-      .where(and(isNotNull(payments.creditedAt), gte(payments.creditedAt, since7d))),
+      .where(and(...paymentConditions)),
     db
       .select({ value: count() })
       .from(videoGenerationOrders)
-      .where(and(isNotNull(videoGenerationOrders.paidAt), gte(videoGenerationOrders.paidAt, since7d)))
+      .where(and(...videoPaymentConditions))
   ]);
 
   const [newUsersRow] = await db
     .select({ value: count() })
     .from(users)
-    .where(gte(users.createdAt, since7d));
+    .where(and(...newUserConditions));
 
   const registrationCount = Math.max(registrations, Number(newUsersRow?.value ?? 0));
   const successfulPayments = Number(generationPayments[0]?.value ?? 0) + Number(videoPayments[0]?.value ?? 0);

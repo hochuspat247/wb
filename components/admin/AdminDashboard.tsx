@@ -754,7 +754,7 @@ export function AdminDashboard() {
           </div>
         </CollapsibleAdminSection>
 
-        <Funnel7dPanel steps={stats.funnel7d} />
+        <Funnel7dPanel onRefresh={() => load(path)} steps={stats.funnel7d} />
 
         <UserJourneysMapPanel
           heatmap={stats.heatmap}

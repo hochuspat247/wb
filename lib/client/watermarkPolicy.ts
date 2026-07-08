@@ -1,0 +1,61 @@
+import type { ProductCardResult } from "@/types/product-card";
+
+export type DownloadPolicy = {
+  cleanDownloadGenerationId: string | null;
+  downloadsFullyUnlocked: boolean;
+};
+
+function stripWatermarkedCard(card: ProductCardResult): ProductCardResult {
+  return {
+    ...card,
+    generatedImageBase64: null,
+    generatedImageDataUrl: undefined,
+    generatedImageUrl: null,
+    downloadUnlocked: false,
+    watermarkLocked: true,
+    previewImageUrl: card.previewImageUrl ?? `/api/cards/${card.id}/image?variant=preview`
+  };
+}
+
+export function applyDownloadPolicyToCard(
+  card: ProductCardResult,
+  policy: DownloadPolicy | null,
+  persistToServer: boolean
+): ProductCardResult {
+  if (!persistToServer) {
+    return card;
+  }
+
+  if (policy?.downloadsFullyUnlocked) {
+    return {
+      ...card,
+      downloadUnlocked: true,
+      watermarkLocked: false
+    };
+  }
+
+  if (card.watermarkLocked) {
+    return stripWatermarkedCard(card);
+  }
+
+  if (card.downloadUnlocked) {
+    return {
+      ...card,
+      watermarkLocked: false
+    };
+  }
+
+  if (!policy) {
+    return card;
+  }
+
+  if (card.id === policy.cleanDownloadGenerationId) {
+    return {
+      ...card,
+      downloadUnlocked: true,
+      watermarkLocked: false
+    };
+  }
+
+  return stripWatermarkedCard(card);
+}

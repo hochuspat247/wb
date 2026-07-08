@@ -1,11 +1,14 @@
 "use client";
 
-import { Filter } from "lucide-react";
+import { useState } from "react";
+import { Filter, Trash2 } from "lucide-react";
 import { CollapsibleAdminSection } from "@/components/admin/CollapsibleAdminSection";
+import { Button } from "@/components/ui/Button";
 import type { Funnel7dStep } from "@/lib/server/funnel7d";
 
 type Funnel7dPanelProps = {
   steps: Funnel7dStep[];
+  onRefresh?: () => Promise<void> | void;
 };
 
 function formatPercent(value: number | null) {
@@ -13,9 +16,35 @@ function formatPercent(value: number | null) {
   return `${value}%`;
 }
 
-export function Funnel7dPanel({ steps }: Funnel7dPanelProps) {
+export function Funnel7dPanel({ steps, onRefresh }: Funnel7dPanelProps) {
+  const [cleanupMessage, setCleanupMessage] = useState("");
+  const [cleanupError, setCleanupError] = useState("");
+  const [cleaning, setCleaning] = useState(false);
+
   if (!steps.length) {
     return null;
+  }
+
+  async function handleCleanup() {
+    setCleaning(true);
+    setCleanupMessage("");
+    setCleanupError("");
+
+    try {
+      const response = await fetch("/api/admin/funnel/cleanup", { method: "POST" });
+      const data = (await response.json()) as { error?: string; message?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error || "Не удалось очистить тестовые события.");
+      }
+
+      setCleanupMessage(data.message || "Готово.");
+      await onRefresh?.();
+    } catch (caught) {
+      setCleanupError(caught instanceof Error ? caught.message : "Не удалось очистить тестовые события.");
+    } finally {
+      setCleaning(false);
+    }
   }
 
   return (
@@ -25,11 +54,24 @@ export function Funnel7dPanel({ steps }: Funnel7dPanelProps) {
           {steps[0]?.count ?? 0}
         </span>
       }
-      description="Уникальные сессии за 7 дней. Проценты — переход к следующему шагу."
+      description="Уникальные сессии за 7 дней без внутренних аккаунтов (ADMIN_EMAILS). Проценты — переход к следующему шагу."
       icon={<Filter className="text-mint" size={20} />}
       id="funnel-7d"
       title="Воронка за 7 дней"
     >
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <Button disabled={cleaning} onClick={() => void handleCleanup()} size="sm" type="button" variant="secondary">
+          <Trash2 size={15} />
+          {cleaning ? "Очищаем…" : "Удалить мои тестовые события"}
+        </Button>
+        <p className="text-xs font-semibold leading-relaxed text-muted">
+          Оплаты из тестовых аккаунтов в воронке не считаются. Кнопка удаляет только события аналитики за 7 дней.
+        </p>
+      </div>
+
+      {cleanupMessage ? <p className="mb-4 text-sm font-semibold text-mint">{cleanupMessage}</p> : null}
+      {cleanupError ? <p className="mb-4 text-sm font-semibold text-red-400">{cleanupError}</p> : null}
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <div className="space-y-1">
           {steps.map((step, index) => (

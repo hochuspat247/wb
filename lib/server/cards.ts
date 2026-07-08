@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { productCards } from "@/lib/db/schema";
 import { hydrateUserCardsWithVideos } from "@/lib/server/cardVideos";
 import {
+  backfillCleanDownloadGeneration,
   getUserDownloadAccess,
   isGenerationDownloadUnlocked,
   registerGenerationForCleanDownload
@@ -49,6 +50,8 @@ function sanitizeCardForClient(
 }
 
 export async function getUserCards(userId: string): Promise<ProductCardResult[]> {
+  await backfillCleanDownloadGeneration(userId);
+
   const rows = await db
     .select()
     .from(productCards)

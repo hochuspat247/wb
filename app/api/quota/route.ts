@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { backfillCleanDownloadGeneration, getUserDownloadAccess } from "@/lib/server/downloadAccess";
 import { getUserQuota } from "@/lib/server/quota";
 
 export async function GET() {
@@ -10,6 +11,12 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const quota = await getUserQuota(userId);
-  return NextResponse.json(quota);
+  await backfillCleanDownloadGeneration(userId);
+  const [quota, access] = await Promise.all([getUserQuota(userId), getUserDownloadAccess(userId)]);
+
+  return NextResponse.json({
+    ...quota,
+    cleanDownloadGenerationId: access.freeCleanDownloadGenerationId,
+    downloadsFullyUnlocked: access.downloadsFullyUnlocked
+  });
 }

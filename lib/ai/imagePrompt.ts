@@ -13,11 +13,11 @@ function truncateText(value: string, maxLength: number): string {
   return `${clean.slice(0, maxLength - 1).trim()}…`;
 }
 
-function listToLines(items: string[] | undefined, fallback: string[]): string {
+function listToLines(items: string[] | undefined, fallback: string[], maxItems = 5): string {
   const source = Array.isArray(items) && items.length > 0 ? items : fallback;
   return source
     .filter(Boolean)
-    .slice(0, 7)
+    .slice(0, maxItems)
     .map((item) => `- ${truncateText(item, 90)}`)
     .join("\n");
 }
@@ -25,14 +25,15 @@ function listToLines(items: string[] | undefined, fallback: string[]): string {
 function characteristicsToLines(
   characteristics: { key: string; value: string }[] | undefined,
   fallback: string[],
+  maxItems = 5,
 ): string {
   if (!Array.isArray(characteristics) || characteristics.length === 0) {
-    return fallback.map((item) => `- ${item}`).join("\n");
+    return fallback.slice(0, maxItems).map((item) => `- ${item}`).join("\n");
   }
 
   return characteristics
     .filter((item) => item && item.key && item.value)
-    .slice(0, 7)
+    .slice(0, maxItems)
     .map((item) => `- ${truncateText(item.key, 40)}: ${truncateText(item.value, 60)}`)
     .join("\n");
 }
@@ -177,11 +178,13 @@ This is the main required style.
 The image must look like an expensive, conversion-focused premium marketplace advertising creative:
 - oversized bold headline at the top
 - one large hero product image
-- 2–4 smaller supporting preview/detail images
-- structured features/specifications block
+- optional 1–3 smaller supporting detail previews only when they make the product clearer
+- short structured benefits/specifications block with only the strongest information
 - clean background selected from the product's real environment and use case
 - excellent Russian typography
 - strong hierarchy
+- editorial art direction
+- premium spacing and margins
 - polished e-commerce art direction
 - not a simple product listing`;
 }
@@ -201,14 +204,14 @@ export function buildPremiumMarketplaceImagePrompt(input: GenerateImageInput): s
     "Понятная польза",
     "Легко выбрать",
     "Подходит под разные задачи",
-  ]);
+  ], 4);
 
   const infographicTexts = listToLines(input.infographicTexts, [
     "Премиальный вид",
     "Для подарка",
     "Каждый день",
     "Удобный формат",
-  ]);
+  ], 3);
 
   const specs = characteristicsToLines(input.characteristics, [
     `Категория: ${category}`,
@@ -216,7 +219,7 @@ export function buildPremiumMarketplaceImagePrompt(input: GenerateImageInput): s
     `Стиль: ${style}`,
     "Формат: премиум-карточка 4:5",
     "Подача: коммерческий e-commerce creative",
-  ]);
+  ], 4);
 
   const styleDirection = getStyleDirection(style);
   const presetDirection = getPresetDirection(designPreset);
@@ -244,6 +247,7 @@ Generate a high-end, expensive-looking, conversion-focused product card for a ma
 The card must look like a professionally designed premium advertising creative, not a basic marketplace listing.
 This must look like a premium marketplace advertising creative, not a simple product listing.
 The output must have strong hierarchy, a luxury feel, and polished e-commerce art direction.
+Think like a senior marketplace art director: fewer elements, better composition, confident typography, clean spacing, expensive visual taste.
 
 USE THE UPLOADED PRODUCT IMAGE:
 Use the uploaded reference image as the main product object.
@@ -252,6 +256,13 @@ Do not replace the product with another object.
 Do not distort the product shape, material, color, or core appearance.
 Do not add random products.
 If the reference image contains a product, it must become the hero product in the final card.
+
+PRODUCT INTERPRETATION:
+- First decide what the actual sellable product is: physical item, package, clothing, cosmetic bottle, gadget, poster, wall art, decor, service visual, or another product type.
+- If the product is a poster, print, artwork, card, decor panel, wall art, or image-on-material, show it as the sellable physical object: framed poster, canvas, print sheet, mounted panel, or interior mockup. Do not turn the artwork subject into a standalone character or unrelated scene.
+- If the reference contains a design printed on the product, preserve that design as printed content on the product.
+- Supporting images must come from the same product: close-up, material, packaging, scale, use case, or interior/use mockup.
+- Do not invent random lifestyle photos, people, rooms, thumbnails, or unrelated product variants.
 
 PRODUCT DATA:
 Product description: ${productDescription}
@@ -279,24 +290,30 @@ ${seriesContext}
 REQUIRED COMPOSITION:
 1. Large bold Russian headline at the top.
 2. One large hero product image as the main focal point.
-3. 2–4 small additional detail preview images showing close-ups, material, angle, texture, or product details.
-4. A structured benefits/specifications text block.
+3. Optional 1–3 small detail previews only if they improve trust or explain the product.
+4. One compact benefits/specifications block, not a long table.
 5. Product-bound premium background with lighting and environment that match the product category and use case.
 6. Clear information hierarchy and readable Russian text.
 7. Visually balanced layout with enough whitespace.
 8. The result must look like a polished premium sales card suitable for marketplace performance creatives.
+9. The card must feel intentionally designed, not assembled from random template parts.
 
 LAYOUT RULES:
 - Vertical format, aspect ratio 4:5.
 - Large product on left, center-left, or center.
 - Text/specifications on right or top-right.
-- Small detail preview cards in a row near the middle or lower section.
-- Use rounded rectangles and premium card blocks.
+- Use a clean editorial grid with consistent margins and aligned edges.
+- Keep generous safe margins around the headline and main product.
+- Small detail previews may be in a neat row or column, but only when visually useful.
+- Use rounded rectangles and premium card blocks sparingly; they must look integrated, not like pasted widgets.
 - Maintain strong visual rhythm and clean spacing.
 - Make the product the visual center.
 - Do not make the design empty.
 - Do not make the design cluttered.
 - Do not create a collage of unrelated items.
+- Do not create large beige/yellow info panels unless they look like refined premium packaging or editorial layout.
+- Do not stack many boxes, icons, badges, and thumbnails in every corner.
+- Avoid template-like brochure composition with a huge title, a large text table, three icons at the bottom, and unrelated preview photos.
 
 TYPOGRAPHY:
 - All visible text must be in Russian.
@@ -308,6 +325,10 @@ TYPOGRAPHY:
 - Avoid too much text.
 - Do not create broken or random Cyrillic text.
 - Use fewer words, bigger type, stronger hierarchy.
+- Prefer 1 headline, 2–4 short benefit lines, and at most 3 short specs unless the card type specifically requires technical detail.
+- Keep line lengths short and balanced.
+- Do not render paragraph-like blocks of tiny copy.
+- Do not use awkward literal labels like "Категория:", "Материал:", "Размер:" if a cleaner premium phrasing would look better.
 
 PREMIUM VISUAL REQUIREMENTS:
 - expensive
@@ -324,6 +345,16 @@ PREMIUM VISUAL REQUIREMENTS:
 - studio-quality composition only when it fits the product
 - premium catalog feeling in the product's real usage environment
 - background and props must support the product, not compete with it
+- tasteful color palette with contrast and depth, not a flat one-color template
+- polished photo-realistic product lighting or polished high-end illustration only when illustration is appropriate for the product
+- refined shadows, realistic contact shadows, and believable material detail
+
+ART DIRECTION QUALITY GATE:
+- Before finalizing, mentally compare the card to premium Wildberries/Ozon top-category creatives and boutique catalog ads.
+- If the image looks like a school poster, cheap Canva template, busy brochure, or random collage, simplify it and make it more premium.
+- The first glance must clearly answer: what is the product, why it is attractive, and what the strongest benefit is.
+- The final design should be beautiful even if the viewer does not read every word.
+- No accidental visual noise, mismatched image styles, inconsistent icon sets, or floating elements without alignment.
 
 ${presetDirection}
 
@@ -350,6 +381,8 @@ NEGATIVE DESIGN GUIDANCE:
 - no cheap amateur design
 - no low-quality typography
 - no random extra objects
+- no random people or portrait thumbnails unless the uploaded product itself requires a human model
+- no unrelated room mockups, lifestyle photos, or screenshots
 - no generic abstract premium background unrelated to the product
 - no random luxury showroom when the product belongs outdoors, in water, in a home, in a vehicle, or in another concrete use context
 - no irrelevant product replacements
@@ -357,6 +390,9 @@ NEGATIVE DESIGN GUIDANCE:
 - no distorted product
 - no ugly stock-template look
 - no chaotic collage
+- no busy brochure template
+- no oversized info table
+- no bottom row of generic icons unless the icons are elegant, minimal, and actually useful
 - no excessive stickers
 - no fake marketplace UI
 - no official marketplace logos

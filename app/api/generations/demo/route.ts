@@ -7,6 +7,8 @@ import { detectCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
 import { createDemoGeneration } from "@/lib/server/demo-generations";
+import { reserveGuestDemoGeneration } from "@/lib/server/demoRateLimit";
+import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import type {
   GenerateImageInput,
   GenerateImageResult,
@@ -20,6 +22,9 @@ import type { MarketplaceTextInput } from "@/types/marketplace";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+const MAX_DEMO_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const SUPPORTED_DEMO_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 type DemoGenerationRequest = {
   guestId?: string;
@@ -39,30 +44,61 @@ export async function POST(request: Request) {
     const session = await auth();
     const userId = session?.user?.id ?? null;
     const body = (await request.json()) as DemoGenerationRequest;
-    const guestId = body.guestId?.trim();
+    const guestId = sanitizeGuestId(body.guestId);
 
     if (!guestId) {
       return NextResponse.json({ error: "Missing guest_id" }, { status: 400 });
     }
 
-    if (!body.cardInput?.productDescription?.trim()) {
+    const inputError = validateDemoGenerationRequest(body);
+
+    if (inputError) {
+      return NextResponse.json({ error: inputError }, { status: 400 });
+    }
+
+    const requestedCardInput = body.cardInput;
+
+    if (!requestedCardInput) {
       return NextResponse.json({ error: "Добавьте описание товара, чтобы создать демо-карточку." }, { status: 400 });
     }
 
-    if (!body.imageBase64 || !body.imageMimeType) {
-      return NextResponse.json({ error: "Загрузите фото товара, чтобы создать демо-карточку." }, { status: 400 });
+    if (userId) {
+      const quota = await getUserQuota(userId);
+
+      if (!quota.canGenerate) {
+        return NextResponse.json(
+          {
+            error: "Бесплатные генерации использованы. Пополните баланс, чтобы продолжить.",
+            code: "QUOTA_EXCEEDED",
+            quota
+          },
+          { status: 402 }
+        );
+      }
+    } else {
+      const limit = await reserveGuestDemoGeneration(request, guestId);
+
+      if (!limit.allowed) {
+        return NextResponse.json(
+          { error: limit.error, code: limit.code },
+          {
+            status: 429,
+            headers: { "Retry-After": String(limit.retryAfterSeconds) }
+          }
+        );
+      }
     }
 
-    const marketplace = body.cardInput.marketplace || "Wildberries";
-    const category = detectCategory(body.cardInput.productDescription.trim(), body.cardInput.category?.trim());
-    const platform = body.cardInput.platform ?? marketplaceLabelToPlatform(marketplace);
-    const textMode = body.cardInput.textMode ?? "marketplace_safe";
+    const marketplace = requestedCardInput.marketplace || "Wildberries";
+    const category = detectCategory(requestedCardInput.productDescription.trim(), requestedCardInput.category?.trim());
+    const platform = requestedCardInput.platform ?? marketplaceLabelToPlatform(marketplace);
+    const textMode = requestedCardInput.textMode ?? "marketplace_safe";
     const cardInput: ProductCardInput = {
-      ...body.cardInput,
-      productDescription: body.cardInput.productDescription.trim(),
+      ...requestedCardInput,
+      productDescription: requestedCardInput.productDescription.trim(),
       category,
       marketplace,
-      style: body.cardInput.style || "Премиальный",
+      style: requestedCardInput.style || "Премиальный",
       includeSeo: true,
       focusBenefits: true,
       includeInfographicText: true,
@@ -101,12 +137,14 @@ export async function POST(request: Request) {
       originalImageBase64: original.base64,
       originalImageMimeType: original.mimeType
     });
+    const nextQuota = userId ? await consumeGeneration(userId) : undefined;
 
     return NextResponse.json({
       id: demo.id,
       status: demo.status,
       previewUrl: `/api/generations/${demo.id}/preview`,
-      originalAvailable: Boolean(userId)
+      originalAvailable: Boolean(userId),
+      quota: nextQuota
     });
   } catch (error) {
     console.error("[MarketCard AI] demo generation failed", error);
@@ -204,14 +242,15 @@ async function generateDemoImage(card: ProductCardResult, body: DemoGenerationRe
     resolution: "1k",
     outputFormat: "png"
   };
-  const provider = resolveImageProvider(body.imageProvider);
+  const provider = resolveImageProvider();
+  const demoImageMode = resolveDemoImageMode();
 
   if (provider === "nanobanana_expert") {
     return generateNanoBananaExpertImage(input);
   }
 
   if (provider === "gemini") {
-    return generateGeminiProductImage(input, body.imageMode);
+    return generateGeminiProductImage(input, demoImageMode);
   }
 
   if (provider === "html") {
@@ -224,19 +263,53 @@ async function generateDemoImage(card: ProductCardResult, body: DemoGenerationRe
   }
 
   if (process.env.GEMINI_API_KEY) {
-    const result = await generateGeminiProductImage(input, body.imageMode);
+    const result = await generateGeminiProductImage(input, demoImageMode);
     if (!result.isFallback) return result;
   }
 
   return createFallbackImageResult("AI-провайдеры недоступны. Показан fallback-preview.");
 }
 
-function resolveImageProvider(provider?: ImageProviderMode): ImageProviderMode {
-  const requested = provider?.toLowerCase() as ImageProviderMode | undefined;
-  if (requested && requested !== "auto") return requested;
-
-  const fromEnv = (process.env.IMAGE_PROVIDER || "auto").toLowerCase() as ImageProviderMode;
+function resolveImageProvider(): ImageProviderMode {
+  const fromEnv = (process.env.DEMO_IMAGE_PROVIDER || process.env.IMAGE_PROVIDER || "auto").toLowerCase() as ImageProviderMode;
   return fromEnv || "auto";
+}
+
+function resolveDemoImageMode(): ImageGenerationMode {
+  const mode = (process.env.DEMO_IMAGE_MODE || "fast").toLowerCase();
+  return mode === "legacy" ? "legacy" : "fast";
+}
+
+function sanitizeGuestId(value?: string) {
+  const clean = value?.trim();
+
+  if (!clean || clean.length > 80) {
+    return "";
+  }
+
+  return /^[a-zA-Z0-9_-]{8,80}$/.test(clean) ? clean : "";
+}
+
+function validateDemoGenerationRequest(body: DemoGenerationRequest) {
+  if (!body.cardInput?.productDescription?.trim()) {
+    return "Добавьте описание товара, чтобы создать демо-карточку.";
+  }
+
+  if (!body.imageBase64 || !body.imageMimeType) {
+    return "Загрузите фото товара, чтобы создать демо-карточку.";
+  }
+
+  if (!SUPPORTED_DEMO_IMAGE_TYPES.includes(body.imageMimeType)) {
+    return "Поддерживаются только image/jpeg, image/png и image/webp.";
+  }
+
+  const size = Buffer.byteLength(body.imageBase64, "base64");
+
+  if (size > MAX_DEMO_IMAGE_SIZE_BYTES) {
+    return "Изображение слишком большое. Загрузите файл до 5 МБ.";
+  }
+
+  return null;
 }
 
 async function resolveOriginalImage(card: ProductCardResult, image: GenerateImageResult) {

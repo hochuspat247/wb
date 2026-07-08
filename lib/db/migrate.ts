@@ -64,6 +64,29 @@ export function migrate(sqlite: Database.Database) {
 
     CREATE INDEX IF NOT EXISTS demo_generation_guest_idx ON demo_generation(guestId);
     CREATE INDEX IF NOT EXISTS demo_generation_user_idx ON demo_generation(userId);
+
+    CREATE TABLE IF NOT EXISTS demo_generation_attempt (
+      id TEXT PRIMARY KEY NOT NULL,
+      identityType TEXT NOT NULL,
+      identityHash TEXT NOT NULL,
+      createdAt INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS demo_generation_attempt_identity_idx ON demo_generation_attempt(identityType, identityHash);
+    CREATE INDEX IF NOT EXISTS demo_generation_attempt_created_idx ON demo_generation_attempt(createdAt);
+
+    CREATE TABLE IF NOT EXISTS image_generation_ticket (
+      id TEXT PRIMARY KEY NOT NULL,
+      userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+      purpose TEXT NOT NULL DEFAULT 'card_image',
+      usedAt INTEGER,
+      expiresAt INTEGER NOT NULL,
+      createdAt INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS image_generation_ticket_user_idx ON image_generation_ticket(userId);
+    CREATE INDEX IF NOT EXISTS image_generation_ticket_used_idx ON image_generation_ticket(usedAt);
+    CREATE INDEX IF NOT EXISTS image_generation_ticket_expires_idx ON image_generation_ticket(expiresAt);
   `);
 
   try {

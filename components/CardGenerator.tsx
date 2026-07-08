@@ -352,6 +352,7 @@ export function CardGenerator({
     const data = (await response.json()) as ProductCardResult & {
       error?: string;
       quota?: { remaining: number; used: number; credits: number };
+      imageGenerationTicket?: string;
     };
 
     if (!response.ok) {
@@ -368,7 +369,7 @@ export function CardGenerator({
       onQuotaChange?.(data.quota);
     }
 
-    const { quota: _quota, error: _error, ...cardPayload } = data;
+    const { quota: _quota, error: _error, imageGenerationTicket, ...cardPayload } = data;
     const planItem = options.planItem;
     const preserveCard = options.preserveCard;
     const generatedCard: ProductCardResult = {
@@ -416,7 +417,8 @@ export function CardGenerator({
 
     return {
       card: generatedCard,
-      quota: data.quota
+      quota: data.quota,
+      imageGenerationTicket
     };
   }
 
@@ -488,10 +490,10 @@ export function CardGenerator({
 
     try {
       if (cardsCount === 1) {
-        const { card: generatedCard, quota } = await createGeneratedProductCard(payload);
+        const { card: generatedCard, quota, imageGenerationTicket } = await createGeneratedProductCard(payload);
         setCard(generatedCard);
         setNotice("Создаём обложку…");
-        const finalCard = await generateAiMarketplaceImage(generatedCard);
+        const finalCard = await generateAiMarketplaceImage(generatedCard, undefined, imageGenerationTicket);
         await persistGeneratedCard(finalCard ?? generatedCard);
 
         trackConversion("generation_complete", { marketplace, platform: payload.platform || "wildberries" });
@@ -516,13 +518,13 @@ export function CardGenerator({
         try {
           setSeriesProgress(`Генерируется карточка ${planItem.index} из ${seriesTotal}`);
           setNotice(`Генерируется карточка ${planItem.index} из ${seriesTotal}: ${planItem.title}`);
-          const { card: generatedCard } = await createGeneratedProductCard(payload, {
+          const { card: generatedCard, imageGenerationTicket } = await createGeneratedProductCard(payload, {
             planItem,
             seriesId,
             seriesCount: seriesTotal
           });
           setCard(generatedCard);
-          const finalCard = await generateAiMarketplaceImage(generatedCard);
+          const finalCard = await generateAiMarketplaceImage(generatedCard, undefined, imageGenerationTicket);
           const readyCard = finalCard ?? generatedCard;
           completedCards.push(readyCard);
           setSeriesCards([...completedCards]);
@@ -948,7 +950,8 @@ export function CardGenerator({
 
   async function generateAiMarketplaceImage(
     cardForImage: ProductCardResult,
-    editInstructions?: string
+    editInstructions?: string,
+    imageGenerationTicket?: string
   ): Promise<ProductCardResult | null> {
     const productImage = imageUrl || cardForImage.imageDataUrl;
 
@@ -996,6 +999,7 @@ export function CardGenerator({
           aspectRatio: "4:5",
           resolution: "1k",
           outputFormat: "png",
+          imageGenerationTicket,
           seriesStyleGuide: cardForImage.seriesStyleGuide,
           seriesCardType: cardForImage.seriesPlanItem?.type,
           seriesCardGoal: cardForImage.seriesPlanItem?.goal,
@@ -1004,10 +1008,23 @@ export function CardGenerator({
           editInstructions: editInstructions?.trim() || undefined
         })
       });
-      const data = (await response.json()) as GenerateImageResult & { error?: string };
+      const data = (await response.json()) as GenerateImageResult & {
+        error?: string;
+        quota?: { remaining: number; used: number; credits: number };
+      };
 
       if (!response.ok) {
+        if (response.status === 402) {
+          setRemainingGenerations(data.quota?.remaining ?? 0);
+          if (data.quota) onQuotaChange?.(data.quota);
+          setShowPaywall(true);
+        }
         throw new Error(data.error || "Не удалось создать обложку.");
+      }
+
+      if (data.quota?.remaining !== undefined) {
+        setRemainingGenerations(data.quota.remaining);
+        onQuotaChange?.(data.quota);
       }
 
       const updatedCard = applyImageResult(cardForImage, data);

@@ -96,6 +96,24 @@ export const demoGenerations = sqliteTable("demo_generation", {
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull()
 });
 
+export const demoGenerationAttempts = sqliteTable("demo_generation_attempt", {
+  id: text("id").primaryKey(),
+  identityType: text("identityType").notNull(),
+  identityHash: text("identityHash").notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull()
+});
+
+export const imageGenerationTickets = sqliteTable("image_generation_ticket", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  purpose: text("purpose").notNull().default("card_image"),
+  usedAt: integer("usedAt", { mode: "timestamp_ms" }),
+  expiresAt: integer("expiresAt", { mode: "timestamp_ms" }).notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull()
+});
+
 export const analyticsEvents = sqliteTable("analytics_event", {
   id: text("id")
     .primaryKey()

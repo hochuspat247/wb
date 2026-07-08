@@ -5,6 +5,7 @@ import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { detectCategory } from "@/lib/category";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
+import { createImageGenerationTicket } from "@/lib/server/imageGenerationTickets";
 import type { ProductCardInput } from "@/types/product-card";
 import type { MarketplaceTextInput } from "@/types/marketplace";
 
@@ -118,10 +119,12 @@ export async function POST(request: Request) {
     };
 
     const nextQuota = await consumeGeneration(userId);
+    const imageGenerationTicket = await createImageGenerationTicket(userId);
 
     return NextResponse.json({
       ...enrichedResult,
-      quota: nextQuota
+      quota: nextQuota,
+      imageGenerationTicket
     });
   } catch (error) {
     console.error("[MarketCard AI] generate-card failed", error);

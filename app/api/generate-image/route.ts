@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
 import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
+import { consumeImageGenerationTicket } from "@/lib/server/imageGenerationTickets";
+import { consumeGeneration, getUserQuota, type UserQuota } from "@/lib/server/quota";
 import type {
   GenerateImageInput,
   ImageDesignPreset,
@@ -19,6 +21,7 @@ const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 type GenerateImageRequest = GenerateImageInput & {
   imageProvider?: ImageProviderMode;
   imageMode?: ImageGenerationMode;
+  imageGenerationTicket?: string;
 };
 
 type LegacyImageRequest = {
@@ -84,14 +87,38 @@ export async function POST(request: Request) {
       );
     }
 
+    const quota = await authorizePaidImageGeneration(userId, input.imageGenerationTicket);
     const result = await generateWithProvider(provider, input);
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, quota });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось сгенерировать AI-изображение.";
     console.error("[MarketCard AI] generate-image failed:", message);
 
+    if (message === "IMAGE_QUOTA_EXCEEDED") {
+      return NextResponse.json(
+        { error: "Бесплатные генерации использованы. Пополните баланс, чтобы продолжить.", code: "QUOTA_EXCEEDED" },
+        { status: 402 }
+      );
+    }
+
     return NextResponse.json(createHtmlFallback(message), { status: 200 });
   }
+}
+
+async function authorizePaidImageGeneration(userId: string, imageGenerationTicket?: string): Promise<UserQuota | undefined> {
+  const ticketAccepted = await consumeImageGenerationTicket(imageGenerationTicket, userId);
+
+  if (ticketAccepted) {
+    return undefined;
+  }
+
+  const quota = await getUserQuota(userId);
+
+  if (!quota.canGenerate) {
+    throw new Error("IMAGE_QUOTA_EXCEEDED");
+  }
+
+  return consumeGeneration(userId);
 }
 
 function resolveImageProvider(input: GenerateImageRequest): ImageProviderMode {
@@ -183,6 +210,7 @@ async function parseGenerateImageRequest(request: Request): Promise<GenerateImag
       designPreset: getFormString(formData, "designPreset") as ImageDesignPreset,
       imageProvider: getFormString(formData, "imageProvider") as ImageProviderMode,
       imageMode: getFormString(formData, "imageMode") as ImageGenerationMode,
+      imageGenerationTicket: getFormString(formData, "imageGenerationTicket"),
       model: getFormString(formData, "model") as "nb2" | "gpt2",
       aspectRatio: getFormString(formData, "aspectRatio"),
       resolution: getFormString(formData, "resolution") as "1k" | "2k" | "4k",
@@ -216,6 +244,7 @@ async function parseGenerateImageRequest(request: Request): Promise<GenerateImag
       designPreset: body.designPreset,
       imageProvider: body.imageProvider,
       imageMode: body.imageMode,
+      imageGenerationTicket: body.imageGenerationTicket,
       model: body.model,
       aspectRatio: body.aspectRatio,
       resolution: body.resolution,
@@ -249,6 +278,7 @@ async function parseGenerateImageRequest(request: Request): Promise<GenerateImag
       designPreset: body.designPreset || body.card.designPreset,
       imageProvider: body.imageProvider,
       imageMode: body.imageMode,
+      imageGenerationTicket: body.imageGenerationTicket,
       model: body.model,
       aspectRatio: body.aspectRatio,
       resolution: body.resolution,

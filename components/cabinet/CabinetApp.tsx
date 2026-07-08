@@ -26,6 +26,7 @@ import { CompareSection } from "@/components/CompareSection";
 import { HistorySection } from "@/components/HistorySection";
 import { Logo } from "@/components/Logo";
 import { PaymentButton } from "@/components/PaymentButton";
+import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -35,6 +36,7 @@ import {
   clearUserCardsRemote,
   fetchUserCards,
   fetchUserProfile,
+  fetchUserQuota,
   migrateGuestGenerations,
   migrateLocalCards,
   removeUserCardRemote,
@@ -42,6 +44,7 @@ import {
 } from "@/lib/api/user";
 import { GUEST_ID_KEY } from "@/lib/guest";
 import { downloadCardImageAsset } from "@/lib/client/cardImage";
+import { applyDownloadPolicyToCard, type DownloadPolicy } from "@/lib/client/watermarkPolicy";
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
 import { DEFAULT_IMAGE_SETTINGS, getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { reachGoal } from "@/lib/metrika";
@@ -87,14 +90,40 @@ export function CabinetApp() {
   const [loading, setLoading] = useState(true);
   const [imageSettings, setImageSettings] = useState<ImageSettings>(DEFAULT_IMAGE_SETTINGS);
   const [remainingGenerations, setRemainingGenerations] = useState(0);
+  const [downloadPolicy, setDownloadPolicy] = useState<DownloadPolicy | null>(null);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
   const [emailDisplay, setEmailDisplay] = useState("");
   const [verificationMessage, setVerificationMessage] = useState("");
   const [resendingVerification, setResendingVerification] = useState(false);
 
-  const handleQuotaChange = useCallback((quota: { remaining: number }) => {
+  const handleQuotaChange = useCallback((quota: { remaining: number; cleanDownloadGenerationId?: string | null; downloadsFullyUnlocked?: boolean }) => {
     setRemainingGenerations(quota.remaining);
+    setDownloadPolicy({
+      cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
+      downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
+    });
   }, []);
+
+  async function refreshDownloadPolicy() {
+    try {
+      const quota = await fetchUserQuota();
+      handleQuotaChange(quota);
+      return quota;
+    } catch {
+      setDownloadPolicy(null);
+      return null;
+    }
+  }
+
+  const displayCards = useMemo(
+    () => cards.map((card) => applyDownloadPolicyToCard(card, downloadPolicy, true)),
+    [cards, downloadPolicy]
+  );
+
+  const selectedDisplayCard = useMemo(
+    () => (selected ? applyDownloadPolicyToCard(selected, downloadPolicy, true) : null),
+    [downloadPolicy, selected]
+  );
 
   useEffect(() => {
     setImageSettings(getImageSettings());
@@ -103,11 +132,21 @@ export function CabinetApp() {
   useEffect(() => {
     async function loadCabinet() {
       try {
-        const [profile, remoteCards] = await Promise.all([fetchUserProfile(), fetchUserCards()]);
+        const [profile, remoteCards, quota] = await Promise.all([
+          fetchUserProfile(),
+          fetchUserCards(),
+          fetchUserQuota().catch(() => null)
+        ]);
         setProfileName(profile.name);
         setUserEmail(profile.email);
         setEditName(profile.name);
-        setRemainingGenerations(profile.quota?.remaining ?? 0);
+        setRemainingGenerations(quota?.remaining ?? profile.quota?.remaining ?? 0);
+        if (quota) {
+          setDownloadPolicy({
+            cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
+            downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
+          });
+        }
         setNeedsEmailVerification(Boolean(profile.needsEmailVerification));
         setEmailDisplay(profile.emailDisplay || profile.email);
 
@@ -159,9 +198,7 @@ export function CabinetApp() {
       .then(setCards)
       .catch(() => setCards(getHistory()));
 
-    fetchUserProfile()
-      .then((profile) => setRemainingGenerations(profile.quota?.remaining ?? 0))
-      .catch(() => undefined);
+    void refreshDownloadPolicy();
   }
 
   function refreshCardsAndSelection() {
@@ -245,13 +282,14 @@ export function CabinetApp() {
   }
 
   async function handleDownload(card: ProductCardResult) {
-    const result = await downloadCardImageAsset(card, "marketcard-ai.png");
+    const displayCard = applyDownloadPolicyToCard(card, downloadPolicy, true);
+    const result = await downloadCardImageAsset(displayCard, "marketcard-ai.png");
 
     if (!result.missing) {
       return;
     }
 
-    const coverSrc = getGeneratedCoverSrc(card);
+    const coverSrc = getGeneratedCoverSrc(displayCard);
 
     if (coverSrc?.startsWith("data:")) {
       await downloadImageFromUrl(coverSrc, "marketcard-ai.png");
@@ -438,9 +476,9 @@ export function CabinetApp() {
                 <EmptyState onCreate={openCreateTab} />
               ) : (
                 <HistorySection
-                  history={cards}
+                  history={displayCards}
                   onClear={handleClearAll}
-                  onOpen={setSelected}
+                  onOpen={(card) => setSelected(cards.find((item) => item.id === card.id) ?? card)}
                   onRemove={handleRemove}
                 />
               )}
@@ -590,17 +628,22 @@ export function CabinetApp() {
                 }
               >
                 {videoFlowPhase === "idle" ? (
-                  <div className="mx-auto w-full max-w-[280px] shrink-0 overflow-hidden rounded-card border border-clay bg-paper lg:mx-0">
-                    {getThumbnail(selected) ? (
+                  <div className="relative mx-auto w-full max-w-[280px] shrink-0 overflow-hidden rounded-card border border-clay bg-paper lg:mx-0">
+                    {getThumbnail(selectedDisplayCard ?? selected) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         alt=""
                         className="aspect-[4/5] w-full bg-paper object-contain"
-                        src={getThumbnail(selected)!}
+                        src={getThumbnail(selectedDisplayCard ?? selected)!}
                       />
                     ) : (
                       <div className="grid aspect-[4/5] place-items-center text-sm text-muted">Нет изображения</div>
                     )}
+                    {selectedDisplayCard?.watermarkLocked ? (
+                      <div className="pointer-events-none absolute inset-0">
+                        <WatermarkOverlay />
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
                 <div className="min-w-0 space-y-4">
@@ -612,8 +655,14 @@ export function CabinetApp() {
                       <p className="text-sm leading-relaxed text-muted">{selected.shortDescription}</p>
                       {selected.price ? <p className="text-2xl font-bold text-ink">{selected.price}</p> : null}
                       <p className="text-xs text-muted">{new Date(selected.generatedAt).toLocaleString("ru-RU")}</p>
+                      {selectedDisplayCard?.watermarkLocked ? (
+                        <p className="text-xs font-semibold text-muted">
+                          Карточка с демо-меткой. Без водяного знака доступна только первая генерация или после покупки
+                          пакета.
+                        </p>
+                      ) : null}
                       <div className="grid gap-2 sm:grid-cols-2">
-                        <Button className="w-full" onClick={() => handleDownload(selected)} size="sm">
+                        <Button className="w-full" onClick={() => handleDownload(selected!)} size="sm">
                           <Download size={16} />
                           Скачать PNG
                         </Button>

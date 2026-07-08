@@ -6,6 +6,7 @@ import type { ImageDesignPreset, ProductCardResult } from "@/types/product-card"
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
+import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
 import { getGeneratedCoverSrc } from "@/lib/image";
 import { hasCardGeneratedVideo, getCardGeneratedVideos } from "@/lib/cardVideos";
 
@@ -19,7 +20,17 @@ type HistorySectionProps = {
 };
 
 function getHistoryThumbnail(card: ProductCardResult) {
-  return getGeneratedCoverSrc(card) || card.imageDataUrl;
+  const cover = getGeneratedCoverSrc(card);
+
+  if (cover) {
+    return cover;
+  }
+
+  if (card.watermarkLocked) {
+    return card.previewImageUrl ?? null;
+  }
+
+  return card.imageDataUrl;
 }
 
 function getDesignPresetLabel(preset?: ImageDesignPreset) {
@@ -106,8 +117,11 @@ export function HistorySection({
               <div className="flex items-center gap-3">
                 <div className="relative h-16 w-14 shrink-0 overflow-hidden rounded-xl border border-clay bg-card">
                   {imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img alt="" className="h-full w-full object-cover" src={imageUrl} />
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img alt="" className="h-full w-full object-cover" src={imageUrl} />
+                      {card.watermarkLocked ? <WatermarkOverlay label="DEMO" className="opacity-100" /> : null}
+                    </>
                   ) : (
                     <div className="grid h-full place-items-center text-[10px] font-medium text-muted">4:5</div>
                   )}
@@ -122,6 +136,9 @@ export function HistorySection({
                   <p className="mt-1 text-xs text-muted">
                     {card.marketplace} · {card.style} · {new Date(card.generatedAt).toLocaleDateString("ru-RU")}
                   </p>
+                  {card.watermarkLocked ? (
+                    <p className="mt-1 text-xs font-semibold text-muted">С демо-меткой · без покупки пакета</p>
+                  ) : null}
                   {presetLabel ? <p className="mt-0.5 text-xs text-muted">{presetLabel}</p> : null}
                   {videoCount > 0 ? (
                     <p className="mt-1 text-xs font-semibold text-accent">

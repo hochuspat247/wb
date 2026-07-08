@@ -7,6 +7,8 @@ export const GENAPI_VIDEO_RATES_RUB_PER_SEC: Record<VideoQuality, number> = {
 };
 
 export const VIDEO_DURATION_OPTIONS: Array<{ value: VideoDuration; label: string }> = [
+  { value: "1", label: "1 секунда" },
+  { value: "2", label: "2 секунды" },
   { value: "3", label: "3 секунды" },
   { value: "5", label: "5 секунд" },
   { value: "10", label: "10 секунд" },

@@ -178,6 +178,7 @@ export async function createKlingVideoTask(input: {
     duration: input.duration,
     translate_input: false,
     generate_audio: false,
+    keep_audio: false,
     shot_type: "customize"
   };
 

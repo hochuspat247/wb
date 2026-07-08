@@ -31,6 +31,11 @@ export function LoginForm() {
       return;
     }
 
+    if (searchParams.get("error") === "verify") {
+      setError("Ссылка подтверждения недействительна или устарела. Запросите письмо повторно.");
+      return;
+    }
+
     if (searchParams.get("checkEmail") === "1") {
       setInfo("Подтвердите email по ссылке из письма, затем войдите.");
     }

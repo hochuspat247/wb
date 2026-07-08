@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, verificationTokens } from "@/lib/db/schema";
+import { appUrl } from "@/lib/email";
+
+function redirectToLogin(query: string) {
+  return NextResponse.redirect(appUrl(`/login?${query}`));
+}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -9,7 +14,15 @@ export async function GET(request: Request) {
   const email = searchParams.get("email")?.trim().toLowerCase() ?? "";
 
   if (!token || !email) {
-    return NextResponse.redirect(new URL("/login?error=verify", request.url));
+    return redirectToLogin("error=verify");
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.email, email)
+  });
+
+  if (user?.emailVerified) {
+    return redirectToLogin("verified=1");
   }
 
   const record = await db.query.verificationTokens.findFirst({
@@ -17,11 +30,11 @@ export async function GET(request: Request) {
   });
 
   if (!record || record.token !== token || record.expires < new Date()) {
-    return NextResponse.redirect(new URL("/login?error=verify", request.url));
+    return redirectToLogin("error=verify");
   }
 
   await db.update(users).set({ emailVerified: new Date() }).where(eq(users.email, email));
   await db.delete(verificationTokens).where(eq(verificationTokens.identifier, `verify:${email}`));
 
-  return NextResponse.redirect(new URL("/login?verified=1", request.url));
+  return redirectToLogin("verified=1");
 }

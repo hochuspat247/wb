@@ -2,12 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart3, Eye, LogOut, MousePointerClick, RefreshCw, Users, X } from "lucide-react";
+import { BarChart3, Eye, Film, LogOut, MousePointerClick, RefreshCw, Users, X } from "lucide-react";
 import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
+import { CardSavedVideosPanel } from "@/components/video/CardSavedVideosPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Loader } from "@/components/ui/Loader";
 import { formatAccountEmail } from "@/lib/auth/email-utils";
+import { hasCardGeneratedVideo } from "@/lib/cardVideos";
 import type { ProductCardResult } from "@/types/product-card";
 
 type AdminStats = {
@@ -49,6 +51,7 @@ type AdminStats = {
     category: string;
     generatedAt: string;
     createdAt: Date;
+    videoCount: number;
   }[];
 };
 
@@ -254,6 +257,7 @@ function CardDetailModal({
               <TextBlock label="Визуальная концепция" value={card.visualConcept} />
               <TextBlock label="Промпт изображения" value={card.generatedImagePrompt} />
               <TextBlock label="Ошибка генерации" value={card.generatedImageError} />
+              <CardSavedVideosPanel card={card} />
 
               <div>
                 <h4 className="text-sm font-black uppercase tracking-[0.14em] text-muted">Что вводил пользователь</h4>
@@ -558,10 +562,11 @@ export function AdminDashboard() {
                   </p>
                   <p className="mt-1 text-xs font-semibold text-muted">
                     {new Date(card.createdAt).toLocaleString("ru-RU")}
+                    {card.videoCount > 0 ? ` · ${card.videoCount} видео` : ""}
                   </p>
                 </div>
                 <span className="inline-flex items-center justify-center gap-2 rounded-button border border-clay bg-card px-4 py-2 text-sm font-bold text-ink">
-                  <Eye size={16} />
+                  {card.videoCount > 0 ? <Film size={16} /> : <Eye size={16} />}
                   Смотреть
                 </span>
               </button>

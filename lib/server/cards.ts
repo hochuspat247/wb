@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { productCards } from "@/lib/db/schema";
+import { hydrateUserCardsWithVideos } from "@/lib/server/cardVideos";
 import type { ProductCardResult } from "@/types/product-card";
 
 const CARD_LIMIT = 50;
@@ -19,9 +20,12 @@ export async function getUserCards(userId: string) {
     .where(eq(productCards.userId, userId))
     .orderBy(desc(productCards.createdAt));
 
-  return rows
-    .map((row) => normalizeCard(row.payload))
-    .filter((item): item is ProductCardResult => item !== null);
+  return hydrateUserCardsWithVideos(
+    userId,
+    rows
+      .map((row) => normalizeCard(row.payload))
+      .filter((item): item is ProductCardResult => item !== null)
+  );
 }
 
 export async function saveUserCard(userId: string, card: ProductCardResult) {

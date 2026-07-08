@@ -34,7 +34,7 @@ export function CreateVideoFromCardBlock({ onCreateClick, disabled, darkConsole 
           </p>
           <p className={`mt-2 text-xs font-semibold ${darkConsole ? "text-white/40" : "text-muted/80"}`}>
             Видео создаётся отдельно после оплаты — от {formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)} за 4 сек.
-            Всегда без звука.
+            Звук можно включить в настройках.
           </p>
         </div>
         <Button

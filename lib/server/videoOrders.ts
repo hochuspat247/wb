@@ -4,6 +4,7 @@ import { productCards, users, videoGenerationOrders } from "@/lib/db/schema";
 import { createVeoVideoTask, getVeoVideoTaskStatus, normalizeVeoVideoResponse } from "@/lib/video/genapiVeoVideo";
 import { buildProductCardVideoPrompt } from "@/lib/video/videoPrompt";
 import { buildGenApiCallbackUrl, buildSignedSourceImageUrl, getCardSourceImageData, getSourceImageExtension } from "@/lib/server/videoSourceImage";
+import { syncCompletedVideoToCard } from "@/lib/server/cardVideos";
 import type { ProductCardResult } from "@/types/product-card";
 import type { CreateVideoOrderInput, VideoGenerationRecord } from "@/types/video-generation";
 
@@ -20,6 +21,7 @@ function mapOrder(row: typeof videoGenerationOrders.$inferSelect): VideoGenerati
     aspectRatio: row.aspectRatio,
     quality: row.quality,
     motionStyle: row.motionStyle,
+    generateAudio: row.generateAudio ?? false,
     prompt: row.prompt,
     amountRub: row.amountRub ?? undefined,
     paymentId: row.paymentId ?? undefined,
@@ -83,6 +85,7 @@ export async function createVideoOrderRecord(input: {
 }) {
   const prompt = buildProductCardVideoPrompt({
     motionStyle: input.params.motionStyle,
+    aspectRatio: input.params.aspectRatio,
     card: input.cardPayload
   });
   const now = new Date();
@@ -100,6 +103,7 @@ export async function createVideoOrderRecord(input: {
     aspectRatio: input.params.aspectRatio,
     quality: input.params.quality,
     motionStyle: input.params.motionStyle,
+    generateAudio: Boolean(input.params.generateAudio),
     prompt,
     amountRub: input.amountRub,
     paymentId: input.paymentId,
@@ -188,6 +192,7 @@ export async function startPaidVideoGeneration(orderId: string, siteUrl: string)
     duration: order.duration,
     aspectRatio: order.aspectRatio,
     quality: order.quality,
+    generateAudio: order.generateAudio,
     callbackUrl
   });
 
@@ -239,7 +244,10 @@ export async function refreshVideoOrderStatus(orderId: string) {
     })
     .where(eq(videoGenerationOrders.id, orderId));
 
-  return getVideoOrderById(orderId);
+  const updated = await getVideoOrderById(orderId);
+  await syncCompletedVideoToCard(updated);
+
+  return updated;
 }
 
 export async function applyGenApiCallback(
@@ -279,7 +287,10 @@ export async function applyGenApiCallback(
     })
     .where(eq(videoGenerationOrders.id, row.id));
 
-  return getVideoOrderById(row.id);
+  const updated = await getVideoOrderById(row.id);
+  await syncCompletedVideoToCard(updated);
+
+  return updated;
 }
 
 export async function cancelVideoOrder(orderId: string) {

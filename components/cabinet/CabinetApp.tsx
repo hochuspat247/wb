@@ -21,6 +21,7 @@ import { signOut, useSession } from "next-auth/react";
 import { CardGenerator } from "@/components/CardGenerator";
 import { VideoFromCardFlow, type VideoFlowPhase } from "@/components/video/VideoFromCardFlow";
 import { VideoHistorySection } from "@/components/video/VideoHistorySection";
+import { CardSavedVideosPanel } from "@/components/video/CardSavedVideosPanel";
 import { CompareSection } from "@/components/CompareSection";
 import { HistorySection } from "@/components/HistorySection";
 import { Logo } from "@/components/Logo";
@@ -115,6 +116,15 @@ export function CabinetApp() {
     fetchUserProfile()
       .then((profile) => setRemainingGenerations(profile.quota?.remaining ?? 0))
       .catch(() => undefined);
+  }
+
+  function refreshCardsAndSelection() {
+    fetchUserCards()
+      .then((next) => {
+        setCards(next);
+        setSelected((current) => (current ? next.find((item) => item.id === current.id) || current : null));
+      })
+      .catch(() => refreshCards());
   }
 
   function openCreateTab() {
@@ -530,12 +540,14 @@ export function CabinetApp() {
                           Создать похожую
                         </Button>
                       </div>
+                      <CardSavedVideosPanel card={selected} compact />
                     </>
                   ) : null}
                   <VideoFromCardFlow
                     card={selected}
                     compact
                     onPhaseChange={setVideoFlowPhase}
+                    onVideoReady={refreshCardsAndSelection}
                   />
                 </div>
               </div>

@@ -1,4 +1,17 @@
 import type { MarketplacePlatform, MarketplaceTextMode, MarketplaceTextResult } from "@/types/marketplace";
+import type { VideoDuration, VideoMotionStyle, VideoQuality } from "@/types/video-generation";
+
+export type GeneratedVideoSnapshot = {
+  orderId: string;
+  url: string;
+  provider?: string;
+  model?: string;
+  duration?: VideoDuration;
+  quality?: VideoQuality;
+  motionStyle?: VideoMotionStyle;
+  generateAudio?: boolean;
+  createdAt: string;
+};
 
 export type PreviousCardSnapshot = {
   title: string;
@@ -107,6 +120,7 @@ export type ProductCardResult = {
   generatedVideoDurationSeconds?: number;
   generatedVideoPriceRub?: number;
   generatedVideoIsFree?: boolean;
+  generatedVideos?: GeneratedVideoSnapshot[];
   bananasSpent?: number;
   usedCoupon?: boolean;
   generationId?: string;

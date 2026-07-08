@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { requireAdminSession } from "@/lib/server/admin";
+import { hydrateCardPayloadWithVideos } from "@/lib/server/cardVideos";
 import { db } from "@/lib/db";
 import { productCards, users } from "@/lib/db/schema";
 
@@ -38,6 +39,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     userName: card.userName,
     userEmail: card.userEmail,
     createdAt: card.createdAt,
-    payload: card.payload
+    payload: await hydrateCardPayloadWithVideos(card.payload)
   });
 }

@@ -1,6 +1,6 @@
-import { and, count, desc, eq, gte, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { analyticsEvents, productCards, users } from "@/lib/db/schema";
+import { analyticsEvents, productCards, users, videoGenerationOrders } from "@/lib/db/schema";
 
 export type AnalyticsTrackInput = {
   eventType: "page_view" | "click" | "conversion";
@@ -221,6 +221,30 @@ export async function getAdminAnalytics(pathFilter = "/") {
     []
   );
 
+  const cardIds = recentCards.map((row) => row.id);
+  const videoCountRows =
+    cardIds.length > 0
+      ? await safeAnalyticsQuery(
+          "card video counts",
+          db
+            .select({
+              sourceGenerationId: videoGenerationOrders.sourceGenerationId,
+              value: count()
+            })
+            .from(videoGenerationOrders)
+            .where(
+              and(
+                inArray(videoGenerationOrders.sourceGenerationId, cardIds),
+                eq(videoGenerationOrders.status, "done"),
+                sql`${videoGenerationOrders.originalVideoUrl} IS NOT NULL`
+              )
+            )
+            .groupBy(videoGenerationOrders.sourceGenerationId),
+          []
+        )
+      : [];
+  const videoCountMap = new Map(videoCountRows.map((row) => [row.sourceGenerationId, row.value]));
+
   return {
     overview: {
       users: userCount?.value ?? 0,
@@ -260,7 +284,8 @@ export async function getAdminAnalytics(pathFilter = "/") {
       style: row.payload.style,
       category: row.payload.category,
       generatedAt: row.payload.generatedAt,
-      createdAt: row.createdAt
+      createdAt: row.createdAt,
+      videoCount: videoCountMap.get(row.id) ?? row.payload.generatedVideos?.length ?? (row.payload.generatedVideoUrl ? 1 : 0)
     })),
     trackedFunnelEvents: funnelNames
   };

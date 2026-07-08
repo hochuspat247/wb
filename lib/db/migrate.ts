@@ -176,6 +176,12 @@ export function migrate(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS video_generation_order_status_idx ON video_generation_order(status);
   `);
 
+  try {
+    sqlite.exec(`ALTER TABLE video_generation_order ADD COLUMN generateAudio INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // column already exists
+  }
+
   sqlite.exec(`
     UPDATE user
     SET emailVerified = CAST(strftime('%s','now') AS INTEGER) * 1000

@@ -30,7 +30,9 @@ export type GenApiVideoTaskResult = {
 const DEFAULT_MODEL_ID = "veo-3-1-fast";
 
 const VEO_NEGATIVE_PROMPT =
-  "distorted text, unreadable letters, warped packaging, deformed product, chaotic camera movement, watermark, logo artifacts, blur, low quality";
+  "distorted text, garbled letters, misspelled Cyrillic, unreadable typography, warped Russian words, morphing text, " +
+  "text regeneration, rewritten headline, deformed packaging, deformed product, chaotic camera movement, " +
+  "scene replacement, new objects, water splash, smoke effects, watermark, logo artifacts, blur, low quality";
 
 function getGenApiConfig() {
   const apiKey = process.env.GENAPI_API_KEY?.trim();
@@ -135,12 +137,18 @@ export function normalizeVeoVideoResponse(response: GenApiStatusResponse): GenAp
   };
 }
 
-export function toVeoAspectRatio(aspectRatio: VideoAspectRatio): "16:9" | "9:16" | null {
-  if (aspectRatio === "16:9" || aspectRatio === "9:16") {
-    return aspectRatio;
+export function resolveVeoAspectRatio(aspectRatio: VideoAspectRatio): "16:9" | "9:16" {
+  if (aspectRatio === "16:9") {
+    return "16:9";
   }
 
-  return null;
+  // Veo 3.1 Fast поддерживает только 16:9 и 9:16. Форматы карточки маппим в вертикальное 9:16.
+  return "9:16";
+}
+
+/** @deprecated Используйте resolveVeoAspectRatio. */
+export function toVeoAspectRatio(aspectRatio: VideoAspectRatio): "16:9" | "9:16" {
+  return resolveVeoAspectRatio(aspectRatio);
 }
 
 function toVeoResolution(quality: VideoQuality): "720p" | "1080p" | "4k" {
@@ -183,6 +191,7 @@ export async function createVeoVideoTask(input: {
   duration: VideoDuration;
   aspectRatio: VideoAspectRatio;
   quality: VideoQuality;
+  generateAudio?: boolean;
   callbackUrl?: string;
 }): Promise<GenApiVideoTaskResult> {
   const config = getGenApiConfig();
@@ -196,22 +205,19 @@ export async function createVeoVideoTask(input: {
     throw new Error(`Unsupported video duration: ${duration}. Allowed: ${GENAPI_VIDEO_DURATIONS.join(", ")} sec.`);
   }
 
-  const aspectRatio = toVeoAspectRatio(input.aspectRatio);
+  const aspectRatio = resolveVeoAspectRatio(input.aspectRatio);
 
   const body: Record<string, unknown> = {
     prompt: input.prompt,
     image_urls: [input.startImageUrl],
     duration: formatVeoDuration(input.duration),
     resolution: toVeoResolution(input.quality),
-    generate_audio: false,
+    aspect_ratio: aspectRatio,
+    generate_audio: Boolean(input.generateAudio),
     enhance_prompt: false,
-    auto_fix: true,
+    auto_fix: false,
     negative_prompt: VEO_NEGATIVE_PROMPT
   };
-
-  if (aspectRatio) {
-    body.aspect_ratio = aspectRatio;
-  }
 
   if (input.callbackUrl) {
     body.callback_url = input.callbackUrl;

@@ -36,6 +36,7 @@ export type VideoGenerationRecord = {
   aspectRatio: VideoAspectRatio;
   quality: VideoQuality;
   motionStyle: VideoMotionStyle;
+  generateAudio?: boolean;
   prompt: string;
   amountRub?: number;
   paymentId?: string;
@@ -53,6 +54,7 @@ export type CreateVideoOrderInput = {
   aspectRatio: VideoAspectRatio;
   quality: VideoQuality;
   motionStyle: VideoMotionStyle;
+  generateAudio?: boolean;
 };
 
 export type CreateVideoOrderResponse = {

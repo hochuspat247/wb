@@ -95,6 +95,7 @@ export function VideoHistorySection({ cards = [], onOpen }: VideoHistorySectionP
               </p>
               <p className="mt-1 text-xs font-semibold text-muted">
                 {statusLabels[order.status] || order.status} · {order.amountRub ? formatVideoPriceRub(order.amountRub) : "video-credit"}
+                {order.generateAudio ? " · со звуком" : " · без звука"}
               </p>
               <p className="mt-1 text-xs text-muted">{new Date(order.createdAt).toLocaleString("ru-RU")}</p>
               {order.error ? <p className="mt-2 text-xs font-semibold text-red-600">{order.error}</p> : null}

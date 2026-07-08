@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Film } from "lucide-react";
 import type { ImageDesignPreset, ProductCardResult } from "@/types/product-card";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Select";
 import { getGeneratedCoverSrc } from "@/lib/image";
+import { hasCardGeneratedVideo, getCardGeneratedVideos } from "@/lib/cardVideos";
 
 type HistorySectionProps = {
   history: ProductCardResult[];
@@ -94,6 +96,7 @@ export function HistorySection({
         {filtered.map((card) => {
           const imageUrl = getHistoryThumbnail(card);
           const presetLabel = getDesignPresetLabel(card.designPreset);
+          const videoCount = getCardGeneratedVideos(card).length;
 
           return (
             <div
@@ -101,13 +104,18 @@ export function HistorySection({
               key={card.id}
             >
               <div className="flex items-center gap-3">
-                <div className="h-16 w-14 shrink-0 overflow-hidden rounded-xl border border-clay bg-card">
+                <div className="relative h-16 w-14 shrink-0 overflow-hidden rounded-xl border border-clay bg-card">
                   {imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img alt="" className="h-full w-full object-cover" src={imageUrl} />
                   ) : (
                     <div className="grid h-full place-items-center text-[10px] font-medium text-muted">4:5</div>
                   )}
+                  {hasCardGeneratedVideo(card) ? (
+                    <span className="absolute bottom-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-accent text-paper">
+                      <Film size={11} />
+                    </span>
+                  ) : null}
                 </div>
                 <div>
                   <p className="font-semibold text-ink">{card.headline || card.title}</p>
@@ -115,6 +123,11 @@ export function HistorySection({
                     {card.marketplace} · {card.style} · {new Date(card.generatedAt).toLocaleDateString("ru-RU")}
                   </p>
                   {presetLabel ? <p className="mt-0.5 text-xs text-muted">{presetLabel}</p> : null}
+                  {videoCount > 0 ? (
+                    <p className="mt-1 text-xs font-semibold text-accent">
+                      {videoCount === 1 ? "Есть сохранённое видео" : `${videoCount} сохранённых видео`}
+                    </p>
+                  ) : null}
                 </div>
               </div>
               <div className="flex gap-2">

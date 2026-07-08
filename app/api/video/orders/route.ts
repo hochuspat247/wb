@@ -90,8 +90,11 @@ export async function POST(request: Request) {
   try {
     const cardPayload = await assertCardOwnership(userId, body.sourceGenerationId!);
     const siteUrl = getSiteUrl(request);
-    const amountRub = calculateVideoPriceRub(body.duration!, body.quality!);
-    const params = body as CreateVideoOrderInput;
+    const amountRub = calculateVideoPriceRub(body.duration!, body.quality!, Boolean(body.generateAudio));
+    const params = {
+      ...body,
+      generateAudio: Boolean(body.generateAudio)
+    } as CreateVideoOrderInput;
 
     const orderId = crypto.randomUUID();
     const sourceImage = getCardSourceImageData(cardPayload);
@@ -165,7 +168,7 @@ export async function POST(request: Request) {
       amount: amountRub,
       customerEmail,
       credits: 0,
-      description: `MarketCard AI: видео из карточки (${body.duration} сек, ${body.quality})`,
+      description: `MarketCard AI: видео из карточки (${body.duration} сек, ${body.quality}${body.generateAudio ? ", со звуком" : ""})`,
       idempotenceKey,
       returnUrl: `${siteUrl}/cabinet?videoOrder=${order.id}`,
       userId,

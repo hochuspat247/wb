@@ -1475,6 +1475,7 @@ export function CardGenerator({
                     disabled={isWorking}
                     initialOrderId={initialVideoOrderId}
                     onFlowReset={onVideoFlowReset}
+                    onVideoReady={onSaved}
                   />
                 ) : null}
                 <div className={`mt-4 overflow-hidden rounded-card border ${previewFrameClass} ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>

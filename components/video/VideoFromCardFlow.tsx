@@ -20,6 +20,7 @@ type VideoFromCardFlowProps = {
   initialOrderId?: string | null;
   onFlowReset?: () => void;
   onPhaseChange?: (phase: VideoFlowPhase) => void;
+  onVideoReady?: () => void;
 };
 
 export function VideoFromCardFlow({
@@ -29,7 +30,8 @@ export function VideoFromCardFlow({
   disabled,
   initialOrderId,
   onFlowReset,
-  onPhaseChange
+  onPhaseChange,
+  onVideoReady
 }: VideoFromCardFlowProps) {
   const [phase, setPhase] = useState<VideoFlowPhase>(initialOrderId ? "waiting" : "idle");
   const [orderId, setOrderId] = useState<string | null>(initialOrderId || null);
@@ -73,6 +75,7 @@ export function VideoFromCardFlow({
           onDone={(url) => {
             setVideoUrl(url);
             setPhase("ready");
+            onVideoReady?.();
           }}
           onError={(message) => {
             setError(message);

@@ -1,38 +1,69 @@
+import Link from "next/link";
+import { ArrowRight, Film } from "lucide-react";
+import { CardVideoCompareSlider } from "@/components/video/CardVideoCompareSlider";
 import { Reveal } from "@/components/ui/Reveal";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { Button } from "@/components/ui/Button";
 import { PRODUCT_CARD_VIDEO_DEMO } from "@/lib/marketing/videoExample";
 
 export function VideoExampleSection() {
   return (
     <section className="border-t border-clay bg-card py-20 md:py-28" id="video-example">
       <div className="section-shell">
-        <SectionHeader
-          description={PRODUCT_CARD_VIDEO_DEMO.description}
-          title={PRODUCT_CARD_VIDEO_DEMO.title}
-        />
+        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] lg:gap-12 xl:gap-16">
+          <Reveal>
+            <div className="max-w-xl">
+              <span className="inline-flex items-center gap-2 rounded-full border border-clay bg-paper/40 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted">
+                <Film size={14} />
+                {PRODUCT_CARD_VIDEO_DEMO.kicker}
+              </span>
+              <h2 className="mt-5 text-3xl font-black leading-[1.02] tracking-normal text-ink md:text-[3rem]">
+                {PRODUCT_CARD_VIDEO_DEMO.title}
+              </h2>
+              <p className="mt-4 text-base leading-relaxed text-muted md:text-lg">
+                {PRODUCT_CARD_VIDEO_DEMO.description}
+              </p>
 
-        <Reveal delay={1}>
-          <div className="mx-auto mt-10 max-w-[320px] sm:max-w-[360px]">
-            <div className="overflow-hidden rounded-[24px] border border-clay bg-paper/40 p-2 shadow-soft">
-              <div className="relative overflow-hidden rounded-[18px] border border-clay bg-black">
-                <span className="absolute left-3 top-3 z-10 rounded-full bg-accent px-3 py-1 text-[10px] font-black uppercase tracking-wide text-paper">
-                  {PRODUCT_CARD_VIDEO_DEMO.badge}
-                </span>
-                <video
-                  autoPlay
-                  className="aspect-[4/5] w-full object-cover"
-                  controls
-                  loop
-                  muted
-                  playsInline
-                  preload="metadata"
-                  src={PRODUCT_CARD_VIDEO_DEMO.src}
-                />
+              <ul className="mt-6 grid gap-2 sm:grid-cols-2">
+                {PRODUCT_CARD_VIDEO_DEMO.features.map((item) => (
+                  <li className="flex items-start gap-2 text-sm font-semibold text-muted" key={item}>
+                    <span aria-hidden className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-mint" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link href="/cabinet#create">
+                  <Button type="button">
+                    Создать видео из карточки
+                    <ArrowRight size={16} />
+                  </Button>
+                </Link>
+                <Link href="/#generator">
+                  <Button type="button" variant="secondary">
+                    Сначала сделать карточку
+                  </Button>
+                </Link>
               </div>
-              <p className="mt-3 px-1 text-center text-xs font-semibold text-muted">{PRODUCT_CARD_VIDEO_DEMO.durationLabel}</p>
             </div>
-          </div>
-        </Reveal>
+          </Reveal>
+
+          <Reveal delay={1}>
+            <div className="mx-auto w-full max-w-[360px] lg:mx-0 lg:max-w-none">
+              <CardVideoCompareSlider
+                alt={PRODUCT_CARD_VIDEO_DEMO.title}
+                badge={PRODUCT_CARD_VIDEO_DEMO.badge}
+                cardImage={PRODUCT_CARD_VIDEO_DEMO.cardImage}
+                duration={PRODUCT_CARD_VIDEO_DEMO.durationLabel}
+                label={PRODUCT_CARD_VIDEO_DEMO.compareLabel}
+                videoSrc={PRODUCT_CARD_VIDEO_DEMO.src}
+              />
+              <p className="mt-3 text-center text-xs font-medium text-muted lg:text-left">
+                Потяните ползунок, чтобы сравнить карточку и видео
+              </p>
+            </div>
+          </Reveal>
+        </div>
       </div>
     </section>
   );

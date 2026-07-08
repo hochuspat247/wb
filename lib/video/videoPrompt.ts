@@ -1,15 +1,8 @@
 import { detectProductSceneCategory, type ProductSceneCategory } from "@/lib/ai/cardPromptBuilder";
 import type { ProductCardResult } from "@/types/product-card";
-import type { VideoMotionStyle } from "@/types/video-generation";
+import type { VideoMotionStyle, VideoAspectRatio } from "@/types/video-generation";
 
 export type VideoPromptCategory = ProductSceneCategory | "perfumery";
-
-type VideoCategoryProfile = {
-  subject: string;
-  backgroundDynamics: string;
-  lighting: string;
-  cameraMotion: string;
-};
 
 type VideoCardContext = Pick<
   ProductCardResult,
@@ -24,99 +17,19 @@ const PERFUMERY_KEYWORDS = [
   "cologne",
   "духи",
   "парфюм",
-  "аромат",
   "туалетная вода",
   "одеколон"
 ];
 
-const PREMIUM_TRIGGERS =
-  "Product commercial, High-end advertising, Luxury aesthetic, Smooth cinematic camera pan, Slow-motion, Macro lens, Studio lighting, Volumetric light, Soft shadows, Photorealistic, Clean background, Commercial quality, Raytracing look.";
-
-const CATEGORY_PROFILES: Record<VideoPromptCategory, VideoCategoryProfile> = {
-  perfumery: {
-    subject: "a premium glass perfume bottle with liquid reflecting the light",
-    backgroundDynamics: "slow-motion splash of water and silk fabric waving gently in the wind, dramatic backlighting, subtle light smoke",
-    lighting: "dramatic backlighting, studio lighting, volumetric light, soft shadows, luxury aesthetic",
-    cameraMotion: "smooth orbiting camera shot around the bottle, slow cinematic pan, subtle zoom-in"
-  },
-  beauty: {
-    subject: "a luxury cosmetic cream jar with white smooth cream texture inside",
-    backgroundDynamics:
-      "soft focus background with a white lily flower, subtle water droplets splashing, elegant gold particles floating around",
-    lighting: "cinematic soft lighting, glowing skin effect, studio lighting, volumetric light, soft shadows",
-    cameraMotion: "smooth slow-motion camera pan and subtle zoom-in, macro lens feel"
-  },
-  electronics: {
-    subject: "sleek modern consumer electronics product with sharp premium materials",
-    backgroundDynamics: "dark techno aesthetic, neon blue and purple accent lights, subtle smoke effect, clean reflections",
-    lighting: "sharp studio lighting, controlled highlights, volumetric accent lights, commercial product lighting",
-    cameraMotion: "dynamic camera rotation with controlled speed, subtle technical blueprint elements fading in"
-  },
-  home: {
-    subject: "a premium home or kitchen product with refined materials and clean design",
-    backgroundDynamics: "soft lifestyle background blur, gentle ambient particles, subtle natural light movement",
-    lighting: "warm studio lighting, soft volumetric shadows, elegant clean atmosphere",
-    cameraMotion: "smooth slow-motion camera pan and subtle zoom-in"
-  },
-  apparel: {
-    subject: "a premium fashion or apparel product with elegant fabric texture",
-    backgroundDynamics: "soft fabric motion in the background, gentle wind effect, subtle light particles",
-    lighting: "fashion editorial lighting, soft shadows, clean premium atmosphere",
-    cameraMotion: "smooth cinematic camera pan with subtle parallax depth"
-  },
-  sport: {
-    subject: "a modern sports or fitness product with energetic premium styling",
-    backgroundDynamics: "subtle motion blur energy, soft dynamic particles, clean active lifestyle atmosphere",
-    lighting: "bright studio lighting, crisp highlights, commercial sports advertising look",
-    cameraMotion: "smooth dynamic camera push-in with controlled slow-motion emphasis"
-  },
-  kids: {
-    subject: "a playful premium children's product with bright friendly presentation",
-    backgroundDynamics: "soft colorful bokeh motion, gentle floating particles, cheerful clean atmosphere",
-    lighting: "bright soft studio lighting, clean shadows, family-friendly commercial look",
-    cameraMotion: "gentle smooth camera pan and subtle zoom-in"
-  },
-  pet_product: {
-    subject: "a premium pet care product with clean trustworthy presentation",
-    backgroundDynamics: "soft natural background motion, gentle light particles, calm lifestyle atmosphere",
-    lighting: "warm studio lighting, soft shadows, clean commercial quality",
-    cameraMotion: "smooth slow-motion camera pan and subtle zoom-in"
-  },
-  water_transport: {
-    subject: "a premium marine or water transport product with polished surfaces",
-    backgroundDynamics: "subtle water ripples, soft horizon light movement, elegant outdoor atmosphere",
-    lighting: "natural cinematic lighting, soft volumetric shadows, premium outdoor commercial look",
-    cameraMotion: "smooth cinematic camera pan with subtle parallax depth"
-  },
-  automotive: {
-    subject: "a premium automotive accessory with sharp industrial design",
-    backgroundDynamics: "subtle garage atmosphere motion, soft smoke and light streaks, technical premium mood",
-    lighting: "dramatic studio lighting, controlled reflections, commercial automotive advertising look",
-    cameraMotion: "smooth dynamic camera rotation with subtle zoom-in"
-  },
-  tools: {
-    subject: "a professional tool or hardware product with rugged premium finish",
-    backgroundDynamics: "subtle workshop atmosphere motion, soft dust particles, clean industrial background",
-    lighting: "crisp studio lighting, strong product highlights, commercial-grade look",
-    cameraMotion: "smooth controlled camera pan with macro detail emphasis"
-  },
-  other: {
-    subject: "the product shown on this marketplace card",
-    backgroundDynamics: "gentle motion of soft light particles, subtle background parallax, elegant clean atmosphere",
-    lighting: "professional studio lighting, soft volumetric shadows, elegant and clean atmosphere",
-    cameraMotion: "smooth slow-motion camera pan and subtle zoom-in"
-  }
-};
-
 const MOTION_STYLE_OVERRIDES: Record<VideoMotionStyle, string> = {
   soft_zoom:
-    "Use only a very soft slow-motion camera zoom-in. Keep background motion minimal and premium. No chaotic movement.",
+    "Use only a very slow 2-3% zoom-in over the full frame. No parallax, no text movement, no background replacement. The card must look like a static design with barely noticeable camera push.",
   premium_parallax:
-    "Add premium parallax depth between product, text layers and background while keeping all card elements perfectly readable.",
+    "Allow only subtle depth parallax in the background and product area. Text blocks, headlines, bullet lists and badges must remain perfectly flat, sharp and locked in place — zero movement on typography.",
   light_sweep:
-    "Add a soft cinematic light sweep across the product and background. Light reflection passing across surfaces without changing text.",
+    "Add a soft light sweep across the product surface and background only. Typography, icons and text panels must not move, warp or change.",
   marketplace_motion:
-    "Create a clean marketplace-style animated ad with subtle polished movement and a final premium commercial look."
+    "Create a polished marketplace ad feel with gentle camera push and soft product highlight. Keep the entire text layout frozen — animate only camera and ambient light."
 };
 
 function clean(value: unknown) {
@@ -145,69 +58,77 @@ export function detectVideoPromptCategory(card: VideoCardContext): VideoPromptCa
   });
 }
 
-function buildSubject(card: VideoCardContext, profile: VideoCategoryProfile) {
-  const title = clean(card.title || card.headline);
-
-  if (title) {
-    return `the product shown on this marketplace card (${title})`;
-  }
-
-  return profile.subject;
-}
-
-function buildCommercialSceneFromProfile(profile: VideoCategoryProfile, subject = profile.subject) {
-  return [
-    "Commercial product advertisement, high-end marketplace video.",
-    `Close-up macro shot of ${subject}.`,
-    `${profile.lighting}.`,
-    `${profile.cameraMotion}.`,
-    `In the background, there is a gentle motion of ${profile.backgroundDynamics}.`,
-    "4K resolution, cinematic composition, photorealistic, commercial-grade CGI look."
-  ].join(" ");
-}
-
-function buildCommercialScene(card: VideoCardContext, category: VideoPromptCategory) {
-  const profile = CATEGORY_PROFILES[category];
-  const subject = buildSubject(card, profile);
-
-  return buildCommercialSceneFromProfile(profile, subject);
-}
-
 function buildPreservationRules() {
   return [
-    "Critical rules for image-to-video:",
-    "- Animate this image. Bring this marketplace product card shot to life.",
-    "- Keep the original product card layout unchanged.",
-    "- Keep all text, numbers, letters, icons, badges and typography unchanged.",
-    "- Do not rewrite, distort, replace, translate or deform any text.",
-    "- Do not change product shape, packaging design, colors or marketplace card composition.",
-    "- Do not add new random objects, logos or watermarks.",
-    "- Do not crop important parts of the card.",
-    "- Do not make chaotic camera movement.",
-    "- Animate only motion: camera movement, light sweep, soft background parallax and subtle product emphasis.",
-    "The result should look like a premium animated product ad made by a motion designer, not a distorted AI video."
+    "Image-to-video task: animate the provided marketplace product card image.",
+    "",
+    "CRITICAL — preserve the source image exactly:",
+    "- All Russian text, headlines, bullet points, numbers, badges and icons must stay pixel-sharp and unchanged.",
+    "- Do NOT rewrite, translate, blur, distort, morph or regenerate any letters or words.",
+    "- Do NOT invent new Cyrillic text, gibberish, misspellings or random characters.",
+    "- Keep product shape, packaging, colors, card layout and composition identical to the input.",
+    "- Do NOT replace the scene, add splashes, smoke, new props, logos or watermarks.",
+    "- Do NOT crop, rotate or reframe the card.",
+    "",
+    "ALLOWED motion only:",
+    "- Very subtle slow camera zoom or push (2-5% max).",
+    "- Soft light shift or reflection on product and background.",
+    "- Minimal background-only parallax — text panels must stay fixed.",
+    "",
+    "The result must look like a motion designer gently animated a finished static card, not like AI re-rendered the design."
   ].join("\n");
+}
+
+function buildMinimalSceneHint(card: VideoCardContext, category: VideoPromptCategory) {
+  const title = clean(card.title || card.headline);
+  const categoryLabel = getVideoPromptCategoryLabel(category);
+
+  return [
+    "Context (do not add new visuals, use only for understanding the product):",
+    title ? `- Product: ${title}` : `- Category: ${categoryLabel}`,
+    "- Animate the existing card as-is. Do not generate a new scene or close-up."
+  ].join("\n");
+}
+
+function buildAspectRatioHint(aspectRatio?: VideoAspectRatio) {
+  if (!aspectRatio) {
+    return "";
+  }
+
+  if (aspectRatio === "4:5" || aspectRatio === "1:1") {
+    return [
+      "Output framing:",
+      "- Keep a vertical marketplace card composition.",
+      "- The source card is vertical; do not crop it into a horizontal 16:9 frame.",
+      "- Preserve the full card inside a vertical 9:16 video frame."
+    ].join("\n");
+  }
+
+  if (aspectRatio === "9:16") {
+    return "Output framing: vertical 9:16 video, preserve the full card composition.";
+  }
+
+  return "Output framing: horizontal 16:9 video.";
 }
 
 export function buildProductCardVideoPrompt(input: {
   motionStyle: VideoMotionStyle;
+  aspectRatio?: VideoAspectRatio;
   card?: VideoCardContext | null;
   customPrompt?: string;
 }) {
   const category = input.card ? detectVideoPromptCategory(input.card) : "other";
-  const commercialScene = input.card
-    ? buildCommercialScene(input.card, category)
-    : buildCommercialSceneFromProfile(CATEGORY_PROFILES.other);
+  const aspectHint = buildAspectRatioHint(input.aspectRatio);
 
   return [
     buildPreservationRules(),
     "",
-    "Commercial scene direction:",
-    commercialScene,
+    input.card ? buildMinimalSceneHint(input.card, category) : "",
+    aspectHint ? `\n${aspectHint}` : "",
     "",
     `Motion style:\n${MOTION_STYLE_OVERRIDES[input.motionStyle]}`,
     "",
-    `Premium marketplace triggers:\n${PREMIUM_TRIGGERS}`,
+    "Final reminder: typography and Russian text must remain 100% readable and identical to the source image.",
     input.customPrompt ? `\nAdditional direction:\n${input.customPrompt}` : ""
   ]
     .filter(Boolean)

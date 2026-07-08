@@ -172,6 +172,7 @@ export const videoGenerationOrders = sqliteTable("video_generation_order", {
   aspectRatio: text("aspectRatio").$type<VideoAspectRatio>().notNull(),
   quality: text("quality").$type<VideoQuality>().notNull(),
   motionStyle: text("motionStyle").$type<VideoMotionStyle>().notNull(),
+  generateAudio: integer("generateAudio", { mode: "boolean" }).notNull().default(false),
   prompt: text("prompt").notNull(),
   amountRub: integer("amountRub"),
   paymentId: text("paymentId"),

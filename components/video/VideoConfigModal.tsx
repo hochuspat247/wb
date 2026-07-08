@@ -6,6 +6,7 @@ import {
   calculateVideoPriceRub,
   formatVideoPriceBreakdown,
   formatVideoPriceRub,
+  getVideoAspectRatioOptionLabel,
   getVideoDurationOptionLabel,
   getVideoQualityLabel,
   VIDEO_DURATION_OPTIONS
@@ -26,11 +27,11 @@ import type {
   VideoQuality
 } from "@/types/video-generation";
 
-const motionStyleOptions: Array<{ value: VideoMotionStyle; label: string }> = [
-  { value: "soft_zoom", label: "Мягкий zoom" },
-  { value: "premium_parallax", label: "Premium parallax" },
-  { value: "light_sweep", label: "Light sweep" },
-  { value: "marketplace_motion", label: "Marketplace motion" }
+const motionStyleOptions: Array<{ value: VideoMotionStyle; label: string; hint: string }> = [
+  { value: "soft_zoom", label: "Мягкий zoom", hint: "Лучше сохраняет текст на карточке" },
+  { value: "premium_parallax", label: "Premium parallax", hint: "Лёгкий parallax фона" },
+  { value: "light_sweep", label: "Light sweep", hint: "Мягкий блик по товару" },
+  { value: "marketplace_motion", label: "Marketplace motion", hint: "Чуть более живое движение" }
 ];
 
 function isValidEmail(email: string) {
@@ -49,7 +50,8 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
   const [duration, setDuration] = useState<VideoDuration>("4");
   const [aspectRatio, setAspectRatio] = useState<VideoAspectRatio>("4:5");
   const [quality, setQuality] = useState<VideoQuality>("standard");
-  const [motionStyle, setMotionStyle] = useState<VideoMotionStyle>("premium_parallax");
+  const [motionStyle, setMotionStyle] = useState<VideoMotionStyle>("soft_zoom");
+  const [generateAudio, setGenerateAudio] = useState(false);
   const [customerEmail, setCustomerEmail] = useState("");
   const [emailIsPlaceholder, setEmailIsPlaceholder] = useState(false);
   const [isUnlimited, setIsUnlimited] = useState(false);
@@ -57,8 +59,14 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
   const [error, setError] = useState("");
 
   const previewSrc = getGeneratedCoverSrc(card) || card.imageDataUrl;
-  const amountRub = useMemo(() => calculateVideoPriceRub(duration, quality), [duration, quality]);
-  const priceBreakdown = useMemo(() => formatVideoPriceBreakdown(duration, quality), [duration, quality]);
+  const amountRub = useMemo(
+    () => calculateVideoPriceRub(duration, quality, generateAudio),
+    [duration, quality, generateAudio]
+  );
+  const priceBreakdown = useMemo(
+    () => formatVideoPriceBreakdown(duration, quality, generateAudio),
+    [duration, quality, generateAudio]
+  );
   const promptCategoryLabel = useMemo(
     () => getVideoPromptCategoryLabel(detectVideoPromptCategory(card)),
     [card]
@@ -107,6 +115,7 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
         aspectRatio,
         quality,
         motionStyle,
+        generateAudio,
         useVideoCredit,
         customerEmail: showEmailField && emailIsPlaceholder ? customerEmail.trim() : undefined
       });
@@ -166,8 +175,8 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
         <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Google Veo 3.1 Fast</p>
         <h3 className="mt-3 text-2xl font-black text-ink">Видео из вашей карточки</h3>
         <p className="mt-2 text-sm font-medium text-muted">
-          Мы анимируем уже готовую карточку, сохранив товар, текст, цвета и композицию. Видео всегда без звука. Минимум
-          4 сек — ограничение Veo 3.1.
+          Мы анимируем уже готовую карточку, сохранив товар, текст, цвета и композицию. Формат карточки 4:5 отправляется
+          в Veo как вертикальное 9:16. Минимум 4 сек — ограничение Veo 3.1.
         </p>
 
         <div className="mt-6 grid gap-5 md:grid-cols-[180px_1fr]">
@@ -186,7 +195,7 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
               <Select onChange={(e) => setDuration(e.target.value as VideoDuration)} value={duration}>
                 {VIDEO_DURATION_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
-                    {getVideoDurationOptionLabel(option.value, quality)}
+                    {getVideoDurationOptionLabel(option.value, quality, generateAudio)}
                   </option>
                 ))}
               </Select>
@@ -195,11 +204,32 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
             <label className="grid gap-1.5 text-xs font-semibold text-muted">
               Формат
               <Select onChange={(e) => setAspectRatio(e.target.value as VideoAspectRatio)} value={aspectRatio}>
-                <option value="4:5">4:5 (как карточка)</option>
-                <option value="1:1">1:1</option>
-                <option value="9:16">9:16</option>
-                <option value="16:9">16:9</option>
+                <option value="4:5">{getVideoAspectRatioOptionLabel("4:5")}</option>
+                <option value="1:1">{getVideoAspectRatioOptionLabel("1:1")}</option>
+                <option value="9:16">{getVideoAspectRatioOptionLabel("9:16")}</option>
+                <option value="16:9">{getVideoAspectRatioOptionLabel("16:9")}</option>
               </Select>
+              {(aspectRatio === "4:5" || aspectRatio === "1:1") ? (
+                <span className="text-[11px] font-normal leading-relaxed text-muted/90">
+                  Veo не поддерживает 4:5 напрямую — мы отправляем вертикальное 9:16, чтобы ролик не получался
+                  горизонтальным.
+                </span>
+              ) : null}
+            </label>
+
+            <label className="flex items-start gap-3 rounded-[14px] border border-clay bg-paper/40 px-3 py-3 text-xs font-semibold text-muted">
+              <input
+                checked={generateAudio}
+                className="mt-0.5"
+                onChange={(event) => setGenerateAudio(event.target.checked)}
+                type="checkbox"
+              />
+              <span>
+                Сгенерировать со звуком
+                <span className="mt-1 block text-[11px] font-normal leading-relaxed text-muted/90">
+                  Опционально. Ambient/звук сцены от Veo. Дороже на ×1.5. Для карточек обычно лучше без звука.
+                </span>
+              </span>
             </label>
 
             <label className="grid gap-1.5 text-xs font-semibold text-muted">
@@ -219,11 +249,15 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
                   </option>
                 ))}
               </Select>
+              <span className="text-[11px] font-normal leading-relaxed text-muted/90">
+                {motionStyleOptions.find((option) => option.value === motionStyle)?.hint}. Для карточек с текстом
+                рекомендуем «Мягкий zoom».
+              </span>
             </label>
 
             <p className="rounded-[14px] border border-clay bg-paper/40 px-3 py-2 text-[11px] font-medium leading-relaxed text-muted">
-              Premium-промт: {promptCategoryLabel}. Animate this image — плавное движение камеры, свет и фон без
-              искажения текста на карточке.
+              Категория: {promptCategoryLabel}. Видео анимирует готовую карточку — текст и композиция должны остаться
+              как на исходном изображении.
             </p>
 
             {showEmailField ? (
@@ -248,9 +282,9 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
         <div className="mt-6 rounded-[18px] border border-clay bg-paper/50 px-4 py-4">
           <p className="text-sm font-black text-ink">Стоимость: {priceLabel}</p>
           {!isUnlimited ? (
-            <p className="mt-1 text-xs font-semibold text-muted">{priceBreakdown} · без звука</p>
+            <p className="mt-1 text-xs font-semibold text-muted">{priceBreakdown}</p>
           ) : (
-            <p className="mt-1 text-xs font-semibold text-muted">Без звука</p>
+            <p className="mt-1 text-xs font-semibold text-muted">{generateAudio ? "Со звуком" : "Без звука"}</p>
           )}
           {isUnlimited ? (
             <p className="mt-1 text-xs font-semibold text-mint">Безлимитный аккаунт — оплата не требуется</p>

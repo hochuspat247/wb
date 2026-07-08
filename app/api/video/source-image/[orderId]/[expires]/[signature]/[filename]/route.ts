@@ -2,20 +2,25 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { productCards, videoGenerationOrders } from "@/lib/db/schema";
-import { getCardSourceImageData, parseSourceImageOrderId, verifySignedSourceImageAccess } from "@/lib/server/videoSourceImage";
+import { getCardSourceImageData, verifySignedSourceImageAccess } from "@/lib/server/videoSourceImage";
 
 export const runtime = "nodejs";
 
 type RouteContext = {
-  params: Promise<{ orderId: string }>;
+  params: Promise<{
+    orderId: string;
+    expires: string;
+    signature: string;
+    filename: string;
+  }>;
 };
 
-export async function GET(request: Request, context: RouteContext) {
-  const { orderId: orderIdParam } = await context.params;
-  const orderId = parseSourceImageOrderId(orderIdParam);
-  const url = new URL(request.url);
-  const expires = url.searchParams.get("expires") || "";
-  const signature = url.searchParams.get("sig") || "";
+export async function GET(_request: Request, context: RouteContext) {
+  const { orderId, expires, signature, filename } = await context.params;
+
+  if (!/^image\.(png|jpe?g|webp)$/i.test(filename)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   if (!verifySignedSourceImageAccess(orderId, expires, signature)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });

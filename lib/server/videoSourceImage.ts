@@ -46,20 +46,12 @@ export function getSourceImageExtension(mimeType: string): "png" | "jpg" | "jpeg
   return "png";
 }
 
-export function parseSourceImageOrderId(orderIdOrFilename: string) {
-  return orderIdOrFilename.replace(/\.(png|jpe?g|webp)$/i, "");
-}
-
 export function buildSignedSourceImageUrl(siteUrl: string, orderId: string, extension: string = "png") {
   const expires = Date.now() + DEFAULT_TTL_MS;
   const signature = createHmac("sha256", getSecret()).update(`${orderId}:${expires}`).digest("hex");
-  const params = new URLSearchParams({
-    expires: String(expires),
-    sig: signature
-  });
   const safeExtension = extension.replace(/^\./, "");
 
-  return `${siteUrl.replace(/\/$/, "")}/api/video/source-image/${orderId}.${safeExtension}?${params.toString()}`;
+  return `${siteUrl.replace(/\/$/, "")}/api/video/source-image/${orderId}/${expires}/${signature}/image.${safeExtension}`;
 }
 
 export function verifySignedSourceImageAccess(orderId: string, expires: string, signature: string) {

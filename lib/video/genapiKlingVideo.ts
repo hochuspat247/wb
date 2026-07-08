@@ -6,6 +6,7 @@ type GenApiCreateResponse = {
   status?: string;
   message?: string;
   error?: string | boolean;
+  errors_validation?: Record<string, string[] | string>;
 };
 
 type GenApiStatusResponse = {
@@ -34,6 +35,30 @@ function getGenApiConfig() {
   }
 
   return { apiKey, baseUrl, modelId };
+}
+
+function formatGenApiError(status: number, data: Record<string, unknown>) {
+  const validation = data.errors_validation;
+  if (validation && typeof validation === "object") {
+    const parts = Object.entries(validation).map(([key, value]) => {
+      const message = Array.isArray(value) ? value.join(", ") : String(value);
+      return `${key}: ${message}`;
+    });
+
+    if (parts.length > 0) {
+      return parts.join("; ");
+    }
+  }
+
+  if (typeof data.message === "string" && data.message.trim()) {
+    return data.message;
+  }
+
+  if (typeof data.error === "string" && data.error.trim()) {
+    return data.error;
+  }
+
+  return `GenAPI error ${status}`;
 }
 
 function extractVideoUrl(payload: unknown): string | null {
@@ -81,7 +106,7 @@ function normalizeStatus(status?: string): GenApiVideoTaskResult["status"] {
     return "error";
   }
 
-  if (["processing", "running", "started"].includes(normalized)) {
+  if (["processing", "running", "started", "starting"].includes(normalized)) {
     return "processing";
   }
 
@@ -100,6 +125,22 @@ export function normalizeKlingVideoResponse(response: GenApiStatusResponse): Gen
   };
 }
 
+function resolveStartImageInput(input: {
+  startImageUrl?: string;
+  startImageBase64?: string;
+  startImageMimeType?: string;
+}) {
+  if (input.startImageBase64 && input.startImageMimeType) {
+    return `data:${input.startImageMimeType};base64,${input.startImageBase64}`;
+  }
+
+  if (input.startImageUrl) {
+    return input.startImageUrl;
+  }
+
+  throw new Error("Source image is required for image-to-video generation.");
+}
+
 async function callGenApi<T>(path: string, init?: RequestInit): Promise<T> {
   const config = getGenApiConfig();
   const response = await fetch(`${config.baseUrl}${path}`, {
@@ -113,14 +154,10 @@ async function callGenApi<T>(path: string, init?: RequestInit): Promise<T> {
     cache: "no-store"
   });
 
-  const data = (await response.json().catch(() => ({}))) as T & GenApiCreateResponse;
+  const data = (await response.json().catch(() => ({}))) as Record<string, unknown>;
 
   if (!response.ok || data.error === true || (typeof data.error === "string" && data.error)) {
-    const message =
-      (typeof data.error === "string" ? data.error : undefined) ||
-      (data as GenApiCreateResponse).message ||
-      `GenAPI error ${response.status}`;
-    throw new Error(message);
+    throw new Error(formatGenApiError(response.status, data));
   }
 
   return data as T;
@@ -128,25 +165,31 @@ async function callGenApi<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function createKlingVideoTask(input: {
   prompt: string;
-  startImageUrl: string;
+  startImageUrl?: string;
+  startImageBase64?: string;
+  startImageMimeType?: string;
   duration: VideoDuration;
   aspectRatio: VideoAspectRatio;
   quality: VideoQuality;
   callbackUrl?: string;
 }): Promise<GenApiVideoTaskResult> {
   const config = getGenApiConfig();
+  const startImage = resolveStartImageInput(input);
 
   const body: Record<string, unknown> = {
-    model_id: config.modelId,
     prompt: input.prompt,
     model: "image-to-video",
-    start_image_url: input.startImageUrl,
+    start_image_url: startImage,
     duration: input.duration,
     aspect_ratio: input.aspectRatio,
+    translate_input: false,
     generate_audio: false,
-    pro: input.quality === "pro",
-    translate_input: false
+    shot_type: "customize"
   };
+
+  if (input.quality === "pro") {
+    body.pro = true;
+  }
 
   if (input.callbackUrl) {
     body.callback_url = input.callbackUrl;

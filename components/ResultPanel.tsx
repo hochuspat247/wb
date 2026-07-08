@@ -246,18 +246,6 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
                 <h4 className={headingClass}>Характеристики WB</h4>
                 <CharList dark={dark} items={wb.wbCharacteristics} />
               </div>
-              <div>
-                <h4 className={headingClass}>Safe-тексты для фото</h4>
-                <TextList dark={dark} items={wb.wbSafeImageTexts} />
-              </div>
-              <div>
-                <h4 className={headingClass}>Что нельзя писать на фото</h4>
-                <TextList dark={dark} items={wb.wbForbiddenImageTexts} />
-              </div>
-              <div>
-                <h4 className={headingClass}>Чеклист перед загрузкой</h4>
-                <TextList dark={dark} items={mt?.exportChecklist ?? []} />
-              </div>
             </div>
           ) : (
             <p className={textClass}>Данные Wildberries не сгенерированы.</p>
@@ -359,18 +347,6 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
                 <h4 className={headingClass}>Характеристики</h4>
                 <CharList dark={dark} items={ym.yandexCharacteristics} />
               </div>
-              <div>
-                <h4 className={headingClass}>Safe-тексты для фото</h4>
-                <TextList dark={dark} items={ym.yandexSafeImageTexts} />
-              </div>
-              <div>
-                <h4 className={headingClass}>Что нельзя писать на фото</h4>
-                <TextList dark={dark} items={ym.yandexForbiddenImageTexts} />
-              </div>
-              <div>
-                <h4 className={headingClass}>Чеклист</h4>
-                <TextList dark={dark} items={mt?.exportChecklist ?? []} />
-              </div>
             </div>
           ) : (
             <p className={textClass}>Данные Яндекс Маркета не сгенерированы.</p>
@@ -404,6 +380,16 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
               <h4 className={headingClass}>Тексты для фото</h4>
               <TextList dark={dark} items={mt.imageTexts} />
             </div>
+          ) : wb?.wbSafeImageTexts?.length ? (
+            <div className="mt-4">
+              <h4 className={headingClass}>Тексты для фото</h4>
+              <TextList dark={dark} items={wb.wbSafeImageTexts} />
+            </div>
+          ) : ym?.yandexSafeImageTexts?.length ? (
+            <div className="mt-4">
+              <h4 className={headingClass}>Тексты для фото</h4>
+              <TextList dark={dark} items={ym.yandexSafeImageTexts} />
+            </div>
           ) : null}
         </TabPanel>
 
@@ -412,6 +398,12 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
             <div className="mb-4">
               <h4 className={headingClass}>Предупреждения модерации</h4>
               <TextList dark={dark} items={mt.moderationWarnings} />
+            </div>
+          ) : null}
+          {wb?.wbForbiddenImageTexts?.length || ym?.yandexForbiddenImageTexts?.length ? (
+            <div className="mb-4">
+              <h4 className={headingClass}>Что нельзя писать на фото</h4>
+              <TextList dark={dark} items={[...(wb?.wbForbiddenImageTexts ?? []), ...(ym?.yandexForbiddenImageTexts ?? [])]} />
             </div>
           ) : null}
           {mt?.improvementTips?.length ? (

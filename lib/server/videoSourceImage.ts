@@ -15,6 +15,13 @@ export function getCardSourceImageData(card: ProductCardResult): { base64: strin
     };
   }
 
+  if (card.generatedImageDataUrl?.startsWith("data:")) {
+    const match = card.generatedImageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (match) {
+      return { mimeType: match[1], base64: match[2] };
+    }
+  }
+
   if (card.imageDataUrl?.startsWith("data:")) {
     const match = card.imageDataUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (match) {

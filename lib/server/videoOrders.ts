@@ -1,9 +1,9 @@
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { productCards, users, videoGenerationOrders } from "@/lib/db/schema";
-import { createKlingVideoTask, getKlingVideoTaskStatus } from "@/lib/video/genapiKlingVideo";
+import { createKlingVideoTask, getKlingVideoTaskStatus, normalizeKlingVideoResponse } from "@/lib/video/genapiKlingVideo";
 import { buildProductCardVideoPrompt } from "@/lib/video/videoPrompt";
-import { buildGenApiCallbackUrl, buildSignedSourceImageUrl } from "@/lib/server/videoSourceImage";
+import { buildGenApiCallbackUrl, buildSignedSourceImageUrl, getCardSourceImageData } from "@/lib/server/videoSourceImage";
 import type { CreateVideoOrderInput, VideoGenerationRecord } from "@/types/video-generation";
 
 function mapOrder(row: typeof videoGenerationOrders.$inferSelect): VideoGenerationRecord {
@@ -166,11 +166,22 @@ export async function startPaidKlingVideoGeneration(orderId: string, siteUrl: st
     return order;
   }
 
-  const startImageUrl = buildSignedSourceImageUrl(siteUrl, order.id);
+  const card = await db.query.productCards.findFirst({
+    where: eq(productCards.id, order.sourceGenerationId)
+  });
+  const sourceImage = card ? getCardSourceImageData(card.payload) : null;
+  const maxInlineImageBytes = 4 * 1024 * 1024;
+  const inlineImage =
+    sourceImage && Buffer.byteLength(sourceImage.base64, "base64") <= maxInlineImageBytes
+      ? sourceImage
+      : null;
+
   const callbackUrl = buildGenApiCallbackUrl(siteUrl);
   const task = await createKlingVideoTask({
     prompt: order.prompt,
-    startImageUrl,
+    startImageBase64: inlineImage?.base64,
+    startImageMimeType: inlineImage?.mimeType,
+    startImageUrl: inlineImage ? undefined : buildSignedSourceImageUrl(siteUrl, order.id),
     duration: order.duration,
     aspectRatio: order.aspectRatio,
     quality: order.quality,
@@ -225,7 +236,10 @@ export async function refreshVideoOrderStatus(orderId: string) {
   return getVideoOrderById(orderId);
 }
 
-export async function applyGenApiCallback(externalTaskId: string) {
+export async function applyGenApiCallback(
+  externalTaskId: string,
+  callbackPayload?: Record<string, unknown>
+) {
   const row = await db.query.videoGenerationOrders.findFirst({
     where: eq(videoGenerationOrders.externalTaskId, externalTaskId)
   });
@@ -234,7 +248,19 @@ export async function applyGenApiCallback(externalTaskId: string) {
     return null;
   }
 
-  const remote = await getKlingVideoTaskStatus(externalTaskId);
+  const remote = callbackPayload
+    ? normalizeKlingVideoResponse({
+        request_id:
+          typeof callbackPayload.request_id === "string" || typeof callbackPayload.request_id === "number"
+            ? callbackPayload.request_id
+            : externalTaskId,
+        status: typeof callbackPayload.status === "string" ? callbackPayload.status : undefined,
+        output: callbackPayload.output,
+        result: callbackPayload.result,
+        message: typeof callbackPayload.message === "string" ? callbackPayload.message : undefined,
+        error: typeof callbackPayload.error === "string" ? callbackPayload.error : undefined
+      })
+    : await getKlingVideoTaskStatus(externalTaskId);
   const now = new Date();
 
   await db

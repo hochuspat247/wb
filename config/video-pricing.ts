@@ -6,16 +6,21 @@ export const GENAPI_VIDEO_RATES_RUB_PER_SEC: Record<VideoQuality, number> = {
   pro: 84
 };
 
+/** Допустимые значения duration для Kling Video O3 через GenAPI. */
+export const GENAPI_VIDEO_DURATIONS = ["3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"] as const satisfies readonly VideoDuration[];
+
 export const VIDEO_DURATION_OPTIONS: Array<{ value: VideoDuration; label: string }> = [
-  { value: "1", label: "1 секунда" },
-  { value: "2", label: "2 секунды" },
-  { value: "3", label: "3 секунды" },
+  { value: "3", label: "3 секунды (минимум)" },
   { value: "5", label: "5 секунд" },
   { value: "10", label: "10 секунд" },
-  { value: "15", label: "15 секунд" }
+  { value: "15", label: "15 секунд (максимум)" }
 ];
 
 export const VIDEO_DURATION_VALUES = VIDEO_DURATION_OPTIONS.map((option) => option.value);
+
+export function isGenApiVideoDuration(value: string): value is VideoDuration {
+  return (GENAPI_VIDEO_DURATIONS as readonly string[]).includes(value);
+}
 
 export function getVideoDurationSeconds(duration: VideoDuration): number {
   return Number(duration);

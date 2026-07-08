@@ -14,7 +14,7 @@ export type VideoGenerationStatus =
 
 export type VideoAspectRatio = "1:1" | "4:5" | "9:16" | "16:9";
 
-export type VideoDuration = "1" | "2" | "3" | "5" | "10" | "15";
+export type VideoDuration = "3" | "4" | "5" | "6" | "7" | "8" | "9" | "10" | "11" | "12" | "13" | "14" | "15";
 
 export type VideoQuality = "standard" | "pro";
 

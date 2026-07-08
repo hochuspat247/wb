@@ -1,3 +1,4 @@
+import { GENAPI_VIDEO_DURATIONS } from "@/config/video-pricing";
 import type { VideoAspectRatio, VideoDuration, VideoQuality } from "@/types/video-generation";
 
 type GenApiCreateResponse = {
@@ -170,12 +171,17 @@ export async function createKlingVideoTask(input: {
   }
 
   const aspectRatio = toGenApiAspectRatio(input.aspectRatio);
+  const duration = String(input.duration);
+
+  if (!(GENAPI_VIDEO_DURATIONS as readonly string[]).includes(duration)) {
+    throw new Error(`Unsupported video duration: ${duration}. Allowed: ${GENAPI_VIDEO_DURATIONS.join(", ")} sec.`);
+  }
 
   const body: Record<string, unknown> = {
     prompt: input.prompt,
     model: "image-to-video",
     start_image_url: input.startImageUrl,
-    duration: input.duration,
+    duration,
     translate_input: false,
     generate_audio: false,
     keep_audio: false,

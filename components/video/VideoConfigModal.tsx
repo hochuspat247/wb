@@ -38,7 +38,7 @@ type VideoConfigModalProps = {
 };
 
 export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCreated }: VideoConfigModalProps) {
-  const [duration, setDuration] = useState<VideoDuration>("1");
+  const [duration, setDuration] = useState<VideoDuration>("3");
   const [aspectRatio, setAspectRatio] = useState<VideoAspectRatio>("4:5");
   const [quality, setQuality] = useState<VideoQuality>("standard");
   const [motionStyle, setMotionStyle] = useState<VideoMotionStyle>("premium_parallax");
@@ -154,7 +154,8 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
         <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Kling Video O3</p>
         <h3 className="mt-3 text-2xl font-black text-ink">Видео из вашей карточки</h3>
         <p className="mt-2 text-sm font-medium text-muted">
-          Мы анимируем уже готовую карточку, сохранив товар, текст, цвета и композицию. Видео всегда без звука.
+          Мы анимируем уже готовую карточку, сохранив товар, текст, цвета и композицию. Видео всегда без звука. Минимум
+          3 сек — ограничение Kling Video O3.
         </p>
 
         <div className="mt-6 grid gap-5 md:grid-cols-[180px_1fr]">

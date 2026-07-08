@@ -199,7 +199,8 @@ export function HeroMiniGenerator() {
       setError(message);
       setIsGenerating(false);
       setDemoProgress(0);
-      trackMarketingEvent("hero_demo_generate_error", { message });
+      trackMarketingEvent("hero_demo_generate_error", { message, source: "hero" });
+      trackMarketingEvent("demo_generation_error", { message, source: "hero" });
     }
   }
 

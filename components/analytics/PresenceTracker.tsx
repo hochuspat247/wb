@@ -26,7 +26,7 @@ async function sendPresence() {
       path: window.location.pathname + window.location.hash,
       section: getPresenceSection() || undefined,
       lastAction: action.action || undefined,
-      lastActionLabel: action.label ? getActionLabel(action.action, action.label) : undefined,
+      lastActionLabel: action.label || getActionLabel(action.action) || undefined,
       guestId,
       isVisible: document.visibilityState === "visible",
       referrer: document.referrer || undefined

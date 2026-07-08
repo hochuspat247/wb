@@ -7,6 +7,7 @@ import { detectCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
 import { createDemoGeneration } from "@/lib/server/demo-generations";
+import { getErrorMessage, logDemoGenerationError } from "@/lib/server/demo-errors";
 import { reserveGuestDemoGeneration } from "@/lib/server/demoRateLimit";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import type {
@@ -40,11 +41,14 @@ type DemoGenerationRequest = {
 };
 
 export async function POST(request: Request) {
+  let guestId = "";
+  let userId: string | null = null;
+
   try {
     const session = await auth();
-    const userId = session?.user?.id ?? null;
+    userId = session?.user?.id ?? null;
     const body = (await request.json()) as DemoGenerationRequest;
-    const guestId = sanitizeGuestId(body.guestId);
+    guestId = sanitizeGuestId(body.guestId);
 
     if (!guestId) {
       return NextResponse.json({ error: "Missing guest_id" }, { status: 400 });
@@ -79,6 +83,15 @@ export async function POST(request: Request) {
       const limit = await reserveGuestDemoGeneration(request, guestId);
 
       if (!limit.allowed) {
+        await logDemoGenerationError({
+          message: limit.error,
+          guestId,
+          userId,
+          code: limit.code,
+          status: 429,
+          source: "server"
+        });
+
         return NextResponse.json(
           { error: limit.error, code: limit.code },
           {
@@ -147,9 +160,20 @@ export async function POST(request: Request) {
       quota: nextQuota
     });
   } catch (error) {
+    const message = getErrorMessage(error);
     console.error("[MarketCard AI] demo generation failed", error);
+
+    await logDemoGenerationError({
+      message,
+      guestId: guestId || undefined,
+      userId,
+      code: "DEMO_FAILED",
+      status: 500,
+      source: "server"
+    });
+
     return NextResponse.json(
-      { error: "Не получилось создать карточку. Попробуйте ещё раз или загрузите другое фото." },
+      { error: "Не получилось создать карточку. Попробуйте ещё раз или загрузите другое фото.", code: "DEMO_FAILED" },
       { status: 500 }
     );
   }

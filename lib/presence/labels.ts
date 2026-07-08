@@ -28,6 +28,7 @@ export const ACTION_LABELS: Record<string, string> = {
   hero_demo_generate_click: "Запустил демо-генерацию",
   hero_demo_generate_success: "Демо создано",
   hero_demo_generate_error: "Ошибка демо",
+  demo_generation_error: "Ошибка демо",
   hero_cta_click: "CTA «Загрузить фото»",
   header_try_click: "«Попробовать бесплатно»",
   examples_click: "«Посмотреть примеры»",

@@ -12,6 +12,7 @@ export type MetrikaGoal =
   | "hero_demo_generate_click"
   | "hero_demo_generate_success"
   | "hero_demo_generate_error"
+  | "demo_generation_error"
   | "header_try_click"
   | "hero_cta_click"
   | "examples_click"

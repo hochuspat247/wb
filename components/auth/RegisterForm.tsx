@@ -4,11 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { VkIdAuthPanel } from "@/components/auth/VkIdAuthPanel";
 import { YandexIdButton } from "@/components/auth/YandexIdButton";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { Logo } from "@/components/Logo";
+import { getEmailFormatError } from "@/lib/auth/email-format";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -22,11 +23,47 @@ export function RegisterForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
+  const [resendMessage, setResendMessage] = useState("");
+  const [resending, setResending] = useState(false);
+
+  async function handleResendVerification() {
+    if (!registeredEmail) return;
+
+    setResending(true);
+    setResendMessage("");
+
+    try {
+      const response = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: registeredEmail })
+      });
+      const data = (await response.json()) as { error?: string; message?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error || "Не удалось отправить письмо.");
+      }
+
+      setResendMessage(data.message || "Письмо отправлено повторно.");
+    } catch (caught) {
+      setResendMessage(caught instanceof Error ? caught.message : "Не удалось отправить письмо.");
+    } finally {
+      setResending(false);
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setLoading(true);
     setError("");
+
+    const emailError = getEmailFormatError(email);
+    if (emailError) {
+      setLoading(false);
+      setError(emailError);
+      return;
+    }
 
     const registerResponse = await fetch("/api/auth/register", {
       method: "POST",
@@ -34,31 +71,52 @@ export function RegisterForm() {
       body: JSON.stringify({ name, email, password })
     });
 
-    const registerData = (await registerResponse.json()) as { error?: string };
+    const registerData = (await registerResponse.json()) as { error?: string; email?: string; message?: string };
+
+    setLoading(false);
 
     if (!registerResponse.ok) {
-      setLoading(false);
       setError(registerData.error || "Не удалось зарегистрироваться.");
       return;
     }
 
-    const signInResult = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-      callbackUrl
-    });
-
-    setLoading(false);
-
-    if (signInResult?.error) {
-      setError("Аккаунт создан, но вход не удался. Попробуйте войти вручную.");
-      return;
-    }
-
     trackConversion("register_complete");
-    router.push(callbackUrl);
-    router.refresh();
+    setRegisteredEmail(registerData.email || email);
+    setResendMessage(registerData.message || "Проверьте почту и подтвердите email.");
+  }
+
+  if (registeredEmail) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-paper px-5 py-12">
+        <div className="w-full max-w-md">
+          <div className="mb-8 text-center">
+            <Logo />
+            <div className="mx-auto mt-6 grid h-14 w-14 place-items-center rounded-full bg-mint/15 text-mint">
+              <MailCheck size={28} />
+            </div>
+            <h1 className="mt-6 text-3xl font-black text-ink">Подтвердите email</h1>
+            <p className="mt-3 text-sm text-muted">
+              Мы отправили письмо на <span className="font-bold text-ink">{registeredEmail}</span>. Перейдите по ссылке в
+              письме, затем войдите в аккаунт.
+            </p>
+          </div>
+
+          <div className="rounded-card border border-clay bg-card p-8">
+            {resendMessage ? <p className="text-sm font-semibold text-muted">{resendMessage}</p> : null}
+            <div className="mt-4 grid gap-3">
+              <Button disabled={resending} onClick={() => void handleResendVerification()} type="button" variant="secondary">
+                {resending ? <Loader2 className="animate-spin" size={18} /> : null}
+                Отправить письмо ещё раз
+              </Button>
+              <Button onClick={() => router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`)} type="button">
+                Перейти ко входу
+                <ArrowRight size={16} />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -67,7 +125,7 @@ export function RegisterForm() {
         <div className="mb-8 text-center">
           <Logo />
           <h1 className="mt-6 text-3xl font-black text-ink">Регистрация</h1>
-          <p className="mt-2 text-muted">3 генерации бесплатно · подтверждение email · вход по паролю</p>
+          <p className="mt-2 text-muted">Сначала подтвердите email — без этого вход и генерации недоступны</p>
         </div>
 
         <div className="rounded-card border border-clay bg-card p-8">

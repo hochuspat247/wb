@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart3, Eye, Film, LogOut, MousePointerClick, RefreshCw, Star, Users, X } from "lucide-react";
 import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
+import { DemoErrorsPanel } from "@/components/admin/DemoErrorsPanel";
 import { CardSavedVideosPanel } from "@/components/video/CardSavedVideosPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Loader } from "@/components/ui/Loader";
-import { formatAccountEmail } from "@/lib/auth/email-utils";
+import { formatAccountEmail, getEmailVerificationLabel } from "@/lib/auth/email-utils";
 import { hasCardGeneratedVideo } from "@/lib/cardVideos";
 import type { ProductCardResult } from "@/types/product-card";
 
@@ -37,6 +38,8 @@ type AdminStats = {
     id: string;
     name: string | null;
     email: string;
+    emailVerified: boolean;
+    hasPasswordAccount: boolean;
     generationsUsed: number;
     generationCredits: number;
     createdAt: Date;
@@ -71,6 +74,19 @@ type AdminStats = {
     generationRating?: 1 | 2 | 3 | 4 | 5;
     generationRatingDismissedAt?: string;
     provider?: string;
+  }[];
+  recentDemoErrors: {
+    id: string;
+    eventName: string;
+    path: string;
+    sessionId: string;
+    userId: string | null;
+    guestId: string | null;
+    message: string;
+    code: string | null;
+    status: number | null;
+    source: string | null;
+    createdAt: Date;
   }[];
   userJourneys: {
     sessionId: string;
@@ -708,6 +724,58 @@ export function AdminDashboard() {
 
         <LiveVisitorsPanel />
 
+        {stats ? <DemoErrorsPanel errors={stats.recentDemoErrors ?? []} /> : null}
+
+        <Card padding="lg">
+          <h2 className="text-lg font-bold text-ink">Последние пользователи</h2>
+          <p className="mt-1 text-sm text-muted">Email и квота сохраняются в SQLite</p>
+          <div className="mt-4 grid gap-3 md:hidden">
+            {stats.recentUsers.map((user) => (
+              <div className="rounded-card border border-clay bg-paper/40 p-4" key={user.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-ink">{user.name || "—"}</p>
+                    <p className="mt-1 break-all text-sm text-muted">{formatAccountEmail(user.email)}</p>
+                    <p className="mt-1 text-xs font-semibold text-muted">
+                      Email: {getEmailVerificationLabel(user)}
+                    </p>
+                  </div>
+                  <span className="shrink-0 rounded-button bg-accent/10 px-3 py-1 text-sm font-black text-accent">
+                    {user.generationsUsed}/{user.generationCredits}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs font-semibold text-muted">{new Date(user.createdAt).toLocaleDateString("ru-RU")}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 hidden overflow-x-auto md:block">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-clay text-muted">
+                  <th className="px-3 py-2 font-semibold">Имя</th>
+                  <th className="px-3 py-2 font-semibold">Email</th>
+                  <th className="px-3 py-2 font-semibold">Статус email</th>
+                  <th className="px-3 py-2 font-semibold">Генерации</th>
+                  <th className="px-3 py-2 font-semibold">Регистрация</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.recentUsers.map((user) => (
+                  <tr className="border-b border-clay/70" key={user.id}>
+                    <td className="px-3 py-3 font-medium text-ink">{user.name || "—"}</td>
+                    <td className="px-3 py-3 text-muted">{formatAccountEmail(user.email)}</td>
+                    <td className="px-3 py-3 text-muted">{getEmailVerificationLabel(user)}</td>
+                    <td className="px-3 py-3 text-muted">
+                      {user.generationsUsed}/{user.generationCredits}
+                    </td>
+                    <td className="px-3 py-3 text-muted">{new Date(user.createdAt).toLocaleDateString("ru-RU")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <Card padding="lg">
             <div className="grid gap-4 sm:flex sm:items-center sm:justify-between">
@@ -904,51 +972,6 @@ export function AdminDashboard() {
               </button>
             ))}
             {!stats.recentCards.length ? <p className="text-sm text-muted">Карточки еще не сохранены</p> : null}
-          </div>
-        </Card>
-
-        <Card padding="lg">
-          <h2 className="text-lg font-bold text-ink">Последние пользователи</h2>
-          <p className="mt-1 text-sm text-muted">Email и квота сохраняются в SQLite</p>
-          <div className="mt-4 grid gap-3 md:hidden">
-            {stats.recentUsers.map((user) => (
-              <div className="rounded-card border border-clay bg-paper/40 p-4" key={user.id}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-bold text-ink">{user.name || "—"}</p>
-                    <p className="mt-1 break-all text-sm text-muted">{formatAccountEmail(user.email)}</p>
-                  </div>
-                  <span className="shrink-0 rounded-button bg-accent/10 px-3 py-1 text-sm font-black text-accent">
-                    {user.generationsUsed}/{user.generationCredits}
-                  </span>
-                </div>
-                <p className="mt-3 text-xs font-semibold text-muted">{new Date(user.createdAt).toLocaleDateString("ru-RU")}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 hidden overflow-x-auto md:block">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-clay text-muted">
-                  <th className="px-3 py-2 font-semibold">Имя</th>
-                  <th className="px-3 py-2 font-semibold">Email</th>
-                  <th className="px-3 py-2 font-semibold">Генерации</th>
-                  <th className="px-3 py-2 font-semibold">Регистрация</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.recentUsers.map((user) => (
-                  <tr className="border-b border-clay/70" key={user.id}>
-                    <td className="px-3 py-3 font-medium text-ink">{user.name || "—"}</td>
-                    <td className="px-3 py-3 text-muted">{formatAccountEmail(user.email)}</td>
-                    <td className="px-3 py-3 text-muted">
-                      {user.generationsUsed}/{user.generationCredits}
-                    </td>
-                    <td className="px-3 py-3 text-muted">{new Date(user.createdAt).toLocaleDateString("ru-RU")}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         </Card>
       </main>

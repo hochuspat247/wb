@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
 import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
 import { consumeImageGenerationTicket } from "@/lib/server/imageGenerationTickets";
+import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import { consumeGeneration, getUserQuota, type UserQuota } from "@/lib/server/quota";
 import type {
   GenerateImageInput,
@@ -69,6 +70,17 @@ export async function POST(request: Request) {
 
     if (!userId) {
       return NextResponse.json({ error: "Войдите в аккаунт, чтобы сгенерировать обложку." }, { status: 401 });
+    }
+
+    const user = await getUserForProtectedAction(userId);
+
+    if (!user) {
+      return NextResponse.json({ error: "Пользователь не найден." }, { status: 404 });
+    }
+
+    const verificationError = getEmailVerificationError(user);
+    if (verificationError) {
+      return NextResponse.json(verificationError, { status: 403 });
     }
 
     const parsed = await parseGenerateImageRequest(request);

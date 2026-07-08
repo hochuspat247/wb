@@ -150,7 +150,9 @@ export function LiveVisitorsPanel() {
                     {visitor.sectionLabel}
                   </span>
                 </td>
-                <td className="px-4 py-3 font-semibold text-muted">{visitor.lastActionLabel}</td>
+                <td className="max-w-xs px-4 py-3 font-semibold text-muted">
+                  <p className="break-words">{visitor.lastActionLabel}</p>
+                </td>
                 <td className="px-4 py-3">
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${

@@ -6,6 +6,7 @@ import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { detectCategory } from "@/lib/category";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import { createImageGenerationTicket } from "@/lib/server/imageGenerationTickets";
+import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import type { ProductCardInput } from "@/types/product-card";
 import type { MarketplaceTextInput } from "@/types/marketplace";
 
@@ -18,6 +19,17 @@ export async function POST(request: Request) {
 
     if (!userId) {
       return NextResponse.json({ error: "Войдите в аккаунт, чтобы сгенерировать карточку." }, { status: 401 });
+    }
+
+    const user = await getUserForProtectedAction(userId);
+
+    if (!user) {
+      return NextResponse.json({ error: "Пользователь не найден." }, { status: 404 });
+    }
+
+    const verificationError = getEmailVerificationError(user);
+    if (verificationError) {
+      return NextResponse.json(verificationError, { status: 403 });
     }
 
     const quota = await getUserQuota(userId);

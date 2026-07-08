@@ -416,6 +416,7 @@ export function CardGenerator({
     });
     const data = (await response.json()) as ProductCardResult & {
       error?: string;
+      code?: string;
       quota?: { remaining: number; used: number; credits: number };
       imageGenerationTicket?: string;
     };
@@ -425,6 +426,9 @@ export function CardGenerator({
         setRemainingGenerations(data.quota?.remaining ?? 0);
         if (data.quota) onQuotaChange?.(data.quota);
         setShowPaywall(true);
+      }
+      if (response.status === 403 && data.code === "EMAIL_NOT_VERIFIED") {
+        setNotice(data.error || "Подтвердите email, чтобы генерировать карточки.");
       }
       throw new Error(data.error || "Не удалось создать карточку. Попробуйте ещё раз.");
     }
@@ -686,10 +690,16 @@ export function CardGenerator({
       });
       router.push(`/generations/${data.id}?guestId=${encodeURIComponent(guestId)}`);
     } catch (caught) {
-      setError(toUserFacingError(caught));
+      const message = toUserFacingError(caught);
+      setError(message);
       setIsDemoGenerating(false);
       setIsLoading(false);
       setDemoProgress(0);
+      trackMarketingEvent("demo_generation_error", {
+        message,
+        source: "card_generator",
+        marketplace
+      });
     }
   }
 
@@ -1141,6 +1151,7 @@ export function CardGenerator({
       });
       const data = (await response.json()) as GenerateImageResult & {
         error?: string;
+        code?: string;
         quota?: { remaining: number; used: number; credits: number };
       };
 
@@ -1149,6 +1160,9 @@ export function CardGenerator({
           setRemainingGenerations(data.quota?.remaining ?? 0);
           if (data.quota) onQuotaChange?.(data.quota);
           setShowPaywall(true);
+        }
+        if (response.status === 403 && data.code === "EMAIL_NOT_VERIFIED") {
+          setNotice(data.error || "Подтвердите email, чтобы генерировать карточки.");
         }
         throw new Error(data.error || "Не удалось создать обложку.");
       }

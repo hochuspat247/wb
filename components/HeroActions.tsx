@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/Button";
 
 export function HeroActions() {
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-5">
       <Button
         className="w-full sm:w-auto"
         data-analytics="hero_cta_click"

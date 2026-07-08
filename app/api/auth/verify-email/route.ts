@@ -23,5 +23,5 @@ export async function GET(request: Request) {
   await db.update(users).set({ emailVerified: new Date() }).where(eq(users.email, email));
   await db.delete(verificationTokens).where(eq(verificationTokens.identifier, `verify:${email}`));
 
-  return NextResponse.redirect(new URL("/cabinet?verified=1", request.url));
+  return NextResponse.redirect(new URL("/login?verified=1", request.url));
 }

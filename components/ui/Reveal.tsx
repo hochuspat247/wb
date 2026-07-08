@@ -6,14 +6,22 @@ type RevealProps = {
   children: ReactNode;
   className?: string;
   delay?: 1 | 2 | 3 | 4;
+  immediate?: boolean;
 };
 
-export function Reveal({ children, className = "", delay }: RevealProps) {
+export function Reveal({ children, className = "", delay, immediate = false }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
+
+    if (immediate) {
+      const timer = window.setTimeout(() => {
+        node.classList.add("visible");
+      }, 40);
+      return () => window.clearTimeout(timer);
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -27,7 +35,7 @@ export function Reveal({ children, className = "", delay }: RevealProps) {
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [immediate]);
 
   const delayClass = delay ? `reveal-delay-${delay}` : "";
 

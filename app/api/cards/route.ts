@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { clearUserCards, getUserCards, saveUserCard, saveUserCardsBulk } from "@/lib/server/cards";
+import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import type { ProductCardResult } from "@/types/product-card";
 
 export async function GET() {
@@ -21,6 +22,13 @@ export async function POST(request: Request) {
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await getUserForProtectedAction(userId);
+  const verificationError = user ? getEmailVerificationError(user) : null;
+
+  if (verificationError) {
+    return NextResponse.json(verificationError, { status: 403 });
   }
 
   try {

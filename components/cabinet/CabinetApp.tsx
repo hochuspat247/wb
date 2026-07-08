@@ -70,6 +70,8 @@ export function CabinetApp() {
   const [remainingGenerations, setRemainingGenerations] = useState(0);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
   const [emailDisplay, setEmailDisplay] = useState("");
+  const [verificationMessage, setVerificationMessage] = useState("");
+  const [resendingVerification, setResendingVerification] = useState(false);
 
   useEffect(() => {
     async function loadCabinet() {
@@ -81,6 +83,10 @@ export function CabinetApp() {
         setRemainingGenerations(profile.quota?.remaining ?? 0);
         setNeedsEmailVerification(Boolean(profile.needsEmailVerification));
         setEmailDisplay(profile.emailDisplay || profile.email);
+
+        if (searchParams.get("verified") === "1" && !profile.needsEmailVerification) {
+          setVerificationMessage("Email подтверждён. Можно генерировать карточки.");
+        }
 
         let nextRemoteCards = remoteCards;
         const guestId = window.localStorage.getItem(GUEST_ID_KEY);
@@ -184,6 +190,26 @@ export function CabinetApp() {
       setProfileName(saved.name);
     } catch {
       setProfileName(editName);
+    }
+  }
+
+  async function handleResendVerification() {
+    setResendingVerification(true);
+    setVerificationMessage("");
+
+    try {
+      const response = await fetch("/api/auth/resend-verification", { method: "POST" });
+      const data = (await response.json()) as { error?: string; message?: string };
+
+      if (!response.ok) {
+        throw new Error(data.error || "Не удалось отправить письмо.");
+      }
+
+      setVerificationMessage(data.message || "Письмо с подтверждением отправлено повторно.");
+    } catch (caught) {
+      setVerificationMessage(caught instanceof Error ? caught.message : "Не удалось отправить письмо.");
+    } finally {
+      setResendingVerification(false);
     }
   }
 
@@ -310,7 +336,17 @@ export function CabinetApp() {
         <main className="flex-1 overflow-x-hidden overflow-y-auto px-3 py-4 pb-[calc(5.75rem+env(safe-area-inset-bottom))] sm:px-5 sm:py-5 sm:pb-28 lg:p-8">
           {needsEmailVerification ? (
             <div className="mb-6 rounded-[18px] border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm font-semibold text-amber-100">
-              Подтвердите email ({emailDisplay}) — проверьте почту после регистрации.
+              <p>Подтвердите email ({emailDisplay}), чтобы генерировать карточки. Проверьте почту после регистрации.</p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <Button disabled={resendingVerification} onClick={() => void handleResendVerification()} size="sm" variant="ghost">
+                  {resendingVerification ? "Отправляем..." : "Отправить письмо ещё раз"}
+                </Button>
+                {verificationMessage ? <span className="text-xs text-amber-50/90">{verificationMessage}</span> : null}
+              </div>
+            </div>
+          ) : verificationMessage ? (
+            <div className="mb-6 rounded-[18px] border border-mint/25 bg-mint/10 px-4 py-3 text-sm font-semibold text-mint">
+              {verificationMessage}
             </div>
           ) : null}
 

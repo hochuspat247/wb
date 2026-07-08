@@ -18,3 +18,46 @@ export function needsEmailVerification(email?: string | null, emailVerified?: Da
   }
   return !emailVerified;
 }
+
+type EmailVerificationSubject = {
+  email: string;
+  emailVerified?: Date | null | boolean;
+  passwordHash?: string | null;
+  hasPasswordAccount?: boolean;
+};
+
+function hasPasswordAccount(user: EmailVerificationSubject) {
+  return Boolean(user.passwordHash ?? user.hasPasswordAccount);
+}
+
+function isEmailVerified(emailVerified?: Date | null | boolean) {
+  return Boolean(emailVerified);
+}
+
+export function userNeedsEmailVerification(user: EmailVerificationSubject) {
+  if (isPlaceholderOAuthEmail(user.email)) {
+    return false;
+  }
+
+  if (isEmailVerified(user.emailVerified)) {
+    return false;
+  }
+
+  return hasPasswordAccount(user);
+}
+
+export function getEmailVerificationLabel(user: EmailVerificationSubject) {
+  if (isPlaceholderOAuthEmail(user.email)) {
+    return "Соцсеть";
+  }
+
+  if (isEmailVerified(user.emailVerified)) {
+    return "Подтверждён";
+  }
+
+  if (hasPasswordAccount(user)) {
+    return "Не подтверждён";
+  }
+
+  return "OAuth";
+}

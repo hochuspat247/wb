@@ -62,7 +62,7 @@ export async function upsertVisitorPresence(input: PresenceUpsertInput) {
   const section = input.section?.slice(0, 120);
   const sectionLabel = getSectionLabel(section);
   const lastAction = input.lastAction?.slice(0, 120);
-  const lastActionLabel = input.lastActionLabel?.slice(0, 200) || getActionLabel(lastAction);
+  const lastActionLabel = input.lastActionLabel?.slice(0, 240) || getActionLabel(lastAction);
 
   await withSqliteRetry(async () => {
     await db

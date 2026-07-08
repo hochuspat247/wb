@@ -4,11 +4,17 @@ import type { Provider } from "next-auth/providers";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
+import { CredentialsSignin } from "@auth/core/errors";
 import { authConfig } from "@/auth.config";
 import { authenticateVkAccessToken } from "@/lib/auth/vk-id-server";
+import { isPlaceholderOAuthEmail, userNeedsEmailVerification } from "@/lib/auth/email-utils";
 import { Yandex } from "@/lib/auth/providers/yandex";
 import { db } from "@/lib/db";
 import { accounts, sessions, users, verificationTokens } from "@/lib/db/schema";
+
+class EmailNotVerified extends CredentialsSignin {
+  static type = "EmailNotVerified";
+}
 
 const providers: Provider[] = [
   Credentials({
@@ -37,6 +43,10 @@ const providers: Provider[] = [
       const valid = await bcrypt.compare(password, user.passwordHash);
       if (!valid) {
         return null;
+      }
+
+      if (userNeedsEmailVerification(user)) {
+        throw new EmailNotVerified();
       }
 
       return {
@@ -86,5 +96,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens
   }),
+  callbacks: {
+    ...authConfig.callbacks,
+    async signIn({ user, account }) {
+      if (account?.provider === "yandex" && user.email && !isPlaceholderOAuthEmail(user.email)) {
+        await db
+          .update(users)
+          .set({ emailVerified: new Date() })
+          .where(eq(users.email, user.email));
+      }
+
+      return true;
+    }
+  },
   providers
 });

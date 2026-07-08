@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { formatAccountEmail, isPlaceholderOAuthEmail, needsEmailVerification } from "@/lib/auth/email-utils";
+import { formatAccountEmail, isPlaceholderOAuthEmail, userNeedsEmailVerification } from "@/lib/auth/email-utils";
 import { getUserQuota } from "@/lib/server/quota";
 
 export async function GET() {
@@ -28,7 +28,7 @@ export async function GET() {
     emailDisplay: formatAccountEmail(user.email),
     emailIsPlaceholder: isPlaceholderOAuthEmail(user.email),
     emailVerified: Boolean(user.emailVerified),
-    needsEmailVerification: needsEmailVerification(user.email, user.emailVerified),
+    needsEmailVerification: userNeedsEmailVerification(user),
     joinedAt: user.createdAt,
     videoCredits: user.videoCredits,
     quota: await getUserQuota(userId)

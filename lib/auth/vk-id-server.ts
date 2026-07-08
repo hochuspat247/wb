@@ -45,7 +45,7 @@ export async function authenticateVkAccessToken(accessToken: string) {
   const realEmail = data.user.email?.trim();
   const email = realEmail || `vk_${vkUserId}@oauth.marketcard.local`;
   const image = data.user.avatar;
-  const emailVerified = realEmail ? undefined : new Date();
+  const emailVerified = new Date();
 
   const linkedAccount = await db.query.accounts.findFirst({
     where: and(eq(accounts.provider, "vk"), eq(accounts.providerAccountId, vkUserId))

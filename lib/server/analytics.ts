@@ -196,6 +196,8 @@ export async function getAdminAnalytics(pathFilter = "/") {
         id: true,
         name: true,
         email: true,
+        emailVerified: true,
+        passwordHash: true,
         generationsUsed: true,
         generationCredits: true,
         createdAt: true
@@ -239,6 +241,30 @@ export async function getAdminAnalytics(pathFilter = "/") {
       .leftJoin(users, eq(demoGenerations.userId, users.id))
       .orderBy(desc(demoGenerations.createdAt))
       .limit(20),
+    []
+  );
+
+  const recentDemoErrors = await safeAnalyticsQuery(
+    "recent demo errors",
+    db
+      .select({
+        id: analyticsEvents.id,
+        eventName: analyticsEvents.eventName,
+        path: analyticsEvents.path,
+        sessionId: analyticsEvents.sessionId,
+        userId: analyticsEvents.userId,
+        metadata: analyticsEvents.metadata,
+        createdAt: analyticsEvents.createdAt
+      })
+      .from(analyticsEvents)
+      .where(
+        and(
+          eq(analyticsEvents.eventType, "conversion"),
+          inArray(analyticsEvents.eventName, ["hero_demo_generate_error", "demo_generation_error"])
+        )
+      )
+      .orderBy(desc(analyticsEvents.createdAt))
+      .limit(30),
     []
   );
 
@@ -352,6 +378,8 @@ export async function getAdminAnalytics(pathFilter = "/") {
       id: user.id,
       name: user.name,
       email: user.email,
+      emailVerified: Boolean(user.emailVerified),
+      hasPasswordAccount: Boolean(user.passwordHash),
       generationsUsed: user.generationsUsed,
       generationCredits: user.generationCredits,
       createdAt: user.createdAt
@@ -386,6 +414,19 @@ export async function getAdminAnalytics(pathFilter = "/") {
       generationRating: row.payload.generationRating,
       generationRatingDismissedAt: row.payload.generationRatingDismissedAt,
       provider: row.payload.generatedImageProvider || row.payload.provider
+    })),
+    recentDemoErrors: recentDemoErrors.map((row) => ({
+      id: row.id,
+      eventName: row.eventName,
+      path: row.path,
+      sessionId: row.sessionId,
+      userId: row.userId,
+      guestId: typeof row.metadata?.guestId === "string" ? row.metadata.guestId : null,
+      message: typeof row.metadata?.message === "string" ? row.metadata.message : "Без описания",
+      code: typeof row.metadata?.code === "string" ? row.metadata.code : null,
+      status: typeof row.metadata?.status === "number" ? row.metadata.status : null,
+      source: typeof row.metadata?.source === "string" ? row.metadata.source : null,
+      createdAt: row.createdAt
     })),
     userJourneys: journeySessions.map((session) => {
       const events = journeyEvents.filter((event) => event.sessionId === session.sessionId);

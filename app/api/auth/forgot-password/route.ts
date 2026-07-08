@@ -2,23 +2,21 @@ import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, verificationTokens } from "@/lib/db/schema";
+import { getEmailFormatError, normalizeEmail } from "@/lib/auth/email-validation";
 import { appUrl, sendEmail } from "@/lib/email";
 
 type ForgotPasswordBody = {
   email?: string;
 };
 
-function isValidEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as ForgotPasswordBody;
-    const email = body.email?.trim().toLowerCase() ?? "";
+    const email = normalizeEmail(body.email ?? "");
+    const emailError = getEmailFormatError(email);
 
-    if (!email || !isValidEmail(email)) {
-      return NextResponse.json({ error: "Укажите корректный email." }, { status: 400 });
+    if (emailError) {
+      return NextResponse.json({ error: emailError }, { status: 400 });
     }
 
     const user = await db.query.users.findFirst({

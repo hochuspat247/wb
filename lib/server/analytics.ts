@@ -1,6 +1,7 @@
 import { and, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { analyticsEvents, demoGenerations, productCards, users, videoGenerationOrders, visitorPresence } from "@/lib/db/schema";
+import { buildSessionDurationStats } from "@/lib/server/session-duration";
 
 export type AnalyticsTrackInput = {
   eventType: "page_view" | "click" | "conversion";
@@ -329,6 +330,21 @@ export async function getAdminAnalytics(pathFilter = "/") {
   const journeyPresenceMap = new Map(journeyPresenceRows.map((row) => [row.sessionId, row]));
 
   const cardIds = recentCards.map((row) => row.id);
+  const sessionDurationRows = await safeAnalyticsQuery(
+    "session durations",
+    db
+      .select({
+        sessionId: analyticsEvents.sessionId,
+        durationMs: sql<number>`max(${analyticsEvents.createdAt}) - min(${analyticsEvents.createdAt})`
+      })
+      .from(analyticsEvents)
+      .where(gte(analyticsEvents.createdAt, since30d))
+      .groupBy(analyticsEvents.sessionId),
+    []
+  );
+
+  const sessionDuration = buildSessionDurationStats(sessionDurationRows, 30);
+
   const videoCountRows =
     cardIds.length > 0
       ? await safeAnalyticsQuery(
@@ -374,6 +390,7 @@ export async function getAdminAnalytics(pathFilter = "/") {
     })),
     signupsByDay,
     generationsByDay,
+    sessionDuration,
     recentUsers: recentUsers.map((user) => ({
       id: user.id,
       name: user.name,

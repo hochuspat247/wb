@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BarChart3, Eye, Film, LogOut, MousePointerClick, RefreshCw, Star, Users, X } from "lucide-react";
 import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
 import { DemoErrorsPanel } from "@/components/admin/DemoErrorsPanel";
+import { SessionDurationPanel } from "@/components/admin/SessionDurationPanel";
 import { UserJourneysMapPanel } from "@/components/admin/UserJourneysMapPanel";
 import { CardSavedVideosPanel } from "@/components/video/CardSavedVideosPanel";
 import { Button } from "@/components/ui/Button";
@@ -13,6 +14,7 @@ import { Loader } from "@/components/ui/Loader";
 import { formatAccountEmail, getEmailVerificationLabel } from "@/lib/auth/email-utils";
 import { hasCardGeneratedVideo } from "@/lib/cardVideos";
 import type { ProductCardResult } from "@/types/product-card";
+import type { SessionDurationStats } from "@/lib/server/session-duration";
 
 type AdminStats = {
   overview: {
@@ -35,6 +37,7 @@ type AdminStats = {
   topClicks: { label: string; count: number }[];
   signupsByDay: { day: string; value: number }[];
   generationsByDay: { day: string; value: number }[];
+  sessionDuration: SessionDurationStats;
   recentUsers: {
     id: string;
     name: string | null;
@@ -697,6 +700,8 @@ export function AdminDashboard() {
         </div>
 
         <LiveVisitorsPanel />
+
+        <SessionDurationPanel stats={stats.sessionDuration} />
 
         {stats ? <DemoErrorsPanel errors={stats.recentDemoErrors ?? []} /> : null}
 

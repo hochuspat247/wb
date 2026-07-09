@@ -31,9 +31,9 @@ export function StoryStudioVideoDemo() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[300px] lg:mx-0 lg:max-w-none">
-      <div className="overflow-hidden rounded-[28px] border border-violet/30 bg-black shadow-[0_24px_80px_rgba(107,76,255,0.25)]">
-        <div className="relative aspect-[9/16] bg-[#0a0812]">
+    <div className="mx-auto w-full max-w-[200px] sm:max-w-[220px] lg:max-w-[230px]">
+      <div className="overflow-hidden rounded-[24px] border border-violet/30 bg-black shadow-[0_24px_80px_rgba(107,76,255,0.25)]">
+        <div className="relative aspect-[9/16] w-full bg-[#0a0812]">
           <video
             ref={videoRef}
             autoPlay
@@ -61,7 +61,7 @@ export function StoryStudioVideoDemo() {
             <p className="mt-1 text-xs text-white/70">{STORYSTUDIO_VIDEO_DEMO.kicker}</p>
           </div>
 
-          <div className="absolute bottom-16 right-3 flex flex-col gap-2">
+          <div className="absolute bottom-12 right-3 flex flex-col gap-2">
             <button
               type="button"
               aria-label={playing ? "Пауза" : "Воспроизвести"}

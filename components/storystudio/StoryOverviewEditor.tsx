@@ -94,12 +94,12 @@ export function StoryOverviewEditor({ story, onUpdate, onError }: StoryOverviewE
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <p className="text-sm text-muted">Редактируйте основу истории вручную — изменения сохраняются в проект.</p>
         <Button
           type="button"
           size="sm"
-          className="!border-violet !bg-violet !text-white"
+          className="w-full !border-violet !bg-violet !text-white sm:w-auto"
           disabled={saving || !hasChanges}
           onClick={handleSave}
         >

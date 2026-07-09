@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { RELATIONS_PREVIEW_PORTRAITS } from "@/lib/storystudio/relationsPreview";
 
 type Point = { x: number; y: number };
 
@@ -8,6 +9,7 @@ type PreviewNode = {
   id: string;
   label: string;
   color: string;
+  image: string;
   position: Point;
 };
 
@@ -22,11 +24,30 @@ type PreviewEdge = {
 const VIEW_WIDTH = 320;
 const VIEW_HEIGHT = 260;
 const NODE_RADIUS = 30;
+const IMAGE_RADIUS = 26;
 
 const INITIAL_NODES: PreviewNode[] = [
-  { id: "a", label: "Аня", color: "#8C7BFF", position: { x: 70, y: 90 } },
-  { id: "b", label: "Макс", color: "#6EDCFF", position: { x: 250, y: 70 } },
-  { id: "c", label: "Ворон", color: "#ff6b8a", position: { x: 160, y: 210 } }
+  {
+    id: "a",
+    label: RELATIONS_PREVIEW_PORTRAITS.a.label,
+    color: RELATIONS_PREVIEW_PORTRAITS.a.color,
+    image: RELATIONS_PREVIEW_PORTRAITS.a.image,
+    position: { x: 70, y: 90 }
+  },
+  {
+    id: "b",
+    label: RELATIONS_PREVIEW_PORTRAITS.b.label,
+    color: RELATIONS_PREVIEW_PORTRAITS.b.color,
+    image: RELATIONS_PREVIEW_PORTRAITS.b.image,
+    position: { x: 250, y: 70 }
+  },
+  {
+    id: "c",
+    label: RELATIONS_PREVIEW_PORTRAITS.c.label,
+    color: RELATIONS_PREVIEW_PORTRAITS.c.color,
+    image: RELATIONS_PREVIEW_PORTRAITS.c.image,
+    position: { x: 160, y: 210 }
+  }
 ];
 
 const EDGES: PreviewEdge[] = [
@@ -117,9 +138,12 @@ export function RelationsMapPreview() {
   }
 
   return (
-    <div className="relative mx-auto max-w-md">
-      <div className="rounded-card border border-white/10 bg-[#0a0812]/80 p-4 backdrop-blur-sm">
-        <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-muted">
+    <div className="relative mx-auto w-full max-w-md overflow-hidden">
+      <div className="relative rounded-card border border-white/10 bg-[#0a0812]/80 p-3 backdrop-blur-sm sm:p-4">
+        <div className="absolute left-3 top-3 z-10 rounded-full border border-violet/30 bg-violet/15 px-2.5 py-1 text-[10px] font-semibold text-violet sm:left-4 sm:top-4 sm:px-3 sm:text-xs">
+          Drag & drop
+        </div>
+        <p className="mb-3 pt-8 text-center text-[11px] font-semibold uppercase tracking-wider text-muted sm:text-xs">
           Интерактивная карта · потяните героя
         </p>
         <svg
@@ -131,6 +155,12 @@ export function RelationsMapPreview() {
           onPointerLeave={handlePointerUp}
         >
           <defs>
+            {nodes.map((node) => (
+              <clipPath key={`clip-${node.id}`} id={`preview-clip-${node.id}`}>
+                <circle cx={node.position.x} cy={node.position.y} r={IMAGE_RADIUS} />
+              </clipPath>
+            ))}
+
             {EDGES.map((edge) => (
               <marker
                 key={edge.markerId}
@@ -176,6 +206,7 @@ export function RelationsMapPreview() {
 
           {nodes.map((node) => {
             const dragging = draggingId === node.id;
+            const radius = dragging ? 34 : NODE_RADIUS;
 
             return (
               <g
@@ -186,20 +217,21 @@ export function RelationsMapPreview() {
                 <circle
                   cx={node.position.x}
                   cy={node.position.y}
-                  r={dragging ? 34 : 30}
+                  r={radius}
                   fill={dragging ? "#8C7BFF22" : "#171C26"}
                   stroke={node.color}
                   strokeWidth={dragging ? 2.5 : 2}
                 />
-                <text
-                  x={node.position.x}
-                  y={node.position.y + 4}
-                  textAnchor="middle"
-                  className="fill-ink text-[12px] font-semibold"
+                <image
+                  href={node.image}
+                  x={node.position.x - IMAGE_RADIUS}
+                  y={node.position.y - IMAGE_RADIUS}
+                  width={IMAGE_RADIUS * 2}
+                  height={IMAGE_RADIUS * 2}
+                  clipPath={`url(#preview-clip-${node.id})`}
+                  preserveAspectRatio="xMidYMid slice"
                   pointerEvents="none"
-                >
-                  {node.label.slice(0, 1)}
-                </text>
+                />
                 <text
                   x={node.position.x}
                   y={node.position.y + 46}
@@ -213,15 +245,12 @@ export function RelationsMapPreview() {
             );
           })}
         </svg>
-        <div className="mt-3 flex flex-wrap justify-center gap-2 text-[10px] text-muted">
-          <span className="rounded-full border border-white/10 px-2 py-1">Союзник</span>
-          <span className="rounded-full border border-white/10 px-2 py-1">Любовь</span>
-          <span className="rounded-full border border-white/10 px-2 py-1">Враг</span>
-          <span className="rounded-full border border-white/10 px-2 py-1">Семья</span>
+        <div className="mt-3 flex flex-wrap justify-center gap-1.5 text-[10px] text-muted sm:gap-2">
+          <span className="rounded-full border border-white/10 px-2 py-0.5 sm:px-2 sm:py-1">Союзник</span>
+          <span className="rounded-full border border-white/10 px-2 py-0.5 sm:px-2 sm:py-1">Любовь</span>
+          <span className="rounded-full border border-white/10 px-2 py-0.5 sm:px-2 sm:py-1">Враг</span>
+          <span className="rounded-full border border-white/10 px-2 py-0.5 sm:px-2 sm:py-1">Семья</span>
         </div>
-      </div>
-      <div className="absolute -left-2 top-6 rounded-full border border-violet/30 bg-violet/15 px-3 py-1 text-xs font-semibold text-violet">
-        Drag & drop
       </div>
     </div>
   );

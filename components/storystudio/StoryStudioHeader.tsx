@@ -24,6 +24,13 @@ export function StoryStudioHeader() {
   const isAuthed = status === "authenticated";
 
   useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
     function onScroll() {
       setScrolled(window.scrollY > 12);
     }
@@ -38,12 +45,12 @@ export function StoryStudioHeader() {
         scrolled ? "border-b border-white/10 bg-[#0a0812]/90 backdrop-blur-xl" : "bg-transparent"
       }`}
     >
-      <div className="mx-auto flex h-16 max-w-content items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-content items-center justify-between px-4 sm:h-16 sm:px-6">
         <Link href="/storystudio" className="flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet/20 text-violet">
             <Sparkles className="h-4 w-4" />
           </span>
-          <span className="text-lg font-bold tracking-tight text-ink">
+          <span className="text-base font-bold tracking-tight text-ink sm:text-lg">
             Story<span className="text-violet">Studio</span>
           </span>
         </Link>
@@ -99,7 +106,7 @@ export function StoryStudioHeader() {
       </div>
 
       {menuOpen && (
-        <div className="border-t border-white/10 bg-[#0a0812] px-4 py-4 md:hidden">
+        <div className="max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-t border-white/10 bg-[#0a0812] px-4 py-4 sm:max-h-[calc(100dvh-4rem)] md:hidden">
           <nav className="flex flex-col gap-1">
             {links.map(([label, href]) => (
               <Link
@@ -111,9 +118,38 @@ export function StoryStudioHeader() {
                 {label}
               </Link>
             ))}
-            <Link href="/storystudio/create" onClick={() => setMenuOpen(false)}>
-              <Button className="mt-2 w-full !bg-violet !text-white !border-violet">Создать историю</Button>
-            </Link>
+            <div className="mt-3 grid gap-2 border-t border-white/10 pt-3">
+              {isAuthed ? (
+                <>
+                  <Link href="/storystudio/cabinet" onClick={() => setMenuOpen(false)}>
+                    <Button variant="secondary" className="w-full">
+                      Мои истории
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      void signOut({ callbackUrl: "/storystudio" });
+                    }}
+                  >
+                    Выйти
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login?callbackUrl=/storystudio/cabinet" onClick={() => setMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full">
+                      Войти
+                    </Button>
+                  </Link>
+                  <Link href="/storystudio/create" onClick={() => setMenuOpen(false)}>
+                    <Button className="w-full !border-violet !bg-violet !text-white">Создать историю</Button>
+                  </Link>
+                </>
+              )}
+            </div>
           </nav>
         </div>
       )}

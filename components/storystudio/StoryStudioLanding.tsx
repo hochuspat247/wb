@@ -75,34 +75,34 @@ export function StoryStudioLanding() {
 
       <StoryStudioHeader />
 
-      <main className="relative pt-24">
+      <main className="relative pt-20 sm:pt-24">
         {/* Hero */}
-        <section className="mx-auto max-w-content px-4 pb-20 pt-12 sm:px-6">
+        <section className="mx-auto max-w-content px-4 pb-12 pt-8 sm:px-6 sm:pb-20 sm:pt-12">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-violet/30 bg-violet/10 px-4 py-1.5 text-sm text-violet">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet/30 bg-violet/10 px-3 py-1.5 text-xs text-violet sm:mb-6 sm:px-4 sm:text-sm">
               <Sparkles className="h-3.5 w-3.5" />
               AI-генератор историй
             </div>
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="text-[1.75rem] font-bold leading-tight tracking-tight sm:text-4xl lg:text-6xl">
               AI генератор историй: создай основу для{" "}
               <span className="bg-gradient-to-r from-violet via-cyan to-violet bg-clip-text text-transparent">
                 новой книги или новеллы
               </span>{" "}
               за 30 секунд
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-muted">
+            <p className="mx-auto mt-4 max-w-2xl text-base text-muted sm:mt-6 sm:text-lg">
               Персонажи, интерактивная <strong className="font-semibold text-ink">карта связей</strong>, главы, AI-портреты и{" "}
               <span className="text-violet">видео-серии Veo 3.1</span> — в одной студии для русскоязычных авторов.
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link href="/storystudio/create">
-                <Button size="lg" className="!bg-violet !text-white !border-violet hover:!bg-[#9d8bff]">
+            <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
+              <Link href="/storystudio/create" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full !border-violet !bg-violet !text-white hover:!bg-[#9d8bff] sm:w-auto">
                   Создать новую историю
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href="/storystudio/cabinet">
-                <Button size="lg" variant="secondary">
+              <Link href="/storystudio/cabinet" className="w-full sm:w-auto">
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto">
                   Мои истории
                 </Button>
               </Link>
@@ -114,15 +114,15 @@ export function StoryStudioLanding() {
         </section>
 
         {/* Video advantage */}
-        <section id="video-series" className="mx-auto max-w-content px-4 py-16 sm:px-6">
+        <section id="video-series" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
           <div className="overflow-hidden rounded-container border border-violet/40 bg-gradient-to-br from-violet/20 via-[#0d0a18] to-cyan/10">
-            <div className="grid gap-8 p-8 lg:grid-cols-2 lg:p-12">
-              <div>
+            <div className="grid gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-2 lg:items-center lg:p-12">
+              <div className="text-center lg:text-left">
                 <span className="inline-flex items-center gap-2 rounded-full border border-violet/40 bg-violet/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-violet">
                   <Film className="h-3.5 w-3.5" />
                   Только в StoryStudio
                 </span>
-                <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
+                <h2 className="mt-4 text-2xl font-bold sm:text-3xl lg:text-4xl">
                   Видео-серии из вашей истории
                 </h2>
                 <p className="mt-4 text-muted">
@@ -137,21 +137,21 @@ export function StoryStudioLanding() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Link href="/storystudio/cabinet">
-                    <Button className="!bg-violet !text-white !border-violet">
+                <div className="mt-6 flex flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:flex-wrap lg:items-start">
+                  <Link href="/storystudio/cabinet" className="w-full sm:w-auto">
+                    <Button className="w-full !border-violet !bg-violet !text-white sm:w-auto">
                       <Clapperboard className="h-4 w-4" />
                       Снять первую серию
                     </Button>
                   </Link>
-                  <span className="flex items-center text-sm text-muted">
+                  <span className="text-center text-sm text-muted sm:text-left">
                     от {formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)} / 4 сек
                   </span>
                 </div>
               </div>
-              <div className="relative flex items-center justify-center">
+              <div className="relative flex items-center justify-center pt-2 lg:justify-end lg:pt-0">
                 <StoryStudioVideoDemo />
-                <div className="absolute -right-4 -top-4 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-xs font-semibold text-cyan">
+                <div className="absolute right-0 top-0 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-xs font-semibold text-cyan">
                   Veo 3.1
                 </div>
               </div>
@@ -160,18 +160,18 @@ export function StoryStudioLanding() {
         </section>
 
         {/* Relations map */}
-        <section id="relations" className="mx-auto max-w-content px-4 py-16 sm:px-6">
+        <section id="relations" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
           <div className="overflow-hidden rounded-container border border-cyan/25 bg-gradient-to-br from-cyan/10 via-[#0d0a18] to-violet/15">
-            <div className="grid gap-8 p-8 lg:grid-cols-2 lg:p-12">
+            <div className="grid gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-2 lg:items-center lg:p-12">
               <div className="order-2 lg:order-1">
                 <RelationsMapPreview />
               </div>
-              <div className="order-1 lg:order-2">
+              <div className="order-1 text-center lg:order-2 lg:text-left">
                 <span className="inline-flex items-center gap-2 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-cyan">
                   <GitBranch className="h-3.5 w-3.5" />
                   Карта связей
                 </span>
-                <h2 className="mt-4 text-3xl font-bold sm:text-4xl">Свяжи героев — AI напишет с учётом интриг</h2>
+                <h2 className="mt-4 text-2xl font-bold sm:text-3xl lg:text-4xl">Свяжи героев — AI напишет с учётом интриг</h2>
                 <p className="mt-4 text-muted">
                   Не список в заметках, а живая карта: перетащите персонажей, проведите стрелку, выберите тип связи —
                   и каждая новая глава будет опираться на вашу драматургию.
@@ -184,14 +184,15 @@ export function StoryStudioLanding() {
                     </li>
                   ))}
                 </ul>
-                <div className="mt-8 flex flex-wrap gap-3">
-                  <Link href="/storystudio/cabinet">
-                    <Button className="!bg-violet !text-white !border-violet">
+                <div className="mt-6 flex flex-col items-center gap-3 sm:mt-8 sm:flex-row sm:flex-wrap lg:items-start">
+                  <Link href="/storystudio/cabinet" className="w-full sm:w-auto">
+                    <Button className="w-full !border-violet !bg-violet !text-white sm:w-auto">
                       <GitBranch className="h-4 w-4" />
                       Открыть карту связей
                     </Button>
                   </Link>
-                  <span className="flex items-center text-sm text-muted">Shift + перетаскивание между героями</span>
+                  <span className="hidden text-sm text-muted sm:inline">Shift + перетаскивание между героями</span>
+                  <span className="text-xs text-muted sm:hidden">Потяните героя пальцем на карте</span>
                 </div>
               </div>
             </div>
@@ -199,8 +200,8 @@ export function StoryStudioLanding() {
         </section>
 
         {/* Features */}
-        <section id="features" className="mx-auto max-w-content px-4 py-16 sm:px-6">
-          <h2 className="mb-10 text-center text-2xl font-bold sm:text-3xl">Всё для вашей истории</h2>
+        <section id="features" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
+          <h2 className="mb-8 text-center text-2xl font-bold sm:mb-10 sm:text-3xl">Всё для вашей истории</h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {features.map((feature) => (
               <div
@@ -223,8 +224,8 @@ export function StoryStudioLanding() {
         </section>
 
         {/* Stats */}
-        <section className="border-y border-white/10 bg-white/[0.02] py-14">
-          <div className="mx-auto grid max-w-content grid-cols-2 gap-8 px-4 sm:grid-cols-4 sm:px-6">
+        <section className="border-y border-white/10 bg-white/[0.02] py-10 sm:py-14">
+          <div className="mx-auto grid max-w-content grid-cols-2 gap-6 px-4 sm:grid-cols-4 sm:gap-8 sm:px-6">
             {STORY_STATS.map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className="text-3xl font-bold text-violet sm:text-4xl">{stat.value}</div>
@@ -261,7 +262,7 @@ export function StoryStudioLanding() {
         </section>
 
         {/* Pricing */}
-        <section id="pricing" className="mx-auto max-w-content px-4 py-16 sm:px-6">
+        <section id="pricing" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
           <h2 className="mb-2 text-center text-2xl font-bold sm:text-3xl">Тарифы</h2>
           <p className="mb-10 text-center text-muted">
             От {formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию · пакеты от{" "}
@@ -321,14 +322,14 @@ export function StoryStudioLanding() {
         <StoryStudioFaqSection />
 
         {/* CTA */}
-        <section className="mx-auto max-w-content px-4 pb-24 sm:px-6">
-          <div className="rounded-container border border-violet/30 bg-gradient-to-br from-violet/20 via-card to-cyan/10 p-10 text-center">
+        <section className="mx-auto max-w-content px-4 pb-16 sm:px-6 sm:pb-24">
+          <div className="rounded-container border border-violet/30 bg-gradient-to-br from-violet/20 via-card to-cyan/10 p-6 text-center sm:p-10">
             <h2 className="text-2xl font-bold sm:text-3xl">Продолжите уже в StoryStudio</h2>
             <p className="mx-auto mt-3 max-w-xl text-muted">
               Соберите персонажей, мир и главы в одной рабочей зоне, а затем развивайте историю дальше с помощью AI.
             </p>
-            <Link href="/storystudio/create" className="mt-6 inline-block">
-              <Button size="lg" className="!bg-violet !text-white !border-violet">
+            <Link href="/storystudio/create" className="mt-6 inline-block w-full sm:w-auto">
+              <Button size="lg" className="w-full !border-violet !bg-violet !text-white sm:w-auto">
                 Начать свою историю
                 <ArrowRight className="h-4 w-4" />
               </Button>

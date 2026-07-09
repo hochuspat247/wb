@@ -9,7 +9,7 @@ export function StoryStudioFaqSection() {
   const [openId, setOpenId] = useState<string | null>(faq[0]?.id ?? null);
 
   return (
-    <section id="faq" className="mx-auto max-w-content px-4 py-16 sm:px-6">
+    <section id="faq" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
       <h2 className="mb-2 text-center text-2xl font-bold sm:text-3xl">Частые вопросы</h2>
       <p className="mb-10 text-center text-muted">Всё про StoryStudio, карту связей и видео-серии</p>
 
@@ -18,14 +18,14 @@ export function StoryStudioFaqSection() {
           const isOpen = openId === item.id;
 
           return (
-            <div key={item.id} className="px-5">
+            <div key={item.id} className="px-4 sm:px-5">
               <button
                 type="button"
-                className="flex w-full items-center justify-between gap-4 py-5 text-left"
+                className="flex w-full items-center justify-between gap-3 py-4 text-left sm:gap-4 sm:py-5"
                 onClick={() => setOpenId(isOpen ? null : item.id)}
                 aria-expanded={isOpen}
               >
-                <span className="text-base font-semibold text-ink sm:text-lg">{item.question}</span>
+                <span className="text-sm font-semibold text-ink sm:text-base lg:text-lg">{item.question}</span>
                 <span
                   className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/15 text-muted transition ${
                     isOpen ? "rotate-45 bg-violet text-white" : ""

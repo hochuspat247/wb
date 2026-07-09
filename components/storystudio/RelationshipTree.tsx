@@ -275,17 +275,21 @@ export function RelationshipTree({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-card border border-white/10 bg-[#0d0a16] p-4">
-        <p className="mb-3 text-sm text-muted">
-          Перетащите персонажа, чтобы расставить на карте. Зажмите{" "}
-          <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-ink">Shift</kbd> и потяните стрелку к другому
-          герою, чтобы создать связь. Клик по стрелке — редактирование.
+      <div className="rounded-card border border-white/10 bg-[#0d0a16] p-3 sm:p-4">
+        <p className="mb-3 text-xs text-muted sm:text-sm">
+          <span className="sm:hidden">Потяните героя. Долгое нажатие + перетаскивание — связь. Клик по стрелке — редактирование.</span>
+          <span className="hidden sm:inline">
+            Перетащите персонажа, чтобы расставить на карте. Зажмите{" "}
+            <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-ink">Shift</kbd> и потяните стрелку к другому
+            герою, чтобы создать связь. Клик по стрелке — редактирование.
+          </span>
         </p>
 
+        <div className="-mx-1 overflow-x-auto sm:mx-0">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
-          className="mx-auto h-[22rem] w-full max-w-lg touch-none select-none"
+          className="mx-auto h-[min(18rem,70vw)] w-full min-w-[280px] max-w-lg touch-none select-none sm:h-[22rem]"
           onPointerMove={handleSvgPointerMove}
           onPointerUp={handleSvgPointerUp}
           onPointerLeave={() => {
@@ -439,8 +443,9 @@ export function RelationshipTree({
             );
           })}
         </svg>
+        </div>
 
-        <div className="mt-3 flex flex-wrap justify-center gap-3 text-xs text-muted">
+        <div className="mt-3 flex flex-wrap justify-center gap-2 text-[11px] text-muted sm:gap-3 sm:text-xs">
           {RELATION_TYPE_OPTIONS.map((option) => (
             <span key={option.value} className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full" style={{ background: RELATION_COLORS[option.value] }} />

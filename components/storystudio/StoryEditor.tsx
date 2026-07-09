@@ -57,19 +57,19 @@ export function StoryEditor({ story, onUpdate, onGenerateChapter, chapterLoading
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-      <aside className="rounded-card border border-white/10 bg-card p-4">
-        <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-ink">
+    <div className="grid gap-4 lg:grid-cols-[280px_1fr] lg:gap-6">
+      <aside className="rounded-card border border-white/10 bg-card p-3 sm:p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink sm:mb-4">
           <BookOpen className="h-4 w-4 text-violet" />
           Главы ({story.chapters.length})
         </div>
-        <div className="space-y-1">
+        <div className="-mx-1 flex gap-2 overflow-x-auto pb-1 lg:mx-0 lg:block lg:space-y-1 lg:overflow-visible lg:pb-0">
           {story.chapters.map((chapter) => (
             <button
               key={chapter.id}
               type="button"
               onClick={() => setActiveChapterId(chapter.id)}
-              className={`w-full rounded-xl px-3 py-2.5 text-left text-sm transition ${
+              className={`w-[min(100%,220px)] shrink-0 rounded-xl px-3 py-2.5 text-left text-sm transition lg:w-full ${
                 activeChapter?.id === chapter.id
                   ? "bg-violet/20 text-ink"
                   : "text-muted hover:bg-white/5 hover:text-ink"
@@ -107,10 +107,10 @@ export function StoryEditor({ story, onUpdate, onGenerateChapter, chapterLoading
         </div>
       </aside>
 
-      <div className="rounded-card border border-white/10 bg-card p-6">
+      <div className="rounded-card border border-white/10 bg-card p-4 sm:p-6">
         {activeChapter ? (
           <>
-            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-xl font-semibold text-ink">
                   Глава {activeChapter.number}: {activeChapter.title}
@@ -134,8 +134,8 @@ export function StoryEditor({ story, onUpdate, onGenerateChapter, chapterLoading
               onChange={(e) =>
                 setEditContent((prev) => ({ ...prev, [activeChapter.id]: e.target.value }))
               }
-              rows={22}
-              className="font-serif text-base leading-relaxed"
+              rows={18}
+              className="min-h-[280px] font-serif text-base leading-relaxed sm:min-h-[440px]"
             />
 
             <div className="mt-3 flex items-center justify-between text-xs text-muted">

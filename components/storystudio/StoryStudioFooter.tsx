@@ -13,9 +13,9 @@ const footerLinks = [
 
 export function StoryStudioFooter() {
   return (
-    <footer className="border-t border-white/10 bg-[#07050d] py-14 text-ink">
-      <div className="section-shell">
-        <div className="grid gap-10 md:grid-cols-[1.2fr_1fr_1fr]">
+    <footer className="border-t border-white/10 bg-[#07050d] py-10 text-ink sm:py-14">
+      <div className="section-shell px-4 sm:px-6">
+        <div className="grid gap-8 sm:gap-10 md:grid-cols-[1.2fr_1fr_1fr]">
           <div>
             <Link href="/storystudio" className="inline-flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet/20 text-violet">
@@ -65,7 +65,7 @@ export function StoryStudioFooter() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-white/10 pt-6 text-xs font-semibold text-muted/80">
+        <div className="mt-8 border-t border-white/10 pt-5 text-center text-[11px] font-semibold leading-relaxed text-muted/80 sm:mt-12 sm:pt-6 sm:text-left sm:text-xs">
           <p>© {new Date().getFullYear()} StoryStudio · ИП Головачев И.С. · ИНН 030403024370 · ОГРНИП 325237500009533</p>
         </div>
       </div>

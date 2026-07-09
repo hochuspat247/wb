@@ -218,18 +218,18 @@ export function StoryStudioCabinet() {
     <div className="min-h-screen bg-[#07050d]">
       <StoryStudioHeader />
 
-      <div className="mx-auto max-w-content px-4 pb-16 pt-24 sm:px-6">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="mx-auto max-w-content px-4 pb-12 pt-20 sm:px-6 sm:pb-16 sm:pt-24">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Мои истории</h1>
+            <h1 className="text-xl font-bold sm:text-2xl">Мои истории</h1>
             {quota && (
               <p className="text-sm text-muted">
                 Осталось генераций: <span className="text-violet">{quota.remaining}</span> из {quota.credits}
               </p>
             )}
           </div>
-          <Link href="/storystudio/create">
-            <Button className="!bg-violet !text-white !border-violet">
+          <Link href="/storystudio/create" className="w-full sm:w-auto">
+            <Button className="w-full !border-violet !bg-violet !text-white sm:w-auto">
               <Plus className="h-4 w-4" />
               Новая история
             </Button>
@@ -250,8 +250,8 @@ export function StoryStudioCabinet() {
             </Link>
           </div>
         ) : (
-          <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-            <aside className="space-y-2">
+          <div className="grid gap-4 lg:grid-cols-[260px_1fr] lg:gap-6">
+            <aside className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:block lg:space-y-2 lg:overflow-visible lg:px-0 lg:pb-0">
               {stories.map((story) => (
                 <button
                   key={story.id}
@@ -260,7 +260,7 @@ export function StoryStudioCabinet() {
                     setActiveStory(story);
                     setSelectedCharacterId(story.characters[0]?.id ?? null);
                   }}
-                  className={`w-full rounded-xl border px-4 py-3 text-left transition ${
+                  className={`w-[min(100%,240px)] shrink-0 rounded-xl border px-4 py-3 text-left transition lg:w-full ${
                     activeStory?.id === story.id
                       ? "border-violet bg-violet/15"
                       : "border-white/10 bg-card hover:border-violet/30"
@@ -276,13 +276,13 @@ export function StoryStudioCabinet() {
 
             {activeStory && (
               <div className="min-w-0">
-                <div className="mb-4 flex flex-wrap gap-2 border-b border-white/10 pb-4">
+                <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto border-b border-white/10 px-4 pb-4 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
                   {tabs.map((t) => (
                     <button
                       key={t.id}
                       type="button"
                       onClick={() => setTab(t.id)}
-                      className={`flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm transition ${
+                      className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm transition sm:px-3.5 ${
                         tab === t.id
                           ? "bg-violet/20 text-ink"
                           : t.highlight

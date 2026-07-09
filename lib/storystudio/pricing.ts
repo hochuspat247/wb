@@ -1,4 +1,6 @@
-/** StoryStudio pricing. */
+import { BRAND } from "@/lib/branding";
+
+/** Тарифы ${BRAND.storyStudio}. */
 
 export const STORY_FREE_TRIAL = 2;
 export const STORY_GENERATION_PRICE_RUB = 39;
@@ -34,7 +36,7 @@ export const STORY_PACKAGES: StoryPackage[] = [
     features: [
       "50 генераций любого типа",
       "Портреты персонажей включены",
-      "Premium 18+ режим",
+      "Премиум 18+ режим",
       "Приоритетная очередь"
     ]
   },
@@ -46,7 +48,7 @@ export const STORY_PACKAGES: StoryPackage[] = [
     features: [
       "100 генераций любого типа",
       "Лучшая цена за генерацию",
-      "Все функции StoryStudio",
+      `Все функции ${BRAND.storyStudio}`,
       "Максимальная скидка −41%"
     ]
   }
@@ -95,7 +97,7 @@ export const STORY_PRICING_PLANS = [
     price: "0 ₽",
     period: "",
     features: [
-      "1 история с AI-основой",
+      "1 история с ИИ-основой",
       "2 бесплатные генерации после регистрации",
       "Персонажи и дерево связей",
       "Редактор глав"

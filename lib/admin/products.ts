@@ -1,3 +1,5 @@
+import { BRAND } from "@/lib/branding";
+
 export type AdminProductId = "marketcard" | "storystudio";
 
 export type AdminProduct = {
@@ -15,9 +17,9 @@ export type AdminProduct = {
 export const ADMIN_PRODUCTS: Record<AdminProductId, AdminProduct> = {
   marketcard: {
     id: "marketcard",
-    label: "MarketCard AI",
-    shortLabel: "MarketCard",
-    title: "Аналитика MarketCard AI",
+    label: BRAND.marketCard,
+    shortLabel: BRAND.marketCardShort,
+    title: `Аналитика ${BRAND.marketCard}`,
     description: "Карточки товаров, демо и видео",
     pathPrefix: "/",
     defaultHeatmapPath: "/",
@@ -33,9 +35,9 @@ export const ADMIN_PRODUCTS: Record<AdminProductId, AdminProduct> = {
   },
   storystudio: {
     id: "storystudio",
-    label: "StoryStudio",
-    shortLabel: "StoryStudio",
-    title: "Аналитика StoryStudio",
+    label: BRAND.storyStudio,
+    shortLabel: BRAND.storyStudio,
+    title: `Аналитика ${BRAND.storyStudio}`,
     description: "Истории, персонажи и видео-серии",
     pathPrefix: "/storystudio",
     defaultHeatmapPath: "/storystudio",

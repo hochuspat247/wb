@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, verificationTokens } from "@/lib/db/schema";
 import { appUrl, sendEmail } from "@/lib/email";
+import { BRAND } from "@/lib/branding";
 
 export async function sendVerificationEmail(user: { email: string; name?: string | null }) {
   const verifyToken = crypto.randomUUID();
@@ -17,7 +18,7 @@ export async function sendVerificationEmail(user: { email: string; name?: string
 
   const emailResult = await sendEmail({
     to: user.email,
-    subject: "Подтвердите email в MarketCard AI",
+    subject: `Подтвердите email в ${BRAND.marketCard}`,
     html: `<p>Здравствуйте, ${user.name || "Продавец"}!</p><p>Подтвердите email, чтобы войти и генерировать карточки:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>Ссылка действует 24 часа.</p>`
   });
 

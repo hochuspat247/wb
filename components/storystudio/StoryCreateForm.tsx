@@ -85,7 +85,7 @@ export function StoryCreateForm() {
               className="h-4 w-4 rounded border-clay accent-violet"
             />
             <span>
-              Premium 18+ <span className="text-violet">✦</span>
+              Премиум 18+ <span className="text-violet">✦</span>
             </span>
           </label>
         </div>
@@ -181,7 +181,7 @@ export function StoryCreateForm() {
                 language === lang ? "border-violet bg-violet/20 text-ink" : "border-white/10 text-muted"
               }`}
             >
-              {lang === "ru" ? "Русский" : "English"}
+              {lang === "ru" ? "Русский" : "Английский"}
             </button>
           ))}
         </div>
@@ -207,12 +207,12 @@ export function StoryCreateForm() {
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Создаём историю с AI... (1–2 мин)
+            Создаём историю с ИИ... (1–2 мин)
           </>
         ) : (
           <>
             <Wand2 className="h-4 w-4" />
-            Создать с AI
+            Создать с ИИ
           </>
         )}
       </Button>

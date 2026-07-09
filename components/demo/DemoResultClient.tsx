@@ -10,6 +10,7 @@ import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent"
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { parseJsonResponse, toUserFacingError } from "@/lib/api/parseJsonResponse";
+import { BRAND } from "@/lib/branding";
 import { AUTH_FROM_RESULT_KEY, GUEST_ID_KEY, INTENDED_ACTION_KEY, INTENDED_GENERATION_KEY } from "@/lib/guest";
 import { reachGoal } from "@/lib/metrika";
 import { useBlockUnauthenticatedImageShortcuts } from "@/components/demo/useBlockUnauthenticatedImageShortcuts";
@@ -293,14 +294,14 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
           <div className="rounded-[22px] border border-clay bg-card p-4 shadow-soft md:p-5">
             {!isAuthenticated || !result.originalAvailable ? (
               <ProtectedDemoImage
-                alt={result.card?.title || "Демо-карточка MarketCard AI"}
+                alt={result.card?.title || `Демо-карточка ${BRAND.marketCard}`}
                 className="mx-auto max-w-[620px]"
                 src={previewSrc}
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                alt={result.card?.title || "Карточка MarketCard AI"}
+                alt={result.card?.title || `Карточка ${BRAND.marketCard}`}
                 className="mx-auto block max-w-[620px] rounded-[24px]"
                 src={previewSrc}
               />

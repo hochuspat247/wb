@@ -8,6 +8,7 @@ import { VideoReadyScreen } from "@/components/video/VideoReadyScreen";
 import { Button } from "@/components/ui/Button";
 import { fetchStoryProject, fetchVideoOrderStatus } from "@/lib/api/storystudio";
 import { fetchVideoCredits } from "@/lib/api/video";
+import { BRAND } from "@/lib/branding";
 import type { StoryCharacter, StoryEpisode, StoryProject } from "@/types/storystudio";
 
 type StoryVideoSeriesProps = {
@@ -130,12 +131,12 @@ export function StoryVideoSeries({
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-violet">
               <Sparkles className="h-4 w-4" />
-              Только в StoryStudio
+              Только в {BRAND.storyStudio}
             </div>
             <h3 className="mt-1 text-lg font-bold text-ink">Видео-серии из вашей истории</h3>
             <p className="mt-2 max-w-xl text-sm text-muted">
-              Превратите портреты персонажей в кинематографичные сцены через Google Veo 3.1 — собирайте серии как
-              эпизоды для Reels, Shorts и TikTok.
+              Превратите портреты персонажей в кинематографичные сцены через {BRAND.googleVeo} {BRAND.veoVersion} — собирайте серии как
+              эпизоды для Рилс, Шортс и ТикТок.
             </p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-center">
@@ -166,9 +167,9 @@ export function StoryVideoSeries({
           ) : (
             <div className="space-y-4">
               <div>
-                <h4 className="font-semibold text-ink">Шаг 1: AI-портрет персонажа</h4>
+                <h4 className="font-semibold text-ink">Шаг 1: ИИ-портрет персонажа</h4>
                 <p className="mt-1 text-sm text-muted">
-                  Видео Veo 3.1 строится на портрете героя. Сгенерируйте его здесь — и сразу откроется съёмка серии.
+                  Видео {BRAND.veoVersion} строится на портрете героя. Сгенерируйте его здесь — и сразу откроется съёмка серии.
                 </p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -196,7 +197,7 @@ export function StoryVideoSeries({
                       ) : (
                         <>
                           <Sparkles className="h-3.5 w-3.5" />
-                          Портрет AI
+                          Портрет ИИ
                         </>
                       )}
                     </Button>
@@ -209,7 +210,7 @@ export function StoryVideoSeries({
       ) : (
         <div className="rounded-card border border-white/10 bg-card p-5">
           <h4 className="mb-1 font-semibold text-ink">Снять новую серию</h4>
-          <p className="mb-4 text-sm text-muted">Выберите персонажа — откроется настройка сцены и оплата через Veo 3.1.</p>
+          <p className="mb-4 text-sm text-muted">Выберите персонажа — откроется настройка сцены и оплата через {BRAND.veoVersion}.</p>
           <div className="flex flex-wrap gap-2">
             {charactersWithPortrait.map((character) => (
               <Button

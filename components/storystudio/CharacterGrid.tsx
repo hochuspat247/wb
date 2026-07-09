@@ -81,7 +81,7 @@ export function CharacterGrid({
                   }}
                 >
                   <Wand2 className="h-3.5 w-3.5" />
-                  {portraitLoadingId === character.id ? "Рисуем..." : "Портрет AI"}
+                  {portraitLoadingId === character.id ? "Рисуем..." : "Портрет ИИ"}
                 </Button>
               </div>
             </div>

@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { createPageMetadata } from "@/lib/seo";
+import { BRAND } from "@/lib/branding";
 
 export const metadata = createPageMetadata({
   title: "Вход",
-  description: "Войдите в MarketCard AI, чтобы создавать и сохранять карточки товаров.",
+  description: `Войдите в ${BRAND.marketCard}, чтобы создавать и сохранять карточки товаров.`,
   path: "/login",
   noIndex: true
 });

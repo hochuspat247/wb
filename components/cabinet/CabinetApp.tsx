@@ -390,7 +390,7 @@ export function CabinetApp() {
             </div>
             <div className="hidden items-center gap-3 sm:flex">
             <div className="rounded-full border border-clay bg-card px-4 py-2 text-sm font-bold text-muted">
-              AI: {imageSettings.imageMode}
+              ИИ: {imageSettings.imageMode}
             </div>
             <p className="text-sm font-semibold text-muted">{profileName}</p>
             <Button onClick={openCreateTab} size="sm">
@@ -530,7 +530,7 @@ export function CabinetApp() {
               </Card>
 
               <Card padding="lg">
-                <h2 className="text-lg font-bold text-ink">AI-провайдер изображений</h2>
+                <h2 className="text-lg font-bold text-ink">ИИ-провайдер изображений</h2>
                 <p className="mt-1 text-sm text-muted">Настройки генерации обложек</p>
                 <div className="mt-5 grid gap-4">
                   <label className="grid gap-2 text-sm font-semibold text-ink">

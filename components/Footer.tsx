@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { MetrikaGoalLink } from "@/components/analytics/MetrikaGoalLink";
 import { Logo } from "@/components/Logo";
+import { LegalFooterLinks } from "@/components/legal/LegalFooterLinks";
+import { BRAND } from "@/lib/branding";
 
 const footerLinks = [
   { label: "Примеры", href: "/#examples", goal: "examples_click" as const },
@@ -20,7 +22,7 @@ export function Footer() {
           <div>
             <Logo light />
             <p className="mt-4 max-w-xs text-sm font-medium leading-relaxed text-white/55">
-              Инструмент для продавцов маркетплейсов: тексты, SEO, обложки 4:5 из одного фото и видео из готовой карточки.
+              Инструмент для продавцов маркетплейсов: тексты, СЕО, обложки 4:5 из одного фото и видео из готовой карточки.
             </p>
           </div>
           <div>
@@ -56,8 +58,9 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        <div className="mt-12 border-t border-white/10 pt-6 text-xs font-semibold text-white/40">
-          <p>© {new Date().getFullYear()} MarketCard AI · ИП Головачев И.С. · ИНН 030403024370 · ОГРНИП 325237500009533</p>
+        <div className="mt-12 space-y-3 border-t border-white/10 pt-6 text-xs font-semibold text-white/40">
+          <LegalFooterLinks linkClassName="transition hover:text-white/80" />
+          <p>© {new Date().getFullYear()} {BRAND.marketCard} · ИП Головачев И.С. · ИНН 030403024370 · ОГРНИП 325237500009533</p>
         </div>
       </div>
     </footer>

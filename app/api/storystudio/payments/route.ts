@@ -7,6 +7,7 @@ import { payments, users } from "@/lib/db/schema";
 import { calculateStoryPackagePrice } from "@/lib/storystudio/pricing";
 import { amountToMinorUnits } from "@/lib/server/payments";
 import { createYooKassaPayment } from "@/lib/server/yookassa";
+import { BRAND } from "@/lib/branding";
 
 export const runtime = "nodejs";
 
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
       amount: price.total,
       customerEmail,
       credits: count,
-      description: `StoryStudio: ${count} генераций`,
+      description: `${BRAND.storyStudio}: ${count} генераций`,
       idempotenceKey,
       returnUrl: `${siteUrl}/storystudio/cabinet?payment=return`,
       userId

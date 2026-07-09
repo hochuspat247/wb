@@ -450,7 +450,7 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
         </Button>
         <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopySeoText} size="sm" variant="secondary">
           <Clipboard size={16} />
-          Скопировать SEO
+          Скопировать СЕО
         </Button>
         <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopyInfographicText} size="sm" variant="secondary">
           <Clipboard size={16} />

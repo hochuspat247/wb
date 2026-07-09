@@ -165,6 +165,22 @@ export function RegisterForm() {
 
             {error ? <p className="text-sm font-semibold text-red-400">{error}</p> : null}
 
+            <p className="text-xs font-medium leading-relaxed text-muted">
+              Нажимая «Создать аккаунт», вы принимаете{" "}
+              <Link className="text-accent hover:underline" href="/legal/terms">
+                пользовательское соглашение
+              </Link>
+              ,{" "}
+              <Link className="text-accent hover:underline" href="/legal/offer">
+                публичную оферту
+              </Link>{" "}
+              и даёте согласие на обработку персональных данных согласно{" "}
+              <Link className="text-accent hover:underline" href="/legal/personal-data">
+                политике
+              </Link>
+              .
+            </p>
+
             <Button className="w-full py-3" disabled={loading} type="submit">
               {loading ? <Loader2 className="animate-spin" size={18} /> : null}
               Создать аккаунт

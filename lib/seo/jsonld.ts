@@ -1,4 +1,5 @@
 import { absoluteUrl, siteConfig } from "@/lib/seo";
+import { BRAND } from "@/lib/branding";
 import { getMarketingFaqItems } from "@/lib/marketing/faq";
 import { PRODUCT_CARD_VIDEO_DEMO } from "@/lib/marketing/videoExample";
 import {
@@ -19,7 +20,7 @@ function buildOfferCatalog() {
 
   return {
     "@type": "OfferCatalog",
-    name: "Тарифы MarketCard AI",
+    name: `Тарифы ${BRAND.marketCard}`,
     itemListElement: [
       {
         "@type": "Offer",
@@ -31,7 +32,7 @@ function buildOfferCatalog() {
         itemOffered: {
           "@type": "Service",
           name: "Генерация карточки товара",
-          description: "AI-обложка 4:5, тексты и SEO для маркетплейсов"
+          description: "ИИ-обложка 4:5, тексты и СЕО для маркетплейсов"
         }
       },
       {
@@ -75,7 +76,7 @@ function buildOfferCatalog() {
         name: `Видео из карточки ${item.duration} сек`,
         price: String(item.priceRub),
         priceCurrency: "RUB",
-        description: "Google Veo 3.1 Fast, без звука, из готовой карточки",
+        description: `${BRAND.googleVeo} ${BRAND.veoVersion} Фаст, без звука, из готовой карточки`,
         url: absoluteUrl("/#video-pricing"),
         itemOffered: {
           "@type": "Service",
@@ -133,8 +134,8 @@ export function buildHomeJsonLd() {
         },
         featureList: [
           "Генерация карточки товара по фото",
-          "Тексты и SEO для WB, Ozon, Avito",
-          "AI-обложка 4:5",
+          "Тексты и СЕО для ВБ, Озон, Авито",
+          "ИИ-обложка 4:5",
           "Видео из готовой карточки без звука"
         ],
         url: absoluteUrl("/cabinet")

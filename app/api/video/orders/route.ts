@@ -17,6 +17,7 @@ import { buildSignedSourceImageUrl, getCardSourceImageData, getSourceImageExtens
 import { recordVideoPayment } from "@/lib/server/videoPayment";
 import { hasUnlimitedGenerations } from "@/lib/server/unlimitedGenerations";
 import { createYooKassaPayment } from "@/lib/server/yookassa";
+import { BRAND } from "@/lib/branding";
 import type { CreateVideoOrderInput } from "@/types/video-generation";
 
 export const runtime = "nodejs";
@@ -168,7 +169,7 @@ export async function POST(request: Request) {
       amount: amountRub,
       customerEmail,
       credits: 0,
-      description: `MarketCard AI: видео из карточки (${body.duration} сек, ${body.quality}${body.generateAudio ? ", со звуком" : ""})`,
+      description: `${BRAND.marketCard}: видео из карточки (${body.duration} сек, ${body.quality}${body.generateAudio ? ", со звуком" : ""})`,
       idempotenceKey,
       returnUrl: `${siteUrl}/cabinet?videoOrder=${order.id}`,
       userId,

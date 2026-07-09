@@ -1,3 +1,5 @@
+import { BRAND } from "@/lib/branding";
+
 type SendEmailInput = {
   to: string;
   subject: string;
@@ -6,10 +8,10 @@ type SendEmailInput = {
 
 export async function sendEmail({ to, subject, html }: SendEmailInput) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "MarketCard AI <hello@marketcard.ai>";
+  const from = process.env.EMAIL_FROM || `${BRAND.marketCard} <hello@marketcard.ai>`;
 
   if (!apiKey) {
-    console.info("[MarketCard AI] Email stub:", { to, subject });
+    console.info(`[${BRAND.marketCard}] Email stub:`, { to, subject });
     return { ok: true, stub: true as const };
   }
 

@@ -244,7 +244,7 @@ export function StoryStudioCabinet() {
           <div className="rounded-card border border-dashed border-white/15 p-12 text-center">
             <BookOpen className="mx-auto mb-4 h-10 w-10 text-violet" />
             <h2 className="text-xl font-semibold">Пока нет историй</h2>
-            <p className="mt-2 text-muted">Создайте первую с помощью AI за 30 секунд</p>
+            <p className="mt-2 text-muted">Создайте первую с помощью ИИ за 30 секунд</p>
             <Link href="/storystudio/create" className="mt-6 inline-block">
               <Button className="!bg-violet !text-white !border-violet">Создать историю</Button>
             </Link>
@@ -310,7 +310,7 @@ export function StoryStudioCabinet() {
                     {activeStory && isStoryFoundationEmpty(activeStory) && (
                       <div className="rounded-card border border-amber-500/30 bg-amber-500/10 p-5">
                         <p className="text-sm text-amber-100">
-                          Контент истории не сгенерировался — AI не вернул данные. Нажмите кнопку ниже, чтобы
+                          Контент истории не сгенерировался — ИИ не вернул данные. Нажмите кнопку ниже, чтобы
                           попробовать снова (бесплатно).
                         </p>
                         <Button

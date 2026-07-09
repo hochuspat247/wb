@@ -4,6 +4,7 @@ import { HeroActions } from "@/components/HeroActions";
 import { HeroViewTracker } from "@/components/hero/HeroViewTracker";
 import { Badge } from "@/components/ui/Badge";
 import { Reveal } from "@/components/ui/Reveal";
+import { BRAND } from "@/lib/branding";
 
 export function Hero() {
   return (
@@ -16,7 +17,7 @@ export function Hero() {
 
             <Reveal immediate>
               <Badge className="border-clay/80 bg-card/50 text-muted backdrop-blur-sm" variant="outline">
-                AI для продавцов маркетплейсов
+                ИИ для продавцов маркетплейсов
               </Badge>
             </Reveal>
 
@@ -29,7 +30,7 @@ export function Hero() {
 
             <Reveal delay={2} immediate>
               <p className="hero-lead mt-7 max-w-[34rem] text-[1.05rem] font-medium leading-[1.8] text-muted/90 sm:mt-8 sm:text-lg sm:leading-[1.85] md:mt-9 md:text-[1.15rem]">
-                Загрузите фото — MarketCard AI создаст обложку 4:5, описание, SEO-ключи и тексты для WB, Ozon, Avito и
+                Загрузите фото — {BRAND.marketCard} создаст обложку 4:5, описание, СЕО-ключи и тексты для ВБ, Озон, Авито и
                 Яндекс Маркета. После карточки можно оживить её в короткое видео без звука прямо из кабинета.
               </p>
             </Reveal>

@@ -1,5 +1,6 @@
 import { DemoResultClient } from "@/components/demo/DemoResultClient";
 import { createPageMetadata } from "@/lib/seo";
+import { BRAND } from "@/lib/branding";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -7,7 +8,7 @@ type PageProps = {
 
 export const metadata = createPageMetadata({
   title: "Демо-карточка готова",
-  description: "Демо-результат генерации MarketCard AI.",
+  description: `Демо-результат генерации ${BRAND.marketCard}.`,
   path: "/generations",
   noIndex: true
 });

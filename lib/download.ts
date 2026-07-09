@@ -1,4 +1,5 @@
 import { toPng } from "html-to-image";
+import { BRAND } from "@/lib/branding";
 import type { MarketplacePlatform } from "@/types/marketplace";
 import type { ProductCardResult } from "@/types/product-card";
 
@@ -36,7 +37,7 @@ ${mt.fullDescription}
 Преимущества:
 ${mt.advantages.map((benefit) => `- ${benefit}`).join("\n")}
 
-SEO-ключи:
+СЕО-ключи:
 ${mt.keywords.join(", ")}`;
   }
 
@@ -49,7 +50,7 @@ ${card.fullDescription}
 Преимущества:
 ${card.benefits.map((benefit) => `- ${benefit}`).join("\n")}
 
-SEO-ключи:
+СЕО-ключи:
 ${card.keywords.join(", ")}
 
 Рекомендации для ${card.marketplace}:
@@ -154,7 +155,7 @@ ${(card.marketplaceText?.exportChecklist ?? []).map((t) => `- ${t}`).join("\n")}
 export function formatSeoText(card: ProductCardResult) {
   const mt = card.marketplaceText;
   if (mt) {
-    return `SEO Title:
+    return `Заголовок СЕО:
 ${mt.seoTitle}
 
 Ключевые слова:
@@ -164,7 +165,7 @@ ${mt.keywords.join(", ")}
 ${mt.shortDescription}`;
   }
 
-  return `SEO Title:
+  return `Заголовок СЕО:
 ${card.title}
 
 Ключевые слова:
@@ -310,7 +311,7 @@ async function fallbackCanvas(node: HTMLElement) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = "#111827";
   ctx.font = "700 28px Arial";
-  ctx.fillText("MarketCard AI", 32, 52);
+  ctx.fillText(BRAND.marketCard, 32, 52);
   ctx.font = "400 18px Arial";
   ctx.fillText("PNG fallback export. Use browser export for full visual fidelity.", 32, 88);
 

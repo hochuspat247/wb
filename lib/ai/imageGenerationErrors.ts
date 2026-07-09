@@ -34,7 +34,7 @@ export function formatImageProviderError(error: unknown) {
   }
 
   if (isGeminiQuotaError(raw)) {
-    return "Исчерпана квота Gemini API. Подключите оплату в Google AI Studio или используйте NanoBanana Expert (NANOBANANA_EXPERT_API_KEY).";
+    return "Исчерпана квота Gemini API. Подключите оплату в Гугл ИИ Студио или используйте NanoBanana Expert (NANOBANANA_EXPERT_API_KEY).";
   }
 
   if (/NANOBANANA_EXPERT_API_KEY is not configured/i.test(raw)) {

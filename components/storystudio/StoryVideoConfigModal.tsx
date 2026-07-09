@@ -19,6 +19,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import type { StoryCharacter, StoryChapter, StoryProject } from "@/types/storystudio";
 import type { VideoAspectRatio, VideoDuration, VideoMotionStyle, VideoQuality } from "@/types/video-generation";
+import { BRAND } from "@/lib/branding";
 
 const motionOptions: Array<{ value: VideoMotionStyle; label: string }> = [
   { value: "premium_parallax", label: "Кинематографичный parallax" },
@@ -145,7 +146,7 @@ export function StoryVideoConfigModal({
 
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-violet">
             <Clapperboard className="h-4 w-4" />
-            Google Veo 3.1 · Видео-серия
+            {BRAND.googleVeo} {BRAND.veoVersion} · Видео-серия
           </div>
           <h3 className="mt-2 text-xl font-bold text-ink sm:text-2xl">Снять сцену из истории</h3>
           <p className="mt-1 text-sm text-muted">
@@ -195,7 +196,7 @@ export function StoryVideoConfigModal({
               <label className="grid gap-1.5 text-xs font-semibold text-muted">
                 Формат
                 <Select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as VideoAspectRatio)}>
-                  <option value="9:16">9:16 — Reels / Shorts</option>
+                  <option value="9:16">9:16 — Рилс / Шортс</option>
                   <option value="16:9">16:9 — широкий кадр</option>
                   <option value="4:5">4:5 — вертикаль</option>
                   <option value="1:1">1:1 — квадрат</option>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND } from "@/lib/branding";
 import { absoluteUrl, siteConfig } from "@/lib/seo";
 import {
   STORY_GENERATION_PRICE_RUB,
@@ -10,32 +11,32 @@ import { VIDEO_STANDARD_PRICE_4_SEC, formatVideoPriceRub } from "@/config/video-
 const pack10 = calculateStoryPackagePrice(10);
 
 export const storyStudioConfig = {
-  name: "StoryStudio",
-  brand: "StoryStudio — AI генератор историй",
+  name: BRAND.storyStudio,
+  brand: `${BRAND.storyStudio} — ИИ генератор историй`,
   title:
-    "StoryStudio — AI генератор историй, персонажей, карта связей и видео-серии",
-  description: `Создавайте книги и новеллы с ИИ: синопсис, мир, персонажи, интерактивная карта связей, портреты героев и видео-серии через Google Veo 3.1. От ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию, пакеты от ${formatStoryRub(pack10.total)}. Без подписки — платите за результат.`,
+    `${BRAND.storyStudio} — ИИ генератор историй, персонажей, карта связей и видео-серии`,
+  description: `Создавайте книги и новеллы с ИИ: синопсис, мир, персонажи, интерактивная карта связей, портреты героев и видео-серии через ${BRAND.googleVeo} ${BRAND.veoVersion}. От ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию, пакеты от ${formatStoryRub(pack10.total)}. Без подписки — платите за результат.`,
   keywords: [
-    "storystudio",
+    "стористудио",
     "генератор историй",
     "нейросеть для книги",
-    "ai писатель",
-    "создать историю с ai",
+    "ии писатель",
+    "создать историю с ии",
     "генератор персонажей",
     "карта связей персонажей",
     "написать книгу с нейросетью",
     "создать новеллу",
     "фанфик генератор",
     "видео из персонажа",
-    "veo 3.1 история",
-    "ai генератор глав",
+    "вео 3.1 история",
+    "ии генератор глав",
     "дерево связей героев",
-    "писательский ai",
+    "писательский ии",
     "создать роман онлайн",
     "интерактивная карта персонажей",
     "генератор портретов персонажа",
-    "видео серия ai",
-    "русский ai для писателей"
+    "видео серия ии",
+    "русский ии для писателей"
   ],
   locale: "ru_RU",
   ogImagePath: "/storystudio/opengraph-image"
@@ -58,7 +59,7 @@ export function createStoryStudioMetadata({
   noIndex?: boolean;
   keywords?: string[];
 }): Metadata {
-  const pageTitle = title ? `${title} | StoryStudio` : storyStudioConfig.title;
+  const pageTitle = title ? `${title} | ${BRAND.storyStudio}` : storyStudioConfig.title;
   const pageDescription = description || storyStudioConfig.description;
   const pageKeywords = keywords ?? storyStudioConfig.keywords;
   const ogImage = storyStudioAbsoluteUrl(storyStudioConfig.ogImagePath);
@@ -97,7 +98,7 @@ export function createStoryStudioMetadata({
           url: ogImage,
           width: 1200,
           height: 630,
-          alt: `${storyStudioConfig.name} — AI генератор историй и видео-серий`
+          alt: `${storyStudioConfig.name} — ИИ генератор историй и видео-серий`
         }
       ]
     },
@@ -127,6 +128,6 @@ export function createStoryStudioMetadata({
 export const storyStudioLandingDescription = storyStudioConfig.description;
 
 export const storyStudioCreateDescription =
-  "Опишите идею романа или новеллы — AI создаст синопсис, персонажей, карту связей и план сюжета. Жанры, объём и Premium 18+ на выбор.";
+  "Опишите идею романа или новеллы — ИИ создаст синопсис, персонажей, карту связей и план сюжета. Жанры, объём и Премиум 18+ на выбор.";
 
-export const storyStudioVideoSnippet = `Видео-серии из портретов — от ${formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)} за 4 сек через Google Veo 3.1.`;
+export const storyStudioVideoSnippet = `Видео-серии из портретов — от ${formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)} за 4 сек через ${BRAND.googleVeo} ${BRAND.veoVersion}.`;

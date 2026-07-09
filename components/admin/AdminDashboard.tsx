@@ -20,6 +20,7 @@ import type { ProductCardResult } from "@/types/product-card";
 import type { SessionDurationStats } from "@/lib/server/session-duration";
 import type { Funnel7dStep } from "@/lib/server/funnel7d";
 import { ADMIN_PRODUCTS, isAdminProductId, type AdminProductId } from "@/lib/admin/products";
+import { BRAND } from "@/lib/branding";
 
 type AdminStats = {
   product?: AdminProductId;
@@ -260,7 +261,7 @@ function ImagePair({
             <img alt={`${title} — результат`} className="aspect-[4/5] w-full object-cover" src={generatedSrc} />
           ) : (
             <div className="grid aspect-[4/5] place-items-center px-4 text-center text-sm font-semibold text-muted">
-              {generatedFallbackLabel || "AI-обложка ещё не готова"}
+              {generatedFallbackLabel || "ИИ-обложка ещё не готова"}
             </div>
           )}
         </div>
@@ -345,7 +346,7 @@ function CardDetailModal({
   const uploadedImage = card ? getUploadedImage(card) : null;
   const generatedImage = card ? getGeneratedImage(card) : null;
   const generatedFallbackLabel = card?.generatedImageIsFallback
-    ? card.generatedImageError || "NanoBanana не вернул AI-обложку"
+    ? card.generatedImageError || "NanoBanana не вернул ИИ-обложку"
     : undefined;
 
   return (
@@ -856,7 +857,7 @@ export function AdminDashboard() {
                 {stats.storyStudio?.recentStories.length ?? 0} последних
               </span>
             }
-            description="Истории, созданные в StoryStudio"
+            description={`Истории, созданные в ${BRAND.storyStudio}`}
             icon={<BookOpen className="text-accent" size={20} />}
             id="recent-stories"
             scope={product}
@@ -874,7 +875,7 @@ export function AdminDashboard() {
                   </p>
                   <p className="mt-1 text-xs font-semibold text-muted">
                     {new Date(story.updatedAt).toLocaleString("ru-RU")} · {story.charactersCount} перс. · {story.chaptersCount} гл. · {story.episodesCount} серий
-                    {story.premiumMode ? " · Premium 18+" : ""}
+                    {story.premiumMode ? " · Премиум 18+" : ""}
                   </p>
                 </div>
               ))}

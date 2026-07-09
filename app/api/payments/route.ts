@@ -7,6 +7,7 @@ import { payments, users } from "@/lib/db/schema";
 import { calculatePackagePrice } from "@/lib/pricing";
 import { amountToMinorUnits } from "@/lib/server/payments";
 import { createYooKassaPayment } from "@/lib/server/yookassa";
+import { BRAND } from "@/lib/branding";
 
 export const runtime = "nodejs";
 
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
       amount: price.total,
       customerEmail,
       credits: count,
-      description: `MarketCard AI: ${count} generations`,
+      description: `${BRAND.marketCard}: ${count} генераций`,
       idempotenceKey,
       returnUrl: `${siteUrl}/cabinet?payment=return`,
       userId

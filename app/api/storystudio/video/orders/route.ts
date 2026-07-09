@@ -23,6 +23,7 @@ import {
 } from "@/lib/server/storyVideo";
 import { buildSignedSourceImageUrl, getSourceImageExtension } from "@/lib/server/videoSourceImage";
 import { buildStorySceneVideoPrompt, buildStoryVideoSourceId } from "@/lib/storystudio/videoPrompt";
+import { BRAND } from "@/lib/branding";
 import type { CreateStoryVideoInput, StoryEpisode } from "@/types/storystudio";
 
 export const runtime = "nodejs";
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
 
   if (!character.imageBase64 && !character.imageUrl) {
     return NextResponse.json(
-      { error: "Сначала создайте AI-портрет персонажа — он станет основой для видео-сцены." },
+      { error: "Сначала создайте ИИ-портрет персонажа — он станет основой для видео-сцены." },
       { status: 400 }
     );
   }
@@ -179,7 +180,7 @@ export async function POST(request: Request) {
       amount: amountRub,
       customerEmail,
       credits: 0,
-      description: `StoryStudio: видео-серия (${body.duration} сек, ${body.quality}${body.generateAudio ? ", со звуком" : ""})`,
+      description: `${BRAND.storyStudio}: видео-серия (${body.duration} сек, ${body.quality}${body.generateAudio ? ", со звуком" : ""})`,
       idempotenceKey,
       returnUrl: `${siteUrl}/storystudio/cabinet?videoOrder=${order.id}&story=${body.storyId}`,
       userId,

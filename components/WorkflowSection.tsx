@@ -47,7 +47,7 @@ export function WorkflowSection() {
     <section className="py-20 md:py-28" id="workflow">
       <div className="section-shell">
         <SectionHeader
-          description="Фото → описание → SEO → обложка → экспорт → видео из карточки. Вся логика собрана в один продуктовый сценарий."
+          description="Фото → описание → СЕО → обложка → экспорт → видео из карточки. Вся логика собрана в один продуктовый сценарий."
           title="Процесс виден как pipeline, а не спрятан в форме"
         />
 

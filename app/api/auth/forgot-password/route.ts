@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { users, verificationTokens } from "@/lib/db/schema";
 import { getEmailFormatError, normalizeEmail } from "@/lib/auth/email-validation";
 import { appUrl, sendEmail } from "@/lib/email";
+import { BRAND } from "@/lib/branding";
 
 type ForgotPasswordBody = {
   email?: string;
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
 
       await sendEmail({
         to: email,
-        subject: "Восстановление пароля MarketCard AI",
+        subject: `Восстановление пароля ${BRAND.marketCard}`,
         html: `<p>Чтобы задать новый пароль, перейдите по ссылке:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Ссылка действует 1 час.</p>`
       });
     }

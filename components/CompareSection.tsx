@@ -1,5 +1,6 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
+import { BRAND } from "@/lib/branding";
 import {
   CARD_GENERATION_PRICE_RUB,
   FREE_TOTAL_MARKETING_CARDS,
@@ -25,15 +26,15 @@ const rows = [
     "—",
     `от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}, без звука`
   ],
-  ["SEO и тексты", "вручную", "частично", "шаблоны", "автоматически"],
-  ["Обложка 4:5", "дизайнер/Canva", "дизайнер", "шаблоны", "AI + пресеты WB/Ozon"],
+  ["СЕО и тексты", "вручную", "частично", "шаблоны", "автоматически"],
+  ["Обложка 4:5", "дизайнер/Канва", "дизайнер", "шаблоны", "ИИ + пресеты ВБ/Озон"],
   ["Масштаб SKU", "сложно", "дорого", "ограничено", "пакеты до 100+"],
   ["Экспорт", "собирать отдельно", "по договорённости", "PNG", "PNG + JSON"],
   ["Правки и версии", "каждый раз вручную", "оплата за версию", "ограничено", "новая версия сразу"],
-  ["Поддержка маркетплейсов", "универсально", "зависит от исполнителя", "универсально", "WB, Ozon, Avito"]
+  ["Поддержка маркетплейсов", "универсально", "зависит от исполнителя", "универсально", "ВБ, Озон, Авито"]
 ];
 
-const columns = ["", "Ручная сборка", "Фрилансер", "Canva / шаблоны", "MarketCard AI"];
+const columns = ["", "Ручная сборка", "Фрилансер", "Канва / шаблоны", BRAND.marketCard];
 const alternatives = columns.slice(1);
 
 function CompareMobileCards({ embedded = false }: { embedded?: boolean }) {
@@ -108,7 +109,7 @@ export function CompareSection({ embedded = false }: { embedded?: boolean }) {
     <section className={embedded ? "py-8 md:py-12" : "py-20 md:py-28"} id="compare">
       <div className={embedded ? "px-3 sm:px-5" : "section-shell"}>
         <SectionHeader
-          description="Сравнение по скорости, стоимости и функционалу — почему продавцам выгоднее генерировать карточки в MarketCard AI."
+          description={`Сравнение по скорости, стоимости и функционалу — почему продавцам выгоднее генерировать карточки в ${BRAND.marketCard}.`}
           title="Наши преимущества относительно альтернатив"
         />
 

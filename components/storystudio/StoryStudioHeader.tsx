@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { Menu, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { BRAND } from "@/lib/branding";
 
 const links = [
   ["Видео-серии", "/storystudio#video-series"],
@@ -51,7 +52,7 @@ export function StoryStudioHeader() {
             <Sparkles className="h-4 w-4" />
           </span>
           <span className="text-base font-bold tracking-tight text-ink sm:text-lg">
-            Story<span className="text-violet">Studio</span>
+            Стори<span className="text-violet">Студио</span>
           </span>
         </Link>
 

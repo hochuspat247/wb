@@ -1,4 +1,5 @@
 import * as VKID from "@vkid/sdk";
+import { BRAND } from "@/lib/branding";
 
 const CALLBACK_STORAGE_KEY = "mc_vk_callback";
 
@@ -44,7 +45,7 @@ export function getVkAppId() {
 }
 
 export function getVkAppName() {
-  return process.env.NEXT_PUBLIC_VK_APP_NAME || "MarketCard AI";
+  return process.env.NEXT_PUBLIC_VK_APP_NAME || BRAND.marketCard;
 }
 
 export function initVkIdConfig() {

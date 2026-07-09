@@ -106,7 +106,7 @@ const designPresets: Array<{ label: string; value: ImageDesignPreset }> = [
 ];
 
 const imageModes: Array<{ label: string; value: ImageGenerationMode }> = [
-  { label: "AI-обложка (авто)", value: "pro" },
+  { label: "ИИ-обложка (авто)", value: "pro" },
   { label: "Быстрая генерация", value: "fast" },
   { label: "Базовая обложка 4:5", value: "html" }
 ];
@@ -114,7 +114,7 @@ const imageModes: Array<{ label: string; value: ImageGenerationMode }> = [
 const textModes: Array<{ label: string; value: MarketplaceTextMode }> = [
   { label: "Безопасно для модерации", value: "marketplace_safe" },
   { label: "Промо-креатив", value: "promo_creative" },
-  { label: "SEO-описание", value: "seo" },
+  { label: "СЕО-описание", value: "seo" },
   { label: "Полная карточка", value: "full_listing" }
 ];
 
@@ -1291,8 +1291,8 @@ export function CardGenerator({
         if (!inSeriesBatch) {
           setNotice(
             data.error
-              ? `NanoBanana не вернул AI-изображение: ${data.error}. Показан fallback-preview.`
-              : "NanoBanana не вернул AI-изображение. Показан fallback-preview."
+              ? `NanoBanana не вернул ИИ-изображение: ${data.error}. Показан запасной предпросмотр.`
+              : "NanoBanana не вернул ИИ-изображение. Показан запасной предпросмотр."
           );
         }
         return updatedCard;
@@ -1305,7 +1305,7 @@ export function CardGenerator({
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Неизвестная ошибка генерации изображения";
       if (!inSeriesBatch) {
-        setNotice(`Текст готов, но AI-изображение не создалось: ${message}. Показан fallback-preview.`);
+        setNotice(`Текст готов, но ИИ-изображение не создалось: ${message}. Показан запасной предпросмотр.`);
       }
       return cardForImage;
     } finally {
@@ -1812,7 +1812,7 @@ export function CardGenerator({
                 {card.generatedImageIsFallback && card.generatedImageError ? (
                   <div className="mt-4">
                     <Alert variant="error">
-                      NanoBanana не вернул AI-изображение: {card.generatedImageError}. Ниже показан fallback-preview.
+                      NanoBanana не вернул ИИ-изображение: {card.generatedImageError}. Ниже показан запасной предпросмотр.
                     </Alert>
                   </div>
                 ) : null}

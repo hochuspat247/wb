@@ -98,7 +98,7 @@ export function HeroStudioVisual({ className = "" }: { className?: string }) {
           </div>
 
           <div className="pointer-events-none absolute bottom-[30%] left-1/2 z-40 -translate-x-1/2 rounded-full border border-clay bg-card/95 px-2.5 py-1 text-[10px] font-bold text-ink shadow-soft backdrop-blur-sm sm:px-3 sm:py-1.5 sm:text-[11px]">
-            AI за ~2 мин
+            ИИ за ~2 мин
           </div>
         </div>
       </div>

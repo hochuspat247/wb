@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
+import { LegalFooterLinks } from "@/components/legal/LegalFooterLinks";
+import { BRAND } from "@/lib/branding";
 
 const footerLinks = [
   { label: "Видео-серии", href: "/storystudio#video-series" },
@@ -22,11 +24,11 @@ export function StoryStudioFooter() {
                 <Sparkles className="h-4 w-4" />
               </span>
               <span className="text-[15px] font-bold tracking-tight text-ink">
-                Story<span className="text-violet">Studio</span>
+                Стори<span className="text-violet">Студио</span>
               </span>
             </Link>
             <p className="mt-4 max-w-xs text-sm font-medium leading-relaxed text-muted">
-              AI-студия для авторов: истории, персонажи, карта связей, главы и видео-серии из портретов героев.
+              ИИ-студия для авторов: истории, персонажи, карта связей, главы и видео-серии из портретов героев.
             </p>
           </div>
 
@@ -65,8 +67,12 @@ export function StoryStudioFooter() {
           </div>
         </div>
 
-        <div className="mt-8 border-t border-white/10 pt-5 text-center text-[11px] font-semibold leading-relaxed text-muted/80 sm:mt-12 sm:pt-6 sm:text-left sm:text-xs">
-          <p>© {new Date().getFullYear()} StoryStudio · ИП Головачев И.С. · ИНН 030403024370 · ОГРНИП 325237500009533</p>
+        <div className="mt-8 space-y-3 border-t border-white/10 pt-5 text-center text-[11px] font-semibold leading-relaxed text-muted/80 sm:mt-12 sm:pt-6 sm:text-left sm:text-xs">
+          <LegalFooterLinks
+            className="flex flex-col items-center gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:gap-x-3 sm:gap-y-1"
+            linkClassName="transition hover:text-violet"
+          />
+          <p>© {new Date().getFullYear()} {BRAND.storyStudio} · ИП Головачев И.С. · ИНН 030403024370 · ОГРНИП 325237500009533</p>
         </div>
       </div>
     </footer>

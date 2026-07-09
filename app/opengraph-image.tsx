@@ -23,15 +23,15 @@ export default function OpenGraphImage() {
           fontFamily: "Arial, sans-serif"
         }}
       >
-        <div style={{ fontSize: 28, opacity: 0.8 }}>AI для продавцов маркетплейсов</div>
+        <div style={{ fontSize: 28, opacity: 0.8 }}>ИИ для продавцов маркетплейсов</div>
         <div>
-          <div style={{ fontSize: 72, fontWeight: 800, lineHeight: 1.05 }}>MarketCard AI</div>
+          <div style={{ fontSize: 72, fontWeight: 800, lineHeight: 1.05 }}>{siteConfig.name}</div>
           <div style={{ marginTop: 24, fontSize: 34, maxWidth: 900, lineHeight: 1.3 }}>
-            Карточки и видео для WB, Ozon, Avito за 2 минуты
+            Карточки и видео для ВБ, Озон, Авито за 2 минуты
           </div>
         </div>
         <div style={{ fontSize: 24, opacity: 0.85 }}>
-          Текст · SEO · Обложка 4:5 · Видео из карточки · от {formatRub(CARD_GENERATION_PRICE_RUB)}/фото
+          Текст · СЕО · Обложка 4:5 · Видео из карточки · от {formatRub(CARD_GENERATION_PRICE_RUB)}/фото
         </div>
       </div>
     ),

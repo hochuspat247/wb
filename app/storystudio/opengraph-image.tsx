@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { formatStoryRub, STORY_GENERATION_PRICE_RUB } from "@/lib/storystudio/pricing";
+import { BRAND } from "@/lib/branding";
 import { storyStudioConfig } from "@/lib/seo/storystudio";
 
 export const runtime = "edge";
@@ -23,13 +24,13 @@ export default function StoryStudioOpenGraphImage() {
           fontFamily: "Arial, sans-serif"
         }}
       >
-        <div style={{ fontSize: 26, opacity: 0.85 }}>AI-студия для авторов</div>
+        <div style={{ fontSize: 26, opacity: 0.85 }}>ИИ-студия для авторов</div>
         <div>
           <div style={{ fontSize: 76, fontWeight: 800, lineHeight: 1.02 }}>
-            Story<span style={{ color: "#b8a6ff" }}>Studio</span>
+            Стори<span style={{ color: "#b8a6ff" }}>Студио</span>
           </div>
           <div style={{ marginTop: 22, fontSize: 34, maxWidth: 920, lineHeight: 1.25, opacity: 0.95 }}>
-            Истории · Персонажи · Карта связей · Видео-серии Veo 3.1
+            Истории · Персонажи · Карта связей · Видео-серии {BRAND.veoVersion}
           </div>
         </div>
         <div style={{ fontSize: 24, opacity: 0.88 }}>

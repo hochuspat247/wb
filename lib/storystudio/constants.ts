@@ -1,4 +1,5 @@
 import type { StoryGenre } from "@/types/storystudio";
+import { BRAND } from "@/lib/branding";
 
 export const STORY_GENRES: { id: StoryGenre; label: string; emoji: string }[] = [
   { id: "fantasy", label: "Фэнтези", emoji: "🐉" },
@@ -8,9 +9,9 @@ export const STORY_GENRES: { id: StoryGenre; label: string; emoji: string }[] = 
   { id: "horror", label: "Хоррор", emoji: "🌑" },
   { id: "drama", label: "Драма", emoji: "🎭" },
   { id: "adventure", label: "Приключения", emoji: "⚔️" },
-  { id: "dark-academia", label: "Dark academia", emoji: "📚" },
-  { id: "enemies-to-lovers", label: "Enemies to lovers", emoji: "🔥" },
-  { id: "found-family", label: "Found family", emoji: "🫂" }
+  { id: "dark-academia", label: "Тёмная академия", emoji: "📚" },
+  { id: "enemies-to-lovers", label: "Враги в любовники", emoji: "🔥" },
+  { id: "found-family", label: "Найденная семья", emoji: "🫂" }
 ];
 
 export const WORD_COUNT_PRESETS = [
@@ -35,7 +36,7 @@ export const EXAMPLE_STORIES = [
   },
   {
     type: "Вайб",
-    title: "Dark academia и forbidden magic",
+    title: "Тёмная академия и запретная магия",
     description: "Старые библиотеки, мокрый камень, опасное знание и чувство, что запретный ритуал уже начал менять тех, кто подошёл слишком близко.",
     tags: ["вайб", "академия", "запретное"]
   },
@@ -55,15 +56,15 @@ export const STORY_STATS = [
 ];
 
 export const VIDEO_ADVANTAGE_POINTS = [
-  "Google Veo 3.1 — киношное видео из портрета персонажа",
+  `${BRAND.googleVeo} ${BRAND.veoVersion} — киношное видео из портрета персонажа`,
   "Собирайте серии сцен как эпизоды вашего мира",
-  "Вертикальный формат 9:16 для Reels, Shorts и TikTok",
-  "От 152 ₽ за 4 сек — озвучка и ambient по желанию"
+  "Вертикальный формат 9:16 для Рилс, Шортс и ТикТок",
+  "От 152 ₽ за 4 сек — озвучка и фоновый звук по желанию"
 ];
 
 export const RELATION_ADVANTAGE_POINTS = [
   "Перетаскивайте героев на карте и соединяйте стрелками — Shift + drag",
   "7 типов связей: союзник, враг, любовь, семья, наставник, соперник",
-  "Описание и сила связи — AI видит вашу драматургию",
+  "Описание и сила связи — ИИ видит вашу драматургию",
   "Каждая новая глава строится с учётом отношений на карте"
 ];

@@ -9,19 +9,20 @@ import {
   createStoryStudioMetadata,
   storyStudioCreateDescription
 } from "@/lib/seo/storystudio";
+import { BRAND } from "@/lib/branding";
 
 export const metadata: Metadata = createStoryStudioMetadata({
-  title: "Создать историю с AI",
+  title: "Создать историю с ИИ",
   description: storyStudioCreateDescription,
   path: "/storystudio/create",
   keywords: [
-    "создать историю с ai",
+    "создать историю с ии",
     "генератор сюжета",
     "написать книгу онлайн",
-    "ai новелла",
+    "ии новелла",
     "создать персонажей",
-    "основа романа ai",
-    "storystudio create"
+    "основа романа ии",
+    "стористудио создать"
   ]
 });
 
@@ -37,9 +38,9 @@ export default function StoryStudioCreatePage() {
             className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-violet"
           >
             <ArrowLeft className="h-4 w-4" />
-            На главную StoryStudio
+            На главную {BRAND.storyStudio}
           </Link>
-          <h1 className="text-3xl font-bold">Создать историю с AI</h1>
+          <h1 className="text-3xl font-bold">Создать историю с ИИ</h1>
           <p className="mt-2 text-muted">{storyStudioCreateDescription}</p>
           <div className="mt-8">
             <StoryCreateForm />

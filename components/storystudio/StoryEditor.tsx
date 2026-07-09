@@ -102,7 +102,7 @@ export function StoryEditor({ story, onUpdate, onGenerateChapter, chapterLoading
             ) : (
               <Plus className="h-4 w-4" />
             )}
-            Новая глава AI
+            Новая глава ИИ
           </Button>
         </div>
       </aside>

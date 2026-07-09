@@ -317,7 +317,7 @@ export function HeroMiniGenerator() {
               </span>
               <span className="text-base font-black text-ink">Загрузите фото товара</span>
               <span className="mx-auto max-w-[260px] text-xs font-semibold leading-snug text-muted md:text-sm">
-                AI уберёт фон, подберёт стиль и соберёт демо-карточку
+                ИИ уберёт фон, подберёт стиль и соберёт демо-карточку
               </span>
               <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted/75">JPG или PNG, до 10 МБ</span>
             </button>

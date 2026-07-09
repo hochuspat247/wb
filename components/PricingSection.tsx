@@ -12,6 +12,7 @@ import {
   formatVideoPriceRub,
   getVideoMarketingPrices
 } from "@/lib/pricing";
+import { BRAND } from "@/lib/branding";
 
 const growthPack = calculatePackagePrice(5);
 const scalePack = calculatePackagePrice(20);
@@ -28,7 +29,7 @@ const plans = [
       "1 демо без входа",
       `${FREE_TRIAL_CARDS} карточки после регистрации`,
       "Без водяного знака — первая карточка",
-      "Тексты и SEO",
+      "Тексты и СЕО",
       "Базовая обложка 4:5",
       "PNG и JSON экспорт",
       `Далее — ${formatRub(CARD_GENERATION_PRICE_RUB)} за 1 фото`
@@ -45,11 +46,11 @@ const plans = [
     features: [
       "5 генераций карточек",
       "Доступ к редактору шаблонов",
-      "Название, описание и SEO-ключи",
-      "AI-обложка 4:5 для маркетплейса",
+      "Название, описание и СЕО-ключи",
+      "ИИ-обложка 4:5 для маркетплейса",
       "Экспорт PNG и JSON",
       "История всех генераций",
-      "Пресеты для WB, Ozon и Avito",
+      "Пресеты для ВБ, Озон и Авито",
       `Видео из карточки — отдельно, от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}`
     ],
     cta: "Подключить",
@@ -101,10 +102,10 @@ export function PricingSection() {
 
         <Reveal delay={2}>
           <div className="mt-10 rounded-[24px] border border-clay bg-card p-6 md:p-8" id="video-pricing">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Google Veo 3.1 Fast</p>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">{BRAND.googleVeo} {BRAND.veoVersion} Фаст</p>
             <h3 className="mt-3 text-2xl font-black text-ink">Видео из карточки товара</h3>
             <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-muted">
-              После создания карточки в кабинете можно оживить её в короткий ролик: плавный zoom, parallax и мягкое
+              После создания карточки в кабинете можно оживить её в короткий ролик: плавный зум, параллакс и мягкое
               движение без искажения текста и товара. Видео всегда без звука, оплачивается отдельно.
             </p>
 

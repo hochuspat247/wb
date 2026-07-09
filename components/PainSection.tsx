@@ -34,7 +34,7 @@ export function PainSection() {
               Карточка товара — узкое место запуска
             </h2>
             <p className="mt-6 max-w-lg text-lg font-medium leading-relaxed text-muted">
-              Товар готов, но запуск застревает на тексте, SEO, визуале и форматах площадок.
+              Товар готов, но запуск застревает на тексте, СЕО, визуале и форматах площадок.
             </p>
           </div>
         </Reveal>

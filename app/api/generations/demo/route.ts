@@ -12,6 +12,7 @@ import { createDemoGeneration } from "@/lib/server/demo-generations";
 import { getErrorMessage, logDemoGenerationError } from "@/lib/server/demo-errors";
 import { checkGuestDemoGenerationAllowed, hashDemoClientIp } from "@/lib/server/demoRateLimit";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
+import { BRAND } from "@/lib/branding";
 import type {
   GenerateImageInput,
   GenerateImageResult,
@@ -338,7 +339,7 @@ async function generateDemoImage(card: ProductCardResult, body: DemoGenerationRe
     if (!result.isFallback) return result;
   }
 
-  return createFallbackImageResult("AI-провайдеры недоступны. Показан fallback-preview.");
+  return createFallbackImageResult("ИИ-провайдеры недоступны. Показан запасной предпросмотр.");
 }
 
 function resolveImageProvider(): ImageProviderMode {
@@ -432,7 +433,7 @@ function createCleanCardSvg(card: ProductCardResult) {
         .map((item, index) => `<text x="140" y="${1010 + index * 70}" fill="#151922" font-family="Arial, sans-serif" font-size="40" font-weight="800">• ${item}</text>`)
         .join("")}
       <rect x="120" y="1190" width="360" height="78" rx="39" fill="#7cff6b"/>
-      <text x="165" y="1242" fill="#151922" font-family="Arial, sans-serif" font-size="30" font-weight="900">MarketCard AI</text>
+      <text x="165" y="1242" fill="#151922" font-family="Arial, sans-serif" font-size="30" font-weight="900">${BRAND.marketCard}</text>
     </svg>
   `;
 }

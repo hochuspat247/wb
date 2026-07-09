@@ -30,7 +30,7 @@ export async function generateGeminiProductImage(
   }
 
   if (!input.imageBase64 || !input.imageMimeType) {
-    return createFallbackResult(prompt, "Для AI-изображения нужно загруженное фото товара.", generatedAt);
+    return createFallbackResult(prompt, "Для ИИ-изображения нужно загруженное фото товара.", generatedAt);
   }
 
   const models = getModelQueue(imageMode);

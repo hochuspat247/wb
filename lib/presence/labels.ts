@@ -58,12 +58,14 @@ export const ACTION_LABELS: Record<string, string> = {
   page_view: "Открыл страницу"
 };
 
+import { BRAND } from "@/lib/branding";
+
 export function getPathLabel(path: string) {
   const pathname = path.split("#")[0] || path;
 
-  if (pathname.startsWith("/storystudio/cabinet")) return "Кабинет StoryStudio";
+  if (pathname.startsWith("/storystudio/cabinet")) return `Кабинет ${BRAND.storyStudio}`;
   if (pathname.startsWith("/storystudio/create")) return "Создание истории";
-  if (pathname.startsWith("/storystudio")) return "StoryStudio";
+  if (pathname.startsWith("/storystudio")) return BRAND.storyStudio;
   if (pathname.startsWith("/admin")) return "Админка";
   if (pathname.startsWith("/cabinet")) return "Кабинет";
   if (pathname.startsWith("/generations/")) return "Результат демо";

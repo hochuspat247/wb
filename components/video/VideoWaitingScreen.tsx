@@ -8,7 +8,7 @@ import type { VideoGenerationStatus } from "@/types/video-generation";
 
 const WAITING_STEPS = [
   "Готовим карточку",
-  "Передаём изображение в Google Veo 3.1",
+  "Передаём изображение в Гугл Вео 3.1",
   "Добавляем плавное движение",
   "Проверяем, чтобы текст не поплыл",
   "Готовим видео",

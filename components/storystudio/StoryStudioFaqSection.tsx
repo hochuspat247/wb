@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getStoryStudioFaqItems } from "@/lib/storystudio/marketingFaq";
+import { BRAND } from "@/lib/branding";
 
 const faq = getStoryStudioFaqItems();
 
@@ -11,7 +12,7 @@ export function StoryStudioFaqSection() {
   return (
     <section id="faq" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
       <h2 className="mb-2 text-center text-2xl font-bold sm:text-3xl">Частые вопросы</h2>
-      <p className="mb-10 text-center text-muted">Всё про StoryStudio, карту связей и видео-серии</p>
+      <p className="mb-10 text-center text-muted">Всё про {BRAND.storyStudio}, карту связей и видео-серии</p>
 
       <div className="mx-auto max-w-3xl divide-y divide-white/10 rounded-card border border-white/10 bg-card/40">
         {faq.map((item) => {

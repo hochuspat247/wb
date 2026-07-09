@@ -10,6 +10,7 @@ import { StoryStudioVideoDemo } from "@/components/storystudio/StoryStudioVideoD
 import { RelationsMapPreview } from "@/components/storystudio/RelationsMapPreview";
 import { StoryPaymentButton } from "@/components/storystudio/StoryPaymentButton";
 import { StoryPricingCard } from "@/components/storystudio/StoryPricingCard";
+import { BRAND } from "@/lib/branding";
 import { EXAMPLE_STORIES, RELATION_ADVANTAGE_POINTS, STORY_STATS, VIDEO_ADVANTAGE_POINTS } from "@/lib/storystudio/constants";
 import {
   STORY_GENERATION_PRICE_RUB,
@@ -24,7 +25,7 @@ const features = [
   {
     icon: Clapperboard,
     title: "Видео-серии из истории",
-    description: "Снимайте кинематографичные сцены из портретов персонажей — эксклюзив StoryStudio.",
+    description: `Снимайте кинематографичные сцены из портретов персонажей — эксклюзив ${BRAND.storyStudio}.`,
     badge: "Только у нас"
   },
   {
@@ -48,20 +49,20 @@ const features = [
   {
     icon: GitBranch,
     title: "Дерево связей",
-    description: "Рисуйте стрелки между героями — AI учитывает связи в каждой главе.",
+    description: "Рисуйте стрелки между героями — ИИ учитывает связи в каждой главе.",
     badge: "Новинка"
   },
   {
     icon: PenLine,
     title: "Редактор глав",
-    description: "Пишите и редактируйте с AI-помощником, продолжайте историю главу за главой.",
+    description: "Пишите и редактируйте с ИИ-помощником, продолжайте историю главу за главой.",
     badge: null
   },
   {
     icon: BookMarked,
-    title: "Premium 18+",
+    title: "Премиум 18+",
     description: "Выберите нужный режим и сохраняйте дерзкую интонацию истории.",
-    badge: "Premium"
+    badge: "Премиум"
   }
 ];
 
@@ -81,18 +82,18 @@ export function StoryStudioLanding() {
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet/30 bg-violet/10 px-3 py-1.5 text-xs text-violet sm:mb-6 sm:px-4 sm:text-sm">
               <Sparkles className="h-3.5 w-3.5" />
-              AI-генератор историй
+              ИИ-генератор историй
             </div>
             <h1 className="text-[1.75rem] font-bold leading-tight tracking-tight sm:text-4xl lg:text-6xl">
-              AI генератор историй: создай основу для{" "}
+              ИИ генератор историй: создай основу для{" "}
               <span className="bg-gradient-to-r from-violet via-cyan to-violet bg-clip-text text-transparent">
                 новой книги или новеллы
               </span>{" "}
               за 30 секунд
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-base text-muted sm:mt-6 sm:text-lg">
-              Персонажи, интерактивная <strong className="font-semibold text-ink">карта связей</strong>, главы, AI-портреты и{" "}
-              <span className="text-violet">видео-серии Veo 3.1</span> — в одной студии для русскоязычных авторов.
+              Персонажи, интерактивная <strong className="font-semibold text-ink">карта связей</strong>, главы, ИИ-портреты и{" "}
+              <span className="text-violet">видео-серии {BRAND.veoVersion}</span> — в одной студии для русскоязычных авторов.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
               <Link href="/storystudio/create" className="w-full sm:w-auto">
@@ -120,14 +121,14 @@ export function StoryStudioLanding() {
               <div className="text-center lg:text-left">
                 <span className="inline-flex items-center gap-2 rounded-full border border-violet/40 bg-violet/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-violet">
                   <Film className="h-3.5 w-3.5" />
-                  Только в StoryStudio
+                  Только в {BRAND.storyStudio}
                 </span>
                 <h2 className="mt-4 text-2xl font-bold sm:text-3xl lg:text-4xl">
                   Видео-серии из вашей истории
                 </h2>
                 <p className="mt-4 text-muted">
-                  Превратите портреты персонажей в кинематографичные сцены через Google Veo 3.1 — собирайте эпизоды
-                  как сериал для Reels, Shorts и TikTok.
+                  Превратите портреты персонажей в кинематографичные сцены через {BRAND.googleVeo} {BRAND.veoVersion} — собирайте эпизоды
+                  как сериал для Рилс, Шортс и ТикТок.
                 </p>
                 <ul className="mt-6 space-y-3">
                   {VIDEO_ADVANTAGE_POINTS.map((point) => (
@@ -152,7 +153,7 @@ export function StoryStudioLanding() {
               <div className="relative flex items-center justify-center pt-2 lg:justify-end lg:pt-0">
                 <StoryStudioVideoDemo />
                 <div className="absolute right-0 top-0 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-xs font-semibold text-cyan">
-                  Veo 3.1
+                  {BRAND.veoVersion}
                 </div>
               </div>
             </div>
@@ -171,7 +172,7 @@ export function StoryStudioLanding() {
                   <GitBranch className="h-3.5 w-3.5" />
                   Карта связей
                 </span>
-                <h2 className="mt-4 text-2xl font-bold sm:text-3xl lg:text-4xl">Свяжи героев — AI напишет с учётом интриг</h2>
+                <h2 className="mt-4 text-2xl font-bold sm:text-3xl lg:text-4xl">Свяжи героев — ИИ напишет с учётом интриг</h2>
                 <p className="mt-4 text-muted">
                   Не список в заметках, а живая карта: перетащите персонажей, проведите стрелку, выберите тип связи —
                   и каждая новая глава будет опираться на вашу драматургию.
@@ -324,9 +325,9 @@ export function StoryStudioLanding() {
         {/* CTA */}
         <section className="mx-auto max-w-content px-4 pb-16 sm:px-6 sm:pb-24">
           <div className="rounded-container border border-violet/30 bg-gradient-to-br from-violet/20 via-card to-cyan/10 p-6 text-center sm:p-10">
-            <h2 className="text-2xl font-bold sm:text-3xl">Продолжите уже в StoryStudio</h2>
+            <h2 className="text-2xl font-bold sm:text-3xl">Продолжите уже в {BRAND.storyStudio}</h2>
             <p className="mx-auto mt-3 max-w-xl text-muted">
-              Соберите персонажей, мир и главы в одной рабочей зоне, а затем развивайте историю дальше с помощью AI.
+              Соберите персонажей, мир и главы в одной рабочей зоне, а затем развивайте историю дальше с помощью ИИ.
             </p>
             <Link href="/storystudio/create" className="mt-6 inline-block w-full sm:w-auto">
               <Button size="lg" className="w-full !border-violet !bg-violet !text-white sm:w-auto">

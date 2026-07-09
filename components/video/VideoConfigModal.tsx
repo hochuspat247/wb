@@ -26,6 +26,7 @@ import type {
   VideoMotionStyle,
   VideoQuality
 } from "@/types/video-generation";
+import { BRAND } from "@/lib/branding";
 
 const motionStyleOptions: Array<{ value: VideoMotionStyle; label: string; hint: string }> = [
   { value: "soft_zoom", label: "Мягкий zoom", hint: "Лучше сохраняет текст на карточке" },
@@ -172,11 +173,11 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
           <X size={16} />
         </button>
 
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Google Veo 3.1 Fast</p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">{BRAND.googleVeo} {BRAND.veoVersion} Фаст</p>
         <h3 className="mt-3 text-2xl font-black text-ink">Видео из вашей карточки</h3>
         <p className="mt-2 text-sm font-medium text-muted">
           Мы анимируем уже готовую карточку, сохранив товар, текст, цвета и композицию. Формат карточки 4:5 отправляется
-          в Veo как вертикальное 9:16. Минимум 4 сек — ограничение Veo 3.1.
+          в {BRAND.veoVersion} как вертикальное 9:16. Минимум 4 сек — ограничение {BRAND.veoVersion}.
         </p>
 
         <div className="mt-6 grid gap-5 md:grid-cols-[180px_1fr]">
@@ -211,7 +212,7 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
               </Select>
               {(aspectRatio === "4:5" || aspectRatio === "1:1") ? (
                 <span className="text-[11px] font-normal leading-relaxed text-muted/90">
-                  Veo не поддерживает 4:5 напрямую — мы отправляем вертикальное 9:16, чтобы ролик не получался
+                  {BRAND.veoVersion} не поддерживает 4:5 напрямую — мы отправляем вертикальное 9:16, чтобы ролик не получался
                   горизонтальным.
                 </span>
               ) : null}
@@ -227,7 +228,7 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
               <span>
                 Сгенерировать со звуком
                 <span className="mt-1 block text-[11px] font-normal leading-relaxed text-muted/90">
-                  Опционально. Ambient/звук сцены от Veo. Дороже на ×1.5. Для карточек обычно лучше без звука.
+                  Опционально. Фоновый звук сцены от {BRAND.veoVersion}. Дороже на ×1.5. Для карточек обычно лучше без звука.
                 </span>
               </span>
             </label>

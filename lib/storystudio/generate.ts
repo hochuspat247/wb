@@ -212,7 +212,7 @@ async function buildFoundationProject(input: CreateStoryInput): Promise<StoryPro
   }
 
   if (isFoundationResponseEmpty(data)) {
-    throw new Error("AI не вернул содержимое истории. Попробуйте ещё раз.");
+    throw new Error("ИИ не вернул содержимое истории. Попробуйте ещё раз.");
   }
 
   const story = await ensureFirstChapter(buildStoryFromFoundation(input, data));
@@ -259,7 +259,7 @@ export async function generateStoryCharacter(
   const data = parseJson<{ character: RawCharacter; relations: RawRelation[] }>(rawText);
   const mapped = mapCharacters([data.character])[0];
   if (!mapped) {
-    throw new Error("AI не вернул персонажа.");
+    throw new Error("ИИ не вернул персонажа.");
   }
 
   const character: StoryCharacter = {
@@ -286,7 +286,7 @@ export async function generateStoryChapter(
   const content = String(data.content ?? "").trim();
 
   if (!content) {
-    throw new Error("AI не вернул текст главы.");
+    throw new Error("ИИ не вернул текст главы.");
   }
 
   const chapter: StoryChapter = {

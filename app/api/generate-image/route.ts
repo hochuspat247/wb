@@ -113,7 +113,7 @@ export async function POST(request: Request) {
 
     if (provider === "html" || input.imageProvider === "html" || input.imageMode === "html") {
       return NextResponse.json(
-        createHtmlFallback("AI-изображение не запрашивалось. Показан fallback-preview.", "HTML-preview выбран в настройках изображения.")
+        createHtmlFallback("ИИ-изображение не запрашивалось. Показан запасной предпросмотр.", "HTML-предпросмотр выбран в настройках изображения.")
       );
     }
 
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
     const result = await generateWithProvider(provider, input);
     return NextResponse.json({ ...result, quota });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Не удалось сгенерировать AI-изображение.";
+    const message = error instanceof Error ? error.message : "Не удалось сгенерировать ИИ-изображение.";
     console.error("[MarketCard AI] generate-image failed:", message);
 
     if (message === "IMAGE_QUOTA_EXCEEDED") {
@@ -193,7 +193,7 @@ async function generateWithProvider(provider: ImageProviderMode, input: Generate
     }
 
     return createHtmlFallback(
-      "AI-провайдеры недоступны или вернули ошибку. Показан fallback-preview.",
+      "ИИ-провайдеры недоступны или вернули ошибку. Показан запасной предпросмотр.",
       input.productDescription
     );
   }
@@ -321,16 +321,16 @@ async function parseGenerateImageRequest(request: Request): Promise<GenerateImag
     };
   }
 
-  throw new Error("Для AI-изображения нужны текст карточки и загруженное фото товара.");
+  throw new Error("Для ИИ-изображения нужны текст карточки и загруженное фото товара.");
 }
 
 function validateGenerateImageInput(input: GenerateImageRequest) {
   if (!input.productDescription.trim() || !input.title.trim()) {
-    return "Для AI-изображения нужны описание товара и текст карточки.";
+    return "Для ИИ-изображения нужны описание товара и текст карточки.";
   }
 
   if (!input.imageBase64 || !input.imageMimeType) {
-    return "Для AI-изображения нужно загруженное фото товара.";
+    return "Для ИИ-изображения нужно загруженное фото товара.";
   }
 
   if (!SUPPORTED_IMAGE_TYPES.includes(input.imageMimeType)) {

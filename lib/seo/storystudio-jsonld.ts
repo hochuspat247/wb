@@ -1,3 +1,4 @@
+import { BRAND } from "@/lib/branding";
 import { absoluteUrl, siteConfig } from "@/lib/seo";
 import { storyStudioConfig } from "@/lib/seo/storystudio";
 import { getStoryStudioFaqItems } from "@/lib/storystudio/marketingFaq";
@@ -13,7 +14,7 @@ import { VIDEO_STANDARD_PRICE_4_SEC } from "@/config/video-pricing";
 function buildStoryOfferCatalog() {
   return {
     "@type": "OfferCatalog",
-    name: "Тарифы StoryStudio",
+    name: `Тарифы ${BRAND.storyStudio}`,
     itemListElement: [
       {
         "@type": "Offer",
@@ -24,7 +25,7 @@ function buildStoryOfferCatalog() {
         url: absoluteUrl("/storystudio/create"),
         itemOffered: {
           "@type": "Service",
-          name: "AI-основа истории",
+          name: "ИИ-основа истории",
           description: "Синопсис, персонажи, план сюжета и первая глава"
         }
       },
@@ -37,7 +38,7 @@ function buildStoryOfferCatalog() {
         url: absoluteUrl("/storystudio#pricing"),
         itemOffered: {
           "@type": "Service",
-          name: "Генерация контента StoryStudio"
+          name: `Генерация контента ${BRAND.storyStudio}`
         }
       },
       ...STORY_PACKAGES.map((pack) => {
@@ -80,12 +81,12 @@ function buildStorySoftwareApplication(url: string) {
       description: `От ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию, пакеты со скидкой`
     },
     featureList: [
-      "AI-генерация основы истории по одной идее",
+      "ИИ-генерация основы истории по одной идее",
       "Персонажи с портретами и описаниями",
       "Интерактивная карта связей между героями",
       "Редактор глав с учётом отношений на карте",
-      "Видео-серии из портретов через Google Veo 3.1",
-      "Premium 18+ режим для взрослых жанров",
+      `Видео-серии из портретов через ${BRAND.googleVeo} ${BRAND.veoVersion}`,
+      "Премиум 18+ режим для взрослых жанров",
       "Оплата без подписки — только за результат"
     ],
     audience: {
@@ -163,7 +164,7 @@ export function buildStoryStudioHomeJsonLd() {
         },
         about: {
           "@type": "Thing",
-          name: "AI генератор художественных историй"
+          name: "ИИ генератор художественных историй"
         },
         primaryImageOfPage: {
           "@type": "ImageObject",
@@ -172,15 +173,15 @@ export function buildStoryStudioHomeJsonLd() {
       },
       buildBreadcrumbs([
         { name: "Главная", path: "/" },
-        { name: "StoryStudio", path: "/storystudio" }
+        { name: BRAND.storyStudio, path: "/storystudio" }
       ]),
       buildStorySoftwareApplication(pageUrl),
       buildStoryOfferCatalog(),
       buildFaqPage(),
       {
         "@type": "Service",
-        name: "Видео-серии из персонажей StoryStudio",
-        description: `Кинематографичные сцены из AI-портретов героев через Google Veo 3.1. От ${VIDEO_STANDARD_PRICE_4_SEC} сек, формат 9:16 для соцсетей.`,
+        name: `Видео-серии из персонажей ${BRAND.storyStudio}`,
+        description: `Кинематографичные сцены из ИИ-портретов героев через ${BRAND.googleVeo} ${BRAND.veoVersion}. От ${VIDEO_STANDARD_PRICE_4_SEC} сек, формат 9:16 для соцсетей.`,
         provider: {
           "@type": "Organization",
           name: storyStudioConfig.name
@@ -214,10 +215,10 @@ export function buildStoryStudioCreateJsonLd() {
     "@graph": [
       {
         "@type": "WebPage",
-        name: "Создать историю с AI — StoryStudio",
+        name: `Создать историю с ИИ — ${BRAND.storyStudio}`,
         url: pageUrl,
         description:
-          "Форма создания истории: название, жанры, идея и объём. AI сгенерирует персонажей, мир и план сюжета.",
+          "Форма создания истории: название, жанры, идея и объём. ИИ сгенерирует персонажей, мир и план сюжета.",
         inLanguage: "ru-RU",
         isPartOf: {
           "@type": "WebSite",
@@ -226,13 +227,13 @@ export function buildStoryStudioCreateJsonLd() {
         }
       },
       buildBreadcrumbs([
-        { name: "StoryStudio", path: "/storystudio" },
+        { name: BRAND.storyStudio, path: "/storystudio" },
         { name: "Создать историю", path: "/storystudio/create" }
       ]),
       {
         "@type": "HowTo",
-        name: "Как создать историю в StoryStudio",
-        description: "Пошаговое создание AI-основы художественного произведения",
+        name: `Как создать историю в ${BRAND.storyStudio}`,
+        description: "Пошаговое создание ИИ-основы художественного произведения",
         step: [
           {
             "@type": "HowToStep",
@@ -244,7 +245,7 @@ export function buildStoryStudioCreateJsonLd() {
             "@type": "HowToStep",
             position: 2,
             name: "Запустите генерацию",
-            text: "AI создаст синопсис, мир, персонажей, связи и план сюжета."
+            text: "ИИ создаст синопсис, мир, персонажей, связи и план сюжета."
           },
           {
             "@type": "HowToStep",

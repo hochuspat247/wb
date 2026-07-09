@@ -5,6 +5,7 @@ import { HashViewTracker } from "@/components/analytics/HashViewTracker";
 import { PresenceTracker } from "@/components/analytics/PresenceTracker";
 import { SectionViewTracker } from "@/components/analytics/SectionViewTracker";
 import { CookieBanner } from "@/components/CookieBanner";
+import { TopMailRu } from "@/components/analytics/TopMailRu";
 import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { VkIdCallbackHandler } from "@/components/auth/VkIdCallbackHandler";
@@ -33,6 +34,7 @@ export default function RootLayout({
           <HashViewTracker />
           <PresenceTracker />
           <YandexMetrika />
+          <TopMailRu />
           <VkIdCallbackHandler />
           <CookieBanner />
         </AuthProvider>

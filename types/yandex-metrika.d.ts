@@ -6,6 +6,11 @@ declare global {
       target?: string | Record<string, unknown>,
       params?: Record<string, unknown>
     ) => void;
+    _tmr?: Array<{
+      id: string;
+      type: string;
+      start: number;
+    }>;
   }
 }
 

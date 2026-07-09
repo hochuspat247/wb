@@ -40,7 +40,7 @@ ${premium}
       "name": "имя",
       "role": "роль в истории",
       "age": "возраст",
-      "appearance": "внешность 2-3 предложения",
+      "appearance": "внешность 2-3 предложения — конкретно и визуально для иллюстрации: форма тела, цвет, одежда, отличительные черты (Колобок = круглый пшеничный блин с лицом, не человек)",
       "personality": "характер",
       "backstory": "предыстория",
       "motivation": "мотивация",
@@ -136,5 +136,50 @@ ${relationsBlock}
 }
 
 export function buildCharacterPortraitPrompt(character: StoryCharacter, story: StoryProject) {
-  return `Portrait illustration for a literary character. ${character.name}, ${character.role}. ${character.appearance}. Mood and world: ${story.world.tone}, ${story.world.setting}. Style: cinematic digital art, rich colors, character sheet portrait, no text, no watermark, vertical 3:4 composition, detailed face and costume.`;
+  const subjectHint = getPortraitSubjectHint(character);
+  const appearance = character.appearance.trim() || character.role;
+  const tags = character.tags.length ? `Traits: ${character.tags.join(", ")}.` : "";
+
+  return [
+    "Character portrait illustration for a story.",
+    `Character name: ${character.name}.`,
+    `Role: ${character.role}.`,
+    `Visual appearance (follow exactly): ${appearance}.`,
+    tags,
+    subjectHint,
+    `World mood: ${story.world.tone}, ${story.world.setting}.`,
+    "Style: cinematic digital art, rich colors, single character centered, storybook illustration quality.",
+    "Composition: vertical 3:4, full character visible, clean background, no text, no watermark, no collage.",
+    "Important: depict THIS specific character, not a generic human unless the character is human."
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function getPortraitSubjectHint(character: StoryCharacter) {
+  const text = [character.name, character.role, character.appearance, ...character.tags]
+    .join(" ")
+    .toLowerCase();
+
+  if (/колобок|kolobok/.test(text)) {
+    return [
+      "Subject type: Russian folklore Kolobok — a round golden-brown baked bread bun with a cheerful face on the sphere,",
+      "small stubby limbs, NO human body, NO girl, NO anime character, NOT a person in costume.",
+      "Cute fairy-tale food character rolling through a forest."
+    ].join(" ");
+  }
+
+  if (/лис|fox|волк|wolf|медвед|bear|заяц|hare|rabbit|кот|cat|собак|dog|птиц|bird|животн|animal|звер/.test(text)) {
+    return "Subject type: anthropomorphic or realistic animal character. Show the correct species, not a human.";
+  }
+
+  if (/робот|robot|голем|golem|дух|spirit|призрак|ghost|монстр|monster|дракон|dragon|гоблин|goblin|эльф|elf|фея|fairy|существо|creature/.test(text)) {
+    return "Subject type: fantasy creature or non-human entity. Match the described form exactly, not a human substitute.";
+  }
+
+  if (/девочк|мальчик|женщин|мужчин|человек|person|hero|heroine|girl|boy|woman|man|аниме|anime/.test(text)) {
+    return "Subject type: human character portrait with accurate face, age, hair and clothing from the description.";
+  }
+
+  return "Subject type: match the described physical form literally — if non-human, do not replace with a human.";
 }

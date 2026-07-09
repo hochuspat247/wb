@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BookMarked, Clapperboard, Film, GitBranch, ImageIcon, PenLine, Play, Sparkles, Users, Zap } from "lucide-react";
+import { ArrowRight, BookMarked, Clapperboard, Film, GitBranch, ImageIcon, PenLine, Sparkles, Users, Zap } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { StoryStudioHeader } from "@/components/storystudio/StoryStudioHeader";
 import { StoryStudioFooter } from "@/components/storystudio/StoryStudioFooter";
 import { StoryStudioFaqSection } from "@/components/storystudio/StoryStudioFaqSection";
+import { StoryStudioVideoDemo } from "@/components/storystudio/StoryStudioVideoDemo";
+import { RelationsMapPreview } from "@/components/storystudio/RelationsMapPreview";
 import { StoryPaymentButton } from "@/components/storystudio/StoryPaymentButton";
+import { StoryPricingCard } from "@/components/storystudio/StoryPricingCard";
 import { EXAMPLE_STORIES, RELATION_ADVANTAGE_POINTS, STORY_STATS, VIDEO_ADVANTAGE_POINTS } from "@/lib/storystudio/constants";
 import {
   STORY_GENERATION_PRICE_RUB,
@@ -146,26 +149,8 @@ export function StoryStudioLanding() {
                   </span>
                 </div>
               </div>
-              <div className="relative">
-                <div className="grid gap-3">
-                  {[1, 2, 3].map((n) => (
-                    <div
-                      key={n}
-                      className="flex items-center gap-4 rounded-card border border-white/10 bg-card/80 p-4 backdrop-blur-sm"
-                      style={{ marginLeft: `${(n - 1) * 12}px` }}
-                    >
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet/20 text-violet">
-                        <Play className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-ink">Серия {n}</p>
-                        <p className="text-xs text-muted">
-                          {n === 1 ? "Портрет → кинематографичная сцена" : n === 2 ? "Глава → видео-эпизод" : "Серия для соцсетей 9:16"}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="relative flex items-center justify-center">
+                <StoryStudioVideoDemo />
                 <div className="absolute -right-4 -top-4 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-xs font-semibold text-cyan">
                   Veo 3.1
                 </div>
@@ -283,68 +268,51 @@ export function StoryStudioLanding() {
             {formatStoryRub(calculateStoryPackagePrice(10).total)}
           </p>
 
-          <div className="mb-12 grid gap-4 lg:grid-cols-3">
+          <h3 className="mb-4 text-center text-sm font-semibold uppercase tracking-wider text-muted">Начало работы</h3>
+          <div className="mb-12 grid gap-4 sm:grid-cols-2 lg:mx-auto lg:max-w-3xl">
             {STORY_PRICING_PLANS.map((plan) => (
-              <div
+              <StoryPricingCard
                 key={plan.id}
-                className={`rounded-card border p-6 ${
-                  plan.highlighted ? "border-violet bg-violet/10" : "border-white/10 bg-card"
-                }`}
-              >
-                <h3 className="text-lg font-semibold">{plan.name}</h3>
-                <div className="mt-2">
-                  <span className="text-3xl font-bold text-violet">{plan.price}</span>
-                  {plan.period && <span className="ml-2 text-sm text-muted">{plan.period}</span>}
-                </div>
-                <ul className="mt-5 space-y-2">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-sm text-muted">
-                      <span className="mt-1 text-violet">✓</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-6">
-                  {plan.id === "free" ? (
+                name={plan.name}
+                price={plan.price}
+                period={plan.period || undefined}
+                features={[...plan.features]}
+                highlighted={plan.highlighted}
+                footer={
+                  plan.id === "free" ? (
                     <Link href="/storystudio/create">
-                      <Button className="w-full !bg-violet !text-white !border-violet">{plan.cta}</Button>
+                      <Button className="w-full !border-violet !bg-violet !text-white">{plan.cta}</Button>
                     </Link>
-                  ) : plan.id === "pack" ? (
-                    <StoryPaymentButton count={50} className="w-full !bg-violet !text-white !border-violet">
-                      {plan.cta}
-                    </StoryPaymentButton>
                   ) : (
-                    <StoryPaymentButton count={10} className="w-full !bg-violet !text-white !border-violet">
+                    <StoryPaymentButton count={1} className="w-full !border-violet !bg-violet !text-white">
                       {plan.cta}
                     </StoryPaymentButton>
-                  )}
-                </div>
-              </div>
+                  )
+                }
+              />
             ))}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <h3 className="mb-4 text-center text-sm font-semibold uppercase tracking-wider text-muted">Пакеты генераций</h3>
+          <div className="grid gap-4 lg:grid-cols-3">
             {STORY_PACKAGES.map((pkg) => {
               const price = calculateStoryPackagePrice(pkg.count);
+
               return (
-                <div key={pkg.id} className="rounded-card border border-white/10 bg-card p-5">
-                  {pkg.badge && (
-                    <span className="mb-2 inline-block rounded-full bg-violet/20 px-2 py-0.5 text-xs text-violet">
-                      {pkg.badge}
-                    </span>
-                  )}
-                  <h4 className="font-semibold">{pkg.label}</h4>
-                  <p className="text-2xl font-bold text-violet">{formatStoryRub(price.total)}</p>
-                  <p className="text-xs text-muted">
-                    {formatStoryRub(price.pricePerUnit)}/ген · −{price.savingsPercent}%
-                  </p>
-                  <p className="mt-2 text-sm text-muted">{pkg.description}</p>
-                  <div className="mt-4">
-                    <StoryPaymentButton count={pkg.count} variant="secondary" className="w-full">
+                <StoryPricingCard
+                  key={pkg.id}
+                  name={pkg.label}
+                  price={formatStoryRub(price.total)}
+                  period={`${formatStoryRub(price.pricePerUnit)}/ген · −${price.savingsPercent}%`}
+                  features={pkg.features}
+                  badge={pkg.badge}
+                  highlighted={Boolean(pkg.badge)}
+                  footer={
+                    <StoryPaymentButton count={pkg.count} className="w-full !border-violet !bg-violet !text-white">
                       Купить {pkg.count}
                     </StoryPaymentButton>
-                  </div>
-                </div>
+                  }
+                />
               );
             })}
           </div>
@@ -370,92 +338,6 @@ export function StoryStudioLanding() {
       </main>
 
       <StoryStudioFooter />
-    </div>
-  );
-}
-
-function RelationsMapPreview() {
-  const nodes = [
-    { id: "a", x: 70, y: 90, label: "Аня", color: "#8C7BFF" },
-    { id: "b", x: 250, y: 70, label: "Макс", color: "#6EDCFF" },
-    { id: "c", x: 160, y: 210, label: "Ворон", color: "#ff6b8a" }
-  ];
-
-  const edges = [
-    { from: 0, to: 1, color: "#ff8fd4", label: "Любовь" },
-    { from: 0, to: 2, color: "#ff6b8a", label: "Враг" },
-    { from: 1, to: 2, color: "#ffd56e", label: "Наставник" }
-  ];
-
-  return (
-    <div className="relative mx-auto max-w-md">
-      <div className="rounded-card border border-white/10 bg-[#0a0812]/80 p-4 backdrop-blur-sm">
-        <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-muted">Интерактивная карта</p>
-        <svg viewBox="0 0 320 260" className="h-auto w-full">
-          <defs>
-            {["lover", "enemy", "mentor"].map((id, index) => (
-              <marker
-                key={id}
-                id={`preview-arrow-${id}`}
-                markerWidth="7"
-                markerHeight="7"
-                refX="6"
-                refY="3.5"
-                orient="auto"
-              >
-                <path d="M0,0 L7,3.5 L0,7 Z" fill={edges[index].color} />
-              </marker>
-            ))}
-          </defs>
-
-          {edges.map((edge, index) => {
-            const from = nodes[edge.from];
-            const to = nodes[edge.to];
-            const markerIds = ["preview-arrow-lover", "preview-arrow-enemy", "preview-arrow-mentor"];
-            const midX = (from.x + to.x) / 2;
-            const midY = (from.y + to.y) / 2;
-
-            return (
-              <g key={`${edge.from}-${edge.to}`}>
-                <line
-                  x1={from.x}
-                  y1={from.y}
-                  x2={to.x}
-                  y2={to.y}
-                  stroke={edge.color}
-                  strokeWidth={2}
-                  strokeOpacity={0.8}
-                  markerEnd={`url(#${markerIds[index]})`}
-                />
-                <text x={midX} y={midY - 6} textAnchor="middle" className="fill-muted text-[10px]">
-                  {edge.label}
-                </text>
-              </g>
-            );
-          })}
-
-          {nodes.map((node) => (
-            <g key={node.id}>
-              <circle cx={node.x} cy={node.y} r={30} fill="#171C26" stroke={node.color} strokeWidth={2} />
-              <text x={node.x} y={node.y + 4} textAnchor="middle" className="fill-ink text-[12px] font-semibold">
-                {node.label.slice(0, 1)}
-              </text>
-              <text x={node.x} y={node.y + 46} textAnchor="middle" className="fill-muted text-[10px]">
-                {node.label}
-              </text>
-            </g>
-          ))}
-        </svg>
-        <div className="mt-3 flex flex-wrap justify-center gap-2 text-[10px] text-muted">
-          <span className="rounded-full border border-white/10 px-2 py-1">Союзник</span>
-          <span className="rounded-full border border-white/10 px-2 py-1">Любовь</span>
-          <span className="rounded-full border border-white/10 px-2 py-1">Враг</span>
-          <span className="rounded-full border border-white/10 px-2 py-1">Семья</span>
-        </div>
-      </div>
-      <div className="absolute -left-2 top-6 rounded-full border border-violet/30 bg-violet/15 px-3 py-1 text-xs font-semibold text-violet">
-        Drag & drop
-      </div>
     </div>
   );
 }

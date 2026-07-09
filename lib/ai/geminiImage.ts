@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { buildImagePrompt } from "@/lib/ai/imagePrompt";
+import { formatImageProviderError, isGeminiQuotaError } from "@/lib/ai/imageGenerationErrors";
 import type { GenerateImageInput, GenerateImageResult, ImageGenerationMode } from "@/types/product-card";
 
 type GeminiImageOutput = {
@@ -57,7 +58,7 @@ export async function generateGeminiProductImage(
     }
   }
 
-  return createFallbackResult(prompt, errors.join(" | "), generatedAt);
+  return createFallbackResult(prompt, summarizeGeminiErrors(errors), generatedAt);
 }
 
 export async function generateGeminiPromptImage(
@@ -110,11 +111,30 @@ export async function generateGeminiPromptImage(
 
       errors.push(`${model}: empty image response`);
     } catch (error) {
-      errors.push(`${model}: ${formatError(error)}`);
+      const message = formatError(error);
+      errors.push(`${model}: ${message}`);
+      if (isGeminiQuotaError(message)) {
+        break;
+      }
     }
   }
 
-  return createFallbackResult(trimmedPrompt, errors.join(" | ") || "Gemini не вернул изображение.", generatedAt);
+  return createFallbackResult(trimmedPrompt, summarizeGeminiErrors(errors), generatedAt);
+}
+
+function summarizeGeminiErrors(errors: string[]) {
+  const formatted = errors.map((error) => formatImageProviderError(error));
+  const unique = formatted.filter((error, index) => formatted.indexOf(error) === index);
+
+  if (!unique.length) {
+    return "Gemini не вернул изображение.";
+  }
+
+  if (unique.every((error) => isGeminiQuotaError(error) || error.includes("квота Gemini"))) {
+    return unique[0];
+  }
+
+  return unique.join(" ");
 }
 
 async function callGeminiImageModel(input: GenerateImageInput, prompt: string, model: string) {
@@ -175,10 +195,6 @@ function createFallbackResult(prompt: string, error: string, generatedAt: string
 }
 
 function formatError(error: unknown) {
-  if (!(error instanceof Error)) {
-    return "unknown error";
-  }
-
-  return error.message;
+  return formatImageProviderError(error);
 }
 

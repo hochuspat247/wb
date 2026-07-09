@@ -21,8 +21,10 @@ import { StoryStudioFooter } from "@/components/storystudio/StoryStudioFooter";
 import { CharacterGrid } from "@/components/storystudio/CharacterGrid";
 import { RelationshipTree } from "@/components/storystudio/RelationshipTree";
 import { StoryEditor } from "@/components/storystudio/StoryEditor";
+import { StoryOverviewEditor } from "@/components/storystudio/StoryOverviewEditor";
 import { StoryVideoSeries } from "@/components/storystudio/StoryVideoSeries";
 import { StoryPaymentButton } from "@/components/storystudio/StoryPaymentButton";
+import { StoryPricingCard } from "@/components/storystudio/StoryPricingCard";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import {
@@ -332,38 +334,11 @@ export function StoryStudioCabinet() {
                       </div>
                     )}
 
-                    <div className="rounded-card border border-white/10 bg-card p-6">
-                      <h2 className="text-xl font-bold">{activeStory.title}</h2>
-                      <p className="mt-1 text-sm text-violet">{activeStory.hook}</p>
-                      <p className="mt-4 text-muted">{activeStory.synopsis}</p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {activeStory.themes.map((theme) => (
-                          <span key={theme} className="rounded-full bg-white/5 px-2.5 py-1 text-xs">
-                            {theme}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-card border border-white/10 bg-card p-5">
-                        <h3 className="font-semibold">Мир</h3>
-                        <p className="mt-2 text-sm text-muted">{activeStory.world.setting}</p>
-                        <p className="mt-1 text-xs text-muted">Тон: {activeStory.world.tone}</p>
-                      </div>
-                      <div className="rounded-card border border-white/10 bg-card p-5">
-                        <h3 className="font-semibold">План сюжета</h3>
-                        {activeStory.outline.length > 0 ? (
-                          <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm text-muted">
-                            {activeStory.outline.map((item) => (
-                              <li key={item}>{item}</li>
-                            ))}
-                          </ol>
-                        ) : (
-                          <p className="mt-2 text-sm text-muted">План сюжета пока не сгенерирован.</p>
-                        )}
-                      </div>
-                    </div>
+                    <StoryOverviewEditor
+                      story={activeStory}
+                      onUpdate={handleStoryUpdate}
+                      onError={setError}
+                    />
                   </div>
                 )}
 
@@ -442,15 +417,22 @@ export function StoryStudioCabinet() {
                     <div className="grid gap-4 sm:grid-cols-3">
                       {STORY_PACKAGES.map((pkg) => {
                         const price = calculateStoryPackagePrice(pkg.count);
+
                         return (
-                          <div key={pkg.id} className="rounded-card border border-white/10 bg-card p-5">
-                            <h4 className="font-semibold">{pkg.label}</h4>
-                            <p className="text-2xl font-bold text-violet">{formatStoryRub(price.total)}</p>
-                            <p className="text-xs text-muted">−{price.savingsPercent}%</p>
-                            <StoryPaymentButton count={pkg.count} className="mt-4 w-full !bg-violet !text-white !border-violet">
-                              Купить
-                            </StoryPaymentButton>
-                          </div>
+                          <StoryPricingCard
+                            key={pkg.id}
+                            name={pkg.label}
+                            price={formatStoryRub(price.total)}
+                            period={`${formatStoryRub(price.pricePerUnit)}/ген · −${price.savingsPercent}%`}
+                            features={pkg.features}
+                            badge={pkg.badge}
+                            highlighted={Boolean(pkg.badge)}
+                            footer={
+                              <StoryPaymentButton count={pkg.count} className="w-full !border-violet !bg-violet !text-white">
+                                Купить {pkg.count}
+                              </StoryPaymentButton>
+                            }
+                          />
                         );
                       })}
                     </div>

@@ -145,6 +145,9 @@ export type PromptOnlyImageOptions = {
   resolution?: "1k" | "2k" | "4k";
   outputFormat?: "png" | "jpeg" | "webp";
   model?: "nb2" | "gpt2";
+  /** Проверять только пользовательский текст, не системный AI-промпт на английском */
+  contentPolicyText?: string;
+  skipContentPolicy?: boolean;
 };
 
 export async function generateNanoBananaExpertFromPrompt(
@@ -157,17 +160,19 @@ export async function generateNanoBananaExpertFromPrompt(
     return createFallbackResult(prompt, "Пустой промпт для изображения.", generatedAt);
   }
 
-  const policy = await assessGenerationContentPolicy({
-    productDescription: prompt,
-    category: "character portrait",
-    title: "portrait",
-    benefits: [],
-    infographicTexts: [],
-    keywords: []
-  });
+  if (!options.skipContentPolicy) {
+    const policy = await assessGenerationContentPolicy({
+      productDescription: options.contentPolicyText || options.prompt,
+      category: "character portrait",
+      title: "portrait",
+      benefits: [],
+      infographicTexts: [],
+      keywords: []
+    });
 
-  if (!policy.allowed) {
-    return createFallbackResult(prompt, policy.error, generatedAt);
+    if (!policy.allowed) {
+      return createFallbackResult(prompt, policy.error, generatedAt);
+    }
   }
 
   if (!isApiKeyConfigured()) {

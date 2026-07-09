@@ -28,7 +28,7 @@ export function CharacterGrid({
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {characters.map((character) => {
         const selected = selectedId === character.id;
         const imageSrc = character.imageBase64
@@ -39,11 +39,11 @@ export function CharacterGrid({
           <article
             key={character.id}
             onClick={() => onSelect(character.id)}
-            className={`group cursor-pointer overflow-hidden rounded-card border transition ${
+            className={`group flex cursor-pointer flex-col overflow-hidden rounded-card border transition ${
               selected ? "border-violet bg-violet/10" : "border-white/10 bg-card hover:border-violet/30"
             }`}
           >
-            <div className="relative aspect-[3/4] bg-sand">
+            <div className="relative aspect-[3/4] shrink-0 bg-sand">
               {imageSrc ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageSrc} alt={character.name} className="h-full w-full object-cover" />
@@ -59,29 +59,31 @@ export function CharacterGrid({
               </div>
             </div>
 
-            <div className="space-y-2 p-4">
+            <div className="flex flex-1 flex-col p-4">
               <p className="line-clamp-2 text-sm text-muted">{character.personality}</p>
-              <div className="flex flex-wrap gap-1">
+              <div className="mt-2 flex flex-wrap gap-1">
                 {character.tags.slice(0, 3).map((tag) => (
                   <span key={tag} className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-muted">
                     {tag}
                   </span>
                 ))}
               </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                className="w-full"
-                disabled={portraitLoadingId === character.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onGeneratePortrait(character.id);
-                }}
-              >
-                <Wand2 className="h-3.5 w-3.5" />
-                {portraitLoadingId === character.id ? "Рисуем..." : "Портрет AI"}
-              </Button>
+              <div className="mt-auto pt-4">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={portraitLoadingId === character.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onGeneratePortrait(character.id);
+                  }}
+                >
+                  <Wand2 className="h-3.5 w-3.5" />
+                  {portraitLoadingId === character.id ? "Рисуем..." : "Портрет AI"}
+                </Button>
+              </div>
             </div>
           </article>
         );

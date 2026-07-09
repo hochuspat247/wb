@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { generatePromptOnlyImage } from "@/lib/ai/promptOnlyImage";
+import { formatImageProviderError } from "@/lib/ai/imageGenerationErrors";
 import { buildCharacterPortraitPrompt } from "@/lib/storystudio/prompt";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
@@ -53,15 +54,21 @@ export async function POST(request: Request) {
     const prompt = buildCharacterPortraitPrompt(character, row.payload);
     const result = await generatePromptOnlyImage({
       prompt,
-      aspectRatio: "3:4",
+      aspectRatio: process.env.NANOBANANA_EXPERT_ASPECT_RATIO || "3:4",
       resolution: "1k",
       outputFormat: "png",
-      model: "nb2"
+      model: "nb2",
+      skipContentPolicy: true,
+      contentPolicyText: [character.name, character.role, character.appearance, character.personality]
+        .filter(Boolean)
+        .join(". ")
     });
 
     if (result.isFallback || (!result.imageBase64 && !result.imageUrl)) {
       return NextResponse.json(
-        { error: result.error || "Не удалось сгенерировать портрет. Попробуйте ещё раз." },
+        {
+          error: formatImageProviderError(result.error) || "Не удалось сгенерировать портрет. Попробуйте ещё раз."
+        },
         { status: 502 }
       );
     }

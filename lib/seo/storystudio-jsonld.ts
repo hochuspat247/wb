@@ -1,6 +1,7 @@
 import { absoluteUrl, siteConfig } from "@/lib/seo";
 import { storyStudioConfig } from "@/lib/seo/storystudio";
 import { getStoryStudioFaqItems } from "@/lib/storystudio/marketingFaq";
+import { STORYSTUDIO_VIDEO_DEMO } from "@/lib/storystudio/videoExample";
 import {
   STORY_GENERATION_PRICE_RUB,
   STORY_PACKAGES,
@@ -186,6 +187,20 @@ export function buildStoryStudioHomeJsonLd() {
         },
         areaServed: "RU",
         url: absoluteUrl("/storystudio#video-series")
+      },
+      {
+        "@type": "VideoObject",
+        name: STORYSTUDIO_VIDEO_DEMO.title,
+        description: STORYSTUDIO_VIDEO_DEMO.description,
+        contentUrl: absoluteUrl(STORYSTUDIO_VIDEO_DEMO.src),
+        embedUrl: absoluteUrl("/storystudio#video-series"),
+        uploadDate: new Date().toISOString().slice(0, 10),
+        inLanguage: "ru-RU",
+        isFamilyFriendly: true,
+        publisher: {
+          "@type": "Organization",
+          name: storyStudioConfig.name
+        }
       }
     ]
   };

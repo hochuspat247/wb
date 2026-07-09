@@ -9,6 +9,7 @@ export type StoryPackage = {
   label: string;
   description: string;
   badge?: string;
+  features: string[];
 };
 
 export const STORY_PACKAGES: StoryPackage[] = [
@@ -17,19 +18,37 @@ export const STORY_PACKAGES: StoryPackage[] = [
     count: 10,
     label: "Старт",
     description: "10 генераций — история, персонажи, главы",
-    badge: "Популярный"
+    badge: "Популярный",
+    features: [
+      "10 генераций любого типа",
+      "История, персонажи и главы",
+      "Портреты и дерево связей",
+      "Редактор глав и видео-серии"
+    ]
   },
   {
     id: "author",
     count: 50,
     label: "Автор",
-    description: "Для активного написания и иллюстраций"
+    description: "Для активного написания и иллюстраций",
+    features: [
+      "50 генераций любого типа",
+      "Портреты персонажей включены",
+      "Premium 18+ режим",
+      "Приоритетная очередь"
+    ]
   },
   {
     id: "studio",
     count: 100,
     label: "Студия",
-    description: "Максимум творчества по лучшей цене"
+    description: "Максимум творчества по лучшей цене",
+    features: [
+      "100 генераций любого типа",
+      "Лучшая цена за генерацию",
+      "Все функции StoryStudio",
+      "Максимальная скидка −41%"
+    ]
   }
 ];
 
@@ -97,19 +116,5 @@ export const STORY_PRICING_PLANS = [
     ],
     cta: "Купить генерации",
     highlighted: true
-  },
-  {
-    id: "pack",
-    name: "Пакет 50",
-    price: formatStoryRub(1490),
-    period: "≈ 30 ₽/ген",
-    features: [
-      "50 генераций любого типа",
-      "Портреты персонажей включены",
-      "Premium 18+ режим",
-      "Приоритетная очередь"
-    ],
-    cta: "Выбрать пакет",
-    highlighted: false
   }
 ] as const;

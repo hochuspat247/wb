@@ -5,11 +5,9 @@ import { FAQSection } from "@/components/FAQSection";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
-import { HowItWorks } from "@/components/HowItWorks";
 import { PainSection } from "@/components/PainSection";
 import { PricingCalculatorSection } from "@/components/PricingCalculatorSection";
 import { PricingSection } from "@/components/PricingSection";
-import { RoadmapSection } from "@/components/RoadmapSection";
 import { HomeJsonLd } from "@/components/seo/HomeJsonLd";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { createPageMetadata, siteConfig } from "@/lib/seo";
@@ -31,11 +29,9 @@ export default function Home() {
 
       <PainSection />
       <CompareSection />
-      <HowItWorks />
       <PricingSection />
       <PricingCalculatorSection />
       <TestimonialsSection />
-      <RoadmapSection />
       <FAQSection />
       <Footer />
     </main>

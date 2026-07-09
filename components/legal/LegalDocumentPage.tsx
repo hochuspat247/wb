@@ -45,6 +45,11 @@ export function LegalDocumentPage({ document }: LegalDocumentPageProps) {
                     ))}
                   </ul>
                 ) : null}
+                {section.afterList?.map((paragraph) => (
+                  <p className="mt-3 text-sm font-medium leading-relaxed text-muted" key={paragraph}>
+                    {paragraph}
+                  </p>
+                ))}
               </section>
             ))}
           </div>

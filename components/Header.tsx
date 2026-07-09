@@ -14,7 +14,6 @@ const links = [
   ["Примеры", "/#examples"],
   ["Сравнение", "/#compare"],
   ["Генератор", "/cabinet#create"],
-  ["Как работает", "/#how"],
   ["Тарифы", "/#pricing"],
   ["FAQ", "/#faq"]
 ] as const;
@@ -22,7 +21,6 @@ const links = [
 const NAV_LINK_GOALS: Record<string, MetrikaGoal> = {
   "/#examples": "examples_click",
   "/#compare": "compare_view",
-  "/#how": "how_view",
   "/#pricing": "pricing_click",
   "/#faq": "faq_view"
 };

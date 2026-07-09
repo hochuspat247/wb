@@ -8,7 +8,6 @@ const footerLinks = [
   { label: "Примеры", href: "/#examples", goal: "examples_click" as const },
   { label: "Пример видео", href: "/#video-example", goal: "video_example_view" as const },
   { label: "Сравнение", href: "/#compare", goal: "compare_view" as const },
-  { label: "Как работает", href: "/#how", goal: "how_view" as const },
   { label: "Тарифы", href: "/#pricing", goal: "pricing_click" as const },
   { label: "Видео из карточки", href: "/#video-pricing", goal: "video_pricing_section_view" as const },
   { label: "FAQ", href: "/#faq", goal: "faq_view" as const }

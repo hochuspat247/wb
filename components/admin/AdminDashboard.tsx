@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart3, Eye, Film, LogOut, MousePointerClick, RefreshCw, Star, Users, X } from "lucide-react";
+import { BarChart3, BookOpen, Clapperboard, Eye, Film, MousePointerClick, Star, Users, X } from "lucide-react";
 import { Funnel7dPanel } from "@/components/admin/Funnel7dPanel";
 import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
+import { AdminShell } from "@/components/admin/AdminShell";
 import { CollapsibleAdminSection } from "@/components/admin/CollapsibleAdminSection";
 import { DemoErrorsPanel } from "@/components/admin/DemoErrorsPanel";
 import { SessionDurationPanel } from "@/components/admin/SessionDurationPanel";
@@ -18,8 +19,10 @@ import { hasCardGeneratedVideo } from "@/lib/cardVideos";
 import type { ProductCardResult } from "@/types/product-card";
 import type { SessionDurationStats } from "@/lib/server/session-duration";
 import type { Funnel7dStep } from "@/lib/server/funnel7d";
+import { ADMIN_PRODUCTS, isAdminProductId, type AdminProductId } from "@/lib/admin/products";
 
 type AdminStats = {
+  product?: AdminProductId;
   overview: {
     users: number;
     cards: number;
@@ -27,6 +30,31 @@ type AdminStats = {
     totalGenerations: number;
     events7d: number;
   };
+  storyStudio?: {
+    overview: {
+      stories: number;
+      characters: number;
+      chapters: number;
+      episodes: number;
+      videoEpisodes: number;
+      storyVideos: number;
+    };
+    recentStories: {
+      id: string;
+      userId: string;
+      userName: string | null;
+      userEmail: string | null;
+      title: string;
+      status: string;
+      genres: string[];
+      charactersCount: number;
+      chaptersCount: number;
+      episodesCount: number;
+      premiumMode: boolean;
+      createdAt: Date;
+      updatedAt: Date;
+    }[];
+  } | null;
   funnel: {
     pageViews: number;
     ctaClicks: number;
@@ -141,7 +169,13 @@ type AdminDemoDetail = {
   previewImageDataUrl: string;
 };
 
-const PATHS = ["/", "/login", "/register", "/cabinet"];
+const PRODUCT_STORAGE_KEY = "admin-selected-product";
+
+function readStoredProduct(): AdminProductId {
+  if (typeof window === "undefined") return "marketcard";
+  const stored = window.localStorage.getItem(PRODUCT_STORAGE_KEY);
+  return isAdminProductId(stored) ? stored : "marketcard";
+}
 
 async function readJsonResponse(response: Response): Promise<any> {
   const text = await response.text();
@@ -506,6 +540,7 @@ function DemoDetailModal({
 export function AdminDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<AdminStats | null>(null);
+  const [product, setProduct] = useState<AdminProductId>("marketcard");
   const [path, setPath] = useState("/");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -514,12 +549,24 @@ export function AdminDashboard() {
   const [selectedDemo, setSelectedDemo] = useState<AdminDemoDetail | null>(null);
   const [demoLoading, setDemoLoading] = useState(false);
 
-  async function load(nextPath = path) {
+  const productConfig = ADMIN_PRODUCTS[product];
+  const isStoryStudio = product === "storystudio";
+
+  useEffect(() => {
+    const stored = readStoredProduct();
+    setProduct(stored);
+    setPath(ADMIN_PRODUCTS[stored].defaultHeatmapPath);
+  }, []);
+
+  async function load(nextPath = path, nextProduct = product) {
     setLoading(true);
     setError("");
 
     try {
-      const response = await fetch(`/api/admin/stats?path=${encodeURIComponent(nextPath)}`, { cache: "no-store" });
+      const response = await fetch(
+        `/api/admin/stats?product=${encodeURIComponent(nextProduct)}&path=${encodeURIComponent(nextPath)}`,
+        { cache: "no-store" }
+      );
       const data = await readJsonResponse(response);
 
       if (!response.ok) {
@@ -543,8 +590,14 @@ export function AdminDashboard() {
   }
 
   useEffect(() => {
-    void load(path);
-  }, [path]);
+    if (product) void load(path, product);
+  }, [path, product]);
+
+  function handleProductChange(nextProduct: AdminProductId) {
+    setProduct(nextProduct);
+    window.localStorage.setItem(PRODUCT_STORAGE_KEY, nextProduct);
+    setPath(ADMIN_PRODUCTS[nextProduct].defaultHeatmapPath);
+  }
 
   async function openCard(cardId: string) {
     setCardLoading(true);
@@ -610,40 +663,19 @@ export function AdminDashboard() {
 
   if (!stats) return null;
 
-  return (
-    <div className="min-h-screen bg-paper">
-      <header className="sticky top-0 z-20 border-b border-clay bg-card/90 px-4 py-4 backdrop-blur-xl sm:px-5 lg:px-8">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-accent sm:text-xs sm:tracking-[0.18em]">Admin</p>
-            <h1 className="mt-1 text-xl font-black leading-tight text-ink sm:text-2xl">Аналитика MarketCard AI</h1>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-            <Button className="w-full sm:w-auto" onClick={() => load(path)} size="sm" variant="secondary">
-              <RefreshCw size={16} />
-              Обновить
-            </Button>
-            <Button
-              className="w-full sm:w-auto"
-              onClick={async () => {
-                await fetch("/api/admin/login", { method: "DELETE" });
-                router.push("/admin/login");
-              }}
-              size="sm"
-              variant="ghost"
-            >
-              <LogOut size={16} />
-              Выйти
-            </Button>
-          </div>
-        </div>
-      </header>
+  const storyOverview = stats.storyStudio?.overview;
 
-      <main className="mx-auto max-w-7xl space-y-5 p-4 sm:p-5 lg:space-y-6 lg:p-8">
+  return (
+    <AdminShell
+      product={productConfig}
+      onProductChange={handleProductChange}
+      onRefresh={() => load(path, product)}
+    >
         <CollapsibleAdminSection
-          description="Ключевые метрики проекта"
+          description={`Ключевые метрики: ${productConfig.label}`}
           icon={<BarChart3 className="text-accent" size={20} />}
           id="overview"
+          scope={product}
           title="Обзор"
         >
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-5 lg:gap-4">
@@ -656,33 +688,69 @@ export function AdminDashboard() {
               <Users className="shrink-0 text-accent" size={22} />
             </div>
           </Card>
-          <Card className="min-w-0" padding="md">
-            <div className="flex min-w-0 items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Карточек в БД</p>
-                <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.cards}</p>
-              </div>
-              <BarChart3 className="shrink-0 text-accent" size={22} />
-            </div>
-          </Card>
-          <Card className="min-w-0" padding="md">
-            <div className="flex min-w-0 items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Демо гостей</p>
-                <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.demoGenerations}</p>
-              </div>
-              <Eye className="shrink-0 text-accent" size={22} />
-            </div>
-          </Card>
-          <Card className="min-w-0" padding="md">
-            <div className="flex min-w-0 items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Генераций всего</p>
-                <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.totalGenerations}</p>
-              </div>
-              <MousePointerClick className="shrink-0 text-accent" size={22} />
-            </div>
-          </Card>
+
+          {isStoryStudio ? (
+            <>
+              <Card className="min-w-0" padding="md">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Историй</p>
+                    <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{storyOverview?.stories ?? 0}</p>
+                  </div>
+                  <BookOpen className="shrink-0 text-accent" size={22} />
+                </div>
+              </Card>
+              <Card className="min-w-0" padding="md">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Персонажей</p>
+                    <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{storyOverview?.characters ?? 0}</p>
+                  </div>
+                  <Users className="shrink-0 text-accent" size={22} />
+                </div>
+              </Card>
+              <Card className="min-w-0" padding="md">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Видео-серий</p>
+                    <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{storyOverview?.storyVideos ?? 0}</p>
+                  </div>
+                  <Clapperboard className="shrink-0 text-accent" size={22} />
+                </div>
+              </Card>
+            </>
+          ) : (
+            <>
+              <Card className="min-w-0" padding="md">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Карточек в БД</p>
+                    <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.cards}</p>
+                  </div>
+                  <BarChart3 className="shrink-0 text-accent" size={22} />
+                </div>
+              </Card>
+              <Card className="min-w-0" padding="md">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Демо гостей</p>
+                    <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.demoGenerations}</p>
+                  </div>
+                  <Eye className="shrink-0 text-accent" size={22} />
+                </div>
+              </Card>
+              <Card className="min-w-0" padding="md">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Генераций всего</p>
+                    <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.totalGenerations}</p>
+                  </div>
+                  <MousePointerClick className="shrink-0 text-accent" size={22} />
+                </div>
+              </Card>
+            </>
+          )}
+
           <Card className="min-w-0" padding="md">
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0">
@@ -695,16 +763,17 @@ export function AdminDashboard() {
           </div>
         </CollapsibleAdminSection>
 
-        <LiveVisitorsPanel />
+        <LiveVisitorsPanel product={product} />
 
-        <SessionDurationPanel stats={stats.sessionDuration} />
+        <SessionDurationPanel product={product} stats={stats.sessionDuration} />
 
-        {stats ? <DemoErrorsPanel errors={stats.recentDemoErrors ?? []} /> : null}
+        {!isStoryStudio && stats ? <DemoErrorsPanel errors={stats.recentDemoErrors ?? []} product={product} /> : null}
 
         <CollapsibleAdminSection
           description="Email и квота сохраняются в SQLite"
           icon={<Users className="text-accent" size={20} />}
           id="recent-users"
+          scope={product}
           title="Последние пользователи"
         >
           <div className="grid gap-3 md:hidden">
@@ -754,13 +823,15 @@ export function AdminDashboard() {
           </div>
         </CollapsibleAdminSection>
 
-        <Funnel7dPanel onRefresh={() => load(path)} steps={stats.funnel7d} />
+        <Funnel7dPanel onRefresh={() => load(path, product)} product={product} steps={stats.funnel7d} />
 
         <UserJourneysMapPanel
           heatmap={stats.heatmap}
           journeys={stats.userJourneys}
+          journeyZones={productConfig.journeyZones}
           onPathChange={setPath}
-          paths={PATHS}
+          paths={productConfig.heatmapPaths}
+          scope={product}
           selectedPath={path}
           topClicks={stats.topClicks}
         />
@@ -769,14 +840,51 @@ export function AdminDashboard() {
           description="Динамика за последние дни"
           icon={<BarChart3 className="text-accent" size={20} />}
           id="charts-daily"
+          scope={product}
           title="Графики по дням"
         >
           <div className="grid gap-6 md:grid-cols-2">
             <MiniBars label="Регистрации по дням" rows={stats.signupsByDay} />
-            <MiniBars label="Генерации по дням" rows={stats.generationsByDay} />
+            <MiniBars label={isStoryStudio ? "События генерации по дням" : "Генерации по дням"} rows={stats.generationsByDay} />
           </div>
         </CollapsibleAdminSection>
 
+        {isStoryStudio ? (
+          <CollapsibleAdminSection
+            badge={
+              <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+                {stats.storyStudio?.recentStories.length ?? 0} последних
+              </span>
+            }
+            description="Истории, созданные в StoryStudio"
+            icon={<BookOpen className="text-accent" size={20} />}
+            id="recent-stories"
+            scope={product}
+            title="Последние истории"
+          >
+            <div className="grid gap-3">
+              {(stats.storyStudio?.recentStories ?? []).map((story) => (
+                <div
+                  className="rounded-card border border-clay bg-paper/40 p-4"
+                  key={story.id}
+                >
+                  <p className="truncate font-bold text-ink">{story.title}</p>
+                  <p className="mt-1 text-sm text-muted">
+                    {story.genres.join(", ")} · {story.userEmail ? formatAccountEmail(story.userEmail) : "без email"}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-muted">
+                    {new Date(story.updatedAt).toLocaleString("ru-RU")} · {story.charactersCount} перс. · {story.chaptersCount} гл. · {story.episodesCount} серий
+                    {story.premiumMode ? " · Premium 18+" : ""}
+                  </p>
+                </div>
+              ))}
+              {!stats.storyStudio?.recentStories.length ? (
+                <p className="text-sm text-muted">Историй пока нет</p>
+              ) : null}
+            </div>
+          </CollapsibleAdminSection>
+        ) : (
+          <>
         <CollapsibleAdminSection
           badge={
             <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
@@ -786,6 +894,7 @@ export function AdminDashboard() {
           description="Фото, ввод пользователя и оценка даже без регистрации"
           icon={<Eye className="text-accent" size={20} />}
           id="recent-demos"
+          scope={product}
           title="Демо-генерации гостей"
         >
           <div className="grid gap-3">
@@ -825,6 +934,7 @@ export function AdminDashboard() {
           description="Нажмите на карточку, чтобы сравнить загрузку пользователя и результат генерации"
           icon={<Film className="text-accent" size={20} />}
           id="recent-cards"
+          scope={product}
           title="Последние карточки пользователей"
         >
           <div className="grid gap-3">
@@ -857,7 +967,8 @@ export function AdminDashboard() {
             {!stats.recentCards.length ? <p className="text-sm text-muted">Карточки еще не сохранены</p> : null}
           </div>
         </CollapsibleAdminSection>
-      </main>
+          </>
+        )}
       <CardDetailModal
         detail={selectedCard}
         loading={cardLoading}
@@ -874,6 +985,6 @@ export function AdminDashboard() {
           setDemoLoading(false);
         }}
       />
-    </div>
+    </AdminShell>
   );
 }

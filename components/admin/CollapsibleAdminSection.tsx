@@ -13,6 +13,7 @@ type Props = {
   icon?: ReactNode;
   defaultOpen?: boolean;
   padding?: "sm" | "md" | "lg";
+  scope?: string;
   children: ReactNode;
 };
 
@@ -24,9 +25,10 @@ export function CollapsibleAdminSection({
   icon,
   defaultOpen = true,
   padding = "lg",
+  scope = "marketcard",
   children
 }: Props) {
-  const { isOpen, toggle } = useAdminSectionState(id, defaultOpen);
+  const { isOpen, toggle } = useAdminSectionState(id, defaultOpen, scope);
 
   return (
     <Card padding={padding}>

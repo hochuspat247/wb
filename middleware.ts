@@ -21,5 +21,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cabinet/:path*"]
+  matcher: ["/cabinet/:path*", "/storystudio/cabinet/:path*"]
 };

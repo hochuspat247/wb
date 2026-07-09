@@ -1,4 +1,4 @@
-import { desc, eq, gte, lt, sql } from "drizzle-orm";
+import { desc, eq, gte, lt, sql, and } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users, visitorPresence } from "@/lib/db/schema";
 import { getActionLabel, getPathLabel, getSectionLabel } from "@/lib/presence/labels";
@@ -109,8 +109,14 @@ export async function upsertVisitorPresence(input: PresenceUpsertInput) {
   }
 }
 
-export async function getActiveVisitors() {
+import type { AdminProductId } from "@/lib/admin/products";
+
+export async function getActiveVisitors(product: AdminProductId = "marketcard") {
   const activeSince = new Date(Date.now() - ACTIVE_WINDOW_MS);
+  const presenceScope =
+    product === "storystudio"
+      ? sql`${visitorPresence.path} LIKE '/storystudio%'`
+      : sql`${visitorPresence.path} NOT LIKE '/storystudio%'`;
 
   const rows = await db
     .select({
@@ -132,7 +138,7 @@ export async function getActiveVisitors() {
     })
     .from(visitorPresence)
     .leftJoin(users, eq(visitorPresence.userId, users.id))
-    .where(gte(visitorPresence.lastSeenAt, activeSince))
+    .where(and(gte(visitorPresence.lastSeenAt, activeSince), presenceScope))
     .orderBy(desc(visitorPresence.lastSeenAt));
 
   const sectionRows = await db
@@ -141,7 +147,7 @@ export async function getActiveVisitors() {
       value: sql<number>`count(*)`
     })
     .from(visitorPresence)
-    .where(gte(visitorPresence.lastSeenAt, activeSince))
+    .where(and(gte(visitorPresence.lastSeenAt, activeSince), presenceScope))
     .groupBy(visitorPresence.sectionLabel)
     .orderBy(desc(sql`count(*)`));
 

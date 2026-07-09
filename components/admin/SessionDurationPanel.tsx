@@ -9,6 +9,7 @@ type ViewMode = "duration" | "hours";
 
 type Props = {
   stats: SessionDurationStats;
+  product?: string;
 };
 
 function DurationChart({ stats }: { stats: SessionDurationStats }) {
@@ -102,7 +103,7 @@ function ActiveHoursChart({ stats }: { stats: SessionDurationStats }) {
   );
 }
 
-export function SessionDurationPanel({ stats }: Props) {
+export function SessionDurationPanel({ stats, product = "marketcard" }: Props) {
   const [view, setView] = useState<ViewMode>("duration");
   const hasData = view === "duration" ? stats.totalSessions > 0 : stats.activeHours.some((bucket) => bucket.value > 0);
 
@@ -111,6 +112,7 @@ export function SessionDurationPanel({ stats }: Props) {
       description={`Сколько времени проводят посетители и в какие часы они активнее всего за последние ${stats.periodDays} дней`}
       icon={<Clock3 className="text-accent" size={20} />}
       id="session-duration"
+      scope={product}
       title="Время на сайте"
     >
       <div className="mb-5 flex flex-wrap gap-2">

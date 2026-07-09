@@ -24,7 +24,7 @@ function formatSource(source: string | null) {
   return source || "Клиент";
 }
 
-export function DemoErrorsPanel({ errors }: { errors: DemoErrorItem[] }) {
+export function DemoErrorsPanel({ errors, product = "marketcard" }: { errors: DemoErrorItem[]; product?: string }) {
   return (
     <CollapsibleAdminSection
       badge={
@@ -35,6 +35,7 @@ export function DemoErrorsPanel({ errors }: { errors: DemoErrorItem[] }) {
       description="Последние сбои демо-генерации с текстом ошибки"
       icon={<AlertTriangle className="text-accent" size={20} />}
       id="demo-errors"
+      scope={product}
       title="Ошибки демо"
     >
       <div className="overflow-x-auto rounded-[18px] border border-clay">

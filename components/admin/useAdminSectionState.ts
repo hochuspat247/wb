@@ -2,15 +2,19 @@
 
 import { useEffect, useState } from "react";
 
-const STORAGE_KEY = "marketcard-admin-sections";
+const STORAGE_PREFIX = "admin-sections";
 
-function readState() {
+function storageKey(scope: string) {
+  return `${STORAGE_PREFIX}-${scope}`;
+}
+
+function readState(scope: string) {
   if (typeof window === "undefined") {
     return {} as Record<string, boolean>;
   }
 
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey(scope));
     if (!raw) {
       return {} as Record<string, boolean>;
     }
@@ -21,32 +25,32 @@ function readState() {
   }
 }
 
-function writeState(state: Record<string, boolean>) {
+function writeState(scope: string, state: Record<string, boolean>) {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  window.localStorage.setItem(storageKey(scope), JSON.stringify(state));
 }
 
-export function useAdminSectionState(id: string, defaultOpen = true) {
+export function useAdminSectionState(id: string, defaultOpen = true, scope = "marketcard") {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    const stored = readState();
+    const stored = readState(scope);
     if (Object.prototype.hasOwnProperty.call(stored, id)) {
       setIsOpen(stored[id]);
     }
     setHydrated(true);
-  }, [id]);
+  }, [id, scope]);
 
   function toggle() {
     setIsOpen((current) => {
       const next = !current;
-      const stored = readState();
+      const stored = readState(scope);
       stored[id] = next;
-      writeState(stored);
+      writeState(scope, stored);
       return next;
     });
   }

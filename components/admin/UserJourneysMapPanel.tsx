@@ -36,23 +36,20 @@ type Props = {
   paths: string[];
   selectedPath: string;
   onPathChange: (path: string) => void;
+  journeyZones?: { id: string; label: string }[];
+  scope?: string;
 };
 
-const PAGE_ZONES = [
-  { id: "/", label: "Главная" },
-  { id: "/login", label: "Вход" },
-  { id: "/register", label: "Регистрация" },
-  { id: "/cabinet", label: "Кабинет" },
-  { id: "/admin", label: "Админка" },
-  { id: "/generations", label: "Демо" }
-] as const;
-
-function normalizePath(path: string) {
+function normalizePath(path: string, journeyZones: { id: string; label: string }[]) {
   const pathname = path.split("#")[0] || "/";
   if (pathname.startsWith("/admin")) return "/admin";
+  if (pathname.startsWith("/storystudio/cabinet")) return "/storystudio/cabinet";
+  if (pathname.startsWith("/storystudio/create")) return "/storystudio/create";
+  if (pathname.startsWith("/storystudio")) return "/storystudio";
   if (pathname.startsWith("/cabinet")) return "/cabinet";
   if (pathname.startsWith("/generations/")) return "/generations";
-  return pathname;
+  const zone = journeyZones.find((z) => pathname === z.id || pathname.startsWith(`${z.id}/`));
+  return zone?.id ?? pathname;
 }
 
 function getJourneyLabel(journey: UserJourney) {
@@ -61,20 +58,20 @@ function getJourneyLabel(journey: UserJourney) {
   return `Сессия ${journey.sessionId.slice(0, 8)}`;
 }
 
-function getLastPath(journey: UserJourney) {
+function getLastPath(journey: UserJourney, journeyZones: { id: string; label: string }[]) {
   const lastEventPath = [...journey.events].reverse().find((event) => event.path)?.path;
-  if (lastEventPath) return normalizePath(lastEventPath);
-  if (journey.paths[0]) return normalizePath(journey.paths[0]);
-  return "/";
+  if (lastEventPath) return normalizePath(lastEventPath, journeyZones);
+  if (journey.paths[0]) return normalizePath(journey.paths[0], journeyZones);
+  return journeyZones[0]?.id ?? "/";
 }
 
-function buildPathTransitions(journeys: UserJourney[]) {
+function buildPathTransitions(journeys: UserJourney[], journeyZones: { id: string; label: string }[]) {
   const transitions = new Map<string, number>();
 
   for (const journey of journeys) {
     const orderedPaths = journey.events
       .filter((event) => event.eventType === "page_view")
-      .map((event) => normalizePath(event.path));
+      .map((event) => normalizePath(event.path, journeyZones));
 
     for (let index = 0; index < orderedPaths.length - 1; index += 1) {
       const from = orderedPaths[index];
@@ -190,27 +187,43 @@ function JourneyDetail({ journey, onClose }: { journey: UserJourney; onClose: ()
   );
 }
 
-export function UserJourneysMapPanel({ journeys, heatmap, topClicks, paths, selectedPath, onPathChange }: Props) {
+export function UserJourneysMapPanel({
+  journeys,
+  heatmap,
+  topClicks,
+  paths,
+  selectedPath,
+  onPathChange,
+  journeyZones = [
+    { id: "/", label: "Главная" },
+    { id: "/login", label: "Вход" },
+    { id: "/register", label: "Регистрация" },
+    { id: "/cabinet", label: "Кабинет" },
+    { id: "/admin", label: "Админка" },
+    { id: "/generations", label: "Демо" }
+  ],
+  scope = "marketcard"
+}: Props) {
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
   const journeysByZone = useMemo(() => {
     const grouped = new Map<string, UserJourney[]>();
 
-    for (const zone of PAGE_ZONES) {
+    for (const zone of journeyZones) {
       grouped.set(zone.id, []);
     }
 
     for (const journey of journeys) {
-      const zoneId = getLastPath(journey);
-      const bucket = grouped.get(zoneId) ?? grouped.get("/") ?? [];
+      const zoneId = getLastPath(journey, journeyZones);
+      const bucket = grouped.get(zoneId) ?? grouped.get(journeyZones[0]?.id ?? "/") ?? [];
       bucket.push(journey);
       grouped.set(zoneId, bucket);
     }
 
     return grouped;
-  }, [journeys]);
+  }, [journeys, journeyZones]);
 
-  const transitions = useMemo(() => buildPathTransitions(journeys), [journeys]);
+  const transitions = useMemo(() => buildPathTransitions(journeys, journeyZones), [journeys, journeyZones]);
   const selectedJourney = journeys.find((journey) => journey.sessionId === selectedSessionId) ?? null;
   const totalClicks = journeys.reduce((sum, journey) => sum + journey.clicks, 0);
 
@@ -222,6 +235,7 @@ export function UserJourneysMapPanel({ journeys, heatmap, topClicks, paths, sele
       description="Карта кликов и перемещений по сайту. Нажмите на пользователя, чтобы открыть его сессию."
       icon={<Route className="text-accent" size={20} />}
       id="user-journeys"
+      scope={scope}
       title="Пути пользователей"
     >
       <div className="mb-5 flex justify-end">
@@ -288,7 +302,7 @@ export function UserJourneysMapPanel({ journeys, heatmap, topClicks, paths, sele
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {PAGE_ZONES.map((zone) => {
+          {journeyZones.map((zone) => {
             const zoneJourneys = journeysByZone.get(zone.id) ?? [];
 
             return (

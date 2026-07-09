@@ -244,4 +244,16 @@ export function migrate(sqlite: Database.Database) {
     SET emailVerified = CAST(strftime('%s','now') AS INTEGER) * 1000
     WHERE email LIKE '%@oauth.marketcard.local' AND emailVerified IS NULL
   `);
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS story_project (
+      id TEXT PRIMARY KEY NOT NULL,
+      userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+      payload TEXT NOT NULL,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS story_project_user_idx ON story_project(userId);
+    CREATE INDEX IF NOT EXISTS story_project_updated_idx ON story_project(updatedAt);
+  `);
 }

@@ -1,6 +1,7 @@
 import type { AdapterAccountType } from "@auth/core/adapters";
 import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { ProductCardResult } from "@/types/product-card";
+import type { StoryProject } from "@/types/storystudio";
 import type {
   VideoAspectRatio,
   VideoDuration,
@@ -177,6 +178,16 @@ export const payments = sqliteTable("payment", {
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date())
+});
+
+export const storyProjects = sqliteTable("story_project", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  payload: text("payload", { mode: "json" }).$type<StoryProject>().notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull()
 });
 
 export const videoGenerationOrders = sqliteTable("video_generation_order", {

@@ -1,8 +1,24 @@
-import { and, count, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { analyticsEvents, demoGenerations, productCards, users, videoGenerationOrders, visitorPresence } from "@/lib/db/schema";
+import type { AdminProductId } from "@/lib/admin/products";
 import { buildSessionDurationStats } from "@/lib/server/session-duration";
 import { getFunnel7d, type Funnel7dStep } from "@/lib/server/funnel7d";
+import { getStoryStudioAdminData } from "@/lib/server/storyAdminAnalytics";
+
+function productPathFilter(column: typeof analyticsEvents.path, product: AdminProductId): SQL {
+  if (product === "storystudio") {
+    return sql`${column} LIKE '/storystudio%'`;
+  }
+  return sql`${column} NOT LIKE '/storystudio%'`;
+}
+
+function productPresenceFilter(column: typeof visitorPresence.path, product: AdminProductId): SQL {
+  if (product === "storystudio") {
+    return sql`${column} LIKE '/storystudio%'`;
+  }
+  return sql`${column} NOT LIKE '/storystudio%'`;
+}
 
 export type AnalyticsTrackInput = {
   eventType: "page_view" | "click" | "conversion";
@@ -50,9 +66,10 @@ async function safeAnalyticsQuery<T>(label: string, query: Promise<T>, fallback:
   }
 }
 
-export async function getAdminAnalytics(pathFilter = "/") {
+export async function getAdminAnalytics(pathFilter = "/", product: AdminProductId = "marketcard") {
   const since7d = daysAgo(7);
   const since30d = daysAgo(30);
+  const pathScope = productPathFilter(analyticsEvents.path, product);
 
   const [userCount] = await safeAnalyticsQuery("user count", db.select({ value: count() }).from(users), [{ value: 0 }]);
   const [cardCount] = await safeAnalyticsQuery("card count", db.select({ value: count() }).from(productCards), [{ value: 0 }]);
@@ -65,7 +82,10 @@ export async function getAdminAnalytics(pathFilter = "/") {
 
   const [events7d] = await safeAnalyticsQuery(
     "events 7d",
-    db.select({ value: count() }).from(analyticsEvents).where(gte(analyticsEvents.createdAt, since7d)),
+    db
+      .select({ value: count() })
+      .from(analyticsEvents)
+      .where(and(gte(analyticsEvents.createdAt, since7d), pathScope)),
     [{ value: 0 }]
   );
 
@@ -90,7 +110,8 @@ export async function getAdminAnalytics(pathFilter = "/") {
       .where(
         and(
           eq(analyticsEvents.eventType, "conversion"),
-          gte(analyticsEvents.createdAt, since30d)
+          gte(analyticsEvents.createdAt, since30d),
+          pathScope
         )
       )
       .groupBy(analyticsEvents.eventName),
@@ -102,9 +123,7 @@ export async function getAdminAnalytics(pathFilter = "/") {
     db
       .select({ value: count() })
       .from(analyticsEvents)
-      .where(
-        and(eq(analyticsEvents.eventType, "page_view"), gte(analyticsEvents.createdAt, since30d))
-      ),
+      .where(and(eq(analyticsEvents.eventType, "page_view"), gte(analyticsEvents.createdAt, since30d), pathScope)),
     [{ value: 0 }]
   );
 
@@ -131,7 +150,8 @@ export async function getAdminAnalytics(pathFilter = "/") {
         and(
           eq(analyticsEvents.eventType, "click"),
           eq(analyticsEvents.path, pathFilter),
-          gte(analyticsEvents.createdAt, since30d)
+          gte(analyticsEvents.createdAt, since30d),
+          pathScope
         )
       )
       .groupBy(analyticsEvents.xPercent, analyticsEvents.yPercent)
@@ -149,7 +169,7 @@ export async function getAdminAnalytics(pathFilter = "/") {
         value: count()
       })
       .from(analyticsEvents)
-      .where(and(eq(analyticsEvents.eventType, "click"), gte(analyticsEvents.createdAt, since30d)))
+      .where(and(eq(analyticsEvents.eventType, "click"), gte(analyticsEvents.createdAt, since30d), pathScope))
       .groupBy(analyticsEvents.label, analyticsEvents.eventName)
       .orderBy(desc(count()))
       .limit(15),
@@ -181,7 +201,8 @@ export async function getAdminAnalytics(pathFilter = "/") {
       .where(
         and(
           eq(analyticsEvents.eventName, "generation_complete"),
-          gte(analyticsEvents.createdAt, since30d)
+          gte(analyticsEvents.createdAt, since30d),
+          pathScope
         )
       )
       .groupBy(sql`strftime('%Y-%m-%d', ${analyticsEvents.createdAt} / 1000, 'unixepoch')`)
@@ -262,7 +283,8 @@ export async function getAdminAnalytics(pathFilter = "/") {
       .where(
         and(
           eq(analyticsEvents.eventType, "conversion"),
-          inArray(analyticsEvents.eventName, ["hero_demo_generate_error", "demo_generation_error"])
+          inArray(analyticsEvents.eventName, ["hero_demo_generate_error", "demo_generation_error"]),
+          pathScope
         )
       )
       .orderBy(desc(analyticsEvents.createdAt))
@@ -283,7 +305,7 @@ export async function getAdminAnalytics(pathFilter = "/") {
         conversions: sql<number>`sum(case when ${analyticsEvents.eventType} = 'conversion' then 1 else 0 end)`
       })
       .from(analyticsEvents)
-      .where(gte(analyticsEvents.createdAt, since30d))
+      .where(and(gte(analyticsEvents.createdAt, since30d), pathScope))
       .groupBy(analyticsEvents.sessionId)
       .orderBy(desc(sql`max(${analyticsEvents.createdAt})`))
       .limit(15),
@@ -339,7 +361,7 @@ export async function getAdminAnalytics(pathFilter = "/") {
         durationMs: sql<number>`max(${analyticsEvents.createdAt}) - min(${analyticsEvents.createdAt})`
       })
       .from(analyticsEvents)
-      .where(gte(analyticsEvents.createdAt, since30d))
+      .where(and(gte(analyticsEvents.createdAt, since30d), pathScope))
       .groupBy(analyticsEvents.sessionId),
     []
   );
@@ -353,7 +375,7 @@ export async function getAdminAnalytics(pathFilter = "/") {
         value: count()
       })
       .from(analyticsEvents)
-      .where(gte(analyticsEvents.createdAt, since30d))
+      .where(and(gte(analyticsEvents.createdAt, since30d), pathScope))
       .groupBy(moscowHour),
     []
   );
@@ -382,9 +404,14 @@ export async function getAdminAnalytics(pathFilter = "/") {
         )
       : [];
   const videoCountMap = new Map(videoCountRows.map((row) => [row.sourceGenerationId, row.value]));
-  const funnel7d = await safeAnalyticsQuery("funnel 7d", getFunnel7d(), [] as Funnel7dStep[]);
+  const storyStudioData = product === "storystudio" ? await getStoryStudioAdminData() : null;
+  const funnel7d =
+    product === "storystudio"
+      ? (storyStudioData?.funnel7d ?? [])
+      : await safeAnalyticsQuery("funnel 7d", getFunnel7d(), [] as Funnel7dStep[]);
 
   return {
+    product,
     overview: {
       users: userCount?.value ?? 0,
       cards: cardCount?.value ?? 0,
@@ -489,6 +516,12 @@ export async function getAdminAnalytics(pathFilter = "/") {
         }))
       };
     }),
-    trackedFunnelEvents: funnelNames
+    trackedFunnelEvents: funnelNames,
+    storyStudio: storyStudioData
+      ? {
+          overview: storyStudioData.overview,
+          recentStories: storyStudioData.recentStories
+        }
+      : null
   };
 }

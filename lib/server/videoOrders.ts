@@ -4,6 +4,8 @@ import { productCards, users, videoGenerationOrders } from "@/lib/db/schema";
 import { createVeoVideoTask, getVeoVideoTaskStatus, normalizeVeoVideoResponse } from "@/lib/video/genapiVeoVideo";
 import { buildProductCardVideoPrompt } from "@/lib/video/videoPrompt";
 import { buildGenApiCallbackUrl, buildSignedSourceImageUrl, getCardSourceImageData, getSourceImageExtension } from "@/lib/server/videoSourceImage";
+import { syncCompletedVideoToStory, getStoryCharacterSourceImage } from "@/lib/server/storyVideo";
+import { parseStoryVideoSourceId } from "@/lib/storystudio/videoPrompt";
 import { syncCompletedVideoToCard } from "@/lib/server/cardVideos";
 import type { ProductCardResult } from "@/types/product-card";
 import type { CreateVideoOrderInput, VideoGenerationRecord } from "@/types/video-generation";
@@ -82,12 +84,15 @@ export async function createVideoOrderRecord(input: {
   status?: VideoGenerationRecord["status"];
   orderId?: string;
   cardPayload?: ProductCardResult;
+  customPrompt?: string;
 }) {
-  const prompt = buildProductCardVideoPrompt({
-    motionStyle: input.params.motionStyle,
-    aspectRatio: input.params.aspectRatio,
-    card: input.cardPayload
-  });
+  const prompt =
+    input.customPrompt ||
+    buildProductCardVideoPrompt({
+      motionStyle: input.params.motionStyle,
+      aspectRatio: input.params.aspectRatio,
+      card: input.cardPayload
+    });
   const now = new Date();
   const orderId = input.orderId || crypto.randomUUID();
 
@@ -178,7 +183,12 @@ export async function startPaidVideoGeneration(orderId: string, siteUrl: string)
   const card = await db.query.productCards.findFirst({
     where: eq(productCards.id, order.sourceGenerationId)
   });
-  const sourceImage = card ? getCardSourceImageData(card.payload) : null;
+  const storyRef = parseStoryVideoSourceId(order.sourceGenerationId);
+  let sourceImage = card ? getCardSourceImageData(card.payload) : null;
+
+  if (!sourceImage && storyRef) {
+    sourceImage = (await getStoryCharacterSourceImage(storyRef.storyId, storyRef.characterId)) ?? null;
+  }
   const sourceImageUrl = buildSignedSourceImageUrl(
     siteUrl,
     order.id,
@@ -246,6 +256,7 @@ export async function refreshVideoOrderStatus(orderId: string) {
 
   const updated = await getVideoOrderById(orderId);
   await syncCompletedVideoToCard(updated);
+  await syncCompletedVideoToStory(updated);
 
   return updated;
 }
@@ -289,6 +300,7 @@ export async function applyGenApiCallback(
 
   const updated = await getVideoOrderById(row.id);
   await syncCompletedVideoToCard(updated);
+  await syncCompletedVideoToStory(updated);
 
   return updated;
 }

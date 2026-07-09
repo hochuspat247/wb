@@ -42,14 +42,14 @@ function formatDuration(start: string, end: string) {
   return `${seconds} сек`;
 }
 
-export function LiveVisitorsPanel() {
+export function LiveVisitorsPanel({ product = "marketcard" }: { product?: string }) {
   const [data, setData] = useState<LivePresence | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   async function load() {
     try {
-      const response = await fetch("/api/admin/presence", { cache: "no-store" });
+      const response = await fetch(`/api/admin/presence?product=${encodeURIComponent(product)}`, { cache: "no-store" });
       const payload = await response.json();
 
       if (!response.ok) {
@@ -72,10 +72,11 @@ export function LiveVisitorsPanel() {
     }, 10_000);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [product]);
 
   return (
     <CollapsibleAdminSection
+      scope={product}
       badge={
         <span className="rounded-full bg-mint/15 px-2.5 py-1 text-xs font-black text-mint">
           {data?.activeCount ?? 0}

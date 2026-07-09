@@ -9,6 +9,7 @@ import type { Funnel7dStep } from "@/lib/server/funnel7d";
 type Funnel7dPanelProps = {
   steps: Funnel7dStep[];
   onRefresh?: () => Promise<void> | void;
+  product?: string;
 };
 
 function formatPercent(value: number | null) {
@@ -16,7 +17,7 @@ function formatPercent(value: number | null) {
   return `${value}%`;
 }
 
-export function Funnel7dPanel({ steps, onRefresh }: Funnel7dPanelProps) {
+export function Funnel7dPanel({ steps, onRefresh, product = "marketcard" }: Funnel7dPanelProps) {
   const [cleanupMessage, setCleanupMessage] = useState("");
   const [cleanupError, setCleanupError] = useState("");
   const [cleaning, setCleaning] = useState(false);
@@ -57,8 +58,10 @@ export function Funnel7dPanel({ steps, onRefresh }: Funnel7dPanelProps) {
       description="Уникальные сессии за 7 дней без внутренних аккаунтов (ADMIN_EMAILS). Проценты — переход к следующему шагу."
       icon={<Filter className="text-mint" size={20} />}
       id="funnel-7d"
+      scope={product}
       title="Воронка за 7 дней"
     >
+      {product === "marketcard" ? (
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <Button disabled={cleaning} onClick={() => void handleCleanup()} size="sm" type="button" variant="secondary">
           <Trash2 size={15} />
@@ -68,6 +71,7 @@ export function Funnel7dPanel({ steps, onRefresh }: Funnel7dPanelProps) {
           Оплаты из тестовых аккаунтов в воронке не считаются. Кнопка удаляет только события аналитики за 7 дней.
         </p>
       </div>
+      ) : null}
 
       {cleanupMessage ? <p className="mb-4 text-sm font-semibold text-mint">{cleanupMessage}</p> : null}
       {cleanupError ? <p className="mb-4 text-sm font-semibold text-red-400">{cleanupError}</p> : null}

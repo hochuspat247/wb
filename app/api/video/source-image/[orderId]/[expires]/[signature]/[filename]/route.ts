@@ -3,6 +3,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { productCards, videoGenerationOrders } from "@/lib/db/schema";
 import { getCardSourceImageData, verifySignedSourceImageAccess } from "@/lib/server/videoSourceImage";
+import { getStoryCharacterSourceImage } from "@/lib/server/storyVideo";
+import { parseStoryVideoSourceId } from "@/lib/storystudio/videoPrompt";
 
 export const runtime = "nodejs";
 
@@ -38,11 +40,15 @@ export async function GET(_request: Request, context: RouteContext) {
     where: eq(productCards.id, order.sourceGenerationId)
   });
 
-  if (!card) {
-    return NextResponse.json({ error: "Card not found" }, { status: 404 });
+  let image = card ? getCardSourceImageData(card.payload) : null;
+
+  if (!image) {
+    const storyRef = parseStoryVideoSourceId(order.sourceGenerationId);
+    if (storyRef) {
+      image = (await getStoryCharacterSourceImage(storyRef.storyId, storyRef.characterId)) ?? null;
+    }
   }
 
-  const image = getCardSourceImageData(card.payload);
   if (!image) {
     return NextResponse.json({ error: "Source image not found" }, { status: 404 });
   }

@@ -8,9 +8,11 @@ import { Button } from "@/components/ui/Button";
 
 const links = [
   ["Видео-серии", "/storystudio#video-series"],
+  ["Карта связей", "/storystudio#relations"],
   ["Возможности", "/storystudio#features"],
   ["Примеры", "/storystudio#examples"],
   ["Тарифы", "/storystudio#pricing"],
+  ["FAQ", "/storystudio#faq"],
   ["Создать", "/storystudio/create"],
   ["Кабинет", "/storystudio/cabinet"]
 ] as const;

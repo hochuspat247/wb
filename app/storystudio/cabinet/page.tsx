@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { StoryStudioCabinet } from "@/components/storystudio/StoryStudioCabinet";
 import { Loader } from "@/components/ui/Loader";
-import { createPageMetadata } from "@/lib/seo";
+import { createStoryStudioMetadata } from "@/lib/seo/storystudio";
 
-export const metadata: Metadata = createPageMetadata({
-  title: "Кабинет StoryStudio",
-  description: "Ваши истории, персонажи, дерево связей и редактор глав.",
+export const metadata: Metadata = createStoryStudioMetadata({
+  title: "Кабинет",
+  description: "Личный кабинет StoryStudio: истории, персонажи, карта связей, редактор глав и видео-серии.",
   path: "/storystudio/cabinet",
   noIndex: true
 });

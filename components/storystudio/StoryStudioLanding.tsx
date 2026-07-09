@@ -4,11 +4,11 @@ import Link from "next/link";
 import { ArrowRight, BookMarked, Clapperboard, Film, GitBranch, ImageIcon, PenLine, Play, Sparkles, Users, Zap } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { StoryStudioHeader } from "@/components/storystudio/StoryStudioHeader";
+import { StoryStudioFooter } from "@/components/storystudio/StoryStudioFooter";
+import { StoryStudioFaqSection } from "@/components/storystudio/StoryStudioFaqSection";
 import { StoryPaymentButton } from "@/components/storystudio/StoryPaymentButton";
-import { EXAMPLE_STORIES, STORY_STATS, VIDEO_ADVANTAGE_POINTS } from "@/lib/storystudio/constants";
+import { EXAMPLE_STORIES, RELATION_ADVANTAGE_POINTS, STORY_STATS, VIDEO_ADVANTAGE_POINTS } from "@/lib/storystudio/constants";
 import {
-  COMPETITOR_MONTHLY_EQUIV_RUB,
-  STORYSTUDIO_MONTHLY_EQUIV_RUB,
   STORY_GENERATION_PRICE_RUB,
   STORY_PACKAGES,
   STORY_PRICING_PLANS,
@@ -21,7 +21,7 @@ const features = [
   {
     icon: Clapperboard,
     title: "Видео-серии из истории",
-    description: "Снимайте кинематографичные сцены из портретов персонажей. Novely такого не умеет.",
+    description: "Снимайте кинематографичные сцены из портретов персонажей — эксклюзив StoryStudio.",
     badge: "Только у нас"
   },
   {
@@ -45,8 +45,8 @@ const features = [
   {
     icon: GitBranch,
     title: "Дерево связей",
-    description: "Визуализируйте отношения героев — союзники, враги, любовь и интриги.",
-    badge: null
+    description: "Рисуйте стрелки между героями — AI учитывает связи в каждой главе.",
+    badge: "Новинка"
   },
   {
     icon: PenLine,
@@ -81,15 +81,15 @@ export function StoryStudioLanding() {
               AI-генератор историй
             </div>
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Создай основу для{" "}
+              AI генератор историй: создай основу для{" "}
               <span className="bg-gradient-to-r from-violet via-cyan to-violet bg-clip-text text-transparent">
-                новой истории
+                новой книги или новеллы
               </span>{" "}
               за 30 секунд
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted">
-              Персонажи, мир, главы, портреты и <span className="text-violet">видео-серии</span> — в одной студии.
-              Дешевле Novely, мощнее и удобнее для русскоязычных авторов.
+              Персонажи, интерактивная <strong className="font-semibold text-ink">карта связей</strong>, главы, AI-портреты и{" "}
+              <span className="text-violet">видео-серии Veo 3.1</span> — в одной студии для русскоязычных авторов.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <Link href="/storystudio/create">
@@ -105,26 +105,26 @@ export function StoryStudioLanding() {
               </Link>
             </div>
             <p className="mt-4 text-sm text-muted">
-              от {formatStoryRub(STORY_GENERATION_PRICE_RUB)}/ген · на ~{Math.round((1 - STORYSTUDIO_MONTHLY_EQUIV_RUB / COMPETITOR_MONTHLY_EQUIV_RUB) * 100)}% дешевле аналогов
+              от {formatStoryRub(STORY_GENERATION_PRICE_RUB)}/ген · пакеты со скидкой до 41%
             </p>
           </div>
         </section>
 
-        {/* Video advantage — competitive differentiator */}
+        {/* Video advantage */}
         <section id="video-series" className="mx-auto max-w-content px-4 py-16 sm:px-6">
           <div className="overflow-hidden rounded-container border border-violet/40 bg-gradient-to-br from-violet/20 via-[#0d0a18] to-cyan/10">
             <div className="grid gap-8 p-8 lg:grid-cols-2 lg:p-12">
               <div>
                 <span className="inline-flex items-center gap-2 rounded-full border border-violet/40 bg-violet/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-violet">
                   <Film className="h-3.5 w-3.5" />
-                  Конкурентное преимущество
+                  Только в StoryStudio
                 </span>
                 <h2 className="mt-4 text-3xl font-bold sm:text-4xl">
                   Видео-серии из вашей истории
                 </h2>
                 <p className="mt-4 text-muted">
-                  Novely останавливается на тексте и статичных картинках. StoryStudio снимает кинематографичные сцены
-                  из портретов персонажей через Google Veo 3.1 — собирайте эпизоды как сериал для Reels, Shorts и TikTok.
+                  Превратите портреты персонажей в кинематографичные сцены через Google Veo 3.1 — собирайте эпизоды
+                  как сериал для Reels, Shorts и TikTok.
                 </p>
                 <ul className="mt-6 space-y-3">
                   {VIDEO_ADVANTAGE_POINTS.map((point) => (
@@ -168,6 +168,45 @@ export function StoryStudioLanding() {
                 </div>
                 <div className="absolute -right-4 -top-4 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-xs font-semibold text-cyan">
                   Veo 3.1
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Relations map */}
+        <section id="relations" className="mx-auto max-w-content px-4 py-16 sm:px-6">
+          <div className="overflow-hidden rounded-container border border-cyan/25 bg-gradient-to-br from-cyan/10 via-[#0d0a18] to-violet/15">
+            <div className="grid gap-8 p-8 lg:grid-cols-2 lg:p-12">
+              <div className="order-2 lg:order-1">
+                <RelationsMapPreview />
+              </div>
+              <div className="order-1 lg:order-2">
+                <span className="inline-flex items-center gap-2 rounded-full border border-cyan/30 bg-cyan/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-cyan">
+                  <GitBranch className="h-3.5 w-3.5" />
+                  Карта связей
+                </span>
+                <h2 className="mt-4 text-3xl font-bold sm:text-4xl">Свяжи героев — AI напишет с учётом интриг</h2>
+                <p className="mt-4 text-muted">
+                  Не список в заметках, а живая карта: перетащите персонажей, проведите стрелку, выберите тип связи —
+                  и каждая новая глава будет опираться на вашу драматургию.
+                </p>
+                <ul className="mt-6 space-y-3">
+                  {RELATION_ADVANTAGE_POINTS.map((point) => (
+                    <li key={point} className="flex items-start gap-2 text-sm text-muted">
+                      <span className="mt-0.5 text-cyan">▸</span>
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <Link href="/storystudio/cabinet">
+                    <Button className="!bg-violet !text-white !border-violet">
+                      <GitBranch className="h-4 w-4" />
+                      Открыть карту связей
+                    </Button>
+                  </Link>
+                  <span className="flex items-center text-sm text-muted">Shift + перетаскивание между героями</span>
                 </div>
               </div>
             </div>
@@ -240,8 +279,8 @@ export function StoryStudioLanding() {
         <section id="pricing" className="mx-auto max-w-content px-4 py-16 sm:px-6">
           <h2 className="mb-2 text-center text-2xl font-bold sm:text-3xl">Тарифы</h2>
           <p className="mb-10 text-center text-muted">
-            Novely ≈ {formatStoryRub(COMPETITOR_MONTHLY_EQUIV_RUB)}/мес · StoryStudio от{" "}
-            {formatStoryRub(STORYSTUDIO_MONTHLY_EQUIV_RUB)}/мес эквивалент
+            От {formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию · пакеты от{" "}
+            {formatStoryRub(calculateStoryPackagePrice(10).total)}
           </p>
 
           <div className="mb-12 grid gap-4 lg:grid-cols-3">
@@ -311,6 +350,8 @@ export function StoryStudioLanding() {
           </div>
         </section>
 
+        <StoryStudioFaqSection />
+
         {/* CTA */}
         <section className="mx-auto max-w-content px-4 pb-24 sm:px-6">
           <div className="rounded-container border border-violet/30 bg-gradient-to-br from-violet/20 via-card to-cyan/10 p-10 text-center">
@@ -328,14 +369,93 @@ export function StoryStudioLanding() {
         </section>
       </main>
 
-      <footer className="border-t border-white/10 py-8 text-center text-sm text-muted">
-        <p>
-          StoryStudio — продукт для проверки гипотезы ·{" "}
-          <Link href="/" className="text-violet hover:underline">
-            MarketCard AI
-          </Link>
-        </p>
-      </footer>
+      <StoryStudioFooter />
+    </div>
+  );
+}
+
+function RelationsMapPreview() {
+  const nodes = [
+    { id: "a", x: 70, y: 90, label: "Аня", color: "#8C7BFF" },
+    { id: "b", x: 250, y: 70, label: "Макс", color: "#6EDCFF" },
+    { id: "c", x: 160, y: 210, label: "Ворон", color: "#ff6b8a" }
+  ];
+
+  const edges = [
+    { from: 0, to: 1, color: "#ff8fd4", label: "Любовь" },
+    { from: 0, to: 2, color: "#ff6b8a", label: "Враг" },
+    { from: 1, to: 2, color: "#ffd56e", label: "Наставник" }
+  ];
+
+  return (
+    <div className="relative mx-auto max-w-md">
+      <div className="rounded-card border border-white/10 bg-[#0a0812]/80 p-4 backdrop-blur-sm">
+        <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-muted">Интерактивная карта</p>
+        <svg viewBox="0 0 320 260" className="h-auto w-full">
+          <defs>
+            {["lover", "enemy", "mentor"].map((id, index) => (
+              <marker
+                key={id}
+                id={`preview-arrow-${id}`}
+                markerWidth="7"
+                markerHeight="7"
+                refX="6"
+                refY="3.5"
+                orient="auto"
+              >
+                <path d="M0,0 L7,3.5 L0,7 Z" fill={edges[index].color} />
+              </marker>
+            ))}
+          </defs>
+
+          {edges.map((edge, index) => {
+            const from = nodes[edge.from];
+            const to = nodes[edge.to];
+            const markerIds = ["preview-arrow-lover", "preview-arrow-enemy", "preview-arrow-mentor"];
+            const midX = (from.x + to.x) / 2;
+            const midY = (from.y + to.y) / 2;
+
+            return (
+              <g key={`${edge.from}-${edge.to}`}>
+                <line
+                  x1={from.x}
+                  y1={from.y}
+                  x2={to.x}
+                  y2={to.y}
+                  stroke={edge.color}
+                  strokeWidth={2}
+                  strokeOpacity={0.8}
+                  markerEnd={`url(#${markerIds[index]})`}
+                />
+                <text x={midX} y={midY - 6} textAnchor="middle" className="fill-muted text-[10px]">
+                  {edge.label}
+                </text>
+              </g>
+            );
+          })}
+
+          {nodes.map((node) => (
+            <g key={node.id}>
+              <circle cx={node.x} cy={node.y} r={30} fill="#171C26" stroke={node.color} strokeWidth={2} />
+              <text x={node.x} y={node.y + 4} textAnchor="middle" className="fill-ink text-[12px] font-semibold">
+                {node.label.slice(0, 1)}
+              </text>
+              <text x={node.x} y={node.y + 46} textAnchor="middle" className="fill-muted text-[10px]">
+                {node.label}
+              </text>
+            </g>
+          ))}
+        </svg>
+        <div className="mt-3 flex flex-wrap justify-center gap-2 text-[10px] text-muted">
+          <span className="rounded-full border border-white/10 px-2 py-1">Союзник</span>
+          <span className="rounded-full border border-white/10 px-2 py-1">Любовь</span>
+          <span className="rounded-full border border-white/10 px-2 py-1">Враг</span>
+          <span className="rounded-full border border-white/10 px-2 py-1">Семья</span>
+        </div>
+      </div>
+      <div className="absolute -left-2 top-6 rounded-full border border-violet/30 bg-violet/15 px-3 py-1 text-xs font-semibold text-violet">
+        Drag & drop
+      </div>
     </div>
   );
 }

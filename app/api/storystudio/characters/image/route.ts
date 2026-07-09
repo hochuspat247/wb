@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
-import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
-import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
+import { generatePromptOnlyImage } from "@/lib/ai/promptOnlyImage";
 import { buildCharacterPortraitPrompt } from "@/lib/storystudio/prompt";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
@@ -10,7 +9,7 @@ import { db } from "@/lib/db";
 import { storyProjects } from "@/lib/db/schema";
 
 export const runtime = "nodejs";
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export async function POST(request: Request) {
   try {
@@ -52,63 +51,31 @@ export async function POST(request: Request) {
     }
 
     const prompt = buildCharacterPortraitPrompt(character, row.payload);
-    let imageBase64: string | null = null;
-    let imageMimeType: string | null = null;
-    let imageUrl: string | null = null;
+    const result = await generatePromptOnlyImage({
+      prompt,
+      aspectRatio: "3:4",
+      resolution: "1k",
+      outputFormat: "png",
+      model: "nb2"
+    });
 
-    if (isNanoBananaExpertConfigured()) {
-      const result = await generateNanoBananaExpertImage({
-        productDescription: prompt,
-        category: "character portrait",
-        marketplace: "StoryStudio",
-        style: "cinematic illustration",
-        aspectRatio: "3:4",
-        resolution: "1k",
-        outputFormat: "png",
-        model: "nb2",
-        designPreset: "premium-marketplace",
-        price: "",
-        ctaText: "",
-        title: character.name,
-        benefits: [],
-        characteristics: [],
-        keywords: character.tags,
-        infographicTexts: []
-      });
-      imageBase64 = result.imageBase64 ?? null;
-      imageMimeType = result.mimeType ?? null;
-      imageUrl = result.imageUrl ?? null;
-    } else if (process.env.GEMINI_API_KEY) {
-      const result = await generateGeminiProductImage({
-        productDescription: prompt,
-        category: "character portrait",
-        marketplace: "StoryStudio",
-        style: "cinematic illustration",
-        aspectRatio: "3:4",
-        resolution: "1k",
-        outputFormat: "png",
-        model: "nb2",
-        designPreset: "premium-marketplace",
-        price: "",
-        ctaText: "",
-        title: character.name,
-        benefits: [],
-        characteristics: [],
-        keywords: character.tags,
-        infographicTexts: []
-      });
-      imageBase64 = result.imageBase64 ?? null;
-      imageMimeType = result.mimeType ?? null;
-      imageUrl = result.imageUrl ?? null;
-    } else {
-      return NextResponse.json({ error: "Генерация изображений не настроена." }, { status: 503 });
+    if (result.isFallback || (!result.imageBase64 && !result.imageUrl)) {
+      return NextResponse.json(
+        { error: result.error || "Не удалось сгенерировать портрет. Попробуйте ещё раз." },
+        { status: 502 }
+      );
     }
 
     const story = {
       ...row.payload,
       characters: row.payload.characters.map((c) =>
         c.id === body.characterId
-          ? { ...c, imageBase64, imageMimeType, imageUrl }
+          ? {
+              ...c,
+              imageBase64: result.imageBase64 ?? null,
+              imageMimeType: result.mimeType ?? null,
+              imageUrl: result.imageUrl ?? null
+            }
           : c
       ),
       updatedAt: new Date().toISOString()

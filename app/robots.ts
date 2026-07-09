@@ -7,7 +7,16 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/cabinet", "/admin", "/api/", "/login", "/register", "/forgot-password", "/reset-password"]
+        disallow: [
+          "/cabinet",
+          "/storystudio/cabinet",
+          "/admin",
+          "/api/",
+          "/login",
+          "/register",
+          "/forgot-password",
+          "/reset-password"
+        ]
       }
     ],
     sitemap: absoluteUrl("/sitemap.xml")

@@ -207,7 +207,7 @@ export function StoryCreateForm() {
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Создаём историю с AI...
+            Создаём историю с AI... (1–2 мин)
           </>
         ) : (
           <>

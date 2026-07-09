@@ -17,6 +17,7 @@ import {
   Wallet
 } from "lucide-react";
 import { StoryStudioHeader } from "@/components/storystudio/StoryStudioHeader";
+import { StoryStudioFooter } from "@/components/storystudio/StoryStudioFooter";
 import { CharacterGrid } from "@/components/storystudio/CharacterGrid";
 import { RelationshipTree } from "@/components/storystudio/RelationshipTree";
 import { StoryEditor } from "@/components/storystudio/StoryEditor";
@@ -35,9 +36,12 @@ import {
   generateCharacterPortrait,
   generateStoryChapter,
   generateStoryCharacter,
+  regenerateStoryFoundation,
+  updateStoryProject,
 } from "@/lib/api/storystudio";
 import { fetchUserQuota } from "@/lib/api/user";
-import type { StoryProject } from "@/types/storystudio";
+import { isStoryFoundationEmpty } from "@/lib/storystudio/storyState";
+import type { CharacterRelation, StoryCharacter, StoryProject } from "@/types/storystudio";
 
 type Tab = "overview" | "characters" | "relations" | "editor" | "series" | "pricing";
 
@@ -55,6 +59,7 @@ export function StoryStudioCabinet() {
   const [portraitLoadingId, setPortraitLoadingId] = useState<string | null>(null);
   const [charHint, setCharHint] = useState("");
   const [error, setError] = useState("");
+  const [regenerateLoading, setRegenerateLoading] = useState(false);
   const [videoOrderId, setVideoOrderId] = useState<string | null>(searchParams.get("videoOrder"));
 
   const loadData = useCallback(async () => {
@@ -94,6 +99,28 @@ export function StoryStudioCabinet() {
     setStories((prev) => prev.map((s) => (s.id === story.id ? story : s)));
   }
 
+  async function handleRelationsUpdate(payload: {
+    characters: StoryCharacter[];
+    relations: CharacterRelation[];
+  }) {
+    if (!activeStory) return;
+
+    const story: StoryProject = {
+      ...activeStory,
+      characters: payload.characters,
+      relations: payload.relations,
+      updatedAt: new Date().toISOString()
+    };
+
+    handleStoryUpdate(story);
+
+    try {
+      await updateStoryProject(story);
+    } catch {
+      setError("Не удалось сохранить карту связей.");
+    }
+  }
+
   async function handleGenerateCharacter() {
     if (!activeStory) return;
     setCharacterLoading(true);
@@ -127,6 +154,22 @@ export function StoryStudioCabinet() {
     }
   }
 
+  async function handleRegenerateFoundation() {
+    if (!activeStory) return;
+    setRegenerateLoading(true);
+    setError("");
+    try {
+      const { story, quota: q } = await regenerateStoryFoundation(activeStory.id);
+      handleStoryUpdate(story);
+      setQuota({ remaining: (q as { remaining: number }).remaining, credits: (q as { credits: number }).credits });
+      setSelectedCharacterId(story.characters[0]?.id ?? null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Не удалось перегенерировать историю");
+    } finally {
+      setRegenerateLoading(false);
+    }
+  }
+
   async function handleGenerateChapter(instructions?: string) {
     if (!activeStory) return;
     setChapterLoading(true);
@@ -155,6 +198,7 @@ export function StoryStudioCabinet() {
             <Button className="!bg-violet !text-white !border-violet">Создать аккаунт</Button>
           </Link>
         </div>
+        <StoryStudioFooter />
       </div>
     );
   }
@@ -261,6 +305,33 @@ export function StoryStudioCabinet() {
 
                 {tab === "overview" && (
                   <div className="space-y-6">
+                    {activeStory && isStoryFoundationEmpty(activeStory) && (
+                      <div className="rounded-card border border-amber-500/30 bg-amber-500/10 p-5">
+                        <p className="text-sm text-amber-100">
+                          Контент истории не сгенерировался — AI не вернул данные. Нажмите кнопку ниже, чтобы
+                          попробовать снова (бесплатно).
+                        </p>
+                        <Button
+                          type="button"
+                          className="mt-3 !bg-violet !text-white !border-violet"
+                          disabled={regenerateLoading}
+                          onClick={handleRegenerateFoundation}
+                        >
+                          {regenerateLoading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Генерируем...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4" />
+                              Сгенерировать заново
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+
                     <div className="rounded-card border border-white/10 bg-card p-6">
                       <h2 className="text-xl font-bold">{activeStory.title}</h2>
                       <p className="mt-1 text-sm text-violet">{activeStory.hook}</p>
@@ -282,11 +353,15 @@ export function StoryStudioCabinet() {
                       </div>
                       <div className="rounded-card border border-white/10 bg-card p-5">
                         <h3 className="font-semibold">План сюжета</h3>
-                        <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm text-muted">
-                          {activeStory.outline.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ol>
+                        {activeStory.outline.length > 0 ? (
+                          <ol className="mt-2 list-decimal space-y-1 pl-4 text-sm text-muted">
+                            {activeStory.outline.map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ol>
+                        ) : (
+                          <p className="mt-2 text-sm text-muted">План сюжета пока не сгенерирован.</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -332,6 +407,7 @@ export function StoryStudioCabinet() {
                     relations={activeStory.relations}
                     selectedId={selectedCharacterId}
                     onSelect={setSelectedCharacterId}
+                    onUpdate={handleRelationsUpdate}
                   />
                 )}
 
@@ -349,6 +425,9 @@ export function StoryStudioCabinet() {
                     story={activeStory}
                     onUpdate={handleStoryUpdate}
                     initialVideoOrderId={videoOrderId}
+                    onGeneratePortrait={handleGeneratePortrait}
+                    portraitLoadingId={portraitLoadingId}
+                    onOpenCharacters={() => setTab("characters")}
                   />
                 )}
 
@@ -382,6 +461,7 @@ export function StoryStudioCabinet() {
           </div>
         )}
       </div>
+      <StoryStudioFooter />
     </div>
   );
 }

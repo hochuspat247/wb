@@ -121,23 +121,90 @@ export async function generateNanoBananaExpertImage(input: GenerateImageInput): 
     return createFallbackResult(prompt, "NANOBANANA_EXPERT_API_KEY is not configured", generatedAt);
   }
 
-  const body = {
+  const referenceImages = input.imageBase64
+    ? [
+        input.imageBase64.startsWith("data:")
+          ? input.imageBase64
+          : `data:${input.imageMimeType || "image/png"};base64,${input.imageBase64}`
+      ]
+    : [];
+
+  return runNanoBananaGeneration({
     prompt,
-    reference_images: input.imageBase64
-      ? [
-          input.imageBase64.startsWith("data:")
-            ? input.imageBase64
-            : `data:${input.imageMimeType || "image/png"};base64,${input.imageBase64}`
-        ]
-      : [],
+    referenceImages,
     model: input.model || process.env.NANOBANANA_EXPERT_MODEL || "nb2",
-    aspect_ratio: input.aspectRatio || process.env.NANOBANANA_EXPERT_ASPECT_RATIO || "4:5",
+    aspectRatio: input.aspectRatio || process.env.NANOBANANA_EXPERT_ASPECT_RATIO || "4:5",
     resolution: input.resolution || process.env.NANOBANANA_EXPERT_RESOLUTION || "1k",
-    output_format: input.outputFormat || "png",
+    outputFormat: input.outputFormat || "png"
+  });
+}
+
+export type PromptOnlyImageOptions = {
+  prompt: string;
+  aspectRatio?: string;
+  resolution?: "1k" | "2k" | "4k";
+  outputFormat?: "png" | "jpeg" | "webp";
+  model?: "nb2" | "gpt2";
+};
+
+export async function generateNanoBananaExpertFromPrompt(
+  options: PromptOnlyImageOptions
+): Promise<GenerateImageResult> {
+  const prompt = options.prompt.trim();
+  const generatedAt = new Date().toISOString();
+
+  if (!prompt) {
+    return createFallbackResult(prompt, "Пустой промпт для изображения.", generatedAt);
+  }
+
+  const policy = await assessGenerationContentPolicy({
+    productDescription: prompt,
+    category: "character portrait",
+    title: "portrait",
+    benefits: [],
+    infographicTexts: [],
+    keywords: []
+  });
+
+  if (!policy.allowed) {
+    return createFallbackResult(prompt, policy.error, generatedAt);
+  }
+
+  if (!isApiKeyConfigured()) {
+    return createFallbackResult(prompt, "NANOBANANA_EXPERT_API_KEY is not configured", generatedAt);
+  }
+
+  return runNanoBananaGeneration({
+    prompt,
+    referenceImages: [],
+    model: options.model || process.env.NANOBANANA_EXPERT_MODEL || "nb2",
+    aspectRatio: options.aspectRatio || "3:4",
+    resolution: options.resolution || process.env.NANOBANANA_EXPERT_RESOLUTION || "1k",
+    outputFormat: options.outputFormat || "png"
+  });
+}
+
+type NanoBananaGenerationRequest = {
+  prompt: string;
+  referenceImages: string[];
+  model: string;
+  aspectRatio: string;
+  resolution: string;
+  outputFormat: string;
+};
+
+async function runNanoBananaGeneration(request: NanoBananaGenerationRequest): Promise<GenerateImageResult> {
+  const generatedAt = new Date().toISOString();
+  const body = {
+    prompt: request.prompt,
+    reference_images: request.referenceImages,
+    model: request.model,
+    aspect_ratio: request.aspectRatio,
+    resolution: request.resolution,
+    output_format: request.outputFormat,
     provider: process.env.NANOBANANA_EXPERT_PROVIDER || "auto"
   };
-
-  const outputFormat = input.outputFormat || "png";
+  const outputFormat = request.outputFormat;
 
   try {
     const response = await fetch(`${getBaseUrl()}/generate`, {
@@ -151,7 +218,7 @@ export async function generateNanoBananaExpertImage(input: GenerateImageInput): 
 
     if (!response.ok) {
       const errorMessage = mapStatusToError(response.status, await readApiErrorMessage(response));
-      return createFallbackResult(prompt, errorMessage, generatedAt);
+      return createFallbackResult(request.prompt, errorMessage, generatedAt);
     }
 
     const data = (await response.json()) as NanoBananaExpertApiResponse;
@@ -161,7 +228,7 @@ export async function generateNanoBananaExpertImage(input: GenerateImageInput): 
     if (!asset) {
       const generationId = extractGenerationId(data);
       const suffix = generationId ? ` generation_id: ${generationId}` : "";
-      return createFallbackResult(prompt, `Сервис NanoBanana Expert не вернул готовый image_url.${suffix}`, generatedAt);
+      return createFallbackResult(request.prompt, `Сервис NanoBanana Expert не вернул готовый image_url.${suffix}`, generatedAt);
     }
 
     const mimeType =
@@ -174,7 +241,7 @@ export async function generateNanoBananaExpertImage(input: GenerateImageInput): 
       mimeType,
       provider: "NanoBanana Expert",
       model: body.model,
-      prompt,
+      prompt: request.prompt,
       generatedAt,
       isFallback: false,
       bananasSpent: resolvedData.bananas_spent ?? data.bananas_spent,
@@ -184,7 +251,7 @@ export async function generateNanoBananaExpertImage(input: GenerateImageInput): 
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Сервис NanoBanana Expert временно недоступен";
-    return createFallbackResult(prompt, message, generatedAt);
+    return createFallbackResult(request.prompt, message, generatedAt);
   }
 }
 

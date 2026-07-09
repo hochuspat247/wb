@@ -65,6 +65,20 @@ export async function generateStoryFoundation(input: {
   return data as { story: StoryProject; quota: unknown };
 }
 
+export async function regenerateStoryFoundation(storyId: string) {
+  const response = await fetch(`/api/storystudio/stories/${storyId}/regenerate`, {
+    method: "POST"
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const err = new Error(data.error || "REGENERATION_FAILED") as Error & { code?: string; quota?: unknown };
+    err.code = data.code;
+    (err as { quota?: unknown }).quota = data.quota;
+    throw err;
+  }
+  return data as { story: StoryProject; quota: unknown };
+}
+
 export async function generateStoryCharacter(storyId: string, options?: { hint?: string; name?: string; role?: string }) {
   const response = await fetch("/api/storystudio/characters/generate", {
     method: "POST",

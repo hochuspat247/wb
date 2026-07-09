@@ -1,5 +1,6 @@
 import type { CreateStoryInput, StoryCharacter, StoryProject } from "@/types/storystudio";
 import { STORY_GENRES } from "@/lib/storystudio/constants";
+import { formatCharactersForPrompt, formatRelationsForPrompt } from "@/lib/storystudio/relations";
 
 function genreLabels(genres: string[]) {
   return genres
@@ -59,10 +60,11 @@ ${premium}
   "outline": ["событие акта 1", "поворот", "кульминация", "финал"],
   "firstChapter": {
     "title": "название первой главы",
-    "summary": "краткое содержание",
-    "content": "полный текст первой главы 800-1200 слов, художественная проза"
+    "summary": "краткое содержание 2-3 предложения (без полного текста главы)"
   }
-}`;
+}
+
+Важно: верни полный синопсис, минимум 3 персонажей с заполненными полями, мир и план сюжета. Полный текст первой главы генерировать не нужно.`;
 }
 
 export function buildCharacterPrompt(story: StoryProject, hint?: string, name?: string, role?: string) {
@@ -73,6 +75,8 @@ export function buildCharacterPrompt(story: StoryProject, hint?: string, name?: 
 История: ${story.title}
 Синопсис: ${story.synopsis}
 Существующие персонажи: ${existing || "пока нет"}
+Текущие связи на карте автора:
+${formatRelationsForPrompt(story)}
 Имя (если задано): ${name || "придумай подходящее"}
 Роль: ${role || "на твоё усмотрение"}
 Подсказка автора: ${hint?.trim() || "нет"}
@@ -103,6 +107,8 @@ export function buildCharacterPrompt(story: StoryProject, hint?: string, name?: 
 
 export function buildChapterPrompt(story: StoryProject, chapterNumber: number, instructions?: string) {
   const prev = story.chapters.slice(-2).map((c) => `Глава ${c.number}: ${c.title}\n${c.summary}`).join("\n\n");
+  const relationsBlock = formatRelationsForPrompt(story);
+  const charactersBlock = formatCharactersForPrompt(story);
 
   return `Ты — писатель. Продолжи художественное произведение.
 
@@ -112,8 +118,14 @@ export function buildChapterPrompt(story: StoryProject, chapterNumber: number, i
 Предыдущие главы:
 ${prev || "Это первая глава после уже сгенерированной основы."}
 
+Персонажи:
+${charactersBlock}
+
+Связи на карте автора (обязательно отражай в сценах, конфликтах и диалогах):
+${relationsBlock}
+
 Номер новой главы: ${chapterNumber}
-Инструкции автора: ${instructions?.trim() || "продолжай естественно, наращивай напряжение"}
+Инструкции автора: ${instructions?.trim() || "продолжай естественно, наращивай напряжение с учётом связей между героями"}
 
 Верни JSON:
 {

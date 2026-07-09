@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Clapperboard, Film, Loader2, Play, Sparkles } from "lucide-react";
 import { StoryVideoConfigModal } from "@/components/storystudio/StoryVideoConfigModal";
 import { VideoWaitingScreen } from "@/components/video/VideoWaitingScreen";
@@ -14,11 +14,21 @@ type StoryVideoSeriesProps = {
   story: StoryProject;
   onUpdate: (story: StoryProject) => void;
   initialVideoOrderId?: string | null;
+  onGeneratePortrait?: (characterId: string) => void;
+  portraitLoadingId?: string | null;
+  onOpenCharacters?: () => void;
 };
 
 type Phase = "list" | "config" | "waiting" | "ready";
 
-export function StoryVideoSeries({ story, onUpdate, initialVideoOrderId }: StoryVideoSeriesProps) {
+export function StoryVideoSeries({
+  story,
+  onUpdate,
+  initialVideoOrderId,
+  onGeneratePortrait,
+  portraitLoadingId,
+  onOpenCharacters
+}: StoryVideoSeriesProps) {
   const [phase, setPhase] = useState<Phase>(initialVideoOrderId ? "waiting" : "list");
   const [orderId, setOrderId] = useState<string | null>(initialVideoOrderId || null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -26,9 +36,28 @@ export function StoryVideoSeries({ story, onUpdate, initialVideoOrderId }: Story
   const [selectedChapterId, setSelectedChapterId] = useState<string | undefined>();
   const [videoCredits, setVideoCredits] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const portraitCountRef = useRef(0);
 
   const episodes = story.episodes ?? [];
   const charactersWithPortrait = story.characters.filter((c) => c.imageBase64 || c.imageUrl);
+  const charactersWithoutPortrait = story.characters.filter((c) => !c.imageBase64 && !c.imageUrl);
+
+  useEffect(() => {
+    const prevCount = portraitCountRef.current;
+    portraitCountRef.current = charactersWithPortrait.length;
+
+    if (
+      phase === "list" &&
+      !portraitLoadingId &&
+      charactersWithPortrait.length > prevCount &&
+      charactersWithPortrait.length > 0
+    ) {
+      const character = charactersWithPortrait[charactersWithPortrait.length - 1];
+      setSelectedCharacter(character);
+      setSelectedChapterId(undefined);
+      setPhase("config");
+    }
+  }, [charactersWithPortrait.length, phase, portraitLoadingId, charactersWithPortrait]);
 
   useEffect(() => {
     fetchVideoCredits().then(setVideoCredits).catch(() => undefined);
@@ -101,12 +130,12 @@ export function StoryVideoSeries({ story, onUpdate, initialVideoOrderId }: Story
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-violet">
               <Sparkles className="h-4 w-4" />
-              Конкурентное преимущество
+              Только в StoryStudio
             </div>
             <h3 className="mt-1 text-lg font-bold text-ink">Видео-серии из вашей истории</h3>
             <p className="mt-2 max-w-xl text-sm text-muted">
-              Novely генерит текст и картинки. StoryStudio снимает кинематографичные сцены из портретов персонажей через
-              Google Veo 3.1 — собирайте серии как эпизоды для Reels, Shorts и TikTok.
+              Превратите портреты персонажей в кинематографичные сцены через Google Veo 3.1 — собирайте серии как
+              эпизоды для Reels, Shorts и TikTok.
             </p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-center">
@@ -118,23 +147,79 @@ export function StoryVideoSeries({ story, onUpdate, initialVideoOrderId }: Story
       </div>
 
       {charactersWithPortrait.length === 0 ? (
-        <div className="rounded-card border border-dashed border-white/15 p-8 text-center text-sm text-muted">
-          Сначала создайте AI-портрет персонажа во вкладке «Персонажи» — он станет основой для видео-сцены.
+        <div className="rounded-card border border-dashed border-violet/30 bg-violet/5 p-6">
+          {story.characters.length === 0 ? (
+            <div className="text-center">
+              <p className="text-sm text-muted">
+                Добавьте персонажей в историю — без них видео-серию снять не получится.
+              </p>
+              {onOpenCharacters && (
+                <Button
+                  type="button"
+                  className="mt-4 !bg-violet !text-white !border-violet"
+                  onClick={onOpenCharacters}
+                >
+                  Перейти к персонажам
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-ink">Шаг 1: AI-портрет персонажа</h4>
+                <p className="mt-1 text-sm text-muted">
+                  Видео Veo 3.1 строится на портрете героя. Сгенерируйте его здесь — и сразу откроется съёмка серии.
+                </p>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {charactersWithoutPortrait.map((character) => (
+                  <div
+                    key={character.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-card/80 px-4 py-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-ink">{character.name}</p>
+                      <p className="truncate text-xs text-muted">{character.role}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="shrink-0 !bg-violet !text-white !border-violet"
+                      disabled={!onGeneratePortrait || portraitLoadingId === character.id}
+                      onClick={() => onGeneratePortrait?.(character.id)}
+                    >
+                      {portraitLoadingId === character.id ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Рисуем...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-3.5 w-3.5" />
+                          Портрет AI
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="rounded-card border border-white/10 bg-card p-5">
-          <h4 className="mb-3 font-semibold text-ink">Снять новую серию</h4>
+          <h4 className="mb-1 font-semibold text-ink">Снять новую серию</h4>
+          <p className="mb-4 text-sm text-muted">Выберите персонажа — откроется настройка сцены и оплата через Veo 3.1.</p>
           <div className="flex flex-wrap gap-2">
             {charactersWithPortrait.map((character) => (
               <Button
                 key={character.id}
                 type="button"
-                size="sm"
-                variant="secondary"
+                className="!bg-violet !text-white !border-violet"
                 onClick={() => openConfig(character)}
               >
-                <Clapperboard className="h-3.5 w-3.5" />
-                {character.name}
+                <Clapperboard className="h-4 w-4" />
+                Снять серию: {character.name}
               </Button>
             ))}
           </div>

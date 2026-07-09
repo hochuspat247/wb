@@ -1,0 +1,132 @@
+import type { Metadata } from "next";
+import { absoluteUrl, siteConfig } from "@/lib/seo";
+import {
+  STORY_GENERATION_PRICE_RUB,
+  calculateStoryPackagePrice,
+  formatStoryRub
+} from "@/lib/storystudio/pricing";
+import { VIDEO_STANDARD_PRICE_4_SEC, formatVideoPriceRub } from "@/config/video-pricing";
+
+const pack10 = calculateStoryPackagePrice(10);
+
+export const storyStudioConfig = {
+  name: "StoryStudio",
+  brand: "StoryStudio — AI генератор историй",
+  title:
+    "StoryStudio — AI генератор историй, персонажей, карта связей и видео-серии",
+  description: `Создавайте книги и новеллы с ИИ: синопсис, мир, персонажи, интерактивная карта связей, портреты героев и видео-серии через Google Veo 3.1. От ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию, пакеты от ${formatStoryRub(pack10.total)}. Без подписки — платите за результат.`,
+  keywords: [
+    "storystudio",
+    "генератор историй",
+    "нейросеть для книги",
+    "ai писатель",
+    "создать историю с ai",
+    "генератор персонажей",
+    "карта связей персонажей",
+    "написать книгу с нейросетью",
+    "создать новеллу",
+    "фанфик генератор",
+    "видео из персонажа",
+    "veo 3.1 история",
+    "ai генератор глав",
+    "дерево связей героев",
+    "писательский ai",
+    "создать роман онлайн",
+    "интерактивная карта персонажей",
+    "генератор портретов персонажа",
+    "видео серия ai",
+    "русский ai для писателей"
+  ],
+  locale: "ru_RU",
+  ogImagePath: "/storystudio/opengraph-image"
+};
+
+export function storyStudioAbsoluteUrl(path = "/storystudio") {
+  return absoluteUrl(path);
+}
+
+export function createStoryStudioMetadata({
+  title,
+  description,
+  path = "/storystudio",
+  noIndex = false,
+  keywords
+}: {
+  title?: string;
+  description?: string;
+  path?: string;
+  noIndex?: boolean;
+  keywords?: string[];
+}): Metadata {
+  const pageTitle = title ? `${title} | StoryStudio` : storyStudioConfig.title;
+  const pageDescription = description || storyStudioConfig.description;
+  const pageKeywords = keywords ?? storyStudioConfig.keywords;
+  const ogImage = storyStudioAbsoluteUrl(storyStudioConfig.ogImagePath);
+
+  return {
+    title: pageTitle,
+    description: pageDescription,
+    keywords: pageKeywords,
+    applicationName: storyStudioConfig.name,
+    metadataBase: new URL(siteConfig.url),
+    alternates: {
+      canonical: absoluteUrl(path),
+      languages: {
+        "ru-RU": absoluteUrl(path)
+      }
+    },
+    icons: {
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+        { url: "/favicon-192x192.png", type: "image/png", sizes: "192x192" }
+      ],
+      shortcut: "/favicon.ico",
+      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
+    },
+    manifest: "/site.webmanifest",
+    openGraph: {
+      type: "website",
+      locale: storyStudioConfig.locale,
+      url: absoluteUrl(path),
+      siteName: storyStudioConfig.name,
+      title: pageTitle,
+      description: pageDescription,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: `${storyStudioConfig.name} — AI генератор историй и видео-серий`
+        }
+      ]
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: pageTitle,
+      description: pageDescription,
+      images: [ogImage]
+    },
+    robots: noIndex
+      ? { index: false, follow: false }
+      : {
+          index: true,
+          follow: true,
+          googleBot: {
+            index: true,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+            "max-video-preview": -1
+          }
+        },
+    category: "technology"
+  };
+}
+
+export const storyStudioLandingDescription = storyStudioConfig.description;
+
+export const storyStudioCreateDescription =
+  "Опишите идею романа или новеллы — AI создаст синопсис, персонажей, карту связей и план сюжета. Жанры, объём и Premium 18+ на выбор.";
+
+export const storyStudioVideoSnippet = `Видео-серии из портретов — от ${formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)} за 4 сек через Google Veo 3.1.`;

@@ -1,4 +1,4 @@
-/** StoryStudio — чуть дешевле Novely и MarketCard. */
+/** StoryStudio pricing. */
 
 export const STORY_FREE_TRIAL = 2;
 export const STORY_GENERATION_PRICE_RUB = 39;
@@ -69,10 +69,6 @@ export function formatStoryRub(value: number) {
   return `${value.toLocaleString("ru-RU")} ₽`;
 }
 
-/** Для сравнения на лендинге — ориентир Novely ~590₽/мес за ~30 генераций. */
-export const COMPETITOR_MONTHLY_EQUIV_RUB = 590;
-export const STORYSTUDIO_MONTHLY_EQUIV_RUB = 449;
-
 export const STORY_PRICING_PLANS = [
   {
     id: "free",
@@ -96,7 +92,7 @@ export const STORY_PRICING_PLANS = [
     features: [
       "История, персонаж, глава или портрет",
       "Без подписки — платите только за результат",
-      "Дешевле Novely на ~34%",
+      "Видео-серии из портретов персонажей",
       "Пакеты со скидкой до 41%"
     ],
     cta: "Купить генерации",

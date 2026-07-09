@@ -149,8 +149,7 @@ export function StoryVideoConfigModal({
         </div>
         <h3 className="mt-3 text-2xl font-bold text-ink">Снять сцену из истории</h3>
         <p className="mt-2 text-sm text-muted">
-          Анимируем портрет {character.name} в кинематографичную сцену. Собирайте серии как эпизоды — конкурентное
-          преимущество StoryStudio перед Novely.
+          Анимируем портрет {character.name} в кинематографичную сцену. Собирайте серии как эпизоды вашей истории.
         </p>
 
         <div className="mt-6 grid gap-5 md:grid-cols-[160px_1fr]">
@@ -227,7 +226,7 @@ export function StoryVideoConfigModal({
           </p>
           {!isUnlimited && <p className="text-xs text-muted">{formatVideoPriceBreakdown(duration, quality, generateAudio)}</p>}
           {!isUnlimited && (
-            <p className="mt-1 text-xs text-muted">Минимум от {formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)} · Novely видео не делает</p>
+            <p className="mt-1 text-xs text-muted">Минимум от {formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)}</p>
           )}
           {canUseCredit && <p className="mt-1 text-xs text-muted">Video-credits: {videoCredits}</p>}
         </div>

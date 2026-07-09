@@ -60,6 +60,63 @@ export async function generateGeminiProductImage(
   return createFallbackResult(prompt, errors.join(" | "), generatedAt);
 }
 
+export async function generateGeminiPromptImage(
+  prompt: string,
+  options: { aspectRatio?: string; imageMode?: ImageGenerationMode } = {}
+): Promise<GenerateImageResult> {
+  const generatedAt = new Date().toISOString();
+  const trimmedPrompt = prompt.trim();
+
+  if (!trimmedPrompt) {
+    return createFallbackResult(trimmedPrompt, "Пустой промпт для изображения.", generatedAt);
+  }
+
+  if (!process.env.GEMINI_API_KEY) {
+    return createFallbackResult(trimmedPrompt, "GEMINI_API_KEY не задан.", generatedAt);
+  }
+
+  const models = getModelQueue(options.imageMode);
+  const aspectRatio = options.aspectRatio || "3:4";
+  const errors: string[] = [];
+
+  for (const model of models) {
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model,
+        contents: trimmedPrompt,
+        config: {
+          responseModalities: ["IMAGE"],
+          imageConfig: { aspectRatio }
+        }
+      });
+
+      const parts = response.candidates?.[0]?.content?.parts ?? [];
+      for (const part of parts) {
+        const data = part.inlineData?.data;
+        if (data) {
+          return {
+            imageBase64: data,
+            imageUrl: null,
+            mimeType: part.inlineData?.mimeType ?? "image/png",
+            provider: "Gemini Nano Banana",
+            model,
+            prompt: trimmedPrompt,
+            generatedAt,
+            isFallback: false
+          };
+        }
+      }
+
+      errors.push(`${model}: empty image response`);
+    } catch (error) {
+      errors.push(`${model}: ${formatError(error)}`);
+    }
+  }
+
+  return createFallbackResult(trimmedPrompt, errors.join(" | ") || "Gemini не вернул изображение.", generatedAt);
+}
+
 async function callGeminiImageModel(input: GenerateImageInput, prompt: string, model: string) {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
   const interaction = (await ai.interactions.create({

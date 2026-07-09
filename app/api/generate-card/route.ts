@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { assessGenerationContentPolicy, scanTextForProhibitedContent } from "@/lib/ai/contentPolicy";
 import { generateProductCard } from "@/lib/ai/providers";
 import { resolveProductContextFromImage } from "@/lib/ai/productVision";
 import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
+import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import { createImageGenerationTicket } from "@/lib/server/imageGenerationTickets";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
@@ -54,6 +56,17 @@ export async function POST(request: Request) {
       );
     }
 
+    const initialPolicy = scanTextForProhibitedContent(
+      [body.productDescription, body.category, body.brand, body.sellerWishes, body.editInstructions]
+        .map((value) => value?.trim())
+        .filter(Boolean)
+        .join("\n")
+    );
+
+    if (!initialPolicy.allowed) {
+      return createContentPolicyBlockedResponse(initialPolicy);
+    }
+
     const marketplace = body.marketplace || "Wildberries";
     const productContext = await resolveProductContextFromImage({
       productDescription: body.productDescription.trim(),
@@ -63,6 +76,21 @@ export async function POST(request: Request) {
       imageMimeType: body.imageMimeType
     });
     const category = productContext.category;
+    const resolvedPolicy = await assessGenerationContentPolicy({
+      productDescription: productContext.productDescription,
+      category,
+      brand: productContext.brand,
+      sellerWishes: productContext.sellerWishes,
+      editInstructions: body.editInstructions?.trim(),
+      identifiedProductName: productContext.identifiedProductName,
+      imageBase64: body.imageBase64,
+      imageMimeType: body.imageMimeType
+    });
+
+    if (!resolvedPolicy.allowed) {
+      return createContentPolicyBlockedResponse(resolvedPolicy);
+    }
+
     const platform = body.platform ?? marketplaceLabelToPlatform(marketplace);
     const textMode = body.textMode ?? "marketplace_safe";
 

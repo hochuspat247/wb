@@ -96,7 +96,7 @@ export function buildHomeJsonLd() {
         "@type": "Organization",
         name: siteConfig.name,
         url: absoluteUrl("/"),
-        logo: absoluteUrl("/favicon.png"),
+        logo: absoluteUrl("/logo.png"),
         email: "avenir.team.corp@gmail.com"
       },
       {

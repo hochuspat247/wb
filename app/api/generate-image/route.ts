@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { assessGenerationContentPolicy } from "@/lib/ai/contentPolicy";
 import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
 import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
+import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
 import { consumeImageGenerationTicket } from "@/lib/server/imageGenerationTickets";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import { consumeGeneration, getUserQuota, type UserQuota } from "@/lib/server/quota";
@@ -14,7 +16,7 @@ import type {
 } from "@/types/product-card";
 
 export const runtime = "nodejs";
-export const maxDuration = 240;
+export const maxDuration = 300;
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -89,6 +91,22 @@ export async function POST(request: Request) {
 
     if (validationError) {
       return NextResponse.json({ error: validationError }, { status: 400 });
+    }
+
+    const policy = await assessGenerationContentPolicy({
+      productDescription: input.productDescription,
+      category: input.category,
+      title: input.title,
+      benefits: input.benefits,
+      infographicTexts: input.infographicTexts,
+      keywords: input.keywords,
+      editInstructions: input.editInstructions,
+      imageBase64: input.imageBase64,
+      imageMimeType: input.imageMimeType
+    });
+
+    if (!policy.allowed) {
+      return createContentPolicyBlockedResponse(policy);
     }
 
     const provider = resolveImageProvider(input);

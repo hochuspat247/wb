@@ -86,7 +86,7 @@ function isCardCountOptionLocked(
   return getRequiredGenerationsForCardsCount(count, category) > remaining;
 }
 const DEMO_MIN_LOADING_MS = 20_000;
-const DEMO_PROGRESS_DURATION_MS = 140_000;
+const DEMO_PROGRESS_DURATION_MS = 280_000;
 const DEMO_LOADING_STATUSES = [
   "Загружаем фото",
   "Определяем товар",

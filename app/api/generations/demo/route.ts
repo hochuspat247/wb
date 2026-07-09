@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { assessGenerationContentPolicy, scanTextForProhibitedContent } from "@/lib/ai/contentPolicy";
 import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
 import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
 import { resolveProductContextFromImage } from "@/lib/ai/productVision";
 import { generateProductCard } from "@/lib/ai/providers";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { generateMarketplaceTextFallback } from "@/lib/marketplace/textFallback";
+import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
 import { createDemoGeneration } from "@/lib/server/demo-generations";
 import { getErrorMessage, logDemoGenerationError } from "@/lib/server/demo-errors";
 import { checkGuestDemoGenerationAllowed, hashDemoClientIp } from "@/lib/server/demoRateLimit";
@@ -22,7 +24,7 @@ import type {
 import type { MarketplaceTextInput } from "@/types/marketplace";
 
 export const runtime = "nodejs";
-export const maxDuration = 240;
+export const maxDuration = 300;
 
 const MAX_DEMO_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const SUPPORTED_DEMO_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -64,6 +66,23 @@ export async function POST(request: Request) {
 
     if (!requestedCardInput) {
       return NextResponse.json({ error: "Добавьте описание товара, чтобы создать демо-карточку." }, { status: 400 });
+    }
+
+    const initialPolicy = scanTextForProhibitedContent(
+      [
+        requestedCardInput.productDescription,
+        requestedCardInput.category,
+        requestedCardInput.brand,
+        requestedCardInput.sellerWishes,
+        requestedCardInput.editInstructions
+      ]
+        .map((value) => value?.trim())
+        .filter(Boolean)
+        .join("\n")
+    );
+
+    if (!initialPolicy.allowed) {
+      return createContentPolicyBlockedResponse(initialPolicy);
     }
 
     if (userId) {
@@ -111,6 +130,21 @@ export async function POST(request: Request) {
       imageMimeType: body.imageMimeType
     });
     const category = productContext.category;
+    const resolvedPolicy = await assessGenerationContentPolicy({
+      productDescription: productContext.productDescription,
+      category,
+      brand: productContext.brand,
+      sellerWishes: productContext.sellerWishes,
+      editInstructions: requestedCardInput.editInstructions?.trim(),
+      identifiedProductName: productContext.identifiedProductName,
+      imageBase64: body.imageBase64,
+      imageMimeType: body.imageMimeType
+    });
+
+    if (!resolvedPolicy.allowed) {
+      return createContentPolicyBlockedResponse(resolvedPolicy);
+    }
+
     const platform = requestedCardInput.platform ?? marketplaceLabelToPlatform(marketplace);
     const textMode = requestedCardInput.textMode ?? "marketplace_safe";
     const cardInput: ProductCardInput = {

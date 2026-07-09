@@ -1,4 +1,5 @@
 import { buildImagePrompt } from "@/lib/ai/imagePrompt";
+import { assessGenerationContentPolicy } from "@/lib/ai/contentPolicy";
 import type { GenerateImageInput, GenerateImageResult } from "@/types/product-card";
 
 export type NanoBananaExpertBalance = {
@@ -100,6 +101,22 @@ export async function generateNanoBananaExpertImage(input: GenerateImageInput): 
   const prompt = buildImagePrompt(input);
   const generatedAt = new Date().toISOString();
 
+  const policy = await assessGenerationContentPolicy({
+    productDescription: input.productDescription,
+    category: input.category,
+    title: input.title,
+    benefits: input.benefits,
+    infographicTexts: input.infographicTexts,
+    keywords: input.keywords,
+    editInstructions: input.editInstructions,
+    imageBase64: input.imageBase64,
+    imageMimeType: input.imageMimeType
+  });
+
+  if (!policy.allowed) {
+    return createFallbackResult(prompt, policy.error, generatedAt);
+  }
+
   if (!isApiKeyConfigured()) {
     return createFallbackResult(prompt, "NANOBANANA_EXPERT_API_KEY is not configured", generatedAt);
   }
@@ -182,7 +199,7 @@ async function resolveNanoBananaImage(initialData: NanoBananaExpertApiResponse) 
     return null;
   }
 
-  const maxPollMs = getPositiveEnvNumber("NANOBANANA_EXPERT_MAX_POLL_MS", 210_000);
+  const maxPollMs = getPositiveEnvNumber("NANOBANANA_EXPERT_MAX_POLL_MS", 300_000);
   const pollIntervalMs = getPositiveEnvNumber("NANOBANANA_EXPERT_POLL_INTERVAL_MS", 3_000);
   const startedAt = Date.now();
 

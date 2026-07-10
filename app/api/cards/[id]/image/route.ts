@@ -1,24 +1,36 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getUserCardImagePayload } from "@/lib/server/cards";
+import { downloadRemoteImageAsBase64 } from "@/lib/server/remoteImage";
 import { addWatermarkToImageBuffer } from "@/lib/server/watermark";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-function getImageBuffer(card: {
+async function getImageBuffer(card: {
   generatedImageBase64?: string | null;
   generatedImageMimeType?: string | null;
+  generatedImageUrl?: string | null;
 }) {
-  if (!card.generatedImageBase64 || !card.generatedImageMimeType) {
-    return null;
+  if (card.generatedImageBase64 && card.generatedImageMimeType) {
+    return {
+      buffer: Buffer.from(card.generatedImageBase64, "base64"),
+      mimeType: card.generatedImageMimeType
+    };
   }
 
-  return {
-    buffer: Buffer.from(card.generatedImageBase64, "base64"),
-    mimeType: card.generatedImageMimeType
-  };
+  if (card.generatedImageUrl) {
+    const downloaded = await downloadRemoteImageAsBase64(card.generatedImageUrl);
+    if (downloaded) {
+      return {
+        buffer: Buffer.from(downloaded.base64, "base64"),
+        mimeType: downloaded.mimeType
+      };
+    }
+  }
+
+  return null;
 }
 
 export async function GET(request: Request, context: RouteContext) {
@@ -37,7 +49,7 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const image = getImageBuffer(payload.card);
+  const image = await getImageBuffer(payload.card);
 
   if (!image) {
     return NextResponse.json({ error: "Image not available" }, { status: 404 });

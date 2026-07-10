@@ -49,7 +49,7 @@ import { applyDownloadPolicyToCard, type DownloadPolicy } from "@/lib/client/wat
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
 import { DEFAULT_IMAGE_SETTINGS, getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { reachGoal } from "@/lib/metrika";
-import { FREE_TRIAL_CARDS, FREE_TOTAL_MARKETING_CARDS } from "@/lib/pricing";
+import { FREE_TRIAL_CARDS, FREE_TOTAL_MARKETING_CARDS, calculatePackagePrice, formatRub } from "@/lib/pricing";
 import { clearHistory, getHistory } from "@/lib/storage";
 import type { ProductCardResult } from "@/types/product-card";
 
@@ -91,6 +91,7 @@ export function CabinetApp() {
   const [loading, setLoading] = useState(true);
   const [imageSettings, setImageSettings] = useState<ImageSettings>(DEFAULT_IMAGE_SETTINGS);
   const [remainingGenerations, setRemainingGenerations] = useState(0);
+  const [generationsUsed, setGenerationsUsed] = useState(0);
   const [downloadPolicy, setDownloadPolicy] = useState<DownloadPolicy | null>(null);
   const [needsEmailVerification, setNeedsEmailVerification] = useState(false);
   const [emailDisplay, setEmailDisplay] = useState("");
@@ -98,13 +99,23 @@ export function CabinetApp() {
   const [resendingVerification, setResendingVerification] = useState(false);
   const [demoWelcomeHint, setDemoWelcomeHint] = useState<{ cardId: string; title?: string } | null>(null);
 
-  const handleQuotaChange = useCallback((quota: { remaining: number; cleanDownloadGenerationId?: string | null; downloadsFullyUnlocked?: boolean }) => {
-    setRemainingGenerations(quota.remaining);
-    setDownloadPolicy({
-      cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
-      downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
-    });
-  }, []);
+  const handleQuotaChange = useCallback(
+    (quota: {
+      remaining: number;
+      used?: number;
+      credits?: number;
+      cleanDownloadGenerationId?: string | null;
+      downloadsFullyUnlocked?: boolean;
+    }) => {
+      setRemainingGenerations(quota.remaining);
+      setGenerationsUsed(quota.used ?? 0);
+      setDownloadPolicy({
+        cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
+        downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
+      });
+    },
+    []
+  );
 
   async function refreshDownloadPolicy() {
     try {
@@ -147,6 +158,7 @@ export function CabinetApp() {
         setUserEmail(profile.email);
         setEditName(profile.name);
         setRemainingGenerations(quota?.remaining ?? profile.quota?.remaining ?? 0);
+        setGenerationsUsed(quota?.used ?? profile.quota?.used ?? 0);
         if (quota) {
           setDownloadPolicy({
             cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
@@ -217,6 +229,14 @@ export function CabinetApp() {
       setTab("create");
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (loading || tab !== "history") {
+      return;
+    }
+
+    refreshCards();
+  }, [loading, tab]);
 
   function dismissDemoWelcomeHint() {
     window.localStorage.setItem(CABINET_DEMO_HINT_DISMISSED_KEY, "1");
@@ -371,6 +391,8 @@ export function CabinetApp() {
     { id: "compare" as const, label: "Сравнение", shortLabel: "Сравн.", icon: Scale },
     { id: "settings" as const, label: "Настройки", shortLabel: "Ещё", icon: Settings }
   ];
+  const isQuotaExhausted = remainingGenerations < 999_000 && remainingGenerations === 0;
+  const starterPack = calculatePackagePrice(10);
 
   return (
     <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[260px_1fr]">
@@ -381,10 +403,12 @@ export function CabinetApp() {
           <p className="mt-3 text-3xl font-black text-white">
             {remainingGenerations >= 999_000 ? "Безлимит" : remainingGenerations}
           </p>
-          <p className="mt-1 text-xs font-semibold text-white/45">генераций доступно</p>
-          {remainingGenerations === 0 ? (
-            <PaymentButton className="mt-4" count={10} size="sm">
-              Купить пакет
+          <p className="mt-1 text-xs font-semibold text-white/45">
+            {isQuotaExhausted ? "лимит исчерпан — нужен тариф" : "генераций доступно"}
+          </p>
+          {isQuotaExhausted ? (
+            <PaymentButton className="mt-4" count={10} metrikaPlan="cabinet_sidebar_pack10" size="sm">
+              Купить тариф
             </PaymentButton>
           ) : (
             <CabinetPricingLink className="mt-4 w-full" />
@@ -424,8 +448,16 @@ export function CabinetApp() {
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <div className="rounded-full border border-clay bg-card px-2.5 py-1 text-xs font-bold text-mint sm:hidden">
-              {remainingGenerations >= 999_000 ? "∞" : remainingGenerations}
+            <div className="rounded-full border border-clay bg-card px-2.5 py-1 text-xs font-bold sm:hidden">
+              {remainingGenerations >= 999_000 ? (
+                "∞"
+              ) : isQuotaExhausted ? (
+                <Link className="text-accent" href="/#pricing-calculator">
+                  Купить тариф
+                </Link>
+              ) : (
+                <span className="text-mint">{remainingGenerations}</span>
+              )}
             </div>
             <div className="hidden items-center gap-3 sm:flex">
             <div className="rounded-full border border-clay bg-card px-4 py-2 text-sm font-bold text-muted">
@@ -471,14 +503,33 @@ export function CabinetApp() {
                   </div>
                 ))}
               </div>
-              <div className="flex flex-col gap-3 rounded-[16px] border border-mint/20 bg-mint/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-3">
-                <p className="text-xs font-bold text-mint sm:text-sm">
-                  {remainingGenerations >= 999_000
-                    ? "Безлимитные генерации для вашего аккаунта."
-                    : `${FREE_TOTAL_MARKETING_CARDS} карточки бесплатно (1 демо + ${FREE_TRIAL_CARDS} после входа). Доступно: ${remainingGenerations}`}
-                </p>
-                <CabinetPricingLink className="self-start sm:self-auto" onLight />
-              </div>
+              {isQuotaExhausted ? (
+                <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-ink">Бесплатные генерации закончились</p>
+                    <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
+                      Купите тариф, чтобы продолжить создавать карточки для Wildberries и Ozon. Пакет из 10 карточек —{" "}
+                      {formatRub(starterPack.total)} ({formatRub(starterPack.pricePerUnit)} за штуку). Все сохранённые
+                      карточки станут без водяного знака.
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                    <PaymentButton className="w-full sm:w-auto" count={10} metrikaPlan="cabinet_quota_banner_pack10" size="sm">
+                      Купить тариф
+                    </PaymentButton>
+                    <CabinetPricingLink className="self-start sm:self-auto" onLight />
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 rounded-[16px] border border-mint/20 bg-mint/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-3">
+                  <p className="text-xs font-bold text-mint sm:text-sm">
+                    {remainingGenerations >= 999_000
+                      ? "Безлимитные генерации для вашего аккаунта."
+                      : `${FREE_TOTAL_MARKETING_CARDS} карточки бесплатно (1 демо + ${FREE_TRIAL_CARDS} после входа). Доступно: ${remainingGenerations}`}
+                  </p>
+                  <CabinetPricingLink className="self-start sm:self-auto" onLight />
+                </div>
+              )}
               <CardGenerator
                 embedded
                 hideHistory
@@ -497,6 +548,19 @@ export function CabinetApp() {
 
           {tab === "history" ? (
             <div className="mx-auto max-w-4xl space-y-6">
+              {isQuotaExhausted ? (
+                <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-ink">Бесплатные генерации закончились</p>
+                    <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
+                      Купите тариф, чтобы снова создавать карточки и снять демо-метку со всех сохранённых результатов.
+                    </p>
+                  </div>
+                  <PaymentButton className="w-full sm:w-auto" count={10} metrikaPlan="cabinet_history_pack10" size="sm">
+                    Купить тариф
+                  </PaymentButton>
+                </div>
+              ) : null}
               {demoWelcomeHint ? (
                 <CabinetDemoWelcomeHint
                   cardTitle={demoWelcomeHint.title}
@@ -519,7 +583,13 @@ export function CabinetApp() {
                 ) : null}
               </div>
               {cards.length === 0 ? (
-                <EmptyState onCreate={openCreateTab} />
+                <EmptyState
+                  generationsUsed={generationsUsed}
+                  isQuotaExhausted={isQuotaExhausted}
+                  onCreate={openCreateTab}
+                  remainingGenerations={remainingGenerations}
+                  starterPackTotal={starterPack.total}
+                />
               ) : (
                 <HistorySection
                   history={displayCards}
@@ -734,20 +804,58 @@ export function CabinetApp() {
   );
 }
 
-function EmptyState({ onCreate }: { onCreate: () => void }) {
+function EmptyState({
+  onCreate,
+  generationsUsed,
+  remainingGenerations,
+  isQuotaExhausted,
+  starterPackTotal
+}: {
+  onCreate: () => void;
+  generationsUsed: number;
+  remainingGenerations: number;
+  isQuotaExhausted: boolean;
+  starterPackTotal: number;
+}) {
+  const lostGeneration = generationsUsed > 0 && !isQuotaExhausted;
+
   return (
     <Card className="flex flex-col items-center py-16 text-center" padding="lg">
       <div className="mb-5 grid h-14 w-14 place-items-center rounded-card bg-paper text-ink">
         <Wand2 size={24} />
       </div>
-      <h3 className="text-xl font-bold text-ink">Пока нет карточек</h3>
-      <p className="mt-2 max-w-sm text-sm text-muted">
-        Создайте первую карточку и сохраните результат — она появится в истории.
+      <h3 className="text-xl font-bold text-ink">
+        {isQuotaExhausted
+          ? "История пуста"
+          : lostGeneration
+            ? "Карточка не попала в историю"
+            : "Пока нет карточек"}
+      </h3>
+      <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
+        {isQuotaExhausted ? (
+          <>
+            Бесплатные генерации уже использованы. Купите тариф за {formatRub(starterPackTotal)}, чтобы продолжить
+            создавать карточки — новые результаты сразу появятся здесь.
+          </>
+        ) : lostGeneration ? (
+          <>
+            Похоже, одна из генераций уже списалась, но результат не сохранился. Создайте карточку ещё раз — у вас
+            осталось {remainingGenerations} из {generationsUsed + remainingGenerations}.
+          </>
+        ) : (
+          "Создайте первую карточку на вкладке «Создать» — после сохранения она появится в этой истории."
+        )}
       </p>
-      <Button className="mt-8" onClick={onCreate} type="button">
-        <Plus size={16} />
-        Создать первую карточку
-      </Button>
+      {isQuotaExhausted ? (
+        <PaymentButton className="mt-8" count={10} metrikaPlan="cabinet_history_empty_pack10">
+          Купить тариф
+        </PaymentButton>
+      ) : (
+        <Button className="mt-8" onClick={onCreate} type="button">
+          <Plus size={16} />
+          {lostGeneration ? "Создать карточку снова" : "Создать первую карточку"}
+        </Button>
+      )}
     </Card>
   );
 }

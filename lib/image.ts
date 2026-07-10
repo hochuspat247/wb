@@ -82,10 +82,6 @@ export function getGeneratedCoverSrc(card: {
   watermarkLocked?: boolean;
   previewImageUrl?: string;
 }) {
-  if (card.watermarkLocked && card.previewImageUrl) {
-    return card.previewImageUrl;
-  }
-
   if (card.generatedImageBase64 && card.generatedImageMimeType) {
     return base64ToDataUrl(card.generatedImageBase64, card.generatedImageMimeType);
   }
@@ -96,6 +92,10 @@ export function getGeneratedCoverSrc(card: {
 
   if (card.generatedImageUrl) {
     return card.generatedImageUrl;
+  }
+
+  if (card.watermarkLocked && card.previewImageUrl) {
+    return card.previewImageUrl;
   }
 
   return null;

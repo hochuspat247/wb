@@ -8,6 +8,7 @@ import {
   isGenerationDownloadUnlocked,
   registerGenerationForCleanDownload
 } from "@/lib/server/downloadAccess";
+import { downloadRemoteImageAsBase64 } from "@/lib/server/remoteImage";
 import type { ProductCardResult } from "@/types/product-card";
 
 const CARD_LIMIT = 50;
@@ -17,6 +18,27 @@ function normalizeCard(card: ProductCardResult): ProductCardResult | null {
     return null;
   }
   return card;
+}
+
+async function persistCardImagePayload(card: ProductCardResult) {
+  if (card.generatedImageBase64 && card.generatedImageMimeType) {
+    return card;
+  }
+
+  if (!card.generatedImageUrl) {
+    return card;
+  }
+
+  const downloaded = await downloadRemoteImageAsBase64(card.generatedImageUrl);
+  if (!downloaded) {
+    return card;
+  }
+
+  return {
+    ...card,
+    generatedImageBase64: downloaded.base64,
+    generatedImageMimeType: downloaded.mimeType
+  };
 }
 
 function sanitizeCardForClient(
@@ -98,25 +120,26 @@ export async function saveUserCard(userId: string, card: ProductCardResult) {
     throw new Error("INVALID_CARD");
   }
 
-  const createdAt = new Date(normalized.generatedAt || Date.now());
+  const payload = await persistCardImagePayload(normalized);
+  const createdAt = new Date(payload.generatedAt || Date.now());
 
   await db
     .insert(productCards)
     .values({
-      id: normalized.id,
+      id: payload.id,
       userId,
-      payload: normalized,
+      payload,
       createdAt
     })
     .onConflictDoUpdate({
       target: productCards.id,
       set: {
-        payload: normalized,
+        payload,
         createdAt
       }
     });
 
-  await registerGenerationForCleanDownload(userId, normalized.id, createdAt);
+  await registerGenerationForCleanDownload(userId, payload.id, createdAt);
 
   const all = await getUserCards(userId);
   if (all.length <= CARD_LIMIT) {

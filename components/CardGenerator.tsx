@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, Download, FileImage, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Star, Wand2, X } from "lucide-react";
+import { Archive, Download, FileImage, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Star, WifiOff, Wand2, X } from "lucide-react";
 import { CardEditPanel } from "@/components/CardEditPanel";
 import { GeneratedCardPreview } from "@/components/GeneratedCardPreview";
 import { HistorySection } from "@/components/HistorySection";
@@ -21,7 +21,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
 import { getImageSettings } from "@/lib/imageSettings";
-import { IMAGE_GENERATION_RETRY_MESSAGE } from "@/lib/ai/imageGenerationErrors";
+import { getImageGenerationRetryMessage, IMAGE_GENERATION_RETRY_MESSAGE } from "@/lib/ai/imageGenerationErrors";
 import { resolveCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
@@ -830,7 +830,7 @@ export function CardGenerator({
 
   async function persistGeneratedCard(cardToSave: ProductCardResult, options: { silent?: boolean } = {}) {
     if (!persistToServer) {
-      return;
+      return true;
     }
 
     const nextCard = {
@@ -855,10 +855,13 @@ export function CardGenerator({
       if (!options.silent) {
         setNotice("Готово! Карточка сохранена в историю. Скачайте PNG или JSON.");
       }
+      return true;
     } catch {
+      setError("Не удалось сохранить карточку в историю. Попробуйте ещё раз или нажмите «Сохранить в историю».");
       if (!options.silent) {
-        setNotice("Карточка создана. Нажмите «Сохранить в историю», если она не появилась автоматически.");
+        setNotice("");
       }
+      return false;
     }
   }
 
@@ -1169,7 +1172,7 @@ export function CardGenerator({
         generatedImageModel: data.model,
         generatedImagePrompt: data.prompt,
         generatedImageIsFallback: true,
-        generatedImageError: data.error || IMAGE_GENERATION_RETRY_MESSAGE,
+        generatedImageError: getImageGenerationRetryMessage(data.error),
         bananasSpent: data.bananasSpent,
         usedCoupon: data.usedCoupon,
         generationId: data.generationId,
@@ -1225,6 +1228,7 @@ export function CardGenerator({
     }
 
     setIsGeneratingAiImage(true);
+    setError("");
 
     try {
       const image = dataUrlToBase64(productImage);
@@ -1299,12 +1303,14 @@ export function CardGenerator({
             setRemainingGenerations(data.quota.remaining);
             onQuotaChange?.(data.quota);
           }
+          const failureMessage = getImageGenerationRetryMessage(data.error);
           const updatedCard = applyImageResult(cardForImage, {
             ...data,
-            error: data.error || IMAGE_GENERATION_RETRY_MESSAGE
+            error: failureMessage
           });
           if (!inSeriesBatch) {
-            setNotice(data.error || IMAGE_GENERATION_RETRY_MESSAGE);
+            setNotice("");
+            setError(failureMessage);
           }
           return updatedCard;
         }
@@ -1320,22 +1326,39 @@ export function CardGenerator({
       const updatedCard = applyImageResult(cardForImage, data);
 
       if (!hasUsableImage(data)) {
+        const failureMessage = getImageGenerationRetryMessage(data.error);
         if (!inSeriesBatch) {
-          setNotice(IMAGE_GENERATION_RETRY_MESSAGE);
+          setNotice("");
+          setError(failureMessage);
         }
         return updatedCard;
       }
 
       if (!inSeriesBatch) {
+        setError("");
         setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
       }
       return updatedCard;
     } catch (caught) {
-      const message = caught instanceof Error ? caught.message : "Неизвестная ошибка генерации изображения";
+      const failureMessage = getImageGenerationRetryMessage(
+        caught instanceof Error ? caught.message : "Неизвестная ошибка генерации изображения"
+      );
+      const updatedCard = applyImageResult(cardForImage, {
+        imageBase64: null,
+        imageUrl: null,
+        mimeType: null,
+        provider: cardForImage.generatedImageProvider || "auto",
+        model: "error",
+        prompt: cardForImage.generatedImagePrompt || cardForImage.shortDescription,
+        generatedAt: new Date().toISOString(),
+        isFallback: true,
+        error: failureMessage
+      });
       if (!inSeriesBatch) {
-        setNotice(IMAGE_GENERATION_RETRY_MESSAGE);
+        setNotice("");
+        setError(failureMessage);
       }
-      return cardForImage;
+      return updatedCard;
     } finally {
       setIsGeneratingAiImage(false);
     }
@@ -1859,21 +1882,6 @@ export function CardGenerator({
                     </Button>
                   </div>
                 </div>
-                {card.generatedImageIsFallback ? (
-                  <div className="mt-4 space-y-3">
-                    <Alert variant="error">{IMAGE_GENERATION_RETRY_MESSAGE}</Alert>
-                    <Button
-                      className="w-full sm:w-auto"
-                      disabled={isWorking}
-                      onClick={handleRetryImageCover}
-                      type="button"
-                      variant="secondary"
-                    >
-                      <RefreshCcw size={16} />
-                      Повторить генерацию обложки
-                    </Button>
-                  </div>
-                ) : null}
                 <div className={`relative mt-4 overflow-hidden rounded-card border ${previewFrameClass} ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
                   {isGeneratingAiImage ? (
                     <div className="grid aspect-[4/5] max-h-[360px] place-items-center gap-4 px-6">
@@ -1885,16 +1893,17 @@ export function CardGenerator({
                     <img
                       alt="Готовая обложка"
                       className={`aspect-[4/5] w-full ${embedded ? "object-contain" : "object-cover"}`}
+                      key={aiImageUrl}
                       src={aiImageUrl}
                     />
                   ) : card.generatedImageIsFallback ? (
-                    <div className="grid aspect-[4/5] max-h-[360px] place-items-center gap-4 px-6">
-                      <p className="text-center text-sm font-medium text-muted">{IMAGE_GENERATION_RETRY_MESSAGE}</p>
-                      <Button disabled={isWorking} onClick={handleRetryImageCover} size="sm" type="button" variant="secondary">
-                        <RefreshCcw size={16} />
-                        Повторить
-                      </Button>
-                    </div>
+                    <ImageGenerationRetryCallout
+                      className="h-full min-h-[280px] justify-center border-0 bg-transparent p-4 sm:min-h-[320px] sm:p-8"
+                      darkConsole={darkConsole}
+                      disabled={isWorking}
+                      embedded
+                      onRetry={handleRetryImageCover}
+                    />
                   ) : isRenderingImage ? (
                     <div className="grid aspect-[4/5] max-h-[360px] place-items-center">
                       <SkeletonBlock className="h-full w-full rounded-none" />
@@ -1908,9 +1917,9 @@ export function CardGenerator({
                       styleName={style}
                     />
                   )}
-                  {displayCard?.watermarkLocked ? <WatermarkOverlay /> : null}
+                  {displayCard?.watermarkLocked && hasAiCover ? <WatermarkOverlay /> : null}
                 </div>
-                {displayCard?.watermarkLocked ? (
+                {displayCard?.watermarkLocked && hasAiCover ? (
                   <p className={`mt-3 text-sm font-semibold leading-relaxed ${darkConsole ? "text-white/55" : "text-muted"}`}>
                     Карточка с демо-меткой. Скачать без водяного знака можно для первой генерации или после покупки
                     пакета.
@@ -2357,4 +2366,51 @@ async function downloadBestImage(card: ProductCardResult, renderedDataUrl: strin
   }
 
   await downloadGeneratedImage(renderedDataUrl, card.title, fallbackNode);
+}
+
+function ImageGenerationRetryCallout({
+  className = "",
+  darkConsole = false,
+  disabled = false,
+  embedded = false,
+  onRetry
+}: {
+  className?: string;
+  darkConsole?: boolean;
+  disabled?: boolean;
+  embedded?: boolean;
+  onRetry: () => void;
+}) {
+  const panelClass = darkConsole
+    ? "border-amber-300/45 bg-amber-300/12 text-white"
+    : "border-amber-300 bg-amber-50 text-ink";
+  const hintClass = darkConsole ? "text-white/80" : "text-ink/75";
+  const reassuranceClass = darkConsole ? "text-mint" : "text-accent";
+
+  return (
+    <div
+      className={`flex flex-col items-center rounded-[20px] border-2 px-4 py-5 text-center shadow-[0_12px_40px_rgba(251,191,36,0.14)] sm:px-6 sm:py-6 ${panelClass} ${className}`.trim()}
+    >
+      <div className="grid h-14 w-14 place-items-center rounded-full bg-amber-300/25 text-amber-200">
+        <WifiOff size={28} strokeWidth={2.2} />
+      </div>
+      <p className={`mt-4 text-lg font-black leading-snug sm:text-xl ${darkConsole ? "text-white" : "text-ink"}`}>
+        Ошибка связи с интернетом
+      </p>
+      <p className={`mt-2 max-w-sm text-sm font-semibold leading-relaxed sm:text-base ${hintClass}`}>
+        Повторите генерацию — <span className={reassuranceClass}>списание не произойдёт</span>.
+      </p>
+      <Button
+        className={`mt-5 w-full max-w-sm shadow-[0_10px_30px_rgba(155,255,141,0.35)] ${embedded ? "" : "sm:w-auto"}`}
+        disabled={disabled}
+        onClick={onRetry}
+        size="lg"
+        type="button"
+        variant="primary"
+      >
+        <RefreshCcw size={18} />
+        Повторить генерацию
+      </Button>
+    </div>
+  );
 }

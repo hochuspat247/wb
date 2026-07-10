@@ -3,6 +3,10 @@ import type { GenerateImageResult } from "@/types/product-card";
 export const IMAGE_GENERATION_RETRY_MESSAGE =
   "Ошибка связи с интернетом. Повторите генерацию — списание не произойдёт.";
 
+export function getImageGenerationRetryMessage(_error?: string | null) {
+  return IMAGE_GENERATION_RETRY_MESSAGE;
+}
+
 function extractErrorText(error: unknown) {
   if (error instanceof Error) {
     return error.message;

@@ -73,6 +73,16 @@ function daysAgo(days: number) {
   return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 }
 
+function toTimestampMs(value: Date | number | string) {
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  if (typeof value === "number") {
+    return value;
+  }
+  return new Date(value).getTime();
+}
+
 async function safeAnalyticsQuery<T>(label: string, query: Promise<T>, fallback: T) {
   try {
     return await query;
@@ -271,7 +281,7 @@ async function getRecentUsersByProduct(product: AdminProductId) {
     const existing = activityByUser.get(row.userId);
     if (existing) {
       existing.projectDemosCount = row.projectDemosCount;
-      if (row.lastAt > existing.lastProjectActivityAt) {
+      if (toTimestampMs(row.lastAt) > toTimestampMs(existing.lastProjectActivityAt)) {
         existing.lastProjectActivityAt = row.lastAt;
       }
       continue;
@@ -285,7 +295,10 @@ async function getRecentUsersByProduct(product: AdminProductId) {
   }
 
   const sortedActivity = [...activityByUser.entries()]
-    .sort((left, right) => right[1].lastProjectActivityAt.getTime() - left[1].lastProjectActivityAt.getTime())
+    .sort(
+      (left, right) =>
+        toTimestampMs(right[1].lastProjectActivityAt) - toTimestampMs(left[1].lastProjectActivityAt)
+    )
     .slice(0, 10);
 
   if (sortedActivity.length === 0) {

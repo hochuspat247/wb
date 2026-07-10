@@ -63,7 +63,7 @@ export function StoryCreateForm() {
         return;
       }
       if (e.message.includes("401") || e.message.includes("Войдите")) {
-        router.push(`/register?callbackUrl=${encodeURIComponent("/storystudio/create")}`);
+        router.push(`/register?callbackUrl=${encodeURIComponent("/storystudio/cabinet")}`);
         return;
       }
       setError(e.message || "Не удалось создать историю.");

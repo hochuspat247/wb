@@ -10,6 +10,7 @@ import { CollapsibleAdminSection } from "@/components/admin/CollapsibleAdminSect
 import { DemoErrorsPanel } from "@/components/admin/DemoErrorsPanel";
 import { SessionDurationPanel } from "@/components/admin/SessionDurationPanel";
 import { StoryDetailModal, type AdminStoryDetail } from "@/components/admin/StoryDetailModal";
+import { UserJourneysMapPanel } from "@/components/admin/UserJourneysMapPanel";
 import { CardSavedVideosPanel } from "@/components/video/CardSavedVideosPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";

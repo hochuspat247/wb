@@ -84,7 +84,7 @@ type RecentUserDbRow = {
   id: string;
   name: string | null;
   email: string;
-  emailVerified: boolean | null;
+  emailVerified: Date | null;
   passwordHash: string | null;
   generationsUsed: number;
   generationCredits: number;

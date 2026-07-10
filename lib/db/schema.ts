@@ -213,6 +213,10 @@ export const videoGenerationOrders = sqliteTable("video_generation_order", {
   externalTaskId: text("externalTaskId"),
   originalVideoUrl: text("originalVideoUrl"),
   error: text("error"),
+  paidAt: integer("paidAt", { mode: "timestamp_ms" }),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date())

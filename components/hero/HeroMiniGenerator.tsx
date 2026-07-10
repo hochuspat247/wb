@@ -19,7 +19,6 @@ import {
 import { HERO_IMAGE_MAX_BYTES, resizeImageToDataUrl, validateImageFile } from "@/lib/image";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { AntiBotFields } from "@/components/security/AntiBotFields";
-import { isSmartCaptchaEnabled, SmartCaptcha } from "@/components/security/SmartCaptcha";
 import { buildAntiBotPayload } from "@/lib/security/formGuard";
 
 const GENERATE_BUTTON_CLASS =
@@ -43,8 +42,6 @@ export function HeroMiniGenerator() {
   const [demoStatusIndex, setDemoStatusIndex] = useState(0);
   const [selectedExampleId, setSelectedExampleId] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
-  const [captchaToken, setCaptchaToken] = useState("");
-  const captchaRequired = isSmartCaptchaEnabled();
 
   useEffect(() => {
     if (uploadViewTrackedRef.current) return;
@@ -165,11 +162,6 @@ export function HeroMiniGenerator() {
       return;
     }
 
-    if (captchaRequired && !captchaToken) {
-      setError("Подтвердите, что вы не робот.");
-      return;
-    }
-
     trackMarketingEvent("hero_demo_generate_click", {
       hasExample: Boolean(selectedExampleId)
     });
@@ -200,10 +192,7 @@ export function HeroMiniGenerator() {
           platform: marketplaceLabelToPlatform("Wildberries"),
           textMode: "marketplace_safe"
         },
-        antiBot: buildAntiBotPayload({
-          smartCaptchaToken: captchaToken,
-          honeypot
-        })
+        antiBot: buildAntiBotPayload({ honeypot })
       });
 
       const remainingDelay = Math.max(0, HERO_DEMO_MIN_LOADING_MS - (Date.now() - startedAt));
@@ -372,13 +361,7 @@ export function HeroMiniGenerator() {
 
         {error ? <Alert variant="error">{error}</Alert> : null}
 
-        <AntiBotFields
-          captcha={
-            captchaRequired ? <SmartCaptcha onToken={setCaptchaToken} /> : null
-          }
-          honeypot={honeypot}
-          onHoneypotChange={setHoneypot}
-        />
+        <AntiBotFields honeypot={honeypot} onHoneypotChange={setHoneypot} />
 
         <div className="grid gap-2 pt-0.5">
           <Button className={`w-full py-3 ${GENERATE_BUTTON_CLASS}`} disabled={!canGenerate} type="submit">

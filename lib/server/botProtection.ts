@@ -9,14 +9,13 @@ import {
 } from "@/lib/server/rateLimit";
 
 export type AntiBotPayload = {
-  smartCaptchaToken?: string;
   honeypot?: string;
   formStartedAt?: number;
 };
 
 export type AntiBotVerifyResult =
   | { ok: true }
-  | { ok: false; code: "BOT_DETECTED" | "CAPTCHA_FAILED" | "FORM_TOO_FAST" | "RATE_LIMIT_EXCEEDED"; retryAfterSeconds?: number };
+  | { ok: false; code: "BOT_DETECTED" | "FORM_TOO_FAST" | "RATE_LIMIT_EXCEEDED"; retryAfterSeconds?: number };
 
 type ProtectionErrorInput =
   | AntiBotVerifyResult
@@ -25,10 +24,6 @@ type ProtectionErrorInput =
 
 function isBotProtectionEnabled() {
   return process.env.BOT_PROTECTION_ENABLED === "true";
-}
-
-function isCaptchaRequired() {
-  return process.env.BOT_PROTECTION_REQUIRE_CAPTCHA === "true" && Boolean(process.env.YANDEX_SMARTCAPTCHA_SERVER_KEY?.trim());
 }
 
 export function isObviousAutomatedClient(request: NextRequest | Request) {
@@ -100,7 +95,7 @@ export async function recordIpRateLimitAttempt(action: string, request: Request)
   ]);
 }
 
-export async function verifyAntiBotRequest(request: Request, payload: AntiBotPayload): Promise<AntiBotVerifyResult> {
+export async function verifyAntiBotRequest(_request: Request, payload: AntiBotPayload): Promise<AntiBotVerifyResult> {
   if (!isBotProtectionEnabled()) {
     return { ok: true };
   }
@@ -115,22 +110,6 @@ export async function verifyAntiBotRequest(request: Request, payload: AntiBotPay
     return { ok: false, code: "FORM_TOO_FAST" };
   }
 
-  if (!isCaptchaRequired()) {
-    return { ok: true };
-  }
-
-  const token = payload.smartCaptchaToken?.trim();
-
-  if (!token) {
-    return { ok: false, code: "CAPTCHA_FAILED" };
-  }
-
-  const valid = await validateSmartCaptchaToken(token, getClientIp(request));
-
-  if (!valid) {
-    return { ok: false, code: "CAPTCHA_FAILED" };
-  }
-
   return { ok: true };
 }
 
@@ -141,10 +120,7 @@ export function botProtectionErrorResponse(result: ProtectionErrorInput, status?
   let message = "Слишком много запросов. Попробуйте позже.";
   let httpStatus = status ?? 429;
 
-  if (code === "CAPTCHA_FAILED") {
-    message = "Подтвердите, что вы не робот.";
-    httpStatus = status ?? 400;
-  } else if (code === "BOT_DETECTED" || code === "FORM_TOO_FAST") {
+  if (code === "BOT_DETECTED" || code === "FORM_TOO_FAST") {
     message = "Запрос отклонён. Обновите страницу и попробуйте снова.";
     httpStatus = status ?? 403;
   }
@@ -165,38 +141,4 @@ export function botProtectionErrorResponse(result: ProtectionErrorInput, status?
       headers
     }
   );
-}
-
-async function validateSmartCaptchaToken(token: string, ip: string) {
-  const secret = process.env.YANDEX_SMARTCAPTCHA_SERVER_KEY?.trim();
-
-  if (!secret) {
-    return true;
-  }
-
-  try {
-    const body = new URLSearchParams({
-      secret,
-      token,
-      ip
-    });
-
-    const response = await fetch("https://smartcaptcha.cloud.yandex.ru/validate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body
-    });
-
-    if (!response.ok) {
-      return false;
-    }
-
-    const data = (await response.json()) as { status?: string };
-
-    return data.status === "ok";
-  } catch {
-    return false;
-  }
 }

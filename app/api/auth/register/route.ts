@@ -17,7 +17,6 @@ type RegisterBody = {
   name?: string;
   email?: string;
   password?: string;
-  smartCaptchaToken?: string;
   honeypot?: string;
   formStartedAt?: number;
 };
@@ -29,13 +28,12 @@ export async function POST(request: Request) {
     const body = (await request.json()) as RegisterBody;
 
     const antiBot = await verifyAntiBotRequest(request, {
-      smartCaptchaToken: body.smartCaptchaToken,
       honeypot: body.honeypot,
       formStartedAt: body.formStartedAt
     });
 
     if (!antiBot.ok) {
-      return botProtectionErrorResponse(antiBot, antiBot.code === "CAPTCHA_FAILED" ? 400 : 403);
+      return botProtectionErrorResponse(antiBot, 403);
     }
 
     const registerLimit = await enforceIpRateLimit(

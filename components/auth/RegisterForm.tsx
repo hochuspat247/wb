@@ -13,7 +13,6 @@ import { getEmailFormatError } from "@/lib/auth/email-format";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AntiBotFields } from "@/components/security/AntiBotFields";
-import { isSmartCaptchaEnabled, SmartCaptcha } from "@/components/security/SmartCaptcha";
 import { buildAntiBotPayload } from "@/lib/security/formGuard";
 
 export function RegisterForm() {
@@ -30,8 +29,6 @@ export function RegisterForm() {
   const [resendMessage, setResendMessage] = useState("");
   const [resending, setResending] = useState(false);
   const [honeypot, setHoneypot] = useState("");
-  const [captchaToken, setCaptchaToken] = useState("");
-  const captchaRequired = isSmartCaptchaEnabled();
 
   async function handleResendVerification() {
     if (!registeredEmail) return;
@@ -71,12 +68,6 @@ export function RegisterForm() {
       return;
     }
 
-    if (captchaRequired && !captchaToken) {
-      setLoading(false);
-      setError("Подтвердите, что вы не робот.");
-      return;
-    }
-
     const registerResponse = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -84,10 +75,7 @@ export function RegisterForm() {
         name,
         email,
         password,
-        ...buildAntiBotPayload({
-          smartCaptchaToken: captchaToken,
-          honeypot
-        })
+        ...buildAntiBotPayload({ honeypot })
       })
     });
 
@@ -183,11 +171,7 @@ export function RegisterForm() {
               />
             </label>
 
-            <AntiBotFields
-              captcha={captchaRequired ? <SmartCaptcha onToken={setCaptchaToken} /> : null}
-              honeypot={honeypot}
-              onHoneypotChange={setHoneypot}
-            />
+            <AntiBotFields honeypot={honeypot} onHoneypotChange={setHoneypot} />
 
             {error ? <p className="text-sm font-semibold text-red-400">{error}</p> : null}
 

@@ -1,16 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import type { ReactNode } from "react";
 import { resetFormGuardClock } from "@/lib/security/formGuard";
 
 type AntiBotFieldsProps = {
   honeypot: string;
   onHoneypotChange: (value: string) => void;
-  captcha?: ReactNode | null;
 };
 
-export function AntiBotFields({ honeypot, onHoneypotChange, captcha }: AntiBotFieldsProps) {
+export function AntiBotFields({ honeypot, onHoneypotChange }: AntiBotFieldsProps) {
   useEffect(() => {
     resetFormGuardClock();
   }, []);
@@ -27,7 +25,6 @@ export function AntiBotFields({ honeypot, onHoneypotChange, captcha }: AntiBotFi
         type="text"
         value={honeypot}
       />
-      {captcha}
     </>
   );
 }

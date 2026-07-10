@@ -1,5 +1,4 @@
 type AntiBotInput = {
-  smartCaptchaToken?: string;
   honeypot?: string;
 };
 

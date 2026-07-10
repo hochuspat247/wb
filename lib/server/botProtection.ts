@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { isObviousAutomatedClient } from "@/lib/server/automatedClient";
 import { getClientIp } from "@/lib/server/clientIp";
 import {
   enforceRateLimits,
@@ -26,31 +26,7 @@ function isBotProtectionEnabled() {
   return process.env.BOT_PROTECTION_ENABLED === "true";
 }
 
-export function isObviousAutomatedClient(request: NextRequest | Request) {
-  if (!isBotProtectionEnabled()) {
-    return false;
-  }
-
-  const userAgent = (request.headers.get("user-agent") || "").toLowerCase();
-
-  if (!userAgent) {
-    return true;
-  }
-
-  const suspiciousFragments = [
-    "bot",
-    "crawler",
-    "spider",
-    "headless",
-    "curl/",
-    "wget/",
-    "python-requests",
-    "scrapy",
-    "httpclient"
-  ];
-
-  return suspiciousFragments.some((fragment) => userAgent.includes(fragment));
-}
+export { isObviousAutomatedClient };
 
 export function buildClientFingerprint(request: Request) {
   const parts = [

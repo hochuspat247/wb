@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isObviousAutomatedClient } from "@/lib/server/botProtection";
+import { isObviousAutomatedClient } from "@/lib/server/automatedClient";
 
 const sessionCookieNames = [
   "authjs.session-token",

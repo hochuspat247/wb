@@ -74,3 +74,24 @@ export async function deleteKvartovidListing(listingId: string) {
   }
 }
 
+export async function updateKvartovidListingFloorPlan(
+  listingId: string,
+  payload: { floorPlanSvg: string; floorPlanLayout: import("@/types/kvartovid").KvartovidFloorPlanLayout }
+) {
+  const response = await fetch(`/api/kvartovid/listings/${listingId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  const data = (await response.json()) as {
+    listing?: import("@/types/kvartovid").KvartovidSavedListing;
+    error?: string;
+  };
+
+  if (!response.ok) {
+    throw new Error(data.error || "Не удалось сохранить планировку.");
+  }
+
+  return data.listing;
+}
+

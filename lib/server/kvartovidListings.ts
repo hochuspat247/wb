@@ -80,6 +80,38 @@ export async function getKvartovidListing(userId: string, listingId: string) {
   return row.payload;
 }
 
+export async function updateKvartovidListingFloorPlan(
+  userId: string,
+  listingId: string,
+  floorPlanSvg: string,
+  floorPlanLayout: KvartovidSavedListing["floorPlanLayout"]
+) {
+  const row = await db.query.kvartovidListings.findFirst({
+    where: eq(kvartovidListings.id, listingId)
+  });
+
+  if (!row || row.userId !== userId || !floorPlanLayout) {
+    return null;
+  }
+
+  const updated: KvartovidSavedListing = {
+    ...row.payload,
+    floorPlanSvg,
+    floorPlanLayout,
+    updatedAt: new Date().toISOString()
+  };
+
+  await db
+    .update(kvartovidListings)
+    .set({
+      payload: updated,
+      updatedAt: new Date()
+    })
+    .where(eq(kvartovidListings.id, listingId));
+
+  return updated;
+}
+
 export async function deleteKvartovidListing(userId: string, listingId: string) {
   const row = await db.query.kvartovidListings.findFirst({
     where: eq(kvartovidListings.id, listingId)

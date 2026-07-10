@@ -21,6 +21,7 @@ import { KvartovidSeoLinksSection } from "@/components/kvartovid/KvartovidSeoLin
 import { KvartovidWorkflowSection } from "@/components/kvartovid/KvartovidWorkflowSection";
 import { KvartovidPricingSection } from "@/components/kvartovid/KvartovidPricingSection";
 import { KvartovidVideoDemo } from "@/components/kvartovid/KvartovidVideoDemo";
+import { KvartovidFloorPlanFeatureSection } from "@/components/kvartovid/KvartovidFloorPlanFeatureSection";
 import { BRAND } from "@/lib/branding";
 import {
   KVARTOVID_KILLER_FEATURES,
@@ -103,6 +104,8 @@ export function KvartovidLanding() {
             </div>
           </div>
         </section>
+
+        <KvartovidFloorPlanFeatureSection />
 
         <section id="features" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-3xl text-center">

@@ -511,6 +511,11 @@ export function KvartovidCreateForm() {
               svg={result.floorPlanSvg}
               layout={result.floorPlanLayout}
               error={result.floorPlanError}
+              resetKey={result.generatedAt}
+              listingId={result.listingId}
+              onChange={({ layout, svg }) =>
+                setResult((prev) => (prev ? { ...prev, floorPlanLayout: layout, floorPlanSvg: svg } : prev))
+              }
             />
           ) : null}
 

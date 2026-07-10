@@ -244,6 +244,22 @@ export function KvartovidCabinet() {
                   svg={activeListing.floorPlanSvg}
                   layout={activeListing.floorPlanLayout}
                   error={activeListing.floorPlanError}
+                  resetKey={activeListing.id}
+                  listingId={activeListing.id}
+                  onSaved={({ layout, svg }) =>
+                    setListings((prev) =>
+                      prev.map((listing) =>
+                        listing.id === activeListing.id
+                          ? {
+                              ...listing,
+                              floorPlanLayout: layout,
+                              floorPlanSvg: svg,
+                              updatedAt: new Date().toISOString()
+                            }
+                          : listing
+                      )
+                    )
+                  }
                 />
               ) : null}
 

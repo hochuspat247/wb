@@ -102,6 +102,11 @@ export async function POST(request: Request) {
     description: body.description!.trim(),
     advantages: body.advantages,
     city: body.city,
+    rooms: body.rooms,
+    area: body.area,
+    propertyType: body.propertyType,
+    renovation: body.renovation,
+    extraFeatures: body.extraFeatures,
     motionStyle,
     aspectRatio
   });

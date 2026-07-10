@@ -115,6 +115,11 @@ export type KvartovidVideoInput = {
   description: string;
   advantages?: string[];
   city?: string;
+  rooms?: string;
+  area?: number;
+  propertyType?: KvartovidPropertyType;
+  renovation?: string;
+  extraFeatures?: string;
   imageBase64?: string;
   imageMimeType?: string;
   duration?: "4" | "6" | "8";

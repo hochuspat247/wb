@@ -4,7 +4,6 @@ import { KvartovidFooter } from "@/components/kvartovid/KvartovidFooter";
 import { KvartovidHeader } from "@/components/kvartovid/KvartovidHeader";
 import { Button } from "@/components/ui/Button";
 import type { KvartovidMarketingPage } from "@/lib/kvartovid/marketingPages";
-import { absoluteUrl } from "@/lib/seo";
 import { BRAND } from "@/lib/branding";
 
 type KvartovidUseCaseLandingProps = {
@@ -12,55 +11,8 @@ type KvartovidUseCaseLandingProps = {
 };
 
 export function KvartovidUseCaseLanding({ page }: KvartovidUseCaseLandingProps) {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebPage",
-        name: page.title,
-        description: page.description,
-        url: absoluteUrl(page.path),
-        inLanguage: "ru-RU",
-        isPartOf: {
-          "@type": "WebSite",
-          name: BRAND.kvartovid,
-          url: absoluteUrl("/kvartovid")
-        }
-      },
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          {
-            "@type": "ListItem",
-            position: 1,
-            name: BRAND.kvartovid,
-            item: absoluteUrl("/kvartovid")
-          },
-          {
-            "@type": "ListItem",
-            position: 2,
-            name: page.badge,
-            item: absoluteUrl(page.path)
-          }
-        ]
-      },
-      {
-        "@type": "FAQPage",
-        mainEntity: page.faq.map((item) => ({
-          "@type": "Question",
-          name: item.question,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.answer
-          }
-        }))
-      }
-    ]
-  };
-
   return (
     <div className="min-h-screen bg-[#060d0b] text-ink">
-      <script dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} type="application/ld+json" />
       <KvartovidHeader />
 
       <main className="relative pt-20 sm:pt-24">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { KvartovidJsonLd } from "@/components/seo/KvartovidJsonLd";
 import { KvartovidCreateForm } from "@/components/kvartovid/KvartovidCreateForm";
 import { KvartovidHeader } from "@/components/kvartovid/KvartovidHeader";
 import { KvartovidFooter } from "@/components/kvartovid/KvartovidFooter";
@@ -15,13 +16,18 @@ export const metadata: Metadata = createKvartovidMetadata({
     "создать объявление о квартире",
     "описание квартиры ии",
     "генератор объявления недвижимость",
-    "обложка авито квартира"
+    "обложка авито квартира",
+    "планировка квартиры для объявления",
+    "текст для циан квартира",
+    "объявление домклик онлайн"
   ]
 });
 
 export default function KvartovidCreatePage() {
   return (
-    <div className="min-h-screen bg-[#060d0b]">
+    <>
+      <KvartovidJsonLd variant="create" />
+      <div className="min-h-screen bg-[#060d0b]">
       <KvartovidHeader />
       <div className="mx-auto max-w-3xl px-4 pb-20 pt-24 sm:px-6">
         <Link
@@ -38,6 +44,7 @@ export default function KvartovidCreatePage() {
         </div>
       </div>
       <KvartovidFooter />
-    </div>
+      </div>
+    </>
   );
 }

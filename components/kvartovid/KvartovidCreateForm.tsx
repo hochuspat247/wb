@@ -1,15 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Copy, Download, ImagePlus, Loader2, Video, Wand2, X } from "lucide-react";
+import Link from "next/link";
+import { Copy, Download, ImagePlus, Loader2, Video, Wand2, X, FolderOpen } from "lucide-react";
+import { KvartovidPlatformTextsSection } from "@/components/kvartovid/KvartovidPlatformTextsSection";
+import { KvartovidFloorPlanSection } from "@/components/kvartovid/KvartovidFloorPlanSection";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { generateKvartovidListing, createKvartovidVideoOrder, fetchVideoOrderStatus } from "@/lib/api/kvartovid";
 import { BRAND } from "@/lib/branding";
 import { DEAL_TYPE_LABELS, PROPERTY_TYPE_LABELS } from "@/lib/kvartovid/constants";
+import { formatPlatformTextsForExport } from "@/lib/kvartovid/platformTexts";
 import type { KvartovidDealType, KvartovidListingResult, KvartovidPropertyType } from "@/types/kvartovid";
 
 const MIN_PHOTOS = 3;
@@ -59,6 +62,7 @@ export function KvartovidCreateForm() {
   const [photos, setPhotos] = useState<PhotoPreview[]>([]);
   const [selectedHighlights, setSelectedHighlights] = useState<string[]>([]);
   const [includeCover, setIncludeCover] = useState(true);
+  const [includeFloorPlan, setIncludeFloorPlan] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<KvartovidListingResult | null>(null);
@@ -71,14 +75,17 @@ export function KvartovidCreateForm() {
   const exportText = useMemo(() => {
     if (!result) return "";
     const lines = [
+      "=== Универсальная версия ===",
       result.title,
       "",
       result.description,
       "",
       "Преимущества:",
-      ...result.advantages.map((item) => `• ${item}`)
+      ...result.advantages.map((item) => `• ${item}`),
+      "",
+      formatPlatformTextsForExport(result.platformTexts)
     ];
-    return lines.join("\n");
+    return lines.join("\n").trim();
   }, [result]);
 
   async function handlePhotosChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -144,7 +151,8 @@ export function KvartovidCreateForm() {
         extraFeatures: extraFeatures.trim() || undefined,
         photos: photos.map((p) => ({ base64: p.base64, mimeType: p.mimeType, name: p.name })),
         selectedHighlights: selectedHighlights.length ? selectedHighlights : undefined,
-        includeCover
+        includeCover,
+        includeFloorPlan
       });
 
       setResult(data);
@@ -387,8 +395,17 @@ export function KvartovidCreateForm() {
             />
             Сгенерировать AI-обложку (NanoBanana Expert)
           </label>
+          <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-muted">
+            <input
+              type="checkbox"
+              checked={includeFloorPlan}
+              onChange={(e) => setIncludeFloorPlan(e.target.checked)}
+              className="h-4 w-4 rounded accent-amber-500"
+            />
+            Сгенерировать схему планировки (SVG / PNG)
+          </label>
           <p className="mt-2 text-xs text-muted">
-            Обложка генерируется через NanoBanana Expert — как карточки товаров в {BRAND.marketCardShort}.
+            Обложка — через NanoBanana Expert. Планировка — схематический чертёж по параметрам квартиры, не план БТИ.
           </p>
         </div>
 
@@ -443,11 +460,22 @@ export function KvartovidCreateForm() {
         <div className="space-y-6 rounded-card border border-amber-500/30 bg-amber-500/5 p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-bold text-ink">Готовое объявление</h2>
-            {typeof result.qualityScore === "number" ? (
-              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-semibold text-amber-400">
-                Готовность: {result.qualityScore}/100
-              </span>
-            ) : null}
+            <div className="flex flex-wrap items-center gap-3">
+              {typeof result.qualityScore === "number" ? (
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-semibold text-amber-400">
+                  Готовность: {result.qualityScore}/100
+                </span>
+              ) : null}
+              {result.listingId ? (
+                <Link
+                  href={`/kvartovid/cabinet?listing=${result.listingId}`}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-amber-400 transition hover:text-amber-300"
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  Открыть в кабинете
+                </Link>
+              ) : null}
+            </div>
           </div>
 
           <div>
@@ -456,9 +484,13 @@ export function KvartovidCreateForm() {
           </div>
 
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Описание</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Универсальное описание</p>
             <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted">{result.description}</p>
           </div>
+
+          {result.platformTexts?.length ? (
+            <KvartovidPlatformTextsSection platformTexts={result.platformTexts} />
+          ) : null}
 
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Преимущества</p>
@@ -468,6 +500,14 @@ export function KvartovidCreateForm() {
               ))}
             </ul>
           </div>
+
+          {result.floorPlanSvg ? (
+            <KvartovidFloorPlanSection
+              svg={result.floorPlanSvg}
+              layout={result.floorPlanLayout}
+              error={result.floorPlanError}
+            />
+          ) : null}
 
           {coverPreviewSrc ? (
             <div>
@@ -563,13 +603,6 @@ export function KvartovidCreateForm() {
               />
             ) : null}
           </div>
-
-          <p className="text-xs text-muted">
-            Варианты текста под Авито, Циан и Домклик отдельно — в следующем релизе.{" "}
-            <Link href="/kvartovid#features" className="text-amber-400 hover:underline">
-              Смотреть roadmap
-            </Link>
-          </p>
         </div>
       ) : null}
     </div>

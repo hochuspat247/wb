@@ -276,6 +276,18 @@ export function migrate(sqlite: Database.Database) {
   `);
 
   sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS kvartovid_listing (
+      id TEXT PRIMARY KEY NOT NULL,
+      userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+      payload TEXT NOT NULL,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS kvartovid_listing_user_idx ON kvartovid_listing(userId);
+    CREATE INDEX IF NOT EXISTS kvartovid_listing_updated_idx ON kvartovid_listing(updatedAt);
+  `);
+
+  sqlite.exec(`
     CREATE TABLE IF NOT EXISTS kvartovid_video_source (
       orderId TEXT PRIMARY KEY NOT NULL,
       userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,

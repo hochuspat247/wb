@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   FileText,
   ImageIcon,
+  LayoutGrid,
   Sparkles,
   Star,
   Video
@@ -34,6 +35,7 @@ const featureIcons = {
   cover: Camera,
   highlights: Sparkles,
   platforms: FileText,
+  floorplan: LayoutGrid,
   video: Video,
   checklist: ClipboardCheck,
   score: Star,
@@ -124,7 +126,7 @@ export function KvartovidLanding() {
         <section id="features" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-2xl font-bold sm:text-3xl">Возможности {BRAND.kvartovid}</h2>
-            <p className="mt-3 text-muted">MVP уже доступен — остальные фичи появятся в следующих релизах.</p>
+            <p className="mt-3 text-muted">MVP уже доступен — тексты, обложка, планировка, видео и кабинет с историей объектов.</p>
           </div>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

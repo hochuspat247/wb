@@ -8,6 +8,15 @@ export type KvartovidPhotoInput = {
   name?: string;
 };
 
+export type KvartovidPlatformId = "avito" | "cian" | "domclick";
+
+export type KvartovidPlatformText = {
+  platform: KvartovidPlatformId;
+  label: string;
+  title: string;
+  description: string;
+};
+
 export type KvartovidListingInput = {
   dealType: KvartovidDealType;
   propertyType: KvartovidPropertyType;
@@ -25,11 +34,30 @@ export type KvartovidListingInput = {
   photos: KvartovidPhotoInput[];
   selectedHighlights?: string[];
   includeCover?: boolean;
+  includeFloorPlan?: boolean;
+};
+
+export type KvartovidFloorPlanRoom = {
+  name: string;
+  area?: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+export type KvartovidFloorPlanLayout = {
+  width: number;
+  height: number;
+  rooms: KvartovidFloorPlanRoom[];
+  totalArea: number;
+  propertyLabel: string;
 };
 
 export type KvartovidListingResult = {
   title: string;
   description: string;
+  platformTexts: KvartovidPlatformText[];
   advantages: string[];
   suggestedHighlights: string[];
   bestPhotoIndex: number;
@@ -41,7 +69,45 @@ export type KvartovidListingResult = {
   coverImageError?: string;
   qualityScore?: number;
   qualityTips?: string[];
+  floorPlanSvg?: string;
+  floorPlanLayout?: KvartovidFloorPlanLayout;
+  floorPlanError?: string;
   generatedAt: string;
+  listingId?: string;
+};
+
+export type KvartovidSavedListing = {
+  id: string;
+  dealType: KvartovidDealType;
+  propertyType: KvartovidPropertyType;
+  rooms: string;
+  area: number;
+  floor?: number;
+  totalFloors?: number;
+  price?: string;
+  city: string;
+  district?: string;
+  metro?: string;
+  photoCount: number;
+  title: string;
+  description: string;
+  platformTexts: KvartovidPlatformText[];
+  advantages: string[];
+  suggestedHighlights: string[];
+  bestPhotoIndex: number;
+  coverImageBase64?: string;
+  coverImageMimeType?: string;
+  coverImageUrl?: string | null;
+  coverImageProvider?: string;
+  coverImageModel?: string;
+  coverImageError?: string;
+  qualityScore?: number;
+  qualityTips?: string[];
+  floorPlanSvg?: string;
+  floorPlanLayout?: KvartovidFloorPlanLayout;
+  floorPlanError?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type KvartovidVideoInput = {

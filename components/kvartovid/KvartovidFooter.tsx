@@ -27,7 +27,7 @@ export function KvartovidFooter() {
               </span>
             </Link>
             <p className="mt-4 max-w-xs text-sm font-medium leading-relaxed text-muted">
-              ИИ-сервис для упаковки объявлений о недвижимости: текст, преимущества и обложка за минуту.
+              ИИ для объявлений о недвижимости: тексты для Авито, Циан и Домклик, AI-обложка, планировка и видео из фото квартиры.
             </p>
           </div>
 

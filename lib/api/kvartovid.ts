@@ -53,3 +53,24 @@ export async function createKvartovidVideoOrder(
 }
 
 export { fetchVideoOrderStatus };
+
+export async function fetchKvartovidListings() {
+  const response = await fetch("/api/kvartovid/listings", { cache: "no-store" });
+  const data = (await response.json()) as { listings?: import("@/types/kvartovid").KvartovidSavedListing[]; error?: string };
+
+  if (!response.ok) {
+    throw new Error(data.error || "Не удалось загрузить объявления.");
+  }
+
+  return data.listings ?? [];
+}
+
+export async function deleteKvartovidListing(listingId: string) {
+  const response = await fetch(`/api/kvartovid/listings/${listingId}`, { method: "DELETE" });
+  const data = (await response.json()) as { error?: string };
+
+  if (!response.ok) {
+    throw new Error(data.error || "Не удалось удалить объявление.");
+  }
+}
+

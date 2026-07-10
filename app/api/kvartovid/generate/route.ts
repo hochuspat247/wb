@@ -5,6 +5,7 @@ import { IMAGE_GENERATION_RETRY_MESSAGE } from "@/lib/ai/imageGenerationErrors";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
 import { generateKvartovidListing as runGeneration } from "@/lib/kvartovid/generate";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
+import { buildKvartovidSavedListing, saveKvartovidListing } from "@/lib/server/kvartovidListings";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import type { KvartovidListingInput } from "@/types/kvartovid";
 
@@ -91,12 +92,19 @@ export async function POST(request: Request) {
       return createContentPolicyBlockedResponse(policy);
     }
 
-    const result = await runGeneration(body, { includeCover: body.includeCover !== false });
+    const result = await runGeneration(body, {
+      includeCover: body.includeCover !== false,
+      includeFloorPlan: body.includeFloorPlan !== false
+    });
     const updatedQuota = await consumeGeneration(userId);
 
     if (body.includeCover !== false && !result.coverImageBase64 && !result.coverImageUrl && !result.coverImageError) {
       result.coverImageError = IMAGE_GENERATION_RETRY_MESSAGE;
     }
+
+    const listing = buildKvartovidSavedListing(body, result);
+    await saveKvartovidListing(userId, listing);
+    result.listingId = listing.id;
 
     return NextResponse.json({ ...result, quota: updatedQuota });
   } catch (error) {

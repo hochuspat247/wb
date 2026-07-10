@@ -29,7 +29,7 @@ export const KVARTOVID_PRICING_PLANS: KvartovidPricingPlan[] = [
     priceRub: 0,
     priceLabel: "Бесплатно",
     description: "1 объявление с водяным знаком на обложке",
-    features: ["Заголовок и описание", "Список преимуществ", "Обложка с водяным знаком"]
+    features: ["Тексты для Авито, Циан и Домклик", "Список преимуществ", "Обложка с водяным знаком"]
   },
   {
     id: "listing",
@@ -38,14 +38,14 @@ export const KVARTOVID_PRICING_PLANS: KvartovidPricingPlan[] = [
     priceLabel: "99 ₽",
     description: "Полный текст объявления без водяного знака",
     badge: "MVP",
-    features: ["Заголовок и описание", "Преимущества объекта", "Экспорт текста"]
+    features: ["Тексты под 3 площадки", "Преимущества объекта", "Экспорт текста"]
   },
   {
     id: "cover",
     label: "Объект + обложка",
     priceRub: KVARTOVID_PRICES.listingWithCover,
     priceLabel: "149 ₽",
-    description: "Текст и AI-обложка для Авито и Циан",
+    description: "Тексты и AI-обложка для площадок",
     badge: "Популярный",
     features: ["Всё из тарифа «1 объект»", "AI-обложка с плашкой", "Скачивание PNG"]
   },

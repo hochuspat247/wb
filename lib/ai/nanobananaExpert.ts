@@ -151,6 +151,72 @@ export type PromptOnlyImageOptions = {
   skipContentPolicy?: boolean;
 };
 
+export type ReferenceImageEditOptions = {
+  prompt: string;
+  imageBase64: string;
+  imageMimeType: string;
+  aspectRatio?: string;
+  resolution?: "1k" | "2k" | "4k";
+  outputFormat?: "png" | "jpeg" | "webp";
+  model?: "nb2" | "gpt2";
+  contentPolicyFields?: {
+    productDescription?: string;
+    category?: string;
+    title?: string;
+    benefits?: string[];
+    infographicTexts?: string[];
+  };
+};
+
+export async function generateNanoBananaExpertReferenceEdit(
+  options: ReferenceImageEditOptions
+): Promise<GenerateImageResult> {
+  const prompt = options.prompt.trim();
+  const generatedAt = new Date().toISOString();
+
+  if (!prompt) {
+    return createImageGenerationError("NanoBanana Expert", prompt, "Пустой промпт для изображения.", generatedAt);
+  }
+
+  if (!options.imageBase64?.trim()) {
+    return createImageGenerationError("NanoBanana Expert", prompt, "Не передано исходное фото для редактирования.", generatedAt);
+  }
+
+  const policyFields = options.contentPolicyFields ?? {};
+  const policy = await assessGenerationContentPolicy({
+    productDescription: policyFields.productDescription || prompt,
+    category: policyFields.category || "real estate",
+    title: policyFields.title || "apartment cover",
+    benefits: policyFields.benefits || [],
+    infographicTexts: policyFields.infographicTexts || [],
+    imageBase64: options.imageBase64,
+    imageMimeType: options.imageMimeType
+  });
+
+  if (!policy.allowed) {
+    return createImageGenerationError("NanoBanana Expert", prompt, policy.error, generatedAt);
+  }
+
+  if (!isApiKeyConfigured()) {
+    return createImageGenerationError("NanoBanana Expert", prompt, "NANOBANANA_EXPERT_API_KEY is not configured", generatedAt);
+  }
+
+  const referenceImages = [
+    options.imageBase64.startsWith("data:")
+      ? options.imageBase64
+      : `data:${options.imageMimeType || "image/png"};base64,${options.imageBase64}`
+  ];
+
+  return runNanoBananaGeneration({
+    prompt,
+    referenceImages,
+    model: options.model || process.env.NANOBANANA_EXPERT_MODEL || "nb2",
+    aspectRatio: options.aspectRatio || process.env.NANOBANANA_EXPERT_ASPECT_RATIO || "4:3",
+    resolution: options.resolution || process.env.NANOBANANA_EXPERT_RESOLUTION || "1k",
+    outputFormat: options.outputFormat || "png"
+  });
+}
+
 export async function generateNanoBananaExpertFromPrompt(
   options: PromptOnlyImageOptions
 ): Promise<GenerateImageResult> {

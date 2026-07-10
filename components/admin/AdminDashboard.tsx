@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart3, BookOpen, Clapperboard, Eye, Film, MousePointerClick, Star, Users, X } from "lucide-react";
+import { BarChart3, BookOpen, Building2, Clapperboard, Eye, Film, MousePointerClick, Star, Users, X } from "lucide-react";
 import { Funnel7dPanel } from "@/components/admin/Funnel7dPanel";
 import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
 import { AdminShell } from "@/components/admin/AdminShell";
@@ -58,6 +58,64 @@ type AdminStats = {
       updatedAt: Date;
     }[];
   } | null;
+  kvartovid?: {
+    overview: {
+      listings: number;
+      users: number;
+      usersWithOneListing: number;
+      usersWithMultipleListings: number;
+      listingsWithCover: number;
+      listingsWithFloorPlan: number;
+      kvartovidVideos: number;
+      listings7d: number;
+    };
+    userSegments: {
+      oneListing: Array<{
+        id: string;
+        name: string | null;
+        email: string;
+        emailVerified: boolean;
+        hasPasswordAccount: boolean;
+        generationsUsed: number;
+        generationCredits: number;
+        createdAt: Date;
+        listingsCount: number;
+        latestListingTitle: string;
+        lastProjectActivityAt?: Date;
+      }>;
+      multipleListings: Array<{
+        id: string;
+        name: string | null;
+        email: string;
+        emailVerified: boolean;
+        hasPasswordAccount: boolean;
+        generationsUsed: number;
+        generationCredits: number;
+        createdAt: Date;
+        listingsCount: number;
+        latestListingTitle: string;
+        lastProjectActivityAt?: Date;
+      }>;
+    };
+    recentListings: {
+      id: string;
+      userId: string;
+      userName: string | null;
+      userEmail: string | null;
+      userListingsCount: number;
+      title: string;
+      city: string;
+      rooms: string;
+      area: number;
+      dealType: string;
+      propertyType: string;
+      hasCover: boolean;
+      hasFloorPlan: boolean;
+      qualityScore?: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }[];
+  } | null;
   funnel: {
     pageViews: number;
     ctaClicks: number;
@@ -83,6 +141,7 @@ type AdminStats = {
     generationCredits: number;
     createdAt: Date;
     projectStoriesCount?: number;
+    projectListingsCount?: number;
     projectCardsCount?: number;
     projectDemosCount?: number;
     lastProjectActivityAt?: Date;
@@ -215,6 +274,61 @@ function MiniBars({ rows, label }: { rows: { day: string; value: number }[]; lab
           </div>
         ))}
         {!rows.length ? <p className="text-sm text-muted">Нет данных</p> : null}
+      </div>
+    </div>
+  );
+}
+
+type KvartovidSegmentUser = NonNullable<AdminStats["kvartovid"]>["userSegments"]["oneListing"][number];
+
+function KvartovidUserSegmentTable({
+  title,
+  rows,
+  emptyText
+}: {
+  title: string;
+  rows: KvartovidSegmentUser[];
+  emptyText: string;
+}) {
+  return (
+    <div className="rounded-card border border-clay bg-paper/30 p-4">
+      <p className="text-sm font-bold text-ink">{title}</p>
+      <div className="mt-3 overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-clay text-muted">
+              <th className="px-2 py-2 font-semibold">Пользователь</th>
+              <th className="px-2 py-2 font-semibold">Объявл.</th>
+              <th className="px-2 py-2 font-semibold">Последний объект</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((user) => (
+              <tr className="border-b border-clay/70" key={user.id}>
+                <td className="px-2 py-3">
+                  <p className="font-medium text-ink">{user.name || "—"}</p>
+                  <p className="text-xs text-muted">{formatAccountEmail(user.email)}</p>
+                </td>
+                <td className="px-2 py-3 font-semibold text-accent">{user.listingsCount}</td>
+                <td className="px-2 py-3 text-muted">
+                  <p className="line-clamp-2">{user.latestListingTitle}</p>
+                  <p className="mt-1 text-xs">
+                    {user.lastProjectActivityAt
+                      ? new Date(user.lastProjectActivityAt).toLocaleDateString("ru-RU")
+                      : "—"}
+                  </p>
+                </td>
+              </tr>
+            ))}
+            {rows.length === 0 ? (
+              <tr>
+                <td className="px-2 py-4 text-muted" colSpan={3}>
+                  {emptyText}
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </div>
     </div>
   );
@@ -560,6 +674,7 @@ export function AdminDashboard() {
 
   const productConfig = ADMIN_PRODUCTS[product];
   const isStoryStudio = product === "storystudio";
+  const isKvartovid = product === "kvartovid";
 
   useEffect(() => {
     const stored = readStoredProduct();
@@ -693,6 +808,7 @@ export function AdminDashboard() {
   if (!stats) return null;
 
   const storyOverview = stats.storyStudio?.overview;
+  const kvartovidOverview = stats.kvartovid?.overview;
 
   return (
     <AdminShell
@@ -750,6 +866,38 @@ export function AdminDashboard() {
                 </div>
               </Card>
             </>
+          ) : isKvartovid ? (
+            <>
+              <Card className="min-w-0" padding="md">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Объявлений в БД</p>
+                    <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{kvartovidOverview?.listings ?? 0}</p>
+                  </div>
+                  <Building2 className="shrink-0 text-accent" size={22} />
+                </div>
+              </Card>
+              <Card className="min-w-0" padding="md">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">1 объект</p>
+                    <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{kvartovidOverview?.usersWithOneListing ?? 0}</p>
+                    <p className="mt-1 text-xs text-muted">пользователей</p>
+                  </div>
+                  <Users className="shrink-0 text-accent" size={22} />
+                </div>
+              </Card>
+              <Card className="min-w-0" padding="md">
+                <div className="flex min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">2+ объектов</p>
+                    <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{kvartovidOverview?.usersWithMultipleListings ?? 0}</p>
+                    <p className="mt-1 text-xs text-muted">пользователей</p>
+                  </div>
+                  <Users className="shrink-0 text-accent" size={22} />
+                </div>
+              </Card>
+            </>
           ) : (
             <>
               <Card className="min-w-0" padding="md">
@@ -798,13 +946,15 @@ export function AdminDashboard() {
 
         <SessionDurationPanel product={product} stats={stats.sessionDuration} />
 
-        {!isStoryStudio && stats ? <DemoErrorsPanel errors={stats.recentDemoErrors ?? []} product={product} /> : null}
+        {!isStoryStudio && !isKvartovid && stats ? <DemoErrorsPanel errors={stats.recentDemoErrors ?? []} product={product} /> : null}
 
         <CollapsibleAdminSection
           description={
             isStoryStudio
               ? `Пользователи с историями в ${productConfig.label}`
-              : `Пользователи с карточками или демо в ${productConfig.label}`
+              : isKvartovid
+                ? `Пользователи с объявлениями в ${productConfig.label}`
+                : `Пользователи с карточками или демо в ${productConfig.label}`
           }
           icon={<Users className="text-accent" size={20} />}
           id="recent-users"
@@ -825,7 +975,9 @@ export function AdminDashboard() {
                   <span className="shrink-0 rounded-button bg-accent/10 px-3 py-1 text-sm font-black text-accent">
                     {isStoryStudio
                       ? `${user.projectStoriesCount ?? 0} истор.`
-                      : `${user.projectCardsCount ?? 0} карт. / ${user.projectDemosCount ?? 0} демо`}
+                      : isKvartovid
+                        ? `${user.projectListingsCount ?? 0} объявл.`
+                        : `${user.projectCardsCount ?? 0} карт. / ${user.projectDemosCount ?? 0} демо`}
                   </span>
                 </div>
                 <p className="mt-3 text-xs font-semibold text-muted">
@@ -846,7 +998,9 @@ export function AdminDashboard() {
                   <th className="px-3 py-2 font-semibold">Имя</th>
                   <th className="px-3 py-2 font-semibold">Email</th>
                   <th className="px-3 py-2 font-semibold">Статус email</th>
-                  <th className="px-3 py-2 font-semibold">{isStoryStudio ? "Историй" : "Активность"}</th>
+                  <th className="px-3 py-2 font-semibold">
+                    {isStoryStudio ? "Историй" : isKvartovid ? "Объявлений" : "Активность"}
+                  </th>
                   <th className="px-3 py-2 font-semibold">Квота</th>
                   <th className="px-3 py-2 font-semibold">Последняя активность</th>
                 </tr>
@@ -860,7 +1014,9 @@ export function AdminDashboard() {
                     <td className="px-3 py-3 text-muted">
                       {isStoryStudio
                         ? user.projectStoriesCount ?? 0
-                        : `${user.projectCardsCount ?? 0} карт. / ${user.projectDemosCount ?? 0} демо`}
+                        : isKvartovid
+                          ? user.projectListingsCount ?? 0
+                          : `${user.projectCardsCount ?? 0} карт. / ${user.projectDemosCount ?? 0} демо`}
                     </td>
                     <td className="px-3 py-3 text-muted">
                       {user.generationsUsed}/{user.generationCredits}
@@ -953,6 +1109,81 @@ export function AdminDashboard() {
               ) : null}
             </div>
           </CollapsibleAdminSection>
+        ) : isKvartovid ? (
+          <>
+            <CollapsibleAdminSection
+              badge={
+                <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+                  {kvartovidOverview?.usersWithOneListing ?? 0} / {kvartovidOverview?.usersWithMultipleListings ?? 0}
+                </span>
+              }
+              description="Сегментация по числу объектов в кабинете: частники с одной квартирой и риэлторы с портфелем"
+              icon={<Users className="text-accent" size={20} />}
+              id="kvartovid-user-segments"
+              scope={product}
+              title="Пользователи: 1 объект vs несколько"
+            >
+              <div className="grid gap-6 lg:grid-cols-2">
+                <KvartovidUserSegmentTable
+                  emptyText="Пока нет пользователей с одним объявлением"
+                  rows={stats.kvartovid?.userSegments.oneListing ?? []}
+                  title="1 объект"
+                />
+                <KvartovidUserSegmentTable
+                  emptyText="Пока нет пользователей с несколькими объявлениями"
+                  rows={stats.kvartovid?.userSegments.multipleListings ?? []}
+                  title="2+ объектов"
+                />
+              </div>
+            </CollapsibleAdminSection>
+
+            <CollapsibleAdminSection
+              badge={
+                <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+                  {stats.kvartovid?.recentListings.length ?? 0} последних
+                </span>
+              }
+              description="Объявления из кабинета: город, параметры, обложка и планировка"
+              icon={<Building2 className="text-accent" size={20} />}
+              id="recent-listings"
+              scope={product}
+              title="Последние объявления"
+            >
+              <div className="grid gap-3">
+                {(stats.kvartovid?.recentListings ?? []).map((listing) => (
+                  <div
+                    className="rounded-card border border-clay bg-paper/40 p-4"
+                    key={listing.id}
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate font-bold text-ink">{listing.title}</p>
+                        <p className="mt-1 text-sm text-muted">
+                          {listing.rooms}-комн. · {listing.area} м² · {listing.city}
+                        </p>
+                        <p className="mt-1 text-sm text-muted">
+                          {listing.userEmail ? formatAccountEmail(listing.userEmail) : "email не найден"}
+                          {listing.userListingsCount > 1 ? ` · ${listing.userListingsCount} объявл. у пользователя` : " · 1 объект"}
+                        </p>
+                        <p className="mt-1 text-xs font-semibold text-muted">
+                          {new Date(listing.updatedAt).toLocaleString("ru-RU")}
+                          {listing.hasCover ? " · обложка" : ""}
+                          {listing.hasFloorPlan ? " · планировка" : ""}
+                          {typeof listing.qualityScore === "number" ? ` · готовность ${listing.qualityScore}/100` : ""}
+                        </p>
+                      </div>
+                      <span className="rounded-button bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+                        {listing.userListingsCount === 1 ? "1 объект" : `${listing.userListingsCount} объявл.`}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+                {!stats.kvartovid?.recentListings.length ? (
+                  <p className="text-sm text-muted">Объявлений пока нет</p>
+                ) : null}
+              </div>
+            </CollapsibleAdminSection>
+          </>
         ) : (
           <>
         <CollapsibleAdminSection

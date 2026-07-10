@@ -7,10 +7,10 @@ export function KvartovidSeoLinksSection() {
     <section className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16" id="use-cases">
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="text-2xl font-bold sm:text-3xl">Сценарии использования</h2>
-        <p className="mt-3 text-muted">Продажа, аренда, Авито и работа риэлтора — отдельные посадочные под запросы из поиска.</p>
+        <p className="mt-3 text-muted">Продажа, аренда, Авито, Циан, Домклик, планировка, видео и работа риэлтора — отдельные посадочные под поисковые запросы.</p>
       </div>
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2">
+      <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {kvartovidMarketingPages.map((page) => (
           <Link
             key={page.slug}

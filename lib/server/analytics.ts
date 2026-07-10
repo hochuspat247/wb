@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import {
   analyticsEvents,
   demoGenerations,
+  kvartovidListings,
   productCards,
   storyProjects,
   users,
@@ -13,6 +14,7 @@ import type { AdminProductId } from "@/lib/admin/products";
 import { buildSessionDurationStats } from "@/lib/server/session-duration";
 import { getFunnel7d, type Funnel7dStep } from "@/lib/server/funnel7d";
 import { getStoryStudioAdminData } from "@/lib/server/storyAdminAnalytics";
+import { getKvartovidAdminData } from "@/lib/server/kvartovidAdminAnalytics";
 
 function productPathFilter(column: typeof analyticsEvents.path, product: AdminProductId): SQL {
   if (product === "storystudio") {
@@ -93,6 +95,7 @@ type RecentUserDbRow = {
 
 type RecentUserExtras = {
   projectStoriesCount?: number;
+  projectListingsCount?: number;
   projectCardsCount?: number;
   projectDemosCount?: number;
   lastProjectActivityAt?: Date;
@@ -117,6 +120,13 @@ async function getProductActiveUserCount(product: AdminProductId) {
     const [row] = await db
       .select({ value: sql<number>`count(distinct ${storyProjects.userId})` })
       .from(storyProjects);
+    return row?.value ?? 0;
+  }
+
+  if (product === "kvartovid") {
+    const [row] = await db
+      .select({ value: sql<number>`count(distinct ${kvartovidListings.userId})` })
+      .from(kvartovidListings);
     return row?.value ?? 0;
   }
 
@@ -175,6 +185,46 @@ async function getRecentUsersByProduct(product: AdminProductId) {
 
         return mapRecentUser(user, {
           projectStoriesCount: activity.projectStoriesCount,
+          lastProjectActivityAt: activity.lastProjectActivityAt
+        });
+      })
+      .filter((user): user is NonNullable<typeof user> => user != null);
+  }
+
+  if (product === "kvartovid") {
+    const activityRows = await db
+      .select({
+        userId: kvartovidListings.userId,
+        projectListingsCount: count(),
+        lastProjectActivityAt: sql<Date>`max(${kvartovidListings.updatedAt})`
+      })
+      .from(kvartovidListings)
+      .groupBy(kvartovidListings.userId)
+      .orderBy(desc(sql`max(${kvartovidListings.updatedAt})`))
+      .limit(10);
+
+    if (activityRows.length === 0) {
+      return [];
+    }
+
+    const userRows = await db.query.users.findMany({
+      where: inArray(
+        users.id,
+        activityRows.map((row) => row.userId)
+      ),
+      columns: userColumns
+    });
+    const userMap = new Map(userRows.map((user) => [user.id, user]));
+
+    return activityRows
+      .map((activity) => {
+        const user = userMap.get(activity.userId);
+        if (!user) {
+          return null;
+        }
+
+        return mapRecentUser(user, {
+          projectListingsCount: activity.projectListingsCount,
           lastProjectActivityAt: activity.lastProjectActivityAt
         });
       })
@@ -585,17 +635,25 @@ export async function getAdminAnalytics(pathFilter = "/", product: AdminProductI
       : [];
   const videoCountMap = new Map(videoCountRows.map((row) => [row.sourceGenerationId, row.value]));
   const storyStudioData = product === "storystudio" ? await getStoryStudioAdminData() : null;
+  const kvartovidData = product === "kvartovid" ? await getKvartovidAdminData() : null;
   const funnel7d =
     product === "storystudio"
       ? (storyStudioData?.funnel7d ?? [])
-      : await safeAnalyticsQuery("funnel 7d", getFunnel7d(), [] as Funnel7dStep[]);
+      : product === "kvartovid"
+        ? (kvartovidData?.funnel7d ?? [])
+        : await safeAnalyticsQuery("funnel 7d", getFunnel7d(), [] as Funnel7dStep[]);
 
   return {
     product,
     overview: {
-      users: productUserCount,
-      cards: cardCount?.value ?? 0,
-      demoGenerations: demoCount?.value ?? 0,
+      users: product === "kvartovid" ? (kvartovidData?.overview.users ?? productUserCount) : productUserCount,
+      cards:
+        product === "kvartovid"
+          ? (kvartovidData?.overview.listings ?? 0)
+          : product === "storystudio"
+            ? (storyStudioData?.overview.stories ?? 0)
+            : (cardCount?.value ?? 0),
+      demoGenerations: product === "kvartovid" ? 0 : (demoCount?.value ?? 0),
       totalGenerations: Number(generationsSum?.value ?? 0),
       events7d: events7d?.value ?? 0
     },
@@ -692,6 +750,13 @@ export async function getAdminAnalytics(pathFilter = "/", product: AdminProductI
       ? {
           overview: storyStudioData.overview,
           recentStories: storyStudioData.recentStories
+        }
+      : null,
+    kvartovid: kvartovidData
+      ? {
+          overview: kvartovidData.overview,
+          userSegments: kvartovidData.userSegments,
+          recentListings: kvartovidData.recentListings
         }
       : null
   };

@@ -7,10 +7,14 @@ import { formatKvartovidRub, KVARTOVID_PRICES } from "@/lib/kvartovid/pricing";
 export const kvartovidConfig = {
   name: BRAND.kvartovid,
   brand: `${BRAND.kvartovid} — ИИ для объявлений о недвижимости`,
-  title: `${BRAND.kvartovid} — объявление о квартире, обложка и описание за 1 минуту`,
-  description: `${KVARTOVID_POSITIONING} Загрузите фото и параметры — ИИ подготовит заголовок, описание, преимущества и продающую обложку для Авито, Циан и соцсетей. От ${formatKvartovidRub(KVARTOVID_PRICES.listing)} за объект.`,
+  title: `${BRAND.kvartovid} — объявление о квартире, обложка, планировка и тексты для Авито и Циан`,
+  description: `${KVARTOVID_POSITIONING} Загрузите 3–10 фото и параметры объекта — нейросеть подготовит заголовок, описание для Авито, Циан и Домклик, AI-обложку, схему планировки и видео. Для продажи, аренды и посуточной сдачи. От ${formatKvartovidRub(KVARTOVID_PRICES.listing)} за объект, 1 бесплатно.`,
   keywords: [
     "квартовид",
+    "кварто вид",
+    "ии для недвижимости",
+    "нейросеть для риэлтора",
+    "генератор объявления недвижимость",
     "описание квартиры для продажи",
     "описание квартиры для аренды",
     "как написать объявление о продаже квартиры",
@@ -19,18 +23,34 @@ export const kvartovidConfig = {
     "объявление о продаже квартиры",
     "объявление аренда квартиры",
     "объявление авито недвижимость",
+    "текст для авито квартира",
+    "объявление циан квартира",
+    "текст для циан недвижимость",
+    "объявление домклик",
     "фото квартиры для продажи",
     "ии описание квартиры",
-    "генератор объявления недвижимость",
     "обложка для авито квартира",
+    "ai обложка недвижимость",
+    "планировка квартиры для объявления",
+    "схема квартиры для авито",
+    "чертеж планировки квартиры",
     "как продать квартиру быстрее",
     "как сдать квартиру быстрее",
-    "нейросеть для риэлтора",
-    "текст для циан",
-    "упаковка объявления квартира"
+    "упаковка объявления квартира",
+    "ии для агентства недвижимости",
+    "генератор текста для риэлтора",
+    "видео из фото квартиры",
+    "объявление посуточно квартира",
+    "продающее описание квартиры",
+    "заголовок объявления квартира",
+    "шаблон объявления аренда квартиры",
+    "как оформить объявление на авито недвижимость",
+    "текст объявления продажа квартиры пример",
+    "ии помощник риэлтора",
+    "сервис для риэлторов недвижимость"
   ],
   locale: "ru_RU",
-  ogImagePath: "/og-image.png"
+  ogImagePath: "/kvartovid/opengraph-image"
 };
 
 export function kvartovidAbsoluteUrl(path = "/kvartovid") {
@@ -52,7 +72,7 @@ export function createKvartovidMetadata({
 }): Metadata {
   const pageTitle = title ? `${title} | ${BRAND.kvartovid}` : kvartovidConfig.title;
   const pageDescription = description || kvartovidConfig.description;
-  const pageKeywords = keywords ?? kvartovidConfig.keywords;
+  const pageKeywords = keywords ? [...new Set([...keywords, ...kvartovidConfig.keywords])] : kvartovidConfig.keywords;
   const ogImage = kvartovidAbsoluteUrl(kvartovidConfig.ogImagePath);
 
   return {
@@ -102,9 +122,23 @@ export function createKvartovidMetadata({
             "max-video-preview": -1
           }
         },
-    category: "technology"
+    category: "real estate",
+    ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? {
+          verification: {
+            ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION
+              ? { yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION }
+              : {}),
+            ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+              ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+              : {})
+          }
+        }
+      : {})
   };
 }
 
 export const kvartovidCreateDescription =
-  "Загрузите 3–10 фото квартиры и укажите параметры — ИИ сгенерирует заголовок, описание, преимущества и обложку объявления.";
+  "Загрузите 3–10 фото квартиры и параметры объекта — ИИ сгенерирует заголовок, тексты для Авито, Циан и Домклик, преимущества, AI-обложку и схему планировки для скачивания.";
+
+export const kvartovidLandingDescription = kvartovidConfig.description;

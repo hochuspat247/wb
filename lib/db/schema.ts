@@ -2,6 +2,7 @@ import type { AdapterAccountType } from "@auth/core/adapters";
 import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { ProductCardResult } from "@/types/product-card";
 import type { StoryProject } from "@/types/storystudio";
+import type { KvartovidSavedListing } from "@/types/kvartovid";
 import type {
   VideoAspectRatio,
   VideoDuration,
@@ -220,6 +221,16 @@ export const videoGenerationOrders = sqliteTable("video_generation_order", {
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date())
+});
+
+export const kvartovidListings = sqliteTable("kvartovid_listing", {
+  id: text("id").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  payload: text("payload", { mode: "json" }).$type<KvartovidSavedListing>().notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull()
 });
 
 export const kvartovidVideoSources = sqliteTable("kvartovid_video_source", {

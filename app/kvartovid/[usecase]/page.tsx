@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { KvartovidJsonLd } from "@/components/seo/KvartovidJsonLd";
 import { KvartovidUseCaseLanding } from "@/components/kvartovid/KvartovidUseCaseLanding";
 import { createKvartovidMetadata } from "@/lib/seo/kvartovid";
 import { getKvartovidMarketingPage, kvartovidMarketingPages } from "@/lib/kvartovid/marketingPages";
@@ -36,5 +37,10 @@ export default async function KvartovidUseCasePage({ params }: PageProps) {
     notFound();
   }
 
-  return <KvartovidUseCaseLanding page={page} />;
+  return (
+    <>
+      <KvartovidJsonLd variant="usecase" page={page} />
+      <KvartovidUseCaseLanding page={page} />
+    </>
+  );
 }

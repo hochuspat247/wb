@@ -4,6 +4,22 @@ import { productCards, videoGenerationOrders } from "@/lib/db/schema";
 import type { GeneratedVideoSnapshot, ProductCardResult } from "@/types/product-card";
 import type { VideoGenerationRecord } from "@/types/video-generation";
 
+function toIsoTimestamp(value: Date | number | string | null | undefined, fallback?: Date | number | string | null) {
+  const candidate = value ?? fallback;
+
+  if (candidate == null) {
+    return new Date().toISOString();
+  }
+
+  const date = candidate instanceof Date ? candidate : new Date(candidate);
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString();
+  }
+
+  return date.toISOString();
+}
+
 function snapshotFromOrder(
   order: Pick<
     VideoGenerationRecord,
@@ -111,7 +127,7 @@ export async function hydrateCardPayloadWithVideos(payload: ProductCardResult) {
     .select()
     .from(videoGenerationOrders)
     .where(and(eq(videoGenerationOrders.sourceGenerationId, payload.id), eq(videoGenerationOrders.status, "done")))
-    .orderBy(desc(videoGenerationOrders.createdAt));
+    .orderBy(desc(videoGenerationOrders.updatedAt));
 
   const snapshots = rows
     .map((row) =>
@@ -124,7 +140,7 @@ export async function hydrateCardPayloadWithVideos(payload: ProductCardResult) {
         quality: row.quality,
         motionStyle: row.motionStyle,
         generateAudio: row.generateAudio ?? false,
-        createdAt: new Date(row.createdAt).toISOString()
+        createdAt: toIsoTimestamp(row.createdAt, row.updatedAt)
       })
     )
     .filter((item): item is GeneratedVideoSnapshot => item !== null);
@@ -152,7 +168,7 @@ export async function hydrateUserCardsWithVideos(userId: string, cards: ProductC
         inArray(videoGenerationOrders.sourceGenerationId, cardIds)
       )
     )
-    .orderBy(desc(videoGenerationOrders.createdAt));
+    .orderBy(desc(videoGenerationOrders.updatedAt));
 
   const snapshotsByCardId = new Map<string, GeneratedVideoSnapshot[]>();
 
@@ -166,7 +182,7 @@ export async function hydrateUserCardsWithVideos(userId: string, cards: ProductC
       quality: row.quality,
       motionStyle: row.motionStyle,
       generateAudio: row.generateAudio ?? false,
-      createdAt: new Date(row.createdAt).toISOString()
+      createdAt: toIsoTimestamp(row.createdAt, row.updatedAt)
     });
 
     if (!snapshot) {

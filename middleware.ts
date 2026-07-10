@@ -48,5 +48,13 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/cabinet/:path*", "/storystudio/cabinet/:path*", "/kvartovid/cabinet/:path*", "/api/:path*"]
+  matcher: [
+    "/cabinet",
+    "/cabinet/:path*",
+    "/storystudio/cabinet",
+    "/storystudio/cabinet/:path*",
+    "/kvartovid/cabinet",
+    "/kvartovid/cabinet/:path*",
+    "/api/:path*"
+  ]
 };

@@ -31,10 +31,26 @@ function mapOrder(row: typeof videoGenerationOrders.$inferSelect): VideoGenerati
     externalTaskId: row.externalTaskId ?? undefined,
     originalVideoUrl: row.originalVideoUrl ?? undefined,
     error: row.error ?? undefined,
-    createdAt: new Date(row.createdAt).toISOString(),
+    createdAt: toIsoTimestamp(row.createdAt, row.updatedAt),
     updatedAt: new Date(row.updatedAt).toISOString(),
     paidAt: row.paidAt ? new Date(row.paidAt).toISOString() : undefined
   };
+}
+
+function toIsoTimestamp(value: Date | number | string | null | undefined, fallback?: Date | number | string | null) {
+  const candidate = value ?? fallback;
+
+  if (candidate == null) {
+    return new Date().toISOString();
+  }
+
+  const date = candidate instanceof Date ? candidate : new Date(candidate);
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString();
+  }
+
+  return date.toISOString();
 }
 
 export async function getVideoOrderById(orderId: string) {
@@ -50,7 +66,7 @@ export async function getUserVideoOrders(userId: string) {
     .select()
     .from(videoGenerationOrders)
     .where(eq(videoGenerationOrders.userId, userId))
-    .orderBy(desc(videoGenerationOrders.createdAt));
+    .orderBy(desc(videoGenerationOrders.updatedAt));
 
   return rows.map(mapOrder);
 }

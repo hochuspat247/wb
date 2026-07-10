@@ -226,6 +226,24 @@ export function migrate(sqlite: Database.Database) {
   }
 
   try {
+    sqlite.exec(`ALTER TABLE video_generation_order ADD COLUMN paidAt INTEGER`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE video_generation_order ADD COLUMN createdAt INTEGER`);
+  } catch {
+    // column already exists
+  }
+
+  sqlite.exec(`
+    UPDATE video_generation_order
+    SET createdAt = COALESCE(createdAt, updatedAt, CAST(strftime('%s','now') AS INTEGER) * 1000)
+    WHERE createdAt IS NULL
+  `);
+
+  try {
     sqlite.exec(`ALTER TABLE demo_generation ADD COLUMN clientIpHash TEXT`);
   } catch {
     // column already exists

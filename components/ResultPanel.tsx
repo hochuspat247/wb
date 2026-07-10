@@ -27,6 +27,7 @@ type ResultPanelProps = {
   previewRef?: RefObject<HTMLDivElement | null>;
   dark?: boolean;
   compact?: boolean;
+  canDownload?: boolean;
 };
 
 const ALL_TABS = [
@@ -107,7 +108,15 @@ function TextList({ items = [], dark }: { items?: string[]; dark?: boolean }) {
   );
 }
 
-export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = false, compact = false }: ResultPanelProps) {
+export function ResultPanel({
+  card,
+  onDownloadPng,
+  onSave,
+  previewRef,
+  dark = false,
+  compact = false,
+  canDownload = true
+}: ResultPanelProps) {
   const platform = card?.platform ?? card?.marketplaceText?.platform;
   const tabs = useMemo(() => orderTabs(platform), [platform]);
   const [activeTab, setActiveTab] = useState<string>(tabs[0]?.id ?? "general");
@@ -132,6 +141,10 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
   const tabsClass = dark ? "border-white/10 bg-white/5" : "";
 
   async function handleDownloadPng() {
+    if (!canDownload) {
+      return;
+    }
+
     reachGoal("download_png");
     const remoteImageUrl = currentCard.generatedImageUrl || null;
     const base64ImageUrl =
@@ -424,7 +437,13 @@ export function ResultPanel({ card, onDownloadPng, onSave, previewRef, dark = fa
       </div>
 
       <div className={`mt-6 grid gap-2 ${compact ? "grid-cols-1" : "grid-cols-1 sm:flex sm:flex-wrap"}`}>
-        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleDownloadPng} size="sm" variant="dark">
+        <Button
+          className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"}
+          disabled={!canDownload}
+          onClick={handleDownloadPng}
+          size="sm"
+          variant="dark"
+        >
           <Download size={16} />
           Скачать PNG
         </Button>

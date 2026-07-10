@@ -5,6 +5,30 @@ export type DownloadPolicy = {
   downloadsFullyUnlocked: boolean;
 };
 
+export function canDownloadCardImage(
+  card: ProductCardResult,
+  policy: DownloadPolicy | null,
+  persistToServer: boolean
+) {
+  if (!persistToServer) {
+    return true;
+  }
+
+  if (policy?.downloadsFullyUnlocked) {
+    return true;
+  }
+
+  if (card.downloadUnlocked) {
+    return true;
+  }
+
+  if (policy?.cleanDownloadGenerationId && card.id === policy.cleanDownloadGenerationId) {
+    return true;
+  }
+
+  return false;
+}
+
 function stripWatermarkedCard(card: ProductCardResult): ProductCardResult {
   return {
     ...card,

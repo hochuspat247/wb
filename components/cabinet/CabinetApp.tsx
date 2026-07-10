@@ -45,7 +45,7 @@ import {
 import { GUEST_ID_KEY, INTENDED_GENERATION_KEY, CABINET_DEMO_HINT_DISMISSED_KEY } from "@/lib/guest";
 import { CabinetDemoWelcomeHint } from "@/components/cabinet/CabinetDemoWelcomeHint";
 import { downloadCardImageAsset } from "@/lib/client/cardImage";
-import { applyDownloadPolicyToCard, type DownloadPolicy } from "@/lib/client/watermarkPolicy";
+import { applyDownloadPolicyToCard, canDownloadCardImage, type DownloadPolicy } from "@/lib/client/watermarkPolicy";
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
 import { DEFAULT_IMAGE_SETTINGS, getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { reachGoal } from "@/lib/metrika";
@@ -137,6 +137,10 @@ export function CabinetApp() {
     () => (selected ? applyDownloadPolicyToCard(selected, downloadPolicy, true) : null),
     [downloadPolicy, selected]
   );
+
+  const canDownloadSelected = selectedDisplayCard
+    ? canDownloadCardImage(selectedDisplayCard, downloadPolicy, true)
+    : false;
 
   useEffect(() => {
     setImageSettings(getImageSettings());
@@ -342,7 +346,16 @@ export function CabinetApp() {
 
   async function handleDownload(card: ProductCardResult) {
     const displayCard = applyDownloadPolicyToCard(card, downloadPolicy, true);
+
+    if (!canDownloadCardImage(displayCard, downloadPolicy, true)) {
+      return;
+    }
+
     const result = await downloadCardImageAsset(displayCard, "marketcard-ai.png");
+
+    if (result.blocked) {
+      return;
+    }
 
     if (!result.missing) {
       return;
@@ -352,11 +365,6 @@ export function CabinetApp() {
 
     if (coverSrc?.startsWith("data:")) {
       await downloadImageFromUrl(coverSrc, "marketcard-ai.png");
-      return;
-    }
-
-    if (card.generatedImageUrl) {
-      await downloadImageFromUrl(card.generatedImageUrl, "marketcard-ai.png");
     }
   }
 
@@ -771,12 +779,18 @@ export function CabinetApp() {
                       <p className="text-xs text-muted">{new Date(selected.generatedAt).toLocaleString("ru-RU")}</p>
                       {selectedDisplayCard?.watermarkLocked ? (
                         <p className="text-xs font-semibold text-muted">
-                          Карточка с демо-меткой. Без водяного знака доступна только первая генерация или после покупки
-                          пакета.
+                          {canDownloadSelected
+                            ? "Первая карточка — скачивание без водяного знака доступно."
+                            : "Скачать можно только первую карточку из истории. Для этой нужен пакет генераций."}
                         </p>
                       ) : null}
                       <div className="grid gap-2 sm:grid-cols-2">
-                        <Button className="w-full" onClick={() => handleDownload(selected!)} size="sm">
+                        <Button
+                          className="w-full"
+                          disabled={!canDownloadSelected}
+                          onClick={() => handleDownload(selected!)}
+                          size="sm"
+                        >
                           <Download size={16} />
                           Скачать PNG
                         </Button>

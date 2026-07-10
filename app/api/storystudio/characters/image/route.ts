@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       .set({ payload: story, updatedAt: now })
       .where(eq(storyProjects.id, body.storyId));
 
-    const updatedQuota = await consumeGeneration(userId);
+    const updatedQuota = (await consumeGeneration(userId)).quota;
     return NextResponse.json({ story, quota: updatedQuota });
   } catch (error) {
     console.error("[storystudio/characters/image]", error);

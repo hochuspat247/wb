@@ -9,7 +9,7 @@ import {
   hasValidImageGenerationTicket
 } from "@/lib/server/imageGenerationTickets";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
-import { consumeGeneration, getUserQuota, type UserQuota } from "@/lib/server/quota";
+import { consumeGeneration, getUserQuota, refundGeneration, type UserQuota } from "@/lib/server/quota";
 import type {
   GenerateImageInput,
   ImageDesignPreset,
@@ -55,9 +55,12 @@ function applyImageDefaults(input: GenerateImageRequest): GenerateImageRequest {
 }
 
 export async function POST(request: Request) {
+  let userId: string | undefined;
+  let billing: ImageGenerationBilling | undefined;
+
   try {
     const session = await auth();
-    const userId = session?.user?.id;
+    userId = session?.user?.id;
 
     if (!userId) {
       return NextResponse.json({ error: "Войдите в аккаунт, чтобы сгенерировать обложку." }, { status: 401 });
@@ -99,7 +102,7 @@ export async function POST(request: Request) {
     }
 
     const provider = resolveImageProvider(input.imageProvider);
-    const billing = await assertImageGenerationAllowed(userId, input.imageGenerationTicket);
+    billing = await assertImageGenerationAllowed(userId, input.imageGenerationTicket);
     const result = await generateProductImageWithProvider(input, {
       provider,
       imageMode: input.imageMode
@@ -107,6 +110,11 @@ export async function POST(request: Request) {
 
     if (result.isFallback || (!result.imageBase64 && !result.imageUrl)) {
       console.error("[MarketCard AI] generate-image provider failed:", result.error || "empty image response");
+
+      if (billing.mode === "direct") {
+        await refundGeneration(userId);
+      }
+
       const quota = await getUserQuota(userId);
 
       return NextResponse.json(
@@ -123,12 +131,20 @@ export async function POST(request: Request) {
     const quota = await commitImageGeneration(userId, billing);
     return NextResponse.json({ ...result, quota });
   } catch (error) {
+    if (billing?.mode === "direct" && billing.preConsumed && userId) {
+      await refundGeneration(userId);
+    }
+
     const message = error instanceof Error ? error.message : "Не удалось сгенерировать ИИ-изображение.";
     console.error("[MarketCard AI] generate-image failed:", message);
 
     if (message === "IMAGE_QUOTA_EXCEEDED") {
       return NextResponse.json(
-        { error: "Бесплатные генерации использованы. Пополните баланс, чтобы продолжить.", code: "QUOTA_EXCEEDED" },
+        {
+          error: "Бесплатные генерации использованы. Пополните баланс, чтобы продолжить.",
+          code: "QUOTA_EXCEEDED",
+          quota: userId ? await getUserQuota(userId) : undefined
+        },
         { status: 402 }
       );
     }
@@ -146,7 +162,7 @@ export async function POST(request: Request) {
 
 type ImageGenerationBilling =
   | { mode: "ticket"; ticketId: string }
-  | { mode: "direct" };
+  | { mode: "direct"; preConsumed: true };
 
 async function assertImageGenerationAllowed(
   userId: string,
@@ -158,27 +174,33 @@ async function assertImageGenerationAllowed(
     return { mode: "ticket", ticketId: cleanTicketId };
   }
 
-  const quota = await getUserQuota(userId);
+  const { consumed, quota } = await consumeGeneration(userId);
 
-  if (!quota.canGenerate) {
+  if (!consumed) {
     throw new Error("IMAGE_QUOTA_EXCEEDED");
   }
 
-  return { mode: "direct" };
+  return { mode: "direct", preConsumed: true };
 }
 
 async function commitImageGeneration(userId: string, billing: ImageGenerationBilling): Promise<UserQuota> {
-  if (billing.mode === "ticket") {
-    const ticketAccepted = await consumeImageGenerationTicket(billing.ticketId, userId);
-
-    if (!ticketAccepted) {
-      throw new Error("IMAGE_GENERATION_TICKET_INVALID");
-    }
-
-    return consumeGeneration(userId);
+  if (billing.mode === "direct") {
+    return getUserQuota(userId);
   }
 
-  return consumeGeneration(userId);
+  const ticketAccepted = await consumeImageGenerationTicket(billing.ticketId, userId);
+
+  if (!ticketAccepted) {
+    throw new Error("IMAGE_GENERATION_TICKET_INVALID");
+  }
+
+  const { consumed, quota } = await consumeGeneration(userId);
+
+  if (!consumed) {
+    throw new Error("IMAGE_QUOTA_EXCEEDED");
+  }
+
+  return quota;
 }
 
 async function parseGenerateImageRequest(request: Request): Promise<GenerateImageRequest> {

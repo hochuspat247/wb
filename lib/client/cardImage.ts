@@ -1,7 +1,19 @@
 import type { ProductCardResult } from "@/types/product-card";
 import { downloadBase64Image, downloadImageFromUrl } from "@/lib/image";
 
-export async function downloadCardImageAsset(card: ProductCardResult, fileName: string) {
+export type DownloadCardImageResult =
+  | { clean: boolean; missing?: false; blocked?: false }
+  | { clean: false; missing: true; blocked?: false }
+  | { clean: false; blocked: true; missing?: false };
+
+export async function downloadCardImageAsset(
+  card: ProductCardResult,
+  fileName: string
+): Promise<DownloadCardImageResult> {
+  if (card.watermarkLocked && !card.downloadUnlocked) {
+    return { clean: false, blocked: true };
+  }
+
   if (card.imageDownloadUrl) {
     const response = await fetch(card.imageDownloadUrl, { cache: "no-store" });
 
@@ -11,12 +23,12 @@ export async function downloadCardImageAsset(card: ProductCardResult, fileName: 
     }
   }
 
-  if (card.previewImageUrl) {
+  if (card.previewImageUrl && card.downloadUnlocked) {
     const response = await fetch(card.previewImageUrl, { cache: "no-store" });
 
     if (response.ok) {
       await downloadResponseBlob(response, fileName);
-      return { clean: Boolean(card.downloadUnlocked) };
+      return { clean: true };
     }
   }
 

@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       includeCover: body.includeCover !== false,
       includeFloorPlan: body.includeFloorPlan !== false
     });
-    const updatedQuota = await consumeGeneration(userId);
+    const updatedQuota = (await consumeGeneration(userId)).quota;
 
     if (body.includeCover !== false && !result.coverImageBase64 && !result.coverImageUrl && !result.coverImageError) {
       result.coverImageError = IMAGE_GENERATION_RETRY_MESSAGE;

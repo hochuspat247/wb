@@ -42,7 +42,9 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   const { id } = await context.params;
-  const variant = new URL(request.url).searchParams.get("variant") === "original" ? "original" : "preview";
+  const requestUrl = new URL(request.url);
+  const variant = requestUrl.searchParams.get("variant") === "original" ? "original" : "preview";
+  const downloadIntent = requestUrl.searchParams.get("download") === "1";
   const payload = await getUserCardImagePayload(userId, id);
 
   if (!payload) {
@@ -55,11 +57,11 @@ export async function GET(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Image not available" }, { status: 404 });
   }
 
-  if (variant === "original" && !payload.downloadUnlocked) {
+  if ((variant === "original" || downloadIntent) && !payload.downloadUnlocked) {
     return NextResponse.json(
       {
-        error: "Скачивание без водяного знака доступно для первой карточки или после покупки пакета.",
-        code: "WATERMARK_LOCKED"
+        error: "Скачать можно только первую карточку. Остальные — после покупки пакета.",
+        code: "DOWNLOAD_LOCKED"
       },
       { status: 402 }
     );

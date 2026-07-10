@@ -200,7 +200,7 @@ export async function POST(request: Request) {
       originalImageBase64: original.base64,
       originalImageMimeType: original.mimeType
     });
-    const nextQuota = userId ? await consumeGeneration(userId) : undefined;
+    const nextQuota = userId ? (await consumeGeneration(userId)).quota : undefined;
 
     return NextResponse.json({
       id: demo.id,

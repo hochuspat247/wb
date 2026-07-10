@@ -58,7 +58,7 @@ export async function POST(_request: Request, context: RouteContext) {
       .set({ payload: story, updatedAt: now })
       .where(eq(storyProjects.id, id));
 
-    const updatedQuota = wasEmpty ? await getUserQuota(userId) : await consumeGeneration(userId);
+    const updatedQuota = wasEmpty ? await getUserQuota(userId) : (await consumeGeneration(userId)).quota;
 
     return NextResponse.json({ story, quota: updatedQuota });
   } catch (error) {

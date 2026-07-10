@@ -59,7 +59,40 @@ export async function getUserQuota(userId: string): Promise<UserQuota> {
   };
 }
 
-export async function consumeGeneration(userId: string): Promise<UserQuota> {
+export type ConsumeGenerationResult = {
+  quota: UserQuota;
+  consumed: boolean;
+};
+
+export async function consumeGeneration(userId: string): Promise<ConsumeGenerationResult> {
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId)
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (hasUnlimitedGenerations(user)) {
+    return {
+      quota: buildUnlimitedQuota(user.generationsUsed ?? 0),
+      consumed: true
+    };
+  }
+
+  const result = await db
+    .update(users)
+    .set({ generationsUsed: sql`${users.generationsUsed} + 1` })
+    .where(sql`${users.id} = ${userId} AND ${users.generationsUsed} < ${users.generationCredits}`)
+    .returning({ id: users.id });
+
+  return {
+    quota: await getUserQuota(userId),
+    consumed: result.length > 0
+  };
+}
+
+export async function refundGeneration(userId: string): Promise<UserQuota> {
   const user = await db.query.users.findFirst({
     where: eq(users.id, userId)
   });
@@ -72,14 +105,13 @@ export async function consumeGeneration(userId: string): Promise<UserQuota> {
     return buildUnlimitedQuota(user.generationsUsed ?? 0);
   }
 
-  const result = await db
-    .update(users)
-    .set({ generationsUsed: sql`${users.generationsUsed} + 1` })
-    .where(sql`${users.id} = ${userId} AND ${users.generationsUsed} < ${users.generationCredits}`)
-    .returning({ id: users.id });
+  const used = user.generationsUsed ?? 0;
 
-  if (!result.length) {
-    return getUserQuota(userId);
+  if (used > 0) {
+    await db
+      .update(users)
+      .set({ generationsUsed: used - 1 })
+      .where(eq(users.id, userId));
   }
 
   return getUserQuota(userId);

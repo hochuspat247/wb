@@ -1,31 +1,90 @@
 import { randomUUID } from "crypto";
-import { and, eq, gt, isNull, lt } from "drizzle-orm";
+import { and, eq, gt, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { imageGenerationTickets } from "@/lib/db/schema";
+import { imageGenerationTickets, users } from "@/lib/db/schema";
+import { FREE_TRIAL_CARDS } from "@/lib/pricing";
+import { hasUnlimitedGenerations } from "@/lib/server/unlimitedGenerations";
 
 const TICKET_TTL_MS = 20 * 60 * 1000;
 const CLEANUP_AFTER_MS = 24 * 60 * 60 * 1000;
+
+export class ImageGenerationQuotaExceededError extends Error {
+  constructor() {
+    super("IMAGE_GENERATION_QUOTA_EXCEEDED");
+  }
+}
+
+type TicketDb = Pick<typeof db, "delete" | "select" | "insert" | "query" | "transaction">;
+
+async function cleanupExpiredImageGenerationTickets(client: TicketDb = db, now = new Date()) {
+  await client
+    .delete(imageGenerationTickets)
+    .where(lt(imageGenerationTickets.expiresAt, new Date(now.getTime() - CLEANUP_AFTER_MS)));
+}
+
+async function countActiveImageGenerationTickets(userId: string, client: TicketDb = db, now = new Date()) {
+  await cleanupExpiredImageGenerationTickets(client, now);
+
+  const [row] = await client
+    .select({ value: sql<number>`count(*)` })
+    .from(imageGenerationTickets)
+    .where(
+      and(
+        eq(imageGenerationTickets.userId, userId),
+        isNull(imageGenerationTickets.usedAt),
+        gt(imageGenerationTickets.expiresAt, now)
+      )
+    );
+
+  return Number(row?.value ?? 0);
+}
 
 export async function createImageGenerationTicket(userId: string, purpose = "card_image") {
   const now = new Date();
   const id = randomUUID();
 
-  await db.insert(imageGenerationTickets).values({
-    id,
-    userId,
-    purpose,
-    usedAt: null,
-    expiresAt: new Date(now.getTime() + TICKET_TTL_MS),
-    createdAt: now
-  });
+  return db.transaction(async (tx) => {
+    const user = await tx.query.users.findFirst({
+      where: eq(users.id, userId)
+    });
 
-  return id;
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (!hasUnlimitedGenerations(user)) {
+      const credits = user.generationCredits ?? FREE_TRIAL_CARDS;
+      const used = user.generationsUsed ?? 0;
+      const activeTickets = await countActiveImageGenerationTickets(userId, tx, now);
+
+      if (used + activeTickets >= credits) {
+        throw new ImageGenerationQuotaExceededError();
+      }
+    }
+
+    await tx.insert(imageGenerationTickets).values({
+      id,
+      userId,
+      purpose,
+      usedAt: null,
+      expiresAt: new Date(now.getTime() + TICKET_TTL_MS),
+      createdAt: now
+    });
+
+    return id;
+  });
 }
 
-async function cleanupExpiredImageGenerationTickets(now = new Date()) {
+export async function revokeImageGenerationTicket(ticketId: string, userId: string) {
   await db
     .delete(imageGenerationTickets)
-    .where(lt(imageGenerationTickets.expiresAt, new Date(now.getTime() - CLEANUP_AFTER_MS)));
+    .where(
+      and(
+        eq(imageGenerationTickets.id, ticketId),
+        eq(imageGenerationTickets.userId, userId),
+        isNull(imageGenerationTickets.usedAt)
+      )
+    );
 }
 
 export async function hasValidImageGenerationTicket(ticketId: string | undefined, userId: string) {
@@ -36,7 +95,7 @@ export async function hasValidImageGenerationTicket(ticketId: string | undefined
   }
 
   const now = new Date();
-  await cleanupExpiredImageGenerationTickets(now);
+  await cleanupExpiredImageGenerationTickets(db, now);
 
   const ticket = await db.query.imageGenerationTickets.findFirst({
     where: and(
@@ -58,7 +117,7 @@ export async function consumeImageGenerationTicket(ticketId: string | undefined,
   }
 
   const now = new Date();
-  await cleanupExpiredImageGenerationTickets(now);
+  await cleanupExpiredImageGenerationTickets(db, now);
 
   const updated = await db
     .update(imageGenerationTickets)

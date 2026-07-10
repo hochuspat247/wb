@@ -69,7 +69,7 @@ export async function POST(request: Request) {
       updatedAt: now
     });
 
-    const updatedQuota = await consumeGeneration(userId);
+    const updatedQuota = (await consumeGeneration(userId)).quota;
 
     return NextResponse.json({ story, quota: updatedQuota });
   } catch (error) {

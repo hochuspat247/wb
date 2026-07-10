@@ -47,7 +47,9 @@ function sanitizeCardForClient(
 ): ProductCardResult {
   const downloadUnlocked = isGenerationDownloadUnlocked(access, card.id);
   const previewImageUrl = `/api/cards/${card.id}/image?variant=preview`;
-  const imageDownloadUrl = downloadUnlocked ? `/api/cards/${card.id}/image?variant=original` : undefined;
+  const imageDownloadUrl = downloadUnlocked
+    ? `/api/cards/${card.id}/image?variant=original&download=1`
+    : undefined;
 
   if (downloadUnlocked) {
     return {

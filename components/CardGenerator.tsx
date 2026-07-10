@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, Download, FileImage, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Star, WifiOff, Wand2, X } from "lucide-react";
 import { CardEditPanel } from "@/components/CardEditPanel";
+import { GeneratedCoverPreview } from "@/components/GeneratedCoverPreview";
 import { GeneratedCardPreview } from "@/components/GeneratedCardPreview";
 import { HistorySection } from "@/components/HistorySection";
 import { PaywallModal } from "@/components/PaywallModal";
@@ -26,14 +27,13 @@ import { resolveCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
 import { downloadCardImageAsset } from "@/lib/client/cardImage";
-import { applyDownloadPolicyToCard, type DownloadPolicy } from "@/lib/client/watermarkPolicy";
+import { applyDownloadPolicyToCard, canDownloadCardImage, type DownloadPolicy } from "@/lib/client/watermarkPolicy";
 import {
   base64ToBlob,
   base64ToDataUrl,
   dataUrlToBase64,
   downloadBase64Image,
   downloadImageFromUrl,
-  getGeneratedCoverSrc,
   hasGeneratedAiCover,
   validateImageFile
 } from "@/lib/image";
@@ -238,6 +238,7 @@ export function CardGenerator({
   const [isLoading, setIsLoading] = useState(false);
   const [renderedImageUrl, setRenderedImageUrl] = useState("");
   const [isRenderingImage, setIsRenderingImage] = useState(false);
+  const [previewReloadToken, setPreviewReloadToken] = useState(0);
   const [isGeneratingAiImage, setIsGeneratingAiImage] = useState(false);
   const [ratingPromptCardId, setRatingPromptCardId] = useState<string | null>(null);
   const [isSavingGenerationRating, setIsSavingGenerationRating] = useState(false);
@@ -848,6 +849,7 @@ export function CardGenerator({
       if (savedCard) {
         setCard((current) => (current?.id === savedCard.id ? savedCard : current));
         setSeriesCards((items) => items.map((item) => (item.id === savedCard.id ? savedCard : item)));
+        setPreviewReloadToken((value) => value + 1);
       }
       await refreshDownloadPolicy();
       onSaved?.();
@@ -968,7 +970,13 @@ export function CardGenerator({
   }
 
   async function handleDownloadBestImage() {
-    if (!displayCard) {
+    if (!displayCard || !card) {
+      return;
+    }
+
+    if (!canDownloadCardImage(displayCard, downloadPolicy, persistToServer)) {
+      setShowPaywall(true);
+      setNotice("Скачать можно только первую карточку. Для остальных нужен пакет генераций.");
       return;
     }
 
@@ -998,14 +1006,30 @@ export function CardGenerator({
         ? applyDownloadPolicyToCard(seriesCard, downloadPolicy, persistToServer)
         : seriesCard;
 
+    if (!canDownloadCardImage(displaySeriesCard, downloadPolicy, persistToServer)) {
+      setShowPaywall(true);
+      setNotice("Скачать можно только первую карточку. Для остальных нужен пакет генераций.");
+      return;
+    }
+
     reachGoal("download_png", { source: "series", seriesIndex: seriesCard.seriesIndex ?? index + 1 });
     trackConversion("download_png", { source: "series", seriesIndex: seriesCard.seriesIndex ?? index + 1 });
     await downloadCardImage(displaySeriesCard, `marketcard-series-${seriesCard.seriesIndex ?? index + 1}.png`);
   }
 
   async function handleDownloadSeriesZip() {
+    const downloadableCards = displaySeriesCards.filter((seriesCard) =>
+      canDownloadCardImage(seriesCard, downloadPolicy, persistToServer)
+    );
+
+    if (!downloadableCards.length) {
+      setShowPaywall(true);
+      setNotice("Скачать можно только первую карточку. Для остальных нужен пакет генераций.");
+      return;
+    }
+
     const files = await Promise.all(
-      displaySeriesCards.map(async (seriesCard, index) => {
+      downloadableCards.map(async (seriesCard, index) => {
         const blob = await getCardImageBlob(seriesCard);
 
         if (!blob) return null;
@@ -1210,6 +1234,7 @@ export function CardGenerator({
     };
     setCard(updatedCard);
     setRatingPromptCardId(updatedCard.id);
+    setPreviewReloadToken((value) => value + 1);
     return updatedCard;
   }
 
@@ -1395,15 +1420,22 @@ export function CardGenerator({
         : seriesCards,
     [downloadPolicy, persistToServer, seriesCards]
   );
-  const aiImageUrl = displayCard ? getGeneratedCoverSrc(displayCard) : null;
 
-  const hasAiCover = Boolean(displayCard && !isGeneratingAiImage && hasGeneratedAiCover(displayCard));
+  const hasAiCover = Boolean(
+    card &&
+      !isGeneratingAiImage &&
+      (hasGeneratedAiCover(card) || Boolean(displayCard && hasGeneratedAiCover(displayCard)))
+  );
   const shouldShowGenerationRatingPrompt = Boolean(
     displayCard &&
       hasAiCover &&
       ratingPromptCardId === displayCard.id &&
       !displayCard.generationRating &&
       !displayCard.generationRatingDismissedAt
+  );
+
+  const canDownloadCurrentCard = Boolean(
+    displayCard && canDownloadCardImage(displayCard, downloadPolicy, persistToServer)
   );
 
   const isWorking = isLoading || isGeneratingAiImage || isRenderingImage || isDemoGenerating;
@@ -1873,7 +1905,12 @@ export function CardGenerator({
                     </p>
                   </div>
                   <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-                    <Button className="w-full sm:w-auto" onClick={handleDownloadBestImage} variant="dark">
+                    <Button
+                      className="w-full sm:w-auto"
+                      disabled={!canDownloadCurrentCard}
+                      onClick={handleDownloadBestImage}
+                      variant="dark"
+                    >
                       Скачать PNG
                     </Button>
                     <Button className="w-full sm:w-auto" onClick={() => openCardEditor(card)} type="button" variant="secondary">
@@ -1888,13 +1925,13 @@ export function CardGenerator({
                       <Loader2 className="animate-spin text-muted" size={28} />
                       <p className="text-center text-sm font-medium text-muted">Создаём обложку…</p>
                     </div>
-                  ) : hasAiCover && aiImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                  ) : hasAiCover && card ? (
+                    <GeneratedCoverPreview
                       alt="Готовая обложка"
+                      card={card}
                       className={`aspect-[4/5] w-full ${embedded ? "object-contain" : "object-cover"}`}
-                      key={aiImageUrl}
-                      src={aiImageUrl}
+                      displayCard={displayCard}
+                      reloadToken={previewReloadToken}
                     />
                   ) : card.generatedImageIsFallback ? (
                     <ImageGenerationRetryCallout
@@ -1921,8 +1958,9 @@ export function CardGenerator({
                 </div>
                 {displayCard?.watermarkLocked && hasAiCover ? (
                   <p className={`mt-3 text-sm font-semibold leading-relaxed ${darkConsole ? "text-white/55" : "text-muted"}`}>
-                    Карточка с демо-меткой. Скачать без водяного знака можно для первой генерации или после покупки
-                    пакета.
+                    {canDownloadCurrentCard
+                      ? "Карточка с демо-меткой. Скачать без водяного знака можно для первой генерации или после покупки пакета."
+                      : "Скачать можно только первую карточку из истории. Для этой — купите пакет генераций."}
                   </p>
                 ) : null}
                 {shouldShowGenerationRatingPrompt ? (
@@ -1980,7 +2018,8 @@ export function CardGenerator({
                 </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   {displaySeriesCards.map((seriesCard, index) => {
-                    const previewUrl = getGeneratedCardImageUrl(seriesCard);
+                    const rawSeriesCard = seriesCards.find((item) => item.id === seriesCard.id) ?? seriesCard;
+                    const previewReady = hasGeneratedAiCover(rawSeriesCard) || hasGeneratedAiCover(seriesCard);
                     const itemError = seriesCard.generatedImageError;
 
                     return (
@@ -1990,13 +2029,14 @@ export function CardGenerator({
                       >
                         <button className="block w-full text-left" onClick={() => openCardEditor(seriesCard)} type="button">
                           <div className={`overflow-hidden rounded-[12px] border ${darkConsole ? "border-white/10" : "border-clay"}`}>
-                            {previewUrl ? (
+                            {previewReady ? (
                               <div className="relative">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
+                                <GeneratedCoverPreview
                                   alt={seriesCard.title}
+                                  card={rawSeriesCard}
                                   className="aspect-[4/5] w-full object-cover"
-                                  src={previewUrl}
+                                  displayCard={seriesCard}
+                                  reloadToken={previewReloadToken}
                                 />
                                 {seriesCard.watermarkLocked ? <WatermarkOverlay /> : null}
                               </div>
@@ -2015,7 +2055,12 @@ export function CardGenerator({
                           {itemError ? <p className="mt-2 text-xs font-semibold text-red-400">{itemError}</p> : null}
                         </button>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <Button onClick={() => handleDownloadSeriesCard(seriesCard, index)} size="sm" variant="secondary">
+                          <Button
+                            disabled={!canDownloadCardImage(seriesCard, downloadPolicy, persistToServer)}
+                            onClick={() => handleDownloadSeriesCard(seriesCard, index)}
+                            size="sm"
+                            variant="secondary"
+                          >
                             <Download size={15} />
                             PNG
                           </Button>
@@ -2036,6 +2081,7 @@ export function CardGenerator({
             ) : null}
             {!embedded && card ? (
               <ResultPanel
+                canDownload={canDownloadCurrentCard}
                 card={card}
                 compact={embedded}
                 dark={darkConsole}
@@ -2048,6 +2094,7 @@ export function CardGenerator({
           ) : null}
           {embedded && showPreviewColumn && card ? (
             <ResultPanel
+              canDownload={canDownloadCurrentCard}
               card={card}
               compact={embedded}
               dark={darkConsole}
@@ -2104,12 +2151,13 @@ function hasGeneratedImage(card: ProductCardResult) {
   return Boolean(card.generatedImageBase64 || card.generatedImageUrl || card.generatedImageDataUrl || card.imageDataUrl);
 }
 
-function getGeneratedCardImageUrl(card: ProductCardResult) {
-  return getGeneratedCoverSrc(card);
-}
-
 async function downloadCardImage(card: ProductCardResult, fileName: string) {
   const result = await downloadCardImageAsset(card, fileName);
+
+  if (result.blocked) {
+    throw new Error("DOWNLOAD_LOCKED");
+  }
+
   if (!result.missing) {
     return;
   }
@@ -2351,8 +2399,17 @@ async function downloadGeneratedImage(dataUrl: string, title: string, fallbackNo
 
 async function downloadBestImage(card: ProductCardResult, renderedDataUrl: string, fallbackNode: HTMLElement | null) {
   const remoteResult = await downloadCardImageAsset(card, "marketcard-ai.png");
+
+  if (remoteResult.blocked) {
+    throw new Error("DOWNLOAD_LOCKED");
+  }
+
   if (!remoteResult.missing) {
     return;
+  }
+
+  if (card.watermarkLocked && !card.downloadUnlocked) {
+    throw new Error("DOWNLOAD_LOCKED");
   }
 
   if (card.generatedImageUrl) {

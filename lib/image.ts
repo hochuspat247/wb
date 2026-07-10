@@ -74,14 +74,17 @@ export function base64ToDataUrl(base64: string, mimeType: string) {
   return `data:${mimeType};base64,${base64}`;
 }
 
-export function getGeneratedCoverSrc(card: {
+export function getInlineGeneratedCoverSrc(card: {
+  generatedImageIsFallback?: boolean;
   generatedImageBase64?: string | null;
   generatedImageMimeType?: string | null;
   generatedImageDataUrl?: string;
   generatedImageUrl?: string | null;
-  watermarkLocked?: boolean;
-  previewImageUrl?: string;
 }) {
+  if (card.generatedImageIsFallback) {
+    return null;
+  }
+
   if (card.generatedImageBase64 && card.generatedImageMimeType) {
     return base64ToDataUrl(card.generatedImageBase64, card.generatedImageMimeType);
   }
@@ -94,7 +97,24 @@ export function getGeneratedCoverSrc(card: {
     return card.generatedImageUrl;
   }
 
-  if (card.watermarkLocked && card.previewImageUrl) {
+  return null;
+}
+
+export function getGeneratedCoverSrc(card: {
+  generatedImageBase64?: string | null;
+  generatedImageMimeType?: string | null;
+  generatedImageDataUrl?: string;
+  generatedImageUrl?: string | null;
+  watermarkLocked?: boolean;
+  previewImageUrl?: string;
+}) {
+  const inline = getInlineGeneratedCoverSrc(card);
+
+  if (inline) {
+    return inline;
+  }
+
+  if (card.previewImageUrl) {
     return card.previewImageUrl;
   }
 

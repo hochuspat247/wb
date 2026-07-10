@@ -6,7 +6,11 @@ import { resolveProductContextFromImage } from "@/lib/ai/productVision";
 import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
-import { createImageGenerationTicket } from "@/lib/server/imageGenerationTickets";
+import {
+  createImageGenerationTicket,
+  ImageGenerationQuotaExceededError,
+  revokeImageGenerationTicket
+} from "@/lib/server/imageGenerationTickets";
 import { getUserQuota } from "@/lib/server/quota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import type { ProductCardInput } from "@/types/product-card";
@@ -15,9 +19,12 @@ import type { MarketplaceTextInput } from "@/types/marketplace";
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  let imageGenerationTicket: string | null = null;
+  let userId: string | null = null;
+
   try {
     const session = await auth();
-    const userId = session?.user?.id;
+    userId = session?.user?.id ?? null;
 
     if (!userId) {
       return NextResponse.json({ error: "Войдите в аккаунт, чтобы сгенерировать карточку." }, { status: 401 });
@@ -34,19 +41,6 @@ export async function POST(request: Request) {
       return NextResponse.json(verificationError, { status: 403 });
     }
 
-    const quota = await getUserQuota(userId);
-
-    if (!quota.canGenerate) {
-      return NextResponse.json(
-        {
-          error: "Бесплатные генерации использованы. Купите пакет, чтобы продолжить.",
-          code: "QUOTA_EXCEEDED",
-          quota
-        },
-        { status: 402 }
-      );
-    }
-
     const body = (await request.json()) as ProductCardInput;
 
     if (!body.productDescription?.trim()) {
@@ -56,6 +50,8 @@ export async function POST(request: Request) {
       );
     }
 
+    imageGenerationTicket = await createImageGenerationTicket(userId);
+
     const initialPolicy = scanTextForProhibitedContent(
       [body.productDescription, body.category, body.brand, body.sellerWishes, body.editInstructions]
         .map((value) => value?.trim())
@@ -64,6 +60,7 @@ export async function POST(request: Request) {
     );
 
     if (!initialPolicy.allowed) {
+      await revokeImageGenerationTicket(imageGenerationTicket, userId);
       return createContentPolicyBlockedResponse(initialPolicy);
     }
 
@@ -88,6 +85,7 @@ export async function POST(request: Request) {
     });
 
     if (!resolvedPolicy.allowed) {
+      await revokeImageGenerationTicket(imageGenerationTicket, userId);
       return createContentPolicyBlockedResponse(resolvedPolicy);
     }
 
@@ -170,7 +168,6 @@ export async function POST(request: Request) {
     };
 
     const nextQuota = await getUserQuota(userId);
-    const imageGenerationTicket = await createImageGenerationTicket(userId);
 
     return NextResponse.json({
       ...enrichedResult,
@@ -178,6 +175,23 @@ export async function POST(request: Request) {
       imageGenerationTicket
     });
   } catch (error) {
+    if (imageGenerationTicket && userId) {
+      await revokeImageGenerationTicket(imageGenerationTicket, userId);
+    }
+
+    if (error instanceof ImageGenerationQuotaExceededError) {
+      const quota = userId ? await getUserQuota(userId) : undefined;
+
+      return NextResponse.json(
+        {
+          error: "Бесплатные генерации использованы. Купите пакет, чтобы продолжить.",
+          code: "QUOTA_EXCEEDED",
+          quota
+        },
+        { status: 402 }
+      );
+    }
+
     console.error("[MarketCard AI] generate-card failed", error);
     return NextResponse.json({ error: "Не удалось сгенерировать карточку." }, { status: 500 });
   }

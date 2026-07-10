@@ -3,10 +3,14 @@ import { Sparkles } from "lucide-react";
 import { LegalFooterLinks } from "@/components/legal/LegalFooterLinks";
 import { BRAND } from "@/lib/branding";
 
+import { storyStudioMarketingPages } from "@/lib/storystudio/marketingPages";
+
 const footerLinks = [
   { label: "Видео-серии", href: "/storystudio#video-series" },
   { label: "Карта связей", href: "/storystudio#relations" },
+  { label: "Как работает", href: "/storystudio#workflow" },
   { label: "Возможности", href: "/storystudio#features" },
+  { label: "Сценарии", href: "/storystudio#use-cases" },
   { label: "Примеры", href: "/storystudio#examples" },
   { label: "Тарифы", href: "/storystudio#pricing" },
   { label: "FAQ", href: "/storystudio#faq" },
@@ -17,7 +21,7 @@ export function StoryStudioFooter() {
   return (
     <footer className="border-t border-white/10 bg-[#07050d] py-10 text-ink sm:py-14">
       <div className="section-shell px-4 sm:px-6">
-        <div className="grid gap-8 sm:gap-10 md:grid-cols-[1.2fr_1fr_1fr]">
+        <div className="grid gap-8 sm:gap-10 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
           <div>
             <Link href="/storystudio" className="inline-flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet/20 text-violet">
@@ -47,6 +51,19 @@ export function StoryStudioFooter() {
                   Кабинет
                 </Link>
               </li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="text-sm font-black text-ink">Для авторов</p>
+            <ul className="mt-4 space-y-2.5 text-sm font-semibold text-muted">
+              {storyStudioMarketingPages.map((page) => (
+                <li key={page.slug}>
+                  <Link className="transition hover:text-violet" href={page.path}>
+                    {page.badge}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 

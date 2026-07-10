@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { buildImagePrompt } from "@/lib/ai/imagePrompt";
-import { formatImageProviderError, isGeminiQuotaError } from "@/lib/ai/imageGenerationErrors";
+import { createImageGenerationError, formatImageProviderError, isGeminiQuotaError } from "@/lib/ai/imageGenerationErrors";
 import type { GenerateImageInput, GenerateImageResult, ImageGenerationMode } from "@/types/product-card";
 
 type GeminiImageOutput = {
@@ -21,16 +21,17 @@ export async function generateGeminiProductImage(
   const prompt = buildImagePrompt(input);
   const generatedAt = new Date().toISOString();
 
-  if (imageMode === "html") {
-    return createFallbackResult(prompt, "HTML-preview выбран в настройках изображения.", generatedAt);
-  }
-
   if (!process.env.GEMINI_API_KEY) {
-    return createFallbackResult(prompt, "GEMINI_API_KEY не задан.", generatedAt);
+    return createImageGenerationError("Gemini Nano Banana", prompt, "GEMINI_API_KEY не задан.", generatedAt);
   }
 
   if (!input.imageBase64 || !input.imageMimeType) {
-    return createFallbackResult(prompt, "Для ИИ-изображения нужно загруженное фото товара.", generatedAt);
+    return createImageGenerationError(
+      "Gemini Nano Banana",
+      prompt,
+      "Для ИИ-изображения нужно загруженное фото товара.",
+      generatedAt
+    );
   }
 
   const models = getModelQueue(imageMode);
@@ -58,7 +59,7 @@ export async function generateGeminiProductImage(
     }
   }
 
-  return createFallbackResult(prompt, summarizeGeminiErrors(errors), generatedAt);
+  return createImageGenerationError("Gemini Nano Banana", prompt, summarizeGeminiErrors(errors), generatedAt);
 }
 
 export async function generateGeminiPromptImage(
@@ -69,11 +70,11 @@ export async function generateGeminiPromptImage(
   const trimmedPrompt = prompt.trim();
 
   if (!trimmedPrompt) {
-    return createFallbackResult(trimmedPrompt, "Пустой промпт для изображения.", generatedAt);
+    return createImageGenerationError("Gemini Nano Banana", trimmedPrompt, "Пустой промпт для изображения.", generatedAt);
   }
 
   if (!process.env.GEMINI_API_KEY) {
-    return createFallbackResult(trimmedPrompt, "GEMINI_API_KEY не задан.", generatedAt);
+    return createImageGenerationError("Gemini Nano Banana", trimmedPrompt, "GEMINI_API_KEY не задан.", generatedAt);
   }
 
   const models = getModelQueue(options.imageMode);
@@ -119,7 +120,7 @@ export async function generateGeminiPromptImage(
     }
   }
 
-  return createFallbackResult(trimmedPrompt, summarizeGeminiErrors(errors), generatedAt);
+  return createImageGenerationError("Gemini Nano Banana", trimmedPrompt, summarizeGeminiErrors(errors), generatedAt);
 }
 
 function summarizeGeminiErrors(errors: string[]) {
@@ -178,20 +179,6 @@ function getModelQueue(mode: ImageGenerationMode = "fast") {
     fastModel;
 
   return Array.from(new Set([selectedModel, legacyModel]));
-}
-
-function createFallbackResult(prompt: string, error: string, generatedAt: string): GenerateImageResult {
-  return {
-    imageBase64: null,
-    imageUrl: null,
-    mimeType: null,
-    provider: "HTML/CSS fallback",
-    model: "fallback",
-    prompt,
-    generatedAt,
-    isFallback: true,
-    error
-  };
 }
 
 function formatError(error: unknown) {

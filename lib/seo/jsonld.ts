@@ -138,7 +138,19 @@ export function buildHomeJsonLd() {
           "ИИ-обложка 4:5",
           "Видео из готовой карточки без звука"
         ],
-        url: absoluteUrl("/cabinet")
+        url: absoluteUrl("/")
+      },
+      {
+        "@type": "HowTo",
+        name: "Как сделать карточку товара для маркетплейса",
+        description: "Пошаговый процесс генерации карточки товара в МаркетКард ИИ",
+        step: [
+          { "@type": "HowToStep", name: "Загрузите фото товара", text: "Добавьте исходное фото товара в генератор." },
+          { "@type": "HowToStep", name: "Опишите товар", text: "Укажите категорию, преимущества и площадку." },
+          { "@type": "HowToStep", name: "Получите тексты и СЕО", text: "Нейросеть подготовит название, описание и ключи." },
+          { "@type": "HowToStep", name: "Сгенерируйте обложку 4:5", text: "ИИ создаст визуал карточки под маркетплейс." },
+          { "@type": "HowToStep", name: "Скачайте PNG", text: "Экспортируйте карточку и загрузите на площадку." }
+        ]
       },
       buildOfferCatalog(),
       {
@@ -147,7 +159,8 @@ export function buildHomeJsonLd() {
         description: PRODUCT_CARD_VIDEO_DEMO.description,
         contentUrl: absoluteUrl(PRODUCT_CARD_VIDEO_DEMO.src),
         embedUrl: absoluteUrl("/#video-example"),
-        uploadDate: new Date().toISOString().slice(0, 10),
+        thumbnailUrl: absoluteUrl("/opengraph-image"),
+        uploadDate: "2026-03-01",
         inLanguage: "ru-RU",
         isFamilyFriendly: true
       },

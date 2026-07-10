@@ -6,8 +6,8 @@ import { resolveProductContextFromImage } from "@/lib/ai/productVision";
 import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
-import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import { createImageGenerationTicket } from "@/lib/server/imageGenerationTickets";
+import { getUserQuota } from "@/lib/server/quota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import type { ProductCardInput } from "@/types/product-card";
 import type { MarketplaceTextInput } from "@/types/marketplace";
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
       marketplaceText
     };
 
-    const nextQuota = await consumeGeneration(userId);
+    const nextQuota = await getUserQuota(userId);
     const imageGenerationTicket = await createImageGenerationTicket(userId);
 
     return NextResponse.json({

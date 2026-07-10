@@ -256,4 +256,15 @@ export function migrate(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS story_project_user_idx ON story_project(userId);
     CREATE INDEX IF NOT EXISTS story_project_updated_idx ON story_project(updatedAt);
   `);
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS kvartovid_video_source (
+      orderId TEXT PRIMARY KEY NOT NULL,
+      userId TEXT NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+      imageBase64 TEXT NOT NULL,
+      imageMimeType TEXT NOT NULL,
+      createdAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS kvartovid_video_source_user_idx ON kvartovid_video_source(userId);
+  `);
 }

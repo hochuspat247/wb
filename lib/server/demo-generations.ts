@@ -63,10 +63,11 @@ export async function attachGuestGenerationsToUser(guestId: string, userId: stri
     .where(and(eq(demoGenerations.guestId, guestId), isNull(demoGenerations.userId)));
 
   for (const row of rows) {
-    await registerGenerationForCleanDownload(userId, row.id, row.createdAt);
+    const cardId = row.id;
+    await registerGenerationForCleanDownload(userId, cardId, row.createdAt);
     await saveUserCard(userId, {
       ...row.payload,
-      id: row.payload.id || row.id,
+      id: cardId,
       generatedImageBase64: row.originalImageBase64,
       generatedImageMimeType: row.originalImageMimeType,
       generatedImageDataUrl: undefined,

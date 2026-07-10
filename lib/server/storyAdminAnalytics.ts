@@ -105,6 +105,7 @@ export async function getStoryStudioAdminData() {
       userName: row.userName,
       userEmail: row.userEmail,
       title: row.payload.title,
+      premise: row.payload.premise,
       status: row.payload.status,
       genres: row.payload.genres,
       charactersCount: row.payload.characters?.length ?? 0,

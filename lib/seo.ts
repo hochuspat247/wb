@@ -3,34 +3,39 @@ import { BRAND } from "@/lib/branding";
 import {
   CARD_GENERATION_PRICE_RUB,
   FREE_TOTAL_MARKETING_CARDS,
-  VIDEO_GENERATION_START_PRICE_RUB,
-  formatRub,
-  formatVideoPriceRub
+  formatRub
 } from "@/lib/pricing";
 
 const defaultSiteUrl = "https://marketcard-ai.avenir-team.ru";
 
 export const siteConfig = {
   name: BRAND.marketCard,
-  title: `${BRAND.marketCard} — карточки и видео товаров для ВБ, Озон и Авито`,
-  description: `Загрузите фото товара — получите карточку с текстом, СЕО и ИИ-обложкой 4:5 для Вайлдберриз, Озон, Авито и Яндекс Маркета. ${FREE_TOTAL_MARKETING_CARDS} карточки бесплатно (1 демо + 2 после входа), далее ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото. Видео из карточки — от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}.`,
+  title: `${BRAND.marketCard} — генератор карточек товара для ВБ, Озон и Авито`,
+  description: `Нейросеть для карточек товара: загрузите фото — получите ИИ-обложку 4:5, название, описание, СЕО и инфографику для Вайлдберриз, Ozon, Авито и Яндекс Маркета. ${FREE_TOTAL_MARKETING_CARDS} карточки бесплатно, далее ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото.`,
   keywords: [
+    "генератор карточек товара",
+    "нейросеть для карточек товара",
+    "ии карточка товара",
     "карточка товара",
+    "генератор карточек",
+    "инфографика wildberries",
+    "инфографика для вб",
+    "карточка товара wildberries",
+    "карточка товара ozon",
+    "карточка товара авито",
+    "генератор описания товара",
+    "сео описание маркетплейс",
     "видео из карточки",
-    "видео товара",
     "wildberries",
     "ozon",
     "avito",
+    "вайлдберриз",
+    "озон",
     "яндекс маркет",
-    "генератор карточек",
-    "инфографика",
-    "сео описание",
     "маркетплейс",
-    "вео 3.1",
-    "гугл вео",
-    "маркеткард ии",
+    "селлер",
     "обложка 4:5",
-    "ии карточка товара"
+    "маркеткард ии"
   ],
   locale: "ru_RU",
   url: process.env.AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || defaultSiteUrl
@@ -60,7 +65,10 @@ export function createPageMetadata({
     keywords: siteConfig.keywords,
     metadataBase: new URL(siteConfig.url),
     alternates: {
-      canonical: absoluteUrl(path)
+      canonical: absoluteUrl(path),
+      languages: {
+        "ru-RU": absoluteUrl(path)
+      }
     },
     icons: {
       icon: [
@@ -68,7 +76,8 @@ export function createPageMetadata({
         { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
         { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
         { url: "/favicon-48x48.png", type: "image/png", sizes: "48x48" },
-        { url: "/favicon-192x192.png", type: "image/png", sizes: "192x192" }
+        { url: "/favicon-192x192.png", type: "image/png", sizes: "192x192" },
+        { url: "/favicon-192x192.png", type: "image/png", sizes: "120x120" }
       ],
       shortcut: "/favicon.ico",
       apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
@@ -101,8 +110,20 @@ export function createPageMetadata({
       : {
           index: true,
           follow: true,
-          googleBot: { index: true, follow: true, "max-image-preview": "large" }
+          googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 }
+        },
+    ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? {
+          verification: {
+            ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION
+              ? { yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION }
+              : {}),
+            ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+              ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+              : {})
+          }
         }
+      : {})
   };
 }
 

@@ -1,7 +1,14 @@
-import { createHash } from "crypto";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { demoGenerations } from "@/lib/db/schema";
+import { buildClientFingerprint } from "@/lib/server/botProtection";
+import { getClientIp } from "@/lib/server/clientIp";
+import {
+  enforceRateLimits,
+  hashRateLimitIdentity,
+  recordRateLimitAttempts,
+  type RateLimitResult
+} from "@/lib/server/rateLimit";
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -10,19 +17,46 @@ export type DemoRateLimitResult =
   | {
       allowed: false;
       error: string;
-      code: "DEMO_LIMIT_EXCEEDED";
+      code: "DEMO_LIMIT_EXCEEDED" | "RATE_LIMIT_EXCEEDED";
       retryAfterSeconds: number;
     };
 
 export function hashDemoClientIp(request: Request) {
-  return hashIdentity(getClientIp(request));
+  return hashRateLimitIdentity(getClientIp(request));
 }
 
 export async function checkGuestDemoGenerationAllowed(request: Request, guestId: string): Promise<DemoRateLimitResult> {
-  const since = new Date(Date.now() - ONE_DAY_MS);
+  const sinceMs = ONE_DAY_MS;
   const dailyGuestLimit = getPositiveIntegerEnv("DEMO_FREE_DAILY_LIMIT", 1);
   const dailyIpLimit = getPositiveIntegerEnv("DEMO_FREE_IP_DAILY_LIMIT", 5);
+  const dailyAttemptLimit = getPositiveIntegerEnv("DEMO_ATTEMPT_DAILY_LIMIT", 3);
+  const dailyIpAttemptLimit = getPositiveIntegerEnv("DEMO_IP_ATTEMPT_DAILY_LIMIT", 10);
+  const dailyFingerprintLimit = getPositiveIntegerEnv("DEMO_FREE_FINGERPRINT_DAILY_LIMIT", 3);
+
   const clientIpHash = hashDemoClientIp(request);
+  const fingerprintHash = buildClientFingerprint(request);
+
+  const attemptLimit = await enforceRateLimits([
+    { identityType: "demo_guest_attempt", identityHash: hashRateLimitIdentity(guestId), windowMs: sinceMs, max: dailyAttemptLimit },
+    { identityType: "demo_ip_attempt", identityHash: clientIpHash, windowMs: sinceMs, max: dailyIpAttemptLimit },
+    {
+      identityType: "demo_fingerprint_attempt",
+      identityHash: fingerprintHash,
+      windowMs: sinceMs,
+      max: dailyFingerprintLimit
+    }
+  ]);
+
+  if (!attemptLimit.allowed) {
+    return {
+      allowed: false,
+      code: "RATE_LIMIT_EXCEEDED",
+      retryAfterSeconds: attemptLimit.retryAfterSeconds,
+      error: "Слишком много попыток демо-генерации. Попробуйте позже или войдите в аккаунт."
+    };
+  }
+
+  const since = new Date(Date.now() - sinceMs);
 
   const [guestCount] = await db
     .select({ value: sql<number>`count(*)` })
@@ -30,7 +64,7 @@ export async function checkGuestDemoGenerationAllowed(request: Request, guestId:
     .where(and(eq(demoGenerations.guestId, guestId), gte(demoGenerations.createdAt, since)));
 
   if (Number(guestCount?.value ?? 0) >= dailyGuestLimit) {
-    return buildLimitError();
+    return buildSuccessLimitError();
   }
 
   const [ipCount] = await db
@@ -39,45 +73,35 @@ export async function checkGuestDemoGenerationAllowed(request: Request, guestId:
     .where(and(eq(demoGenerations.clientIpHash, clientIpHash), gte(demoGenerations.createdAt, since)));
 
   if (Number(ipCount?.value ?? 0) >= dailyIpLimit) {
-    return buildLimitError();
+    return buildSuccessLimitError();
   }
 
   return { allowed: true };
 }
 
-/** @deprecated Limits are recorded on successful demo_generation rows */
+export async function recordGuestDemoAttempt(request: Request, guestId: string) {
+  const clientIpHash = hashDemoClientIp(request);
+  const fingerprintHash = buildClientFingerprint(request);
+
+  await recordRateLimitAttempts([
+    { identityType: "demo_guest_attempt", identityHash: hashRateLimitIdentity(guestId) },
+    { identityType: "demo_ip_attempt", identityHash: clientIpHash },
+    { identityType: "demo_fingerprint_attempt", identityHash: fingerprintHash }
+  ]);
+}
+
+/** @deprecated Limits are recorded on demo attempts and successful demo_generation rows */
 export async function commitGuestDemoGeneration(_request: Request, _guestId: string) {
   return;
 }
 
-function buildLimitError(): DemoRateLimitResult {
+function buildSuccessLimitError(): DemoRateLimitResult {
   return {
     allowed: false,
     code: "DEMO_LIMIT_EXCEEDED",
     retryAfterSeconds: Math.ceil(ONE_DAY_MS / 1000),
     error: "Бесплатная демо-генерация уже использована. Войдите в аккаунт или пополните баланс, чтобы продолжить."
   };
-}
-
-function getClientIp(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  return normalizeHeader(
-    request.headers.get("cf-connecting-ip") ||
-      request.headers.get("x-real-ip") ||
-      forwardedFor ||
-      "unknown",
-    80
-  );
-}
-
-function normalizeHeader(value: string | null | undefined, maxLength: number) {
-  const clean = (value || "unknown").replace(/\s+/g, " ").trim();
-  return clean.slice(0, maxLength) || "unknown";
-}
-
-function hashIdentity(value: string) {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "marketcard-demo-rate-limit";
-  return createHash("sha256").update(`${secret}:${value}`).digest("hex");
 }
 
 function getPositiveIntegerEnv(name: string, fallback: number) {

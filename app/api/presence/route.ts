@@ -1,5 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import {
+  botProtectionErrorResponse,
+  enforceIpRateLimit,
+  isObviousAutomatedClient,
+  recordIpRateLimitAttempt
+} from "@/lib/server/botProtection";
 import { upsertVisitorPresence } from "@/lib/server/presence";
 
 export const runtime = "nodejs";
@@ -16,7 +22,24 @@ type PresenceBody = {
   referrer?: string;
 };
 
+const ONE_MINUTE_MS = 60 * 1000;
+
 export async function POST(request: Request) {
+  if (isObviousAutomatedClient(request)) {
+    return NextResponse.json({ ok: true, skipped: true });
+  }
+
+  const presenceLimit = await enforceIpRateLimit(
+    "presence",
+    request,
+    ONE_MINUTE_MS,
+    Number.parseInt(process.env.PRESENCE_IP_MINUTE_LIMIT || "180", 10) || 180
+  );
+
+  if (!presenceLimit.allowed) {
+    return botProtectionErrorResponse(presenceLimit);
+  }
+
   let body: PresenceBody;
 
   try {
@@ -55,6 +78,8 @@ export async function POST(request: Request) {
       isAuthed: Boolean(userId ?? body.isAuthed),
       isVisible: body.isVisible !== false
     });
+
+    await recordIpRateLimitAttempt("presence", request);
 
     return NextResponse.json({ ok: true });
   } catch (error) {

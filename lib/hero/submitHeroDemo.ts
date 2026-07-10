@@ -2,6 +2,7 @@ import { DEMO_GENERATION_ERROR, parseJsonResponse } from "@/lib/api/parseJsonRes
 import { getImageSettings } from "@/lib/imageSettings";
 import { getOrCreateGuestId } from "@/lib/guest";
 import { dataUrlToBase64 } from "@/lib/image";
+import type { AntiBotPayload } from "@/lib/server/botProtection";
 import type { ProductCardInput } from "@/types/product-card";
 import type { ImageDesignPreset, ImageGenerationMode } from "@/types/product-card";
 
@@ -25,13 +26,15 @@ type SubmitHeroDemoInput = {
   payload: ProductCardInput;
   imageMode?: ImageGenerationMode;
   designPreset?: ImageDesignPreset;
+  antiBot?: AntiBotPayload;
 };
 
 export async function submitHeroDemo({
   imageUrl,
   payload,
   imageMode = "pro",
-  designPreset = "premium-marketplace"
+  designPreset = "premium-marketplace",
+  antiBot
 }: SubmitHeroDemoInput) {
   const image = dataUrlToBase64(imageUrl);
   const guestId = getOrCreateGuestId();
@@ -48,7 +51,8 @@ export async function submitHeroDemo({
       imageMimeType: image.mimeType,
       imageProvider: getImageSettings().imageProvider,
       imageMode,
-      designPreset
+      designPreset,
+      ...antiBot
     })
   });
   const data = await parseJsonResponse<{ id?: string; error?: string }>(response);

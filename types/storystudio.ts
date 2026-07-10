@@ -83,6 +83,7 @@ export type StoryProject = {
   id: string;
   title: string;
   premise: string;
+  charactersHint?: string;
   genres: StoryGenre[];
   language: StoryLanguage;
   targetWordCount: number;

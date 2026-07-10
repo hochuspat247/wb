@@ -179,6 +179,41 @@ export function buildStoryStudioHomeJsonLd() {
       buildStoryOfferCatalog(),
       buildFaqPage(),
       {
+        "@type": "HowTo",
+        name: `Как создать историю в ${BRAND.storyStudio}`,
+        description: "Пошаговый сценарий от идеи до кабинета с персонажами, картой связей и главами",
+        step: [
+          {
+            "@type": "HowToStep",
+            position: 1,
+            name: "Опишите идею",
+            text: "Укажите название, жанры и основную завязку произведения на странице создания."
+          },
+          {
+            "@type": "HowToStep",
+            position: 2,
+            name: "Получите основу",
+            text: "ИИ сгенерирует синопсис, мир, персонажей, связи и план сюжета."
+          },
+          {
+            "@type": "HowToStep",
+            position: 3,
+            name: "Развивайте в кабинете",
+            text: "Добавляйте главы, портреты, связи на карте и видео-серии из героев."
+          }
+        ]
+      },
+      {
+        "@type": "ItemList",
+        name: `Сценарии для авторов ${BRAND.storyStudio}`,
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Генератор фанфиков", url: absoluteUrl("/storystudio/fanfik") },
+          { "@type": "ListItem", position: 2, name: "Генератор романа", url: absoluteUrl("/storystudio/roman") },
+          { "@type": "ListItem", position: 3, name: "ИИ для сценариев", url: absoluteUrl("/storystudio/scenarii") },
+          { "@type": "ListItem", position: 4, name: "Генератор персонажей", url: absoluteUrl("/storystudio/personazhi") }
+        ]
+      },
+      {
         "@type": "Service",
         name: `Видео-серии из персонажей ${BRAND.storyStudio}`,
         description: `Кинематографичные сцены из ИИ-портретов героев через ${BRAND.googleVeo} ${BRAND.veoVersion}. От ${VIDEO_STANDARD_PRICE_4_SEC} сек, формат 9:16 для соцсетей.`,

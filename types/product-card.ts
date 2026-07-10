@@ -163,9 +163,9 @@ export type ProductImageGenerationInput = {
   imageMode?: ImageGenerationMode;
 };
 
-export type ImageProviderMode = "html" | "nanobanana_expert" | "gemini" | "auto";
+export type ImageProviderMode = "nanobanana_expert" | "gemini" | "auto";
 
-export type ImageGenerationMode = "html" | "fast" | "legacy" | "pro";
+export type ImageGenerationMode = "fast" | "legacy" | "pro";
 
 export type NanoBananaExpertModel = "nb2" | "gpt2";
 

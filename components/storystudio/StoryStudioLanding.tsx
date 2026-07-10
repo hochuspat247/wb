@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/Button";
 import { StoryStudioHeader } from "@/components/storystudio/StoryStudioHeader";
 import { StoryStudioFooter } from "@/components/storystudio/StoryStudioFooter";
 import { StoryStudioFaqSection } from "@/components/storystudio/StoryStudioFaqSection";
+import { StoryStudioAudienceSection } from "@/components/storystudio/StoryStudioAudienceSection";
+import { StoryStudioSeoLinksSection } from "@/components/storystudio/StoryStudioSeoLinksSection";
+import { StoryStudioWorkflowSection } from "@/components/storystudio/StoryStudioWorkflowSection";
 import { StoryStudioVideoDemo } from "@/components/storystudio/StoryStudioVideoDemo";
 import { RelationsMapPreview } from "@/components/storystudio/RelationsMapPreview";
 import { StoryPaymentButton } from "@/components/storystudio/StoryPaymentButton";
@@ -113,6 +116,8 @@ export function StoryStudioLanding() {
             </p>
           </div>
         </section>
+
+        <StoryStudioWorkflowSection />
 
         {/* Video advantage */}
         <section id="video-series" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
@@ -261,6 +266,10 @@ export function StoryStudioLanding() {
             ))}
           </div>
         </section>
+
+        <StoryStudioAudienceSection />
+
+        <StoryStudioSeoLinksSection />
 
         {/* Pricing */}
         <section id="pricing" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">

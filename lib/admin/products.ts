@@ -1,6 +1,6 @@
 import { BRAND } from "@/lib/branding";
 
-export type AdminProductId = "marketcard" | "storystudio";
+export type AdminProductId = "marketcard" | "storystudio" | "kvartovid";
 
 export type AdminProduct = {
   id: AdminProductId;
@@ -49,13 +49,30 @@ export const ADMIN_PRODUCTS: Record<AdminProductId, AdminProduct> = {
       { id: "/login", label: "Вход" },
       { id: "/register", label: "Регистрация" }
     ]
+  },
+  kvartovid: {
+    id: "kvartovid",
+    label: BRAND.kvartovid,
+    shortLabel: BRAND.kvartovid,
+    title: `Аналитика ${BRAND.kvartovid}`,
+    description: "Объявления о недвижимости, обложки и тексты",
+    pathPrefix: "/kvartovid",
+    defaultHeatmapPath: "/kvartovid",
+    heatmapPaths: ["/kvartovid", "/kvartovid/create", "/kvartovid/cabinet"],
+    journeyZones: [
+      { id: "/kvartovid", label: "Лендинг" },
+      { id: "/kvartovid/create", label: "Создание" },
+      { id: "/kvartovid/cabinet", label: "Кабинет" },
+      { id: "/login", label: "Вход" },
+      { id: "/register", label: "Регистрация" }
+    ]
   }
 };
 
 export const ADMIN_PRODUCT_LIST = Object.values(ADMIN_PRODUCTS);
 
 export function isAdminProductId(value: string | null | undefined): value is AdminProductId {
-  return value === "marketcard" || value === "storystudio";
+  return value === "marketcard" || value === "storystudio" || value === "kvartovid";
 }
 
 export function resolveAdminProduct(value: string | null | undefined): AdminProduct {
@@ -67,5 +84,8 @@ export function belongsToAdminProduct(path: string, product: AdminProductId) {
   if (product === "storystudio") {
     return pathname === "/storystudio" || pathname.startsWith("/storystudio/");
   }
-  return !pathname.startsWith("/storystudio");
+  if (product === "kvartovid") {
+    return pathname === "/kvartovid" || pathname.startsWith("/kvartovid/");
+  }
+  return !pathname.startsWith("/storystudio") && !pathname.startsWith("/kvartovid");
 }

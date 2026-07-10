@@ -22,6 +22,34 @@ export async function createImageGenerationTicket(userId: string, purpose = "car
   return id;
 }
 
+async function cleanupExpiredImageGenerationTickets(now = new Date()) {
+  await db
+    .delete(imageGenerationTickets)
+    .where(lt(imageGenerationTickets.expiresAt, new Date(now.getTime() - CLEANUP_AFTER_MS)));
+}
+
+export async function hasValidImageGenerationTicket(ticketId: string | undefined, userId: string) {
+  const cleanTicketId = ticketId?.trim();
+
+  if (!cleanTicketId || cleanTicketId.length > 120) {
+    return false;
+  }
+
+  const now = new Date();
+  await cleanupExpiredImageGenerationTickets(now);
+
+  const ticket = await db.query.imageGenerationTickets.findFirst({
+    where: and(
+      eq(imageGenerationTickets.id, cleanTicketId),
+      eq(imageGenerationTickets.userId, userId),
+      isNull(imageGenerationTickets.usedAt),
+      gt(imageGenerationTickets.expiresAt, now)
+    )
+  });
+
+  return Boolean(ticket);
+}
+
 export async function consumeImageGenerationTicket(ticketId: string | undefined, userId: string) {
   const cleanTicketId = ticketId?.trim();
 
@@ -30,10 +58,7 @@ export async function consumeImageGenerationTicket(ticketId: string | undefined,
   }
 
   const now = new Date();
-
-  await db
-    .delete(imageGenerationTickets)
-    .where(lt(imageGenerationTickets.expiresAt, new Date(now.getTime() - CLEANUP_AFTER_MS)));
+  await cleanupExpiredImageGenerationTickets(now);
 
   const updated = await db
     .update(imageGenerationTickets)

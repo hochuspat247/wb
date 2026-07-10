@@ -1,4 +1,5 @@
 import { CompareSection } from "@/components/CompareSection";
+import { AudienceSection } from "@/components/AudienceSection";
 import { ExamplesSection } from "@/components/ExamplesSection";
 import { VideoExampleSection } from "@/components/VideoExampleSection";
 import { FAQSection } from "@/components/FAQSection";
@@ -10,11 +11,12 @@ import { PricingCalculatorSection } from "@/components/PricingCalculatorSection"
 import { PricingSection } from "@/components/PricingSection";
 import { HomeJsonLd } from "@/components/seo/HomeJsonLd";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
+import { WorkflowSection } from "@/components/WorkflowSection";
 import { createPageMetadata, siteConfig } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
   path: "/",
-  title: "Генератор карточек и видео для маркетплейсов",
+  title: "Генератор карточек товара для Wildberries, Ozon и Авито",
   description: siteConfig.description
 });
 
@@ -25,9 +27,11 @@ export default function Home() {
       <Header />
       <Hero />
       <ExamplesSection />
+      <WorkflowSection />
       <VideoExampleSection />
 
       <PainSection />
+      <AudienceSection />
       <CompareSection />
       <PricingSection />
       <PricingCalculatorSection />

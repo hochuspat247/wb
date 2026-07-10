@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { assessGenerationContentPolicy, scanTextForProhibitedContent } from "@/lib/ai/contentPolicy";
-import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
-import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
+import { generateProductImageWithProvider, resolveImageProvider } from "@/lib/ai/imageProviders";
 import { resolveProductContextFromImage } from "@/lib/ai/productVision";
 import { generateProductCard } from "@/lib/ai/providers";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
@@ -174,6 +173,11 @@ export async function POST(request: Request) {
       imageMode: body.imageMode
     });
     const generatedImage = await generateDemoImage(card, body);
+
+    if (generatedImage.isFallback || (!generatedImage.imageBase64 && !generatedImage.imageUrl)) {
+      throw new Error(generatedImage.error || "Не удалось сгенерировать ИИ-изображение для демо.");
+    }
+
     const original = await resolveOriginalImage(card, generatedImage);
     const demo = await createDemoGeneration({
       guestId,
@@ -314,37 +318,9 @@ async function generateDemoImage(card: ProductCardResult, body: DemoGenerationRe
     resolution: "1k",
     outputFormat: "png"
   };
-  const provider = resolveImageProvider();
+  const provider = resolveImageProvider(undefined, ["DEMO_IMAGE_PROVIDER", "IMAGE_PROVIDER"]);
   const demoImageMode = resolveDemoImageMode();
-
-  if (provider === "nanobanana_expert") {
-    return generateNanoBananaExpertImage(input);
-  }
-
-  if (provider === "gemini") {
-    return generateGeminiProductImage(input, demoImageMode);
-  }
-
-  if (provider === "html") {
-    return createFallbackImageResult("HTML-preview выбран для демо.");
-  }
-
-  if (isNanoBananaExpertConfigured()) {
-    const result = await generateNanoBananaExpertImage(input);
-    if (!result.isFallback) return result;
-  }
-
-  if (process.env.GEMINI_API_KEY) {
-    const result = await generateGeminiProductImage(input, demoImageMode);
-    if (!result.isFallback) return result;
-  }
-
-  return createFallbackImageResult("ИИ-провайдеры недоступны. Показан запасной предпросмотр.");
-}
-
-function resolveImageProvider(): ImageProviderMode {
-  const fromEnv = (process.env.DEMO_IMAGE_PROVIDER || process.env.IMAGE_PROVIDER || "auto").toLowerCase() as ImageProviderMode;
-  return fromEnv || "auto";
+  return generateProductImageWithProvider(input, { provider, imageMode: demoImageMode });
 }
 
 function resolveDemoImageMode(): ImageGenerationMode {
@@ -400,20 +376,6 @@ async function resolveOriginalImage(card: ProductCardResult, image: GenerateImag
 
   const svg = createCleanCardSvg(card);
   return { base64: Buffer.from(svg).toString("base64"), mimeType: "image/svg+xml" };
-}
-
-function createFallbackImageResult(error: string): GenerateImageResult {
-  return {
-    imageBase64: null,
-    imageUrl: null,
-    mimeType: null,
-    provider: "HTML/CSS fallback",
-    model: "fallback",
-    prompt: "",
-    generatedAt: new Date().toISOString(),
-    isFallback: true,
-    error
-  };
 }
 
 function createCleanCardSvg(card: ProductCardResult) {

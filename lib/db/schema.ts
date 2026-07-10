@@ -213,11 +213,19 @@ export const videoGenerationOrders = sqliteTable("video_generation_order", {
   externalTaskId: text("externalTaskId"),
   originalVideoUrl: text("originalVideoUrl"),
   error: text("error"),
-  paidAt: integer("paidAt", { mode: "timestamp_ms" }),
-  createdAt: integer("createdAt", { mode: "timestamp_ms" })
-    .notNull()
-    .$defaultFn(() => new Date()),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date())
+});
+
+export const kvartovidVideoSources = sqliteTable("kvartovid_video_source", {
+  orderId: text("orderId").primaryKey(),
+  userId: text("userId")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  imageBase64: text("imageBase64").notNull(),
+  imageMimeType: text("imageMimeType").notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date())
 });

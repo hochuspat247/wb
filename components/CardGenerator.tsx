@@ -21,6 +21,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
 import { getImageSettings } from "@/lib/imageSettings";
+import { IMAGE_GENERATION_RETRY_MESSAGE } from "@/lib/ai/imageGenerationErrors";
 import { resolveCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
@@ -108,7 +109,7 @@ const designPresets: Array<{ label: string; value: ImageDesignPreset }> = [
 const imageModes: Array<{ label: string; value: ImageGenerationMode }> = [
   { label: "ИИ-обложка (авто)", value: "pro" },
   { label: "Быстрая генерация", value: "fast" },
-  { label: "Базовая обложка 4:5", value: "html" }
+  { label: "Legacy", value: "legacy" }
 ];
 
 const textModes: Array<{ label: string; value: MarketplaceTextMode }> = [
@@ -249,6 +250,7 @@ export function CardGenerator({
   const [isDemoGenerating, setIsDemoGenerating] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const videoUpsellRef = useRef<HTMLDivElement>(null);
+  const pendingImageGenerationTicketRef = useRef<string | null>(null);
   const descriptionTrackedRef = useRef(false);
   const videoUpsellTrackedRef = useRef<string | null>(null);
   const [emphasizeVideoOffer, setEmphasizeVideoOffer] = useState(false);
@@ -508,12 +510,10 @@ export function CardGenerator({
       throw new Error(data.error || "Не удалось создать карточку. Попробуйте ещё раз.");
     }
 
-    if (data.quota?.remaining !== undefined) {
-      setRemainingGenerations(data.quota.remaining);
-      onQuotaChange?.(data.quota);
-    }
-
     const { quota: _quota, error: _error, imageGenerationTicket, ...cardPayload } = data;
+    if (imageGenerationTicket) {
+      pendingImageGenerationTicketRef.current = imageGenerationTicket;
+    }
     const planItem = options.planItem;
     const preserveCard = options.preserveCard;
     const { imageBase64: _imageBase64, imageMimeType: _imageMimeType, ...sourceInputPayload } = requestPayload;
@@ -645,7 +645,9 @@ export function CardGenerator({
         setCard(generatedCard);
         setNotice("Создаём обложку…");
         const finalCard = await generateAiMarketplaceImage(generatedCard, undefined, imageGenerationTicket);
-        await persistGeneratedCard(finalCard ?? generatedCard);
+        if (finalCard && hasGeneratedAiCover(finalCard)) {
+          await persistGeneratedCard(finalCard);
+        }
 
         trackConversion("generation_complete", { marketplace, platform: payload.platform || "wildberries" });
         reachGoal("generate_card", {
@@ -679,7 +681,9 @@ export function CardGenerator({
           const readyCard = finalCard ?? generatedCard;
           completedCards.push(readyCard);
           setSeriesCards([...completedCards]);
-          await persistGeneratedCard(readyCard, { silent: true });
+          if (hasGeneratedAiCover(readyCard)) {
+            await persistGeneratedCard(readyCard, { silent: true });
+          }
         } catch (caught) {
           const message = caught instanceof Error ? caught.message : "Не удалось создать карточку.";
           const isQuotaError = /генерац|пакет|лимит/i.test(message);
@@ -1054,7 +1058,7 @@ export function CardGenerator({
     setIsLoading(true);
 
     try {
-      const { card: generatedCard } = await createGeneratedProductCard(payload, {
+      const { card: generatedCard, imageGenerationTicket } = await createGeneratedProductCard(payload, {
         planItem: cardToEdit.seriesPlanItem,
         seriesId: cardToEdit.seriesId,
         seriesCount: cardToEdit.seriesCount ?? plannedGenerationCount,
@@ -1062,7 +1066,11 @@ export function CardGenerator({
         preserveCard: cardToEdit
       });
       setCard(generatedCard);
-      const finalCard = await generateAiMarketplaceImage(generatedCard, instructions.trim());
+      const finalCard = await generateAiMarketplaceImage(
+        generatedCard,
+        instructions.trim(),
+        imageGenerationTicket ?? pendingImageGenerationTicketRef.current ?? undefined
+      );
       const readyCard = finalCard ?? generatedCard;
 
       setCard(readyCard);
@@ -1122,14 +1130,18 @@ export function CardGenerator({
     setIsLoading(true);
 
     try {
-      const { card: generatedCard } = await createGeneratedProductCard(payload, {
+      const { card: generatedCard, imageGenerationTicket } = await createGeneratedProductCard(payload, {
         planItem,
         seriesId: cardToRetry.seriesId,
         seriesCount: cardToRetry.seriesCount ?? plannedGenerationCount,
         preserveCard: cardToRetry
       });
       setCard(generatedCard);
-      const finalCard = await generateAiMarketplaceImage(generatedCard);
+      const finalCard = await generateAiMarketplaceImage(
+        generatedCard,
+        undefined,
+        imageGenerationTicket ?? pendingImageGenerationTicketRef.current ?? undefined
+      );
       const readyCard = finalCard ?? generatedCard;
       setSeriesCards((items) => items.map((item) => (item.seriesIndex === planItem.index ? readyCard : item)));
       await persistGeneratedCard(readyCard, { silent: true });
@@ -1157,7 +1169,7 @@ export function CardGenerator({
         generatedImageModel: data.model,
         generatedImagePrompt: data.prompt,
         generatedImageIsFallback: true,
-        generatedImageError: data.error,
+        generatedImageError: data.error || IMAGE_GENERATION_RETRY_MESSAGE,
         bananasSpent: data.bananasSpent,
         usedCoupon: data.usedCoupon,
         generationId: data.generationId,
@@ -1205,6 +1217,7 @@ export function CardGenerator({
   ): Promise<ProductCardResult | null> {
     const inSeriesBatch = Boolean(cardForImage.seriesCount && cardForImage.seriesCount > 1 && isLoading);
     const productImage = imageUrl || cardForImage.imageDataUrl;
+    const ticket = imageGenerationTicket ?? pendingImageGenerationTicketRef.current ?? undefined;
 
     if (!productImage) {
       setNotice("Тексты готовы. Загрузите фото, чтобы создать обложку.");
@@ -1253,7 +1266,7 @@ export function CardGenerator({
           aspectRatio: "4:5",
           resolution: "1k",
           outputFormat: "png",
-          imageGenerationTicket,
+          imageGenerationTicket: ticket,
           seriesStyleGuide: cardForImage.seriesStyleGuide,
           seriesCardType: cardForImage.seriesPlanItem?.type,
           seriesCardGoal: cardForImage.seriesPlanItem?.goal,
@@ -1266,6 +1279,7 @@ export function CardGenerator({
         error?: string;
         code?: string;
         quota?: { remaining: number; used: number; credits: number };
+        imageGenerationTicket?: string;
       };
 
       if (!response.ok) {
@@ -1277,23 +1291,37 @@ export function CardGenerator({
         if (response.status === 403 && data.code === "EMAIL_NOT_VERIFIED") {
           setNotice(data.error || "Подтвердите email, чтобы генерировать карточки.");
         }
+        if (response.status === 502 || response.status === 500) {
+          if (data.imageGenerationTicket) {
+            pendingImageGenerationTicketRef.current = data.imageGenerationTicket;
+          }
+          if (data.quota) {
+            setRemainingGenerations(data.quota.remaining);
+            onQuotaChange?.(data.quota);
+          }
+          const updatedCard = applyImageResult(cardForImage, {
+            ...data,
+            error: data.error || IMAGE_GENERATION_RETRY_MESSAGE
+          });
+          if (!inSeriesBatch) {
+            setNotice(data.error || IMAGE_GENERATION_RETRY_MESSAGE);
+          }
+          return updatedCard;
+        }
         throw new Error(data.error || "Не удалось создать обложку.");
       }
 
       if (data.quota?.remaining !== undefined) {
         setRemainingGenerations(data.quota.remaining);
         onQuotaChange?.(data.quota);
+        pendingImageGenerationTicketRef.current = null;
       }
 
       const updatedCard = applyImageResult(cardForImage, data);
 
       if (!hasUsableImage(data)) {
         if (!inSeriesBatch) {
-          setNotice(
-            data.error
-              ? `NanoBanana не вернул ИИ-изображение: ${data.error}. Показан запасной предпросмотр.`
-              : "NanoBanana не вернул ИИ-изображение. Показан запасной предпросмотр."
-          );
+          setNotice(IMAGE_GENERATION_RETRY_MESSAGE);
         }
         return updatedCard;
       }
@@ -1305,11 +1333,33 @@ export function CardGenerator({
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Неизвестная ошибка генерации изображения";
       if (!inSeriesBatch) {
-        setNotice(`Текст готов, но ИИ-изображение не создалось: ${message}. Показан запасной предпросмотр.`);
+        setNotice(IMAGE_GENERATION_RETRY_MESSAGE);
       }
       return cardForImage;
     } finally {
       setIsGeneratingAiImage(false);
+    }
+  }
+
+  async function handleRetryImageCover() {
+    if (!card) {
+      return;
+    }
+
+    setError("");
+    setNotice("Повторяем генерацию обложки…");
+
+    const readyCard = await generateAiMarketplaceImage(card);
+
+    if (!readyCard) {
+      return;
+    }
+
+    setCard(readyCard);
+
+    if (hasGeneratedAiCover(readyCard)) {
+      await persistGeneratedCard(readyCard, { silent: true });
+      setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
     }
   }
 
@@ -1809,11 +1859,19 @@ export function CardGenerator({
                     </Button>
                   </div>
                 </div>
-                {card.generatedImageIsFallback && card.generatedImageError ? (
-                  <div className="mt-4">
-                    <Alert variant="error">
-                      NanoBanana не вернул ИИ-изображение: {card.generatedImageError}. Ниже показан запасной предпросмотр.
-                    </Alert>
+                {card.generatedImageIsFallback ? (
+                  <div className="mt-4 space-y-3">
+                    <Alert variant="error">{IMAGE_GENERATION_RETRY_MESSAGE}</Alert>
+                    <Button
+                      className="w-full sm:w-auto"
+                      disabled={isWorking}
+                      onClick={handleRetryImageCover}
+                      type="button"
+                      variant="secondary"
+                    >
+                      <RefreshCcw size={16} />
+                      Повторить генерацию обложки
+                    </Button>
                   </div>
                 ) : null}
                 <div className={`relative mt-4 overflow-hidden rounded-card border ${previewFrameClass} ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
@@ -1829,6 +1887,14 @@ export function CardGenerator({
                       className={`aspect-[4/5] w-full ${embedded ? "object-contain" : "object-cover"}`}
                       src={aiImageUrl}
                     />
+                  ) : card.generatedImageIsFallback ? (
+                    <div className="grid aspect-[4/5] max-h-[360px] place-items-center gap-4 px-6">
+                      <p className="text-center text-sm font-medium text-muted">{IMAGE_GENERATION_RETRY_MESSAGE}</p>
+                      <Button disabled={isWorking} onClick={handleRetryImageCover} size="sm" type="button" variant="secondary">
+                        <RefreshCcw size={16} />
+                        Повторить
+                      </Button>
+                    </div>
                   ) : isRenderingImage ? (
                     <div className="grid aspect-[4/5] max-h-[360px] place-items-center">
                       <SkeletonBlock className="h-full w-full rounded-none" />

@@ -166,6 +166,7 @@ function buildStoryFromFoundation(input: CreateStoryInput, data: FoundationRespo
     id: crypto.randomUUID(),
     title: input.title,
     premise: input.premise,
+    charactersHint: input.charactersHint?.trim() || undefined,
     genres: input.genres,
     language: input.language,
     targetWordCount: input.targetWordCount,

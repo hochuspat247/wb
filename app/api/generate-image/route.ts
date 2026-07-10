@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { assessGenerationContentPolicy } from "@/lib/ai/contentPolicy";
-import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
-import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
+import { generateProductImageWithProvider, resolveImageProvider } from "@/lib/ai/imageProviders";
+import { IMAGE_GENERATION_RETRY_MESSAGE } from "@/lib/ai/imageGenerationErrors";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
-import { consumeImageGenerationTicket } from "@/lib/server/imageGenerationTickets";
+import {
+  consumeImageGenerationTicket,
+  hasValidImageGenerationTicket
+} from "@/lib/server/imageGenerationTickets";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import { consumeGeneration, getUserQuota, type UserQuota } from "@/lib/server/quota";
 import type {
@@ -36,20 +39,6 @@ type LegacyImageRequest = {
   imageProvider?: ImageProviderMode;
   imageMode?: ImageGenerationMode;
 };
-
-function createHtmlFallback(message: string, prompt = "") {
-  return {
-    imageBase64: null,
-    imageUrl: null,
-    mimeType: null,
-    provider: "HTML/CSS fallback",
-    model: "fallback",
-    prompt,
-    generatedAt: new Date().toISOString(),
-    isFallback: true,
-    error: message
-  };
-}
 
 function applyImageDefaults(input: GenerateImageRequest): GenerateImageRequest {
   return {
@@ -109,16 +98,29 @@ export async function POST(request: Request) {
       return createContentPolicyBlockedResponse(policy);
     }
 
-    const provider = resolveImageProvider(input);
+    const provider = resolveImageProvider(input.imageProvider);
+    const billing = await assertImageGenerationAllowed(userId, input.imageGenerationTicket);
+    const result = await generateProductImageWithProvider(input, {
+      provider,
+      imageMode: input.imageMode
+    });
 
-    if (provider === "html" || input.imageProvider === "html" || input.imageMode === "html") {
+    if (result.isFallback || (!result.imageBase64 && !result.imageUrl)) {
+      console.error("[MarketCard AI] generate-image provider failed:", result.error || "empty image response");
+      const quota = await getUserQuota(userId);
+
       return NextResponse.json(
-        createHtmlFallback("ИИ-изображение не запрашивалось. Показан запасной предпросмотр.", "HTML-предпросмотр выбран в настройках изображения.")
+        {
+          error: IMAGE_GENERATION_RETRY_MESSAGE,
+          code: "IMAGE_GENERATION_FAILED",
+          imageGenerationTicket: billing.mode === "ticket" ? billing.ticketId : undefined,
+          quota
+        },
+        { status: 502 }
       );
     }
 
-    const quota = await authorizePaidImageGeneration(userId, input.imageGenerationTicket);
-    const result = await generateWithProvider(provider, input);
+    const quota = await commitImageGeneration(userId, billing);
     return NextResponse.json({ ...result, quota });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Не удалось сгенерировать ИИ-изображение.";
@@ -131,15 +133,29 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(createHtmlFallback(message), { status: 200 });
+    if (message === "IMAGE_GENERATION_TICKET_INVALID") {
+      return NextResponse.json(
+        { error: "Сессия генерации истекла. Создайте карточку заново.", code: "IMAGE_GENERATION_TICKET_INVALID" },
+        { status: 409 }
+      );
+    }
+
+    return NextResponse.json({ error: IMAGE_GENERATION_RETRY_MESSAGE, code: "IMAGE_GENERATION_FAILED" }, { status: 500 });
   }
 }
 
-async function authorizePaidImageGeneration(userId: string, imageGenerationTicket?: string): Promise<UserQuota | undefined> {
-  const ticketAccepted = await consumeImageGenerationTicket(imageGenerationTicket, userId);
+type ImageGenerationBilling =
+  | { mode: "ticket"; ticketId: string }
+  | { mode: "direct" };
 
-  if (ticketAccepted) {
-    return undefined;
+async function assertImageGenerationAllowed(
+  userId: string,
+  imageGenerationTicket?: string
+): Promise<ImageGenerationBilling> {
+  const cleanTicketId = imageGenerationTicket?.trim();
+
+  if (cleanTicketId && (await hasValidImageGenerationTicket(cleanTicketId, userId))) {
+    return { mode: "ticket", ticketId: cleanTicketId };
   }
 
   const quota = await getUserQuota(userId);
@@ -148,57 +164,21 @@ async function authorizePaidImageGeneration(userId: string, imageGenerationTicke
     throw new Error("IMAGE_QUOTA_EXCEEDED");
   }
 
+  return { mode: "direct" };
+}
+
+async function commitImageGeneration(userId: string, billing: ImageGenerationBilling): Promise<UserQuota> {
+  if (billing.mode === "ticket") {
+    const ticketAccepted = await consumeImageGenerationTicket(billing.ticketId, userId);
+
+    if (!ticketAccepted) {
+      throw new Error("IMAGE_GENERATION_TICKET_INVALID");
+    }
+
+    return consumeGeneration(userId);
+  }
+
   return consumeGeneration(userId);
-}
-
-function resolveImageProvider(input: GenerateImageRequest): ImageProviderMode {
-  const fromRequest = input.imageProvider?.toLowerCase() as ImageProviderMode | undefined;
-  const fromEnv = (process.env.IMAGE_PROVIDER || "auto").toLowerCase() as ImageProviderMode;
-
-  if (fromRequest && fromRequest !== "auto") {
-    return fromRequest;
-  }
-
-  if (fromEnv && fromEnv !== "auto") {
-    return fromEnv;
-  }
-
-  return "auto";
-}
-
-async function generateWithProvider(provider: ImageProviderMode, input: GenerateImageRequest) {
-  if (provider === "nanobanana_expert") {
-    return generateNanoBananaExpertImage(input);
-  }
-
-  if (provider === "gemini") {
-    return generateGeminiProductImage(input, input.imageMode);
-  }
-
-  if (provider === "auto") {
-    if (isNanoBananaExpertConfigured()) {
-      const nanoResult = await generateNanoBananaExpertImage(input);
-
-      if (!nanoResult.isFallback) {
-        return nanoResult;
-      }
-    }
-
-    if (process.env.GEMINI_API_KEY) {
-      const geminiResult = await generateGeminiProductImage(input, input.imageMode);
-
-      if (!geminiResult.isFallback) {
-        return geminiResult;
-      }
-    }
-
-    return createHtmlFallback(
-      "ИИ-провайдеры недоступны или вернули ошибку. Показан запасной предпросмотр.",
-      input.productDescription
-    );
-  }
-
-  return createHtmlFallback(`Unknown IMAGE_PROVIDER: ${provider}`);
 }
 
 async function parseGenerateImageRequest(request: Request): Promise<GenerateImageRequest> {

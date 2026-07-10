@@ -5,13 +5,27 @@ import { users, verificationTokens } from "@/lib/db/schema";
 import { getEmailFormatError, normalizeEmail } from "@/lib/auth/email-validation";
 import { appUrl, sendEmail } from "@/lib/email";
 import { BRAND } from "@/lib/branding";
+import { botProtectionErrorResponse, enforceIpRateLimit, recordIpRateLimitAttempt } from "@/lib/server/botProtection";
 
 type ForgotPasswordBody = {
   email?: string;
 };
 
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
 export async function POST(request: Request) {
   try {
+    const forgotLimit = await enforceIpRateLimit(
+      "forgot_password",
+      request,
+      ONE_HOUR_MS,
+      Number.parseInt(process.env.FORGOT_PASSWORD_IP_HOURLY_LIMIT || "5", 10) || 5
+    );
+
+    if (!forgotLimit.allowed) {
+      return botProtectionErrorResponse(forgotLimit);
+    }
+
     const body = (await request.json()) as ForgotPasswordBody;
     const email = normalizeEmail(body.email ?? "");
     const emailError = getEmailFormatError(email);
@@ -43,6 +57,8 @@ export async function POST(request: Request) {
         html: `<p>Чтобы задать новый пароль, перейдите по ссылке:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Ссылка действует 1 час.</p>`
       });
     }
+
+    await recordIpRateLimitAttempt("forgot_password", request);
 
     return NextResponse.json({
       ok: true,

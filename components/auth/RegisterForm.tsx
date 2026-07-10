@@ -12,6 +12,9 @@ import { Logo } from "@/components/Logo";
 import { getEmailFormatError } from "@/lib/auth/email-format";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AntiBotFields } from "@/components/security/AntiBotFields";
+import { isSmartCaptchaEnabled, SmartCaptcha } from "@/components/security/SmartCaptcha";
+import { buildAntiBotPayload } from "@/lib/security/formGuard";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -26,6 +29,9 @@ export function RegisterForm() {
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [resendMessage, setResendMessage] = useState("");
   const [resending, setResending] = useState(false);
+  const [honeypot, setHoneypot] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const captchaRequired = isSmartCaptchaEnabled();
 
   async function handleResendVerification() {
     if (!registeredEmail) return;
@@ -65,10 +71,24 @@ export function RegisterForm() {
       return;
     }
 
+    if (captchaRequired && !captchaToken) {
+      setLoading(false);
+      setError("Подтвердите, что вы не робот.");
+      return;
+    }
+
     const registerResponse = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password })
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        ...buildAntiBotPayload({
+          smartCaptchaToken: captchaToken,
+          honeypot
+        })
+      })
     });
 
     const registerData = (await registerResponse.json()) as { error?: string; email?: string; message?: string };
@@ -162,6 +182,12 @@ export function RegisterForm() {
                 value={password}
               />
             </label>
+
+            <AntiBotFields
+              captcha={captchaRequired ? <SmartCaptcha onToken={setCaptchaToken} /> : null}
+              honeypot={honeypot}
+              onHoneypotChange={setHoneypot}
+            />
 
             {error ? <p className="text-sm font-semibold text-red-400">{error}</p> : null}
 

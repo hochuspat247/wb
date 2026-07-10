@@ -1,3 +1,8 @@
+import type { GenerateImageResult } from "@/types/product-card";
+
+export const IMAGE_GENERATION_RETRY_MESSAGE =
+  "Ошибка связи с интернетом. Повторите генерацию — списание не произойдёт.";
+
 function extractErrorText(error: unknown) {
   if (error instanceof Error) {
     return error.message;
@@ -71,4 +76,23 @@ export function summarizeImageGenerationErrors(errors: Array<string | undefined 
   }
 
   return formatted.join(" ");
+}
+
+export function createImageGenerationError(
+  provider: string,
+  prompt: string,
+  error: string,
+  generatedAt = new Date().toISOString()
+): GenerateImageResult {
+  return {
+    imageBase64: null,
+    imageUrl: null,
+    mimeType: null,
+    provider,
+    model: "error",
+    prompt,
+    generatedAt,
+    isFallback: true,
+    error: formatImageProviderError(error)
+  };
 }

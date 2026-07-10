@@ -42,7 +42,8 @@ import {
   removeUserCardRemote,
   updateUserProfile
 } from "@/lib/api/user";
-import { GUEST_ID_KEY } from "@/lib/guest";
+import { GUEST_ID_KEY, INTENDED_GENERATION_KEY, CABINET_DEMO_HINT_DISMISSED_KEY } from "@/lib/guest";
+import { CabinetDemoWelcomeHint } from "@/components/cabinet/CabinetDemoWelcomeHint";
 import { downloadCardImageAsset } from "@/lib/client/cardImage";
 import { applyDownloadPolicyToCard, type DownloadPolicy } from "@/lib/client/watermarkPolicy";
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
@@ -95,6 +96,7 @@ export function CabinetApp() {
   const [emailDisplay, setEmailDisplay] = useState("");
   const [verificationMessage, setVerificationMessage] = useState("");
   const [resendingVerification, setResendingVerification] = useState(false);
+  const [demoWelcomeHint, setDemoWelcomeHint] = useState<{ cardId: string; title?: string } | null>(null);
 
   const handleQuotaChange = useCallback((quota: { remaining: number; cleanDownloadGenerationId?: string | null; downloadsFullyUnlocked?: boolean }) => {
     setRemainingGenerations(quota.remaining);
@@ -132,6 +134,10 @@ export function CabinetApp() {
   useEffect(() => {
     async function loadCabinet() {
       try {
+        const fromDemoParam = searchParams.get("fromDemo");
+        const fromDemoStored = window.localStorage.getItem(INTENDED_GENERATION_KEY);
+        const fromDemoId = fromDemoParam || fromDemoStored || null;
+
         const [profile, remoteCards, quota] = await Promise.all([
           fetchUserProfile(),
           fetchUserCards(),
@@ -158,11 +164,8 @@ export function CabinetApp() {
         const guestId = window.localStorage.getItem(GUEST_ID_KEY);
 
         if (guestId) {
-          const migratedCount = await migrateGuestGenerations(guestId).catch(() => 0);
-
-          if (migratedCount > 0) {
-            nextRemoteCards = await fetchUserCards();
-          }
+          await migrateGuestGenerations(guestId).catch(() => 0);
+          nextRemoteCards = await fetchUserCards();
         }
 
         const localCards = getHistory();
@@ -172,6 +175,24 @@ export function CabinetApp() {
           clearHistory();
         } else {
           setCards(nextRemoteCards);
+        }
+
+        if (fromDemoId) {
+          window.localStorage.removeItem(INTENDED_GENERATION_KEY);
+          setTab("history");
+          window.history.replaceState(null, "", "/cabinet#history");
+
+          const demoCard =
+            nextRemoteCards.find((card) => card.id === fromDemoId) ??
+            (nextRemoteCards.length ? nextRemoteCards[nextRemoteCards.length - 1] : null);
+
+          if (demoCard) {
+            setSelected(demoCard);
+            const hintDismissed = window.localStorage.getItem(CABINET_DEMO_HINT_DISMISSED_KEY) === "1";
+            if (!hintDismissed) {
+              setDemoWelcomeHint({ cardId: demoCard.id, title: demoCard.title });
+            }
+          }
         }
       } catch {
         setCards(getHistory());
@@ -186,12 +207,30 @@ export function CabinetApp() {
       setTab("create");
     }
 
+    if (window.location.hash === "#history") {
+      setTab("history");
+    }
+
     const pendingVideoOrder = searchParams.get("videoOrder");
     if (pendingVideoOrder) {
       setVideoOrderId(pendingVideoOrder);
       setTab("create");
     }
   }, [searchParams]);
+
+  function dismissDemoWelcomeHint() {
+    window.localStorage.setItem(CABINET_DEMO_HINT_DISMISSED_KEY, "1");
+    setDemoWelcomeHint(null);
+  }
+
+  function openDemoWelcomeCard() {
+    const card = cards.find((item) => item.id === demoWelcomeHint?.cardId);
+    if (card) {
+      setSelected(card);
+      setTab("history");
+    }
+    dismissDemoWelcomeHint();
+  }
 
   function refreshCards() {
     fetchUserCards()
@@ -458,6 +497,13 @@ export function CabinetApp() {
 
           {tab === "history" ? (
             <div className="mx-auto max-w-4xl space-y-6">
+              {demoWelcomeHint ? (
+                <CabinetDemoWelcomeHint
+                  cardTitle={demoWelcomeHint.title}
+                  onDismiss={dismissDemoWelcomeHint}
+                  onOpenCard={openDemoWelcomeCard}
+                />
+              ) : null}
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h2 className="text-2xl font-bold text-ink">История</h2>
@@ -547,7 +593,6 @@ export function CabinetApp() {
                       <option value="auto">Авто (рекомендуется)</option>
                       <option value="nanobanana_expert">NanoBanana Expert</option>
                       <option value="gemini">Gemini</option>
-                      <option value="html">Базовая обложка 4:5</option>
                     </Select>
                   </label>
                   <label className="grid gap-2 text-sm font-semibold text-ink">
@@ -564,7 +609,6 @@ export function CabinetApp() {
                       <option value="pro">Pro (лучшее качество)</option>
                       <option value="fast">Быстрый</option>
                       <option value="legacy">Legacy</option>
-                      <option value="html">Базовая обложка 4:5</option>
                     </Select>
                   </label>
                 </div>

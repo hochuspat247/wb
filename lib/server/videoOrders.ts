@@ -5,6 +5,7 @@ import { createVeoVideoTask, getVeoVideoTaskStatus, normalizeVeoVideoResponse } 
 import { buildProductCardVideoPrompt } from "@/lib/video/videoPrompt";
 import { buildGenApiCallbackUrl, buildSignedSourceImageUrl, getCardSourceImageData, getSourceImageExtension } from "@/lib/server/videoSourceImage";
 import { syncCompletedVideoToStory, getStoryCharacterSourceImage } from "@/lib/server/storyVideo";
+import { getKvartovidVideoSource, parseKvartovidVideoSourceId } from "@/lib/server/kvartovidVideo";
 import { parseStoryVideoSourceId } from "@/lib/storystudio/videoPrompt";
 import { syncCompletedVideoToCard } from "@/lib/server/cardVideos";
 import type { ProductCardResult } from "@/types/product-card";
@@ -188,6 +189,11 @@ export async function startPaidVideoGeneration(orderId: string, siteUrl: string)
 
   if (!sourceImage && storyRef) {
     sourceImage = (await getStoryCharacterSourceImage(storyRef.storyId, storyRef.characterId)) ?? null;
+  }
+
+  const kvartovidOrderId = parseKvartovidVideoSourceId(order.sourceGenerationId);
+  if (!sourceImage && kvartovidOrderId) {
+    sourceImage = (await getKvartovidVideoSource(kvartovidOrderId)) ?? null;
   }
   const sourceImageUrl = buildSignedSourceImageUrl(
     siteUrl,

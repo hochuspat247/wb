@@ -1,5 +1,6 @@
 import { generateGeminiPromptImage } from "@/lib/ai/geminiImage";
 import {
+  createImageGenerationError,
   isGeminiConfigured,
   isPromptImageGeminiFallbackEnabled,
   summarizeImageGenerationErrors
@@ -12,20 +13,6 @@ import {
 import type { GenerateImageResult } from "@/types/product-card";
 
 type PromptImageProvider = "auto" | "nanobanana_expert" | "gemini";
-
-function createFallbackResult(prompt: string, error: string): GenerateImageResult {
-  return {
-    imageBase64: null,
-    imageUrl: null,
-    mimeType: null,
-    provider: "HTML/CSS fallback",
-    model: "fallback",
-    prompt,
-    generatedAt: new Date().toISOString(),
-    isFallback: true,
-    error
-  };
-}
 
 function isSuccessfulImageResult(result: GenerateImageResult) {
   return !result.isFallback && Boolean(result.imageBase64 || result.imageUrl);
@@ -45,7 +32,7 @@ export async function generatePromptOnlyImage(options: PromptOnlyImageOptions): 
   const prompt = options.prompt.trim();
 
   if (!prompt) {
-    return createFallbackResult(prompt, "Пустой промпт для изображения.");
+    return createImageGenerationError("Prompt image", prompt, "Пустой промпт для изображения.");
   }
 
   const provider = getPromptImageProvider();
@@ -69,7 +56,11 @@ export async function generatePromptOnlyImage(options: PromptOnlyImageOptions): 
     }
 
     if (provider === "nanobanana_expert" || (nanoConfigured && !shouldUseGemini)) {
-      return createFallbackResult(prompt, summarizeImageGenerationErrors(providerErrors));
+      return createImageGenerationError(
+        "NanoBanana Expert",
+        prompt,
+        summarizeImageGenerationErrors(providerErrors)
+      );
     }
   }
 
@@ -88,11 +79,12 @@ export async function generatePromptOnlyImage(options: PromptOnlyImageOptions): 
   }
 
   if (!nanoConfigured && !geminiConfigured) {
-    return createFallbackResult(
+    return createImageGenerationError(
+      "Prompt image",
       prompt,
       "Генерация изображений не настроена. Добавьте NANOBANANA_EXPERT_API_KEY или GEMINI_API_KEY в .env."
     );
   }
 
-  return createFallbackResult(prompt, summarizeImageGenerationErrors(providerErrors));
+  return createImageGenerationError("Prompt image", prompt, summarizeImageGenerationErrors(providerErrors));
 }

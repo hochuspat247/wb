@@ -66,6 +66,9 @@ export function getPathLabel(path: string) {
   if (pathname.startsWith("/storystudio/cabinet")) return `Кабинет ${BRAND.storyStudio}`;
   if (pathname.startsWith("/storystudio/create")) return "Создание истории";
   if (pathname.startsWith("/storystudio")) return BRAND.storyStudio;
+  if (pathname.startsWith("/kvartovid/cabinet")) return `Кабинет ${BRAND.kvartovid}`;
+  if (pathname.startsWith("/kvartovid/create")) return "Создание объявления";
+  if (pathname.startsWith("/kvartovid")) return BRAND.kvartovid;
   if (pathname.startsWith("/admin")) return "Админка";
   if (pathname.startsWith("/cabinet")) return "Кабинет";
   if (pathname.startsWith("/generations/")) return "Результат демо";

@@ -14,10 +14,11 @@ export const storyStudioConfig = {
   name: BRAND.storyStudio,
   brand: `${BRAND.storyStudio} — ИИ генератор историй`,
   title:
-    `${BRAND.storyStudio} — ИИ генератор историй, персонажей, карта связей и видео-серии`,
-  description: `Создавайте книги и новеллы с ИИ: синопсис, мир, персонажи, интерактивная карта связей, портреты героев и видео-серии через ${BRAND.googleVeo} ${BRAND.veoVersion}. От ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию, пакеты от ${formatStoryRub(pack10.total)}. Без подписки — платите за результат.`,
+    `${BRAND.storyStudio} — генератор историй, романов и фанфиков с ИИ`,
+  description: `Создавайте книги, новеллы и фанфики с нейросетью: синопсис, персонажи с портретами, интерактивная карта связей, редактор глав и видео-серии через ${BRAND.googleVeo} ${BRAND.veoVersion}. Русскоязычный ИИ для авторов. От ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию, пакеты от ${formatStoryRub(pack10.total)}. Без подписки.`,
   keywords: [
     "стористудио",
+    "story studio ии",
     "генератор историй",
     "нейросеть для книги",
     "ии писатель",
@@ -27,6 +28,9 @@ export const storyStudioConfig = {
     "написать книгу с нейросетью",
     "создать новеллу",
     "фанфик генератор",
+    "генератор фанфиков",
+    "генератор романа",
+    "ии для сценария",
     "видео из персонажа",
     "вео 3.1 история",
     "ии генератор глав",
@@ -36,7 +40,13 @@ export const storyStudioConfig = {
     "интерактивная карта персонажей",
     "генератор портретов персонажа",
     "видео серия ии",
-    "русский ии для писателей"
+    "русский ии для писателей",
+    "нейросеть для написания книги",
+    "ии новелла",
+    "создать персонажей для книги",
+    "генератор сюжета",
+    "ии для авторов",
+    "написать фанфик с ии"
   ],
   locale: "ru_RU",
   ogImagePath: "/storystudio/opengraph-image"
@@ -78,12 +88,12 @@ export function createStoryStudioMetadata({
     },
     icons: {
       icon: [
-        { url: "/favicon.ico", sizes: "any" },
-        { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
-        { url: "/favicon-192x192.png", type: "image/png", sizes: "192x192" }
+        { url: "/storystudio/icon", type: "image/png", sizes: "32x32" },
+        { url: "/favicon-192x192.png", type: "image/png", sizes: "120x120" },
+        { url: "/favicon.ico", sizes: "any" }
       ],
-      shortcut: "/favicon.ico",
-      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
+      shortcut: "/storystudio/icon",
+      apple: [{ url: "/storystudio/apple-icon", sizes: "180x180", type: "image/png" }]
     },
     manifest: "/site.webmanifest",
     openGraph: {
@@ -121,7 +131,19 @@ export function createStoryStudioMetadata({
             "max-video-preview": -1
           }
         },
-    category: "technology"
+    category: "technology",
+    ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? {
+          verification: {
+            ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION
+              ? { yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION }
+              : {}),
+            ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+              ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
+              : {})
+          }
+        }
+      : {})
   };
 }
 

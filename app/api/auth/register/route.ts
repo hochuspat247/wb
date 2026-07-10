@@ -6,16 +6,51 @@ import { users } from "@/lib/db/schema";
 import { getEmailDomainError, normalizeEmail } from "@/lib/auth/email-validation";
 import { rollbackRegisteredUser, sendVerificationEmail } from "@/lib/auth/send-verification-email";
 import { FREE_TRIAL_CARDS } from "@/lib/pricing";
+import {
+  botProtectionErrorResponse,
+  enforceIpRateLimit,
+  recordIpRateLimitAttempt,
+  verifyAntiBotRequest
+} from "@/lib/server/botProtection";
 
 type RegisterBody = {
   name?: string;
   email?: string;
   password?: string;
+  smartCaptchaToken?: string;
+  honeypot?: string;
+  formStartedAt?: number;
 };
+
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as RegisterBody;
+
+    const antiBot = await verifyAntiBotRequest(request, {
+      smartCaptchaToken: body.smartCaptchaToken,
+      honeypot: body.honeypot,
+      formStartedAt: body.formStartedAt
+    });
+
+    if (!antiBot.ok) {
+      return botProtectionErrorResponse(antiBot, antiBot.code === "CAPTCHA_FAILED" ? 400 : 403);
+    }
+
+    const registerLimit = await enforceIpRateLimit(
+      "register",
+      request,
+      ONE_HOUR_MS,
+      Number.parseInt(process.env.REGISTER_IP_HOURLY_LIMIT || "5", 10) || 5
+    );
+
+    if (!registerLimit.allowed) {
+      return botProtectionErrorResponse(registerLimit);
+    }
+
+    await recordIpRateLimitAttempt("register", request);
+
     const name = body.name?.trim() || "Продавец";
     const email = normalizeEmail(body.email ?? "");
     const password = body.password ?? "";

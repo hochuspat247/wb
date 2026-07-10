@@ -22,8 +22,8 @@ export function Hero() {
             </Reveal>
 
             <Reveal delay={1} immediate>
-              <h1 className="hero-title mt-7 max-w-[14ch] text-balance text-[2.15rem] font-black leading-[1.08] text-ink sm:mt-8 sm:max-w-[16ch] sm:text-[2.7rem] sm:leading-[1.06] md:text-[3.35rem] lg:text-[3.55rem] lg:leading-[1.04]">
-                Сделайте карточку товара из обычного фото{" "}
+              <h1 className="hero-title mt-7 max-w-[18ch] text-balance text-[2.15rem] font-black leading-[1.08] text-ink sm:mt-8 sm:max-w-[20ch] sm:text-[2.7rem] sm:leading-[1.06] md:text-[3.35rem] lg:text-[3.55rem] lg:leading-[1.04]">
+                Генератор карточек товара для ВБ, Озон и Авито{" "}
                 <span className="hero-title-accent">за 1 минуту</span>
               </h1>
             </Reveal>

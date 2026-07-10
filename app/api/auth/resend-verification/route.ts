@@ -6,14 +6,27 @@ import { userNeedsEmailVerification } from "@/lib/auth/email-utils";
 import { sendVerificationEmail } from "@/lib/auth/send-verification-email";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { botProtectionErrorResponse, enforceIpRateLimit, recordIpRateLimitAttempt } from "@/lib/server/botProtection";
 
 type ResendBody = {
   email?: string;
 };
 
 const GENERIC_OK_MESSAGE = "Если аккаунт существует и email не подтверждён, мы отправили письмо повторно.";
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 export async function POST(request: Request) {
+  const resendLimit = await enforceIpRateLimit(
+    "resend_verification",
+    request,
+    ONE_HOUR_MS,
+    Number.parseInt(process.env.RESEND_VERIFICATION_IP_HOURLY_LIMIT || "5", 10) || 5
+  );
+
+  if (!resendLimit.allowed) {
+    return botProtectionErrorResponse(resendLimit);
+  }
+
   const session = await auth();
   const body = (await request.json().catch(() => ({}))) as ResendBody;
 
@@ -49,6 +62,8 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Не удалось отправить письмо. Попробуйте позже." }, { status: 502 });
   }
+
+  await recordIpRateLimitAttempt("resend_verification", request);
 
   return NextResponse.json({ ok: true, message: GENERIC_OK_MESSAGE });
 }

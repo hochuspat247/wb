@@ -5,7 +5,11 @@ import { users, verificationTokens } from "@/lib/db/schema";
 import { appUrl } from "@/lib/email";
 
 function redirectToLogin(query: string) {
-  return NextResponse.redirect(appUrl(`/login?${query}`));
+  const params = new URLSearchParams(query);
+  if (!params.has("callbackUrl")) {
+    params.set("callbackUrl", "/cabinet");
+  }
+  return NextResponse.redirect(appUrl(`/login?${params.toString()}`));
 }
 
 export async function GET(request: Request) {

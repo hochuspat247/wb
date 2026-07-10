@@ -9,7 +9,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { CollapsibleAdminSection } from "@/components/admin/CollapsibleAdminSection";
 import { DemoErrorsPanel } from "@/components/admin/DemoErrorsPanel";
 import { SessionDurationPanel } from "@/components/admin/SessionDurationPanel";
-import { UserJourneysMapPanel } from "@/components/admin/UserJourneysMapPanel";
+import { StoryDetailModal, type AdminStoryDetail } from "@/components/admin/StoryDetailModal";
 import { CardSavedVideosPanel } from "@/components/video/CardSavedVideosPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -46,6 +46,7 @@ type AdminStats = {
       userName: string | null;
       userEmail: string | null;
       title: string;
+      premise: string;
       status: string;
       genres: string[];
       charactersCount: number;
@@ -80,6 +81,10 @@ type AdminStats = {
     generationsUsed: number;
     generationCredits: number;
     createdAt: Date;
+    projectStoriesCount?: number;
+    projectCardsCount?: number;
+    projectDemosCount?: number;
+    lastProjectActivityAt?: Date;
   }[];
   recentCards: {
     id: string;
@@ -549,6 +554,8 @@ export function AdminDashboard() {
   const [cardLoading, setCardLoading] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState<AdminDemoDetail | null>(null);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [selectedStory, setSelectedStory] = useState<AdminStoryDetail | null>(null);
+  const [storyLoading, setStoryLoading] = useState(false);
 
   const productConfig = ADMIN_PRODUCTS[product];
   const isStoryStudio = product === "storystudio";
@@ -640,6 +647,26 @@ export function AdminDashboard() {
     }
   }
 
+  async function openStory(storyId: string) {
+    setStoryLoading(true);
+    setSelectedStory(null);
+
+    try {
+      const response = await fetch(`/api/admin/stories/${encodeURIComponent(storyId)}`, { cache: "no-store" });
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Не удалось загрузить историю");
+      }
+
+      setSelectedStory(data as AdminStoryDetail);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Не удалось загрузить историю");
+    } finally {
+      setStoryLoading(false);
+    }
+  }
+
   if (loading && !stats) {
     return (
       <div className="grid min-h-screen place-items-center bg-paper">
@@ -683,7 +710,9 @@ export function AdminDashboard() {
           <Card className="min-w-0" padding="md">
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Пользователи</p>
+                <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">
+                  Пользователи проекта
+                </p>
                 <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.users}</p>
               </div>
               <Users className="shrink-0 text-accent" size={22} />
@@ -771,7 +800,11 @@ export function AdminDashboard() {
         {!isStoryStudio && stats ? <DemoErrorsPanel errors={stats.recentDemoErrors ?? []} product={product} /> : null}
 
         <CollapsibleAdminSection
-          description="Email и квота сохраняются в SQLite"
+          description={
+            isStoryStudio
+              ? `Пользователи с историями в ${productConfig.label}`
+              : `Пользователи с карточками или демо в ${productConfig.label}`
+          }
           icon={<Users className="text-accent" size={20} />}
           id="recent-users"
           scope={product}
@@ -789,12 +822,21 @@ export function AdminDashboard() {
                     </p>
                   </div>
                   <span className="shrink-0 rounded-button bg-accent/10 px-3 py-1 text-sm font-black text-accent">
-                    {user.generationsUsed}/{user.generationCredits}
+                    {isStoryStudio
+                      ? `${user.projectStoriesCount ?? 0} истор.`
+                      : `${user.projectCardsCount ?? 0} карт. / ${user.projectDemosCount ?? 0} демо`}
                   </span>
                 </div>
-                <p className="mt-3 text-xs font-semibold text-muted">{new Date(user.createdAt).toLocaleDateString("ru-RU")}</p>
+                <p className="mt-3 text-xs font-semibold text-muted">
+                  {user.lastProjectActivityAt
+                    ? `Активность: ${new Date(user.lastProjectActivityAt).toLocaleDateString("ru-RU")}`
+                    : `Регистрация: ${new Date(user.createdAt).toLocaleDateString("ru-RU")}`}
+                </p>
               </div>
             ))}
+            {stats.recentUsers.length === 0 ? (
+              <p className="text-sm text-muted">Пока нет пользователей с активностью в этом проекте.</p>
+            ) : null}
           </div>
           <div className="hidden overflow-x-auto md:block">
             <table className="min-w-full text-left text-sm">
@@ -803,8 +845,9 @@ export function AdminDashboard() {
                   <th className="px-3 py-2 font-semibold">Имя</th>
                   <th className="px-3 py-2 font-semibold">Email</th>
                   <th className="px-3 py-2 font-semibold">Статус email</th>
-                  <th className="px-3 py-2 font-semibold">Генерации</th>
-                  <th className="px-3 py-2 font-semibold">Регистрация</th>
+                  <th className="px-3 py-2 font-semibold">{isStoryStudio ? "Историй" : "Активность"}</th>
+                  <th className="px-3 py-2 font-semibold">Квота</th>
+                  <th className="px-3 py-2 font-semibold">Последняя активность</th>
                 </tr>
               </thead>
               <tbody>
@@ -814,11 +857,27 @@ export function AdminDashboard() {
                     <td className="px-3 py-3 text-muted">{formatAccountEmail(user.email)}</td>
                     <td className="px-3 py-3 text-muted">{getEmailVerificationLabel(user)}</td>
                     <td className="px-3 py-3 text-muted">
+                      {isStoryStudio
+                        ? user.projectStoriesCount ?? 0
+                        : `${user.projectCardsCount ?? 0} карт. / ${user.projectDemosCount ?? 0} демо`}
+                    </td>
+                    <td className="px-3 py-3 text-muted">
                       {user.generationsUsed}/{user.generationCredits}
                     </td>
-                    <td className="px-3 py-3 text-muted">{new Date(user.createdAt).toLocaleDateString("ru-RU")}</td>
+                    <td className="px-3 py-3 text-muted">
+                      {user.lastProjectActivityAt
+                        ? new Date(user.lastProjectActivityAt).toLocaleDateString("ru-RU")
+                        : new Date(user.createdAt).toLocaleDateString("ru-RU")}
+                    </td>
                   </tr>
                 ))}
+                {stats.recentUsers.length === 0 ? (
+                  <tr>
+                    <td className="px-3 py-6 text-muted" colSpan={6}>
+                      Пока нет пользователей с активностью в этом проекте.
+                    </td>
+                  </tr>
+                ) : null}
               </tbody>
             </table>
           </div>
@@ -857,7 +916,7 @@ export function AdminDashboard() {
                 {stats.storyStudio?.recentStories.length ?? 0} последних
               </span>
             }
-            description={`Истории, созданные в ${BRAND.storyStudio}`}
+            description="Нажмите на историю, чтобы увидеть ввод пользователя, персонажей с фото, главы и связи"
             icon={<BookOpen className="text-accent" size={20} />}
             id="recent-stories"
             scope={product}
@@ -865,19 +924,28 @@ export function AdminDashboard() {
           >
             <div className="grid gap-3">
               {(stats.storyStudio?.recentStories ?? []).map((story) => (
-                <div
-                  className="rounded-card border border-clay bg-paper/40 p-4"
+                <button
+                  className="grid gap-3 rounded-card border border-clay bg-paper/40 p-4 text-left transition hover:border-accent/45 hover:bg-paper md:grid-cols-[1fr_auto] md:items-center"
                   key={story.id}
+                  onClick={() => void openStory(story.id)}
+                  type="button"
                 >
-                  <p className="truncate font-bold text-ink">{story.title}</p>
-                  <p className="mt-1 text-sm text-muted">
-                    {story.genres.join(", ")} · {story.userEmail ? formatAccountEmail(story.userEmail) : "без email"}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-muted">
-                    {new Date(story.updatedAt).toLocaleString("ru-RU")} · {story.charactersCount} перс. · {story.chaptersCount} гл. · {story.episodesCount} серий
-                    {story.premiumMode ? " · Премиум 18+" : ""}
-                  </p>
-                </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-ink">{story.title}</p>
+                    <p className="mt-1 line-clamp-2 text-sm text-muted">{story.premise}</p>
+                    <p className="mt-1 text-sm text-muted">
+                      {story.genres.join(", ")} · {story.userEmail ? formatAccountEmail(story.userEmail) : "Вход через соцсеть — email не указан"}
+                    </p>
+                    <p className="mt-1 text-xs font-semibold text-muted">
+                      {new Date(story.updatedAt).toLocaleString("ru-RU")} · {story.charactersCount} перс. · {story.chaptersCount} гл. · {story.episodesCount} серий
+                      {story.premiumMode ? " · Премиум 18+" : ""}
+                    </p>
+                  </div>
+                  <span className="inline-flex items-center justify-center gap-2 rounded-button border border-clay bg-card px-4 py-2 text-sm font-bold text-ink">
+                    <Eye size={16} />
+                    Смотреть
+                  </span>
+                </button>
               ))}
               {!stats.storyStudio?.recentStories.length ? (
                 <p className="text-sm text-muted">Историй пока нет</p>
@@ -984,6 +1052,14 @@ export function AdminDashboard() {
         onClose={() => {
           setSelectedDemo(null);
           setDemoLoading(false);
+        }}
+      />
+      <StoryDetailModal
+        detail={selectedStory}
+        loading={storyLoading}
+        onClose={() => {
+          setSelectedStory(null);
+          setStoryLoading(false);
         }}
       />
     </AdminShell>

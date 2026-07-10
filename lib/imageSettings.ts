@@ -1,8 +1,8 @@
 const IMAGE_SETTINGS_KEY = "marketcard-ai-image-settings";
 
 export type ImageSettings = {
-  imageProvider: "auto" | "html" | "nanobanana_expert" | "gemini";
-  imageMode: "html" | "fast" | "legacy" | "pro";
+  imageProvider: "auto" | "nanobanana_expert" | "gemini";
+  imageMode: "fast" | "legacy" | "pro";
 };
 
 const defaults: ImageSettings = {
@@ -20,11 +20,21 @@ export function getImageSettings(): ImageSettings {
   try {
     const raw = window.localStorage.getItem(IMAGE_SETTINGS_KEY);
     if (!raw) return defaults;
-    const parsed = JSON.parse(raw) as Partial<ImageSettings>;
-    return {
-      imageProvider: parsed.imageProvider ?? defaults.imageProvider,
-      imageMode: parsed.imageMode ?? defaults.imageMode
-    };
+    const parsed = JSON.parse(raw) as { imageProvider?: string; imageMode?: string };
+    const imageProvider =
+      parsed.imageProvider === "html" || !parsed.imageProvider
+        ? defaults.imageProvider
+        : parsed.imageProvider === "nanobanana_expert" || parsed.imageProvider === "gemini" || parsed.imageProvider === "auto"
+          ? parsed.imageProvider
+          : defaults.imageProvider;
+    const imageMode =
+      parsed.imageMode === "html" || !parsed.imageMode
+        ? defaults.imageMode
+        : parsed.imageMode === "fast" || parsed.imageMode === "legacy" || parsed.imageMode === "pro"
+          ? parsed.imageMode
+          : defaults.imageMode;
+
+    return { imageProvider, imageMode };
   } catch {
     return defaults;
   }

@@ -11,7 +11,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { parseJsonResponse, toUserFacingError } from "@/lib/api/parseJsonResponse";
 import { BRAND } from "@/lib/branding";
-import { AUTH_FROM_RESULT_KEY, GUEST_ID_KEY, INTENDED_ACTION_KEY, INTENDED_GENERATION_KEY } from "@/lib/guest";
+import { AUTH_FROM_RESULT_KEY, buildCabinetFromDemoUrl, GUEST_ID_KEY, INTENDED_ACTION_KEY, INTENDED_GENERATION_KEY } from "@/lib/guest";
 import { reachGoal } from "@/lib/metrika";
 import { useBlockUnauthenticatedImageShortcuts } from "@/components/demo/useBlockUnauthenticatedImageShortcuts";
 import type { ProductCardResult } from "@/types/product-card";
@@ -38,7 +38,6 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [migrating, setMigrating] = useState(false);
-  const [autoActionDone, setAutoActionDone] = useState(false);
   const [ratingSaving, setRatingSaving] = useState(false);
   const resultViewTrackedRef = useRef(false);
 
@@ -113,7 +112,8 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
 
     window.localStorage.removeItem(AUTH_FROM_RESULT_KEY);
     trackMarketingEvent("auth_completed_from_result", { generationId });
-  }, [generationId, isAuthenticated]);
+    router.replace(buildCabinetFromDemoUrl(generationId));
+  }, [generationId, isAuthenticated, router]);
 
   useEffect(() => {
     if (!isAuthenticated || !guestId) return;
@@ -124,38 +124,13 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ guestId })
     })
-      .then(() => loadResult())
+      .then(() => {
+        if (!window.localStorage.getItem(INTENDED_GENERATION_KEY)) {
+          loadResult();
+        }
+      })
       .finally(() => setMigrating(false));
   }, [guestId, isAuthenticated, loadResult]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !result?.originalAvailable || autoActionDone) return;
-
-    const intended =
-      (searchParams.get("afterAuth") as IntendedAction | null) ||
-      (window.localStorage.getItem(INTENDED_ACTION_KEY) as IntendedAction | null);
-    const intendedGenerationId = window.localStorage.getItem(INTENDED_GENERATION_KEY);
-
-    if (intendedGenerationId && intendedGenerationId !== generationId) return;
-
-    setAutoActionDone(true);
-    window.localStorage.removeItem(INTENDED_ACTION_KEY);
-    window.localStorage.removeItem(INTENDED_GENERATION_KEY);
-
-    if (intended === "downloadOriginal") {
-      downloadOriginal();
-      return;
-    }
-
-    if (intended === "moreCards") {
-      router.push("/cabinet#create");
-      return;
-    }
-
-    if (intended === "createNew") {
-      router.push("/#hero-mini-generator");
-    }
-  }, [autoActionDone, generationId, isAuthenticated, result?.originalAvailable, router, searchParams]);
 
   async function downloadOriginal() {
     if (!isAuthenticated) {
@@ -210,7 +185,7 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
     }
 
     trackMarketingEvent("auth_started_from_result", { generationId, action });
-    router.push(`/register?callbackUrl=${encodeURIComponent(`/generations/${generationId}?afterAuth=${action}`)}`);
+    router.push(`/register?callbackUrl=${encodeURIComponent(buildCabinetFromDemoUrl(generationId))}`);
   }
 
   async function updateDemoRating(payload: { generationRating?: 1 | 2 | 3 | 4 | 5; generationRatingDismissed?: boolean }) {

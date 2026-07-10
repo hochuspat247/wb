@@ -5,6 +5,11 @@ import { LegalFooterLinks } from "@/components/legal/LegalFooterLinks";
 import { BRAND } from "@/lib/branding";
 
 const footerLinks = [
+  { label: "Wildberries", href: "/wildberries", goal: "examples_click" as const },
+  { label: "Ozon", href: "/ozon", goal: "examples_click" as const },
+  { label: "Авито", href: "/avito", goal: "examples_click" as const },
+  { label: BRAND.storyStudio, href: "/storystudio", goal: "examples_click" as const },
+  { label: BRAND.kvartovid, href: "/kvartovid", goal: "examples_click" as const },
   { label: "Примеры", href: "/#examples", goal: "examples_click" as const },
   { label: "Пример видео", href: "/#video-example", goal: "video_example_view" as const },
   { label: "Сравнение", href: "/#compare", goal: "compare_view" as const },

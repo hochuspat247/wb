@@ -5,10 +5,8 @@ import {
   ArrowRight,
   Building2,
   Camera,
-  CheckCircle2,
   ClipboardCheck,
   FileText,
-  ImageIcon,
   LayoutGrid,
   Sparkles,
   Star,
@@ -22,6 +20,7 @@ import { KvartovidAudienceSection } from "@/components/kvartovid/KvartovidAudien
 import { KvartovidSeoLinksSection } from "@/components/kvartovid/KvartovidSeoLinksSection";
 import { KvartovidWorkflowSection } from "@/components/kvartovid/KvartovidWorkflowSection";
 import { KvartovidPricingSection } from "@/components/kvartovid/KvartovidPricingSection";
+import { KvartovidVideoDemo } from "@/components/kvartovid/KvartovidVideoDemo";
 import { BRAND } from "@/lib/branding";
 import {
   KVARTOVID_KILLER_FEATURES,
@@ -92,31 +91,13 @@ export function KvartovidLanding() {
         <section id="cover-feature" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
           <div className="overflow-hidden rounded-container border border-amber-500/40 bg-gradient-to-br from-amber-500/15 via-[#0a1210] to-emerald-500/10">
             <div className="grid gap-6 p-5 sm:gap-8 sm:p-8 lg:grid-cols-2 lg:items-center lg:p-12">
-              <div className="text-center lg:text-left">
-                <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-400">
-                  <ImageIcon className="h-3.5 w-3.5" />
-                  Киллер-фича №1
-                </span>
-                <h2 className="mt-4 text-2xl font-bold sm:text-3xl lg:text-4xl">AI-обложка объявления</h2>
-                <p className="mt-4 text-muted">
-                  На Авито и Циан люди листают глазами — первое фото решает очень много. Загрузите обычные фото
-                  квартиры: сервис выберет лучший кадр, улучшит свет и добавит аккуратную плашку с преимуществами.
-                </p>
-                <ul className="mt-6 space-y-2 text-left text-sm text-muted">
-                  {["2-комнатная у парка", "7 минут до метро", "Свежий ремонт", "Можно заехать сразу"].map((item) => (
-                    <li key={item} className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 shrink-0 text-amber-400" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="rounded-card border border-white/10 bg-[#0a1210]/80 p-6">
-                <p className="text-sm font-semibold text-amber-400">Не просто «сгенерить картинку»</p>
-                <p className="mt-3 text-lg font-bold text-ink">Продающая обложка объявления</p>
+              <KvartovidVideoDemo />
+              <div className="rounded-card border border-white/10 bg-[#0a1210]/80 p-6 text-center lg:text-left">
+                <p className="text-sm font-semibold text-amber-400">Оживите фото квартиры</p>
+                <p className="mt-3 text-lg font-bold text-ink">Видео-тур для объявления</p>
                 <p className="mt-2 text-sm text-muted">
-                  КвартоВид упакует квартиру в объявление, которое хочется открыть — с конкретикой вместо «хороший
-                  ремонт» и «удобное расположение».
+                  Одно фото превращается в короткий кинематографичный ролик — для Авито, Циан, Домклик, Рилс и
+                  Stories. Без съёмки и монтажа.
                 </p>
               </div>
             </div>
@@ -126,12 +107,12 @@ export function KvartovidLanding() {
         <section id="features" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
           <div className="mx-auto max-w-3xl text-center">
             <h2 className="text-2xl font-bold sm:text-3xl">Возможности {BRAND.kvartovid}</h2>
-            <p className="mt-3 text-muted">MVP уже доступен — тексты, обложка, планировка, видео и кабинет с историей объектов.</p>
           </div>
 
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {KVARTOVID_KILLER_FEATURES.map((feature) => {
               const Icon = featureIcons[feature.id as keyof typeof featureIcons] ?? Sparkles;
+              const comingSoon = "comingSoon" in feature && feature.comingSoon;
               return (
                 <div
                   key={feature.id}
@@ -141,15 +122,11 @@ export function KvartovidLanding() {
                     <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-500/10 text-amber-400">
                       <Icon className="h-5 w-5" />
                     </span>
-                    {feature.mvp ? (
-                      <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-400">
-                        MVP
-                      </span>
-                    ) : (
+                    {comingSoon ? (
                       <span className="rounded-full border border-white/15 px-2 py-0.5 text-[10px] font-bold uppercase text-muted">
                         Скоро
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <h3 className="mt-4 text-lg font-bold text-ink">{feature.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{feature.description}</p>

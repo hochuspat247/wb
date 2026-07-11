@@ -88,6 +88,8 @@ export type StoryProject = {
   language: StoryLanguage;
   targetWordCount: number;
   premiumMode: boolean;
+  /** Пользователь изменил поля — ИИ нужно обновить основу */
+  needsAiRefresh?: boolean;
   synopsis: string;
   hook: string;
   themes: string[];

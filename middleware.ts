@@ -10,6 +10,7 @@ const sessionCookieNames = [
 
 const protectedApiPostPaths = [
   "/api/generations/demo",
+  "/api/storystudio/demo",
   "/api/auth/register",
   "/api/auth/forgot-password",
   "/api/auth/resend-verification",

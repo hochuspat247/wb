@@ -80,6 +80,7 @@ export function StoryOverviewEditor({ story, onUpdate, onError }: StoryOverviewE
           tone: tone.trim()
         },
         outline: parseOutline(outlineText),
+        needsAiRefresh: true,
         updatedAt: new Date().toISOString()
       };
 

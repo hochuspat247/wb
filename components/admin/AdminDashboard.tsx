@@ -13,6 +13,7 @@ import { KvartovidListingDetailModal, type AdminKvartovidListingDetail } from "@
 import { StoryDetailModal, type AdminStoryDetail } from "@/components/admin/StoryDetailModal";
 import { UserJourneysMapPanel } from "@/components/admin/UserJourneysMapPanel";
 import { PromoCodesPanel } from "@/components/admin/PromoCodesPanel";
+import { UsersAdminPanel } from "@/components/admin/UsersAdminPanel";
 import { CardSavedVideosPanel } from "@/components/video/CardSavedVideosPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -998,6 +999,16 @@ export function AdminDashboard() {
 
         <SessionDurationPanel product={product} stats={stats.sessionDuration} />
 
+        <CollapsibleAdminSection
+          description="С какого проекта человек зарегистрировался: MarketCard AI, Story Studio или Kvartovid. Сверху — сводка по проектам."
+          icon={<Users className="text-accent" size={20} />}
+          id="users-admin"
+          scope="global"
+          title="Регистрации по проектам"
+        >
+          <UsersAdminPanel />
+        </CollapsibleAdminSection>
+
         {!isStoryStudio && !isKvartovid && stats ? <DemoErrorsPanel errors={stats.recentDemoErrors ?? []} product={product} /> : null}
 
         <CollapsibleAdminSection
@@ -1008,15 +1019,15 @@ export function AdminDashboard() {
           }
           description={
             isStoryStudio
-              ? `Все зарегистрированные пользователи. Активность — по ${productConfig.label}.`
+              ? `Активность по ${productConfig.label} — последние пользователи из общей статистики.`
               : isKvartovid
-                ? `Все зарегистрированные пользователи. Активность — по ${productConfig.label}.`
-                : `Все зарегистрированные пользователи. Активность — по ${productConfig.label}.`
+                ? `Активность по ${productConfig.label} — последние пользователи из общей статистики.`
+                : `Активность по ${productConfig.label} — последние пользователи из общей статистики.`
           }
           icon={<Users className="text-accent" size={20} />}
           id="recent-users"
           scope={product}
-          title="Все пользователи"
+          title="Активность пользователей"
         >
           <div className="grid max-h-[70vh] gap-3 overflow-y-auto md:hidden">
             {stats.recentUsers.map((user) => (

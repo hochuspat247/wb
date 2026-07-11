@@ -7,6 +7,7 @@ import {
   completeVkIdLogin,
   storeVkCallbackUrl
 } from "@/lib/auth/vk-id-client";
+import { recordSignupContext } from "@/lib/auth/signup-context-client";
 
 export function useVkIdSignIn(callbackUrl = "/cabinet") {
   return useCallback(
@@ -29,6 +30,7 @@ export function useVkIdSignIn(callbackUrl = "/cabinet") {
         throw new Error(result?.error || "SESSION_FAILED");
       }
 
+      await recordSignupContext({ callbackUrl, source: "vk" });
       clearVkAuthParamsFromUrl();
       window.location.assign(callbackUrl);
     },

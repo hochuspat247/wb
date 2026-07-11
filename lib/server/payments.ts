@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { payments, users } from "@/lib/db/schema";
 import type { YooKassaPayment } from "@/lib/server/yookassa";
 import { unlockAllDownloadsForUser } from "@/lib/server/downloadAccess";
+import { STORY_PREMIUM_MIN_PACKAGE_CREDITS, unlockStoryPremium } from "@/lib/server/storyPremium";
 
 export function amountToMinorUnits(value: string | number) {
   const numericValue = typeof value === "number" ? value : Number(value);
@@ -50,6 +51,10 @@ export async function applyVerifiedPayment(payment: YooKassaPayment) {
       generationCredits: sql`${users.generationCredits} + ${creditedPayment.credits}`
     })
     .where(eq(users.id, creditedPayment.userId));
+
+  if (creditedPayment.credits >= STORY_PREMIUM_MIN_PACKAGE_CREDITS) {
+    await unlockStoryPremium(creditedPayment.userId);
+  }
 
   await unlockAllDownloadsForUser(creditedPayment.userId);
 

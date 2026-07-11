@@ -6,6 +6,7 @@ import { users } from "@/lib/db/schema";
 import { getEmailDomainError, normalizeEmail } from "@/lib/auth/email-validation";
 import { rollbackRegisteredUser, sendVerificationEmail } from "@/lib/auth/send-verification-email";
 import { FREE_TRIAL_CARDS } from "@/lib/pricing";
+import { applySignupContextOnRegister, parseSignupProduct } from "@/lib/server/signupContext";
 import {
   botProtectionErrorResponse,
   enforceIpRateLimit,
@@ -19,6 +20,10 @@ type RegisterBody = {
   password?: string;
   honeypot?: string;
   formStartedAt?: number;
+  callbackUrl?: string;
+  referrer?: string;
+  fromDemo?: boolean;
+  product?: string;
 };
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -101,6 +106,14 @@ export async function POST(request: Request) {
         { status: 502 }
       );
     }
+
+    await applySignupContextOnRegister(email, {
+      source: "email",
+      callbackUrl: body.callbackUrl?.trim(),
+      referrer: body.referrer?.trim(),
+      fromDemo: Boolean(body.fromDemo),
+      product: parseSignupProduct(body.product)
+    });
 
     return NextResponse.json({
       ok: true,

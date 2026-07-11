@@ -23,7 +23,9 @@ import { RelationshipTree } from "@/components/storystudio/RelationshipTree";
 import { StoryEditor } from "@/components/storystudio/StoryEditor";
 import { StoryOverviewEditor } from "@/components/storystudio/StoryOverviewEditor";
 import { StoryVideoSeries } from "@/components/storystudio/StoryVideoSeries";
+import { StoryAiRefreshBanner } from "@/components/storystudio/StoryAiRefreshBanner";
 import { StoryPaymentButton } from "@/components/storystudio/StoryPaymentButton";
+import { StoryPremiumUpsellBanner } from "@/components/storystudio/StoryPremiumUpsellBanner";
 import { StoryPricingCard } from "@/components/storystudio/StoryPricingCard";
 import { PromoCodeForm } from "@/components/promo/PromoCodeForm";
 import { Button } from "@/components/ui/Button";
@@ -39,10 +41,12 @@ import {
   generateCharacterPortrait,
   generateStoryChapter,
   generateStoryCharacter,
+  migrateGuestStories,
   regenerateStoryFoundation,
   updateStoryProject,
 } from "@/lib/api/storystudio";
 import { fetchUserQuota } from "@/lib/api/user";
+import { STORY_GUEST_ID_KEY } from "@/lib/guest";
 import { isStoryFoundationEmpty } from "@/lib/storystudio/storyState";
 import type { CharacterRelation, StoryCharacter, StoryProject } from "@/types/storystudio";
 
@@ -56,30 +60,46 @@ export function StoryStudioCabinet() {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
   const [loading, setLoading] = useState(true);
-  const [quota, setQuota] = useState<{ remaining: number; credits: number } | null>(null);
+  const [quota, setQuota] = useState<{ remaining: number; credits: number; storyPremiumUnlocked?: boolean } | null>(null);
   const [chapterLoading, setChapterLoading] = useState(false);
   const [characterLoading, setCharacterLoading] = useState(false);
   const [portraitLoadingId, setPortraitLoadingId] = useState<string | null>(null);
   const [charHint, setCharHint] = useState("");
   const [error, setError] = useState("");
   const [regenerateLoading, setRegenerateLoading] = useState(false);
+  const [demoWelcomeStoryId, setDemoWelcomeStoryId] = useState<string | null>(searchParams.get("fromDemo"));
   const [videoOrderId, setVideoOrderId] = useState<string | null>(searchParams.get("videoOrder"));
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
+      const guestId = window.localStorage.getItem(STORY_GUEST_ID_KEY);
+      if (guestId) {
+        try {
+          await migrateGuestStories(guestId);
+        } catch {
+          // migration is best-effort
+        }
+      }
+
       const [storyList, quotaData] = await Promise.all([fetchStoryProjects(), fetchUserQuota()]);
       setStories(storyList);
-      setQuota({ remaining: quotaData.remaining, credits: quotaData.credits });
+      setQuota({
+        remaining: quotaData.remaining,
+        credits: quotaData.credits,
+        storyPremiumUnlocked: quotaData.storyPremiumUnlocked
+      });
 
-      const storyId = searchParams.get("story");
+      const storyId = searchParams.get("story") || searchParams.get("fromDemo");
       const picked = storyId ? storyList.find((s) => s.id === storyId) : storyList[0];
       if (picked) {
         setActiveStory({ ...picked, episodes: picked.episodes ?? [] });
         setSelectedCharacterId(picked.characters[0]?.id ?? null);
         if (searchParams.get("videoOrder")) {
           setTab("series");
+        } else if (searchParams.get("fromDemo")) {
+          setTab("overview");
         }
       }
     } catch {
@@ -237,6 +257,22 @@ export function StoryStudioCabinet() {
           </Link>
         </div>
 
+        {demoWelcomeStoryId && activeStory?.id === demoWelcomeStoryId && (
+          <div className="mb-6 rounded-card border border-violet/30 bg-violet/10 p-5">
+            <p className="text-sm text-ink">
+              <Sparkles className="mr-1.5 inline h-4 w-4 text-violet" />
+              Демо-история перенесена в ваш кабинет — можно продолжать редактирование, генерировать главы и персонажей.
+            </p>
+            <button
+              type="button"
+              className="mt-2 text-xs text-muted underline hover:text-ink"
+              onClick={() => setDemoWelcomeStoryId(null)}
+            >
+              Скрыть
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex h-64 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-violet" />
@@ -308,6 +344,10 @@ export function StoryStudioCabinet() {
 
                 {tab === "overview" && (
                   <div className="space-y-6">
+                    {activeStory.needsAiRefresh && (
+                      <StoryAiRefreshBanner loading={regenerateLoading} onRefresh={handleRegenerateFoundation} />
+                    )}
+
                     {activeStory && isStoryFoundationEmpty(activeStory) && (
                       <div className="rounded-card border border-amber-500/30 bg-amber-500/10 p-5">
                         <p className="text-sm text-amber-100">
@@ -409,6 +449,9 @@ export function StoryStudioCabinet() {
 
                 {tab === "pricing" && (
                   <div id="pricing" className="space-y-6">
+                    {!quota?.storyPremiumUnlocked && (
+                      <StoryPremiumUpsellBanner onOpenPricing={() => setTab("pricing")} />
+                    )}
                     <div className="rounded-card border border-violet/30 bg-violet/10 p-5">
                       <p className="text-sm">
                         1 генерация = история, персонаж, глава или портрет ·{" "}

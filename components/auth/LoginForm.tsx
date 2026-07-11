@@ -8,6 +8,7 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { VkIdAuthPanel } from "@/components/auth/VkIdAuthPanel";
 import { YandexIdButton } from "@/components/auth/YandexIdButton";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
+import { recordSignupContext, storeSignupCallbackUrl } from "@/lib/auth/signup-context-client";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -17,6 +18,10 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/cabinet";
   const initialEmail = searchParams.get("email") || "";
+
+  useEffect(() => {
+    storeSignupCallbackUrl(callbackUrl);
+  }, [callbackUrl]);
 
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
@@ -97,6 +102,7 @@ export function LoginForm() {
     }
 
     trackConversion("login_complete");
+    await recordSignupContext({ callbackUrl, source: "email" });
     router.push(callbackUrl);
     router.refresh();
   }

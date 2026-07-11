@@ -8,10 +8,14 @@ function genreLabels(genres: string[]) {
     .join(", ");
 }
 
-export function buildStoryFoundationPrompt(input: CreateStoryInput) {
-  const premium = input.premiumMode
+function premiumModeLine(premiumMode: boolean) {
+  return premiumMode
     ? "Режим Премиум 18+: допускаются взрослые темы, откровенные сцены и грубая лексика, если это органично для жанра."
     : "Режим без ограничений по жанру, но без откровенного 18+ контента.";
+}
+
+export function buildStoryFoundationPrompt(input: CreateStoryInput) {
+  const premium = premiumModeLine(Boolean(input.premiumMode));
 
   return `Ты — литературный редактор и сценарист мирового уровня. Создай основу художественного произведения на русском языке (если не указано иное).
 
@@ -69,8 +73,11 @@ ${premium}
 
 export function buildCharacterPrompt(story: StoryProject, hint?: string, name?: string, role?: string) {
   const existing = story.characters.map((c) => c.name).join(", ");
+  const premium = premiumModeLine(story.premiumMode);
 
   return `Ты — литературный редактор. Добавь нового персонажа в историю.
+
+${premium}
 
 История: ${story.title}
 Синопсис: ${story.synopsis}
@@ -109,8 +116,11 @@ export function buildChapterPrompt(story: StoryProject, chapterNumber: number, i
   const prev = story.chapters.slice(-2).map((c) => `Глава ${c.number}: ${c.title}\n${c.summary}`).join("\n\n");
   const relationsBlock = formatRelationsForPrompt(story);
   const charactersBlock = formatCharactersForPrompt(story);
+  const premium = premiumModeLine(story.premiumMode);
 
   return `Ты — писатель. Продолжи художественное произведение.
+
+${premium}
 
 Название: ${story.title}
 Синопсис: ${story.synopsis}

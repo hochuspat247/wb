@@ -90,6 +90,7 @@ export async function fetchUserQuota() {
     remaining: number;
     canGenerate: boolean;
     unlimited?: boolean;
+    storyPremiumUnlocked?: boolean;
     cleanDownloadGenerationId?: string | null;
     downloadsFullyUnlocked?: boolean;
   }>;

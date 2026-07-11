@@ -5,6 +5,7 @@ import { generateStoryFoundation } from "@/lib/storystudio/generate";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
+import { hasStoryPremiumUnlocked } from "@/lib/server/storyPremium";
 import { db } from "@/lib/db";
 import { storyProjects } from "@/lib/db/schema";
 import type { CreateStoryInput } from "@/types/storystudio";
@@ -48,6 +49,19 @@ export async function POST(request: Request) {
     );
     if (!policy.allowed) {
       return createContentPolicyBlockedResponse(policy);
+    }
+
+    if (Boolean(body.premiumMode)) {
+      const premiumUnlocked = await hasStoryPremiumUnlocked(userId);
+      if (!premiumUnlocked) {
+        return NextResponse.json(
+          {
+            error: "Режим 18+ доступен только с пакетом «Автор» (50 генераций) или выше.",
+            code: "PREMIUM_REQUIRED"
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const story = await generateStoryFoundation({

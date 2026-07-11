@@ -1,18 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Loader2, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
+import { StoryPremiumUpsellBanner } from "@/components/storystudio/StoryPremiumUpsellBanner";
+import { generateStoryDemo, generateStoryFoundation } from "@/lib/api/storystudio";
+import { fetchUserQuota } from "@/lib/api/user";
+import { getOrCreateStoryGuestId } from "@/lib/guest";
 import { STORY_GENRES, WORD_COUNT_PRESETS } from "@/lib/storystudio/constants";
-import { generateStoryFoundation } from "@/lib/api/storystudio";
 import type { StoryGenre, StoryLanguage } from "@/types/storystudio";
 
 export function StoryCreateForm() {
   const router = useRouter();
+  const { status } = useSession();
+  const isAuthenticated = status === "authenticated";
   const [title, setTitle] = useState("");
   const [premise, setPremise] = useState("");
   const [charactersHint, setCharactersHint] = useState("");
@@ -20,11 +26,32 @@ export function StoryCreateForm() {
   const [language, setLanguage] = useState<StoryLanguage>("ru");
   const [targetWordCount, setTargetWordCount] = useState(16000);
   const [premiumMode, setPremiumMode] = useState(false);
+  const [premiumUnlocked, setPremiumUnlocked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setPremiumUnlocked(false);
+      setPremiumMode(false);
+      return;
+    }
+
+    fetchUserQuota()
+      .then((quota) => setPremiumUnlocked(Boolean(quota.storyPremiumUnlocked)))
+      .catch(() => setPremiumUnlocked(false));
+  }, [isAuthenticated]);
+
   function toggleGenre(id: StoryGenre) {
     setGenres((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id].slice(0, 4)));
+  }
+
+  function handlePremiumToggle(checked: boolean) {
+    if (checked && !premiumUnlocked) {
+      setPremiumMode(false);
+      return;
+    }
+    setPremiumMode(checked);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -37,21 +64,34 @@ export function StoryCreateForm() {
       setError("Выберите хотя бы один жанр.");
       return;
     }
+    if (premiumMode && !premiumUnlocked) {
+      setError("Режим 18+ доступен только с пакетом «Автор» или выше.");
+      return;
+    }
 
     setLoading(true);
     setError("");
 
+    const input = {
+      title: title.trim(),
+      premise: premise.trim(),
+      charactersHint: charactersHint.trim() || undefined,
+      genres,
+      language,
+      targetWordCount,
+      premiumMode
+    };
+
     try {
-      const { story } = await generateStoryFoundation({
-        title: title.trim(),
-        premise: premise.trim(),
-        charactersHint: charactersHint.trim() || undefined,
-        genres,
-        language,
-        targetWordCount,
-        premiumMode
-      });
-      router.push(`/storystudio/cabinet?story=${story.id}`);
+      if (isAuthenticated) {
+        const { story } = await generateStoryFoundation(input);
+        router.push(`/storystudio/cabinet?story=${story.id}`);
+        return;
+      }
+
+      const guestId = getOrCreateStoryGuestId();
+      const { story } = await generateStoryDemo({ ...input, guestId });
+      router.push(`/storystudio/preview/${story.id}?guestId=${encodeURIComponent(guestId)}`);
     } catch (err) {
       if (err instanceof Error && err.message === "Failed to fetch") {
         setError("Нет соединения с сервером.");
@@ -62,8 +102,16 @@ export function StoryCreateForm() {
         setError("Генерации закончились. Купите пакет в кабинете.");
         return;
       }
+      if (e.code === "PREMIUM_REQUIRED") {
+        setError(e.message || "Режим 18+ доступен только с премиум-пакетом.");
+        return;
+      }
+      if (e.code === "DEMO_LIMIT_EXCEEDED" || e.code === "RATE_LIMIT_EXCEEDED") {
+        setError(e.message || "Лимит демо исчерпан. Зарегистрируйтесь, чтобы продолжить.");
+        return;
+      }
       if (e.message.includes("401") || e.message.includes("Войдите")) {
-        router.push(`/register?callbackUrl=${encodeURIComponent("/storystudio/cabinet")}`);
+        router.push(`/register?callbackUrl=${encodeURIComponent("/storystudio/create")}`);
         return;
       }
       setError(e.message || "Не удалось создать историю.");
@@ -72,24 +120,40 @@ export function StoryCreateForm() {
     }
   }
 
+  const showPremiumUpsell = premiumMode || (!premiumUnlocked && isAuthenticated);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card backdrop-blur-sm">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-ink">Режим истории</h2>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted">
+          <label
+            className={`flex items-center gap-2 text-sm ${premiumUnlocked ? "cursor-pointer text-muted" : "cursor-not-allowed text-muted/60"}`}
+          >
             <input
               type="checkbox"
               checked={premiumMode}
-              onChange={(e) => setPremiumMode(e.target.checked)}
-              className="h-4 w-4 rounded border-clay accent-violet"
+              disabled={!premiumUnlocked}
+              onChange={(e) => handlePremiumToggle(e.target.checked)}
+              className="h-4 w-4 rounded border-clay accent-violet disabled:opacity-50"
             />
             <span>
               Премиум 18+ <span className="text-violet">✦</span>
             </span>
           </label>
         </div>
-        {premiumMode && (
+
+        {!isAuthenticated && (
+          <StoryPremiumUpsellBanner variant="inline" />
+        )}
+
+        {isAuthenticated && !premiumUnlocked && (
+          <div className="mb-4">
+            <StoryPremiumUpsellBanner variant="inline" />
+          </div>
+        )}
+
+        {showPremiumUpsell && premiumUnlocked && premiumMode && (
           <p className="mb-4 rounded-xl bg-violet/10 px-4 py-3 text-sm text-muted">
             Может включать откровенные сцены, грубую лексику и взрослые темы.
           </p>
@@ -187,12 +251,29 @@ export function StoryCreateForm() {
         </div>
       </div>
 
+      {!isAuthenticated && (
+        <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-muted">
+          Бесплатное демо без регистрации. После генерации вы увидите превью — чтобы редактировать историю и
+          продолжать работу, нужен аккаунт (защита от спам-ботов).
+        </p>
+      )}
+
       {error && (
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
           {error}
           {error.includes("закончились") && (
             <Link href="/storystudio/cabinet#pricing" className="ml-2 underline">
               Купить генерации
+            </Link>
+          )}
+          {(error.includes("премиум") || error.includes("18+")) && (
+            <Link href="/storystudio/cabinet#pricing" className="ml-2 underline">
+              Оформить премиум
+            </Link>
+          )}
+          {error.includes("Зарегистрируйтесь") && (
+            <Link href="/register?callbackUrl=/storystudio/create" className="ml-2 underline">
+              Регистрация
             </Link>
           )}
         </div>
@@ -212,7 +293,7 @@ export function StoryCreateForm() {
         ) : (
           <>
             <Wand2 className="h-4 w-4" />
-            Создать с ИИ
+            {isAuthenticated ? "Создать с ИИ" : "Попробовать бесплатно"}
           </>
         )}
       </Button>

@@ -315,4 +315,55 @@ export function migrate(sqlite: Database.Database) {
     CREATE INDEX IF NOT EXISTS promo_code_product_idx ON promo_code(product);
     CREATE INDEX IF NOT EXISTS promo_code_redeemed_idx ON promo_code(redeemedAt);
   `);
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS demo_story (
+      id TEXT PRIMARY KEY NOT NULL,
+      guestId TEXT NOT NULL,
+      userId TEXT REFERENCES user(id) ON DELETE CASCADE,
+      clientIpHash TEXT,
+      status TEXT NOT NULL DEFAULT 'done',
+      payload TEXT NOT NULL,
+      createdAt INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS demo_story_guest_idx ON demo_story(guestId);
+    CREATE INDEX IF NOT EXISTS demo_story_user_idx ON demo_story(userId);
+    CREATE INDEX IF NOT EXISTS demo_story_ip_hash_idx ON demo_story(clientIpHash);
+  `);
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN storyPremiumUnlocked INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN registrationSource TEXT`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN registrationProduct TEXT`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN registrationReferrer TEXT`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN registrationCallbackUrl TEXT`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN registeredFromDemo INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // column already exists
+  }
 }

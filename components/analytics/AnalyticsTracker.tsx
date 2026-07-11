@@ -4,6 +4,7 @@ import { useCallback, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { getAnalyticsSessionId } from "@/lib/analytics/session";
+import { storeLastVisitedProduct } from "@/lib/auth/signup-context-client";
 import { GUEST_ID_KEY } from "@/lib/guest";
 import { recordPresenceAction } from "@/lib/presence/client-state";
 
@@ -59,6 +60,7 @@ export function AnalyticsTracker() {
   const { data: session } = useSession();
 
   useEffect(() => {
+    storeLastVisitedProduct(pathname);
     void sendEvents([
       {
         eventType: "page_view",

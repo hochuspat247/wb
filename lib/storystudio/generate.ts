@@ -229,11 +229,32 @@ export async function generateStoryFoundation(input: CreateStoryInput): Promise<
   return buildFoundationProject(input);
 }
 
+export async function generateStoryFoundationDemo(input: CreateStoryInput): Promise<StoryProject> {
+  let data = await fetchFoundationResponse(input, 0);
+
+  if (isFoundationResponseEmpty(data)) {
+    console.warn("[storystudio] empty demo foundation response, retrying");
+    data = await fetchFoundationResponse(input, 1);
+  }
+
+  if (isFoundationResponseEmpty(data)) {
+    throw new Error("ИИ не вернул содержимое истории. Попробуйте ещё раз.");
+  }
+
+  const story = buildStoryFromFoundation(input, data);
+
+  if (isStoryFoundationEmpty(story)) {
+    throw new Error("Не удалось сгенерировать основу истории. Попробуйте ещё раз.");
+  }
+
+  return story;
+}
+
 export async function regenerateStoryFoundation(story: StoryProject): Promise<StoryProject> {
   const input: CreateStoryInput = {
     title: story.title,
     premise: story.premise,
-    charactersHint: undefined,
+    charactersHint: story.charactersHint,
     genres: story.genres,
     language: story.language,
     targetWordCount: story.targetWordCount,
@@ -246,7 +267,8 @@ export async function regenerateStoryFoundation(story: StoryProject): Promise<St
     ...generated,
     id: story.id,
     createdAt: story.createdAt,
-    episodes: story.episodes ?? []
+    episodes: story.episodes ?? [],
+    needsAiRefresh: false
   };
 }
 

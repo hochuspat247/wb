@@ -65,6 +65,44 @@ export async function generateStoryFoundation(input: {
   return data as { story: StoryProject; quota: unknown };
 }
 
+export async function generateStoryDemo(
+  input: {
+    title: string;
+    premise: string;
+    charactersHint?: string;
+    genres: string[];
+    language: "ru" | "en";
+    targetWordCount: number;
+    premiumMode?: boolean;
+  } & { guestId: string }
+) {
+  const response = await fetch("/api/storystudio/demo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    const err = new Error(data.error || "DEMO_GENERATION_FAILED") as Error & { code?: string };
+    err.code = data.code;
+    throw err;
+  }
+  return data as { story: StoryProject; guestId: string };
+}
+
+export async function migrateGuestStories(guestId: string) {
+  const response = await fetch("/api/storystudio/migrate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ guestId })
+  });
+  if (!response.ok) {
+    throw new Error("FAILED_TO_MIGRATE_STORIES");
+  }
+  const data = (await response.json()) as { migrated: number; stories: StoryProject[] };
+  return data;
+}
+
 export async function regenerateStoryFoundation(storyId: string) {
   const response = await fetch(`/api/storystudio/stories/${storyId}/regenerate`, {
     method: "POST"

@@ -30,6 +30,12 @@ export const users = sqliteTable("user", {
   hasPurchasedGenerationCredits: integer("hasPurchasedGenerationCredits", { mode: "boolean" })
     .notNull()
     .default(false),
+  storyPremiumUnlocked: integer("storyPremiumUnlocked", { mode: "boolean" }).notNull().default(false),
+  registrationSource: text("registrationSource"),
+  registrationProduct: text("registrationProduct"),
+  registrationReferrer: text("registrationReferrer"),
+  registrationCallbackUrl: text("registrationCallbackUrl"),
+  registeredFromDemo: integer("registeredFromDemo", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("createdAt", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date())
@@ -190,6 +196,16 @@ export const storyProjects = sqliteTable("story_project", {
   payload: text("payload", { mode: "json" }).$type<StoryProject>().notNull(),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull()
+});
+
+export const demoStories = sqliteTable("demo_story", {
+  id: text("id").primaryKey(),
+  guestId: text("guestId").notNull(),
+  userId: text("userId").references(() => users.id, { onDelete: "cascade" }),
+  clientIpHash: text("clientIpHash"),
+  status: text("status").notNull().default("done"),
+  payload: text("payload", { mode: "json" }).$type<StoryProject>().notNull(),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull()
 });
 
 export const videoGenerationOrders = sqliteTable("video_generation_order", {

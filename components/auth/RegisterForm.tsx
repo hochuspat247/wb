@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -8,6 +8,7 @@ import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { VkIdAuthPanel } from "@/components/auth/VkIdAuthPanel";
 import { YandexIdButton } from "@/components/auth/YandexIdButton";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
+import { readLastVisitedProduct, storeSignupCallbackUrl } from "@/lib/auth/signup-context-client";
 import { Logo } from "@/components/Logo";
 import { getEmailFormatError } from "@/lib/auth/email-format";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +20,10 @@ export function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/cabinet";
+
+  useEffect(() => {
+    storeSignupCallbackUrl(callbackUrl);
+  }, [callbackUrl]);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -75,6 +80,10 @@ export function RegisterForm() {
         name,
         email,
         password,
+        callbackUrl,
+        referrer: typeof document !== "undefined" ? document.referrer : undefined,
+        fromDemo: callbackUrl.includes("fromDemo"),
+        product: readLastVisitedProduct(),
         ...buildAntiBotPayload({ honeypot })
       })
     });

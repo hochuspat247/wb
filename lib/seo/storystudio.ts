@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { BRAND } from "@/lib/branding";
-import { absoluteUrl, siteConfig } from "@/lib/seo";
+import { absoluteUrl, siteConfig, siteIcons } from "@/lib/seo";
 import {
   STORY_GENERATION_PRICE_RUB,
   calculateStoryPackagePrice,
@@ -88,12 +88,14 @@ export function createStoryStudioMetadata({
     },
     icons: {
       icon: [
-        { url: "/storystudio/icon", type: "image/png", sizes: "32x32" },
-        { url: "/favicon-192x192.png", type: "image/png", sizes: "120x120" },
-        { url: "/favicon.ico", sizes: "any" }
+        { url: storyStudioAbsoluteUrl("/storystudio/icon"), type: "image/png", sizes: "32x32" },
+        ...siteIcons.icon
       ],
-      shortcut: "/storystudio/icon",
-      apple: [{ url: "/storystudio/apple-icon", sizes: "180x180", type: "image/png" }]
+      shortcut: absoluteUrl("/favicon.ico"),
+      apple: [
+        { url: storyStudioAbsoluteUrl("/storystudio/apple-icon"), sizes: "180x180", type: "image/png" },
+        ...siteIcons.apple
+      ]
     },
     manifest: "/site.webmanifest",
     openGraph: {

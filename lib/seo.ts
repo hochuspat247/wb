@@ -45,6 +45,29 @@ export function absoluteUrl(path = "/") {
   return new URL(path, siteConfig.url).toString();
 }
 
+type SiteIconDescriptor = {
+  url: string;
+  type?: string;
+  sizes?: string;
+};
+
+type SiteIcons = {
+  icon: SiteIconDescriptor[];
+  shortcut: string;
+  apple: SiteIconDescriptor[];
+};
+
+export const siteIcons: SiteIcons = {
+  icon: [
+    { url: absoluteUrl("/favicon.ico"), type: "image/x-icon", sizes: "any" },
+    { url: absoluteUrl("/favicon-32x32.png"), type: "image/png", sizes: "32x32" },
+    { url: absoluteUrl("/favicon-48x48.png"), type: "image/png", sizes: "48x48" },
+    { url: absoluteUrl("/favicon-192x192.png"), type: "image/png", sizes: "192x192" }
+  ],
+  shortcut: absoluteUrl("/favicon.ico"),
+  apple: [{ url: absoluteUrl("/apple-touch-icon.png"), sizes: "180x180", type: "image/png" }]
+};
+
 export function createPageMetadata({
   title,
   description,
@@ -70,18 +93,7 @@ export function createPageMetadata({
         "ru-RU": absoluteUrl(path)
       }
     },
-    icons: {
-      icon: [
-        { url: "/favicon.ico", sizes: "any" },
-        { url: "/favicon-16x16.png", type: "image/png", sizes: "16x16" },
-        { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
-        { url: "/favicon-48x48.png", type: "image/png", sizes: "48x48" },
-        { url: "/favicon-192x192.png", type: "image/png", sizes: "192x192" },
-        { url: "/favicon-192x192.png", type: "image/png", sizes: "120x120" }
-      ],
-      shortcut: "/favicon.ico",
-      apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }]
-    },
+    icons: siteIcons,
     manifest: "/site.webmanifest",
     openGraph: {
       type: "website",

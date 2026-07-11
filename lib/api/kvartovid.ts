@@ -1,12 +1,30 @@
 import type { CreateKvartovidVideoInput, KvartovidListingInput, KvartovidListingResult } from "@/types/kvartovid";
+import type { KvartovidPaidPlanId } from "@/lib/kvartovid/pricing";
 import type { CreateVideoOrderResponse } from "@/types/video-generation";
 import { fetchVideoOrderStatus } from "@/lib/api/video";
 
 type ListingQuota = {
   canGenerate?: boolean;
-  generationsUsed?: number;
-  generationCredits?: number;
+  used?: number;
+  remaining?: number;
+  credits?: number;
+  listingsCount?: number;
+  freeListingsRemaining?: number;
+  freeListingsLimit?: number;
+  usesGlobalQuota?: boolean;
 };
+
+export class KvartovidApiError extends Error {
+  code?: string;
+  quota?: ListingQuota;
+
+  constructor(message: string, options?: { code?: string; quota?: ListingQuota }) {
+    super(message);
+    this.name = "KvartovidApiError";
+    this.code = options?.code;
+    this.quota = options?.quota;
+  }
+}
 
 export async function generateKvartovidListing(
   input: KvartovidListingInput
@@ -24,9 +42,10 @@ export async function generateKvartovidListing(
   };
 
   if (!response.ok) {
-    const error = new Error(data.error || "Не удалось сгенерировать объявление.") as Error & { code?: string };
-    error.code = data.code;
-    throw error;
+    throw new KvartovidApiError(data.error || "Не удалось сгенерировать объявление.", {
+      code: data.code,
+      quota: data.quota
+    });
   }
 
   return data;
@@ -54,15 +73,65 @@ export async function createKvartovidVideoOrder(
 
 export { fetchVideoOrderStatus };
 
+export async function createKvartovidPayment(planId: KvartovidPaidPlanId, customerEmail?: string) {
+  const response = await fetch("/api/kvartovid/payments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ planId, customerEmail })
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error("UNAUTHORIZED");
+    }
+
+    const data = (await response.json().catch(() => null)) as { code?: string; error?: string } | null;
+    if (data?.code === "EMAIL_REQUIRED") {
+      throw new Error("EMAIL_REQUIRED");
+    }
+
+    throw new Error(data?.error || "FAILED_TO_CREATE_PAYMENT");
+  }
+
+  return response.json() as Promise<{ id: string; confirmationUrl: string }>;
+}
+
+export async function fetchKvartovidQuota() {
+  const response = await fetch("/api/kvartovid/quota", { cache: "no-store" });
+  const data = (await response.json()) as { quota?: ListingQuota; error?: string };
+
+  if (!response.ok) {
+    throw new Error(data.error || "Не удалось загрузить квоту.");
+  }
+
+  return data.quota ?? null;
+}
+
 export async function fetchKvartovidListings() {
   const response = await fetch("/api/kvartovid/listings", { cache: "no-store" });
-  const data = (await response.json()) as { listings?: import("@/types/kvartovid").KvartovidSavedListing[]; error?: string };
+  const data = (await response.json()) as {
+    listings?: import("@/types/kvartovid").KvartovidSavedListing[];
+    quota?: {
+      canGenerate?: boolean;
+      used?: number;
+      remaining?: number;
+      credits?: number;
+      listingsCount?: number;
+      freeListingsRemaining?: number;
+      freeListingsLimit?: number;
+      usesGlobalQuota?: boolean;
+    };
+    error?: string;
+  };
 
   if (!response.ok) {
     throw new Error(data.error || "Не удалось загрузить объявления.");
   }
 
-  return data.listings ?? [];
+  return {
+    listings: data.listings ?? [],
+    quota: data.quota
+  };
 }
 
 export async function deleteKvartovidListing(listingId: string) {

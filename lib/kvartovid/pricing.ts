@@ -63,3 +63,29 @@ export const KVARTOVID_PRICING_PLANS: KvartovidPricingPlan[] = [
 export function formatKvartovidRub(amount: number) {
   return `${amount.toLocaleString("ru-RU")} ₽`;
 }
+
+export type KvartovidPaidPlanId = "listing" | "cover" | "realtor";
+
+export function getKvartovidPlanCheckout(planId: KvartovidPaidPlanId) {
+  if (planId === "listing") {
+    return {
+      amountRub: KVARTOVID_PRICES.listing,
+      credits: 1,
+      description: "КвартоВид: объявление без водяного знака"
+    };
+  }
+
+  if (planId === "cover") {
+    return {
+      amountRub: KVARTOVID_PRICES.listingWithCover,
+      credits: 1,
+      description: "КвартоВид: объявление с AI-обложкой"
+    };
+  }
+
+  return {
+    amountRub: KVARTOVID_PRICES.pack10,
+    credits: 10,
+    description: "КвартоВид: пакет из 10 объявлений"
+  };
+}

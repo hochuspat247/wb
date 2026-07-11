@@ -12,6 +12,8 @@ import { KvartovidFooter } from "@/components/kvartovid/KvartovidFooter";
 import { Button } from "@/components/ui/Button";
 import { Loader } from "@/components/ui/Loader";
 import { deleteKvartovidListing, fetchKvartovidListings } from "@/lib/api/kvartovid";
+import { KvartovidPaymentPanel } from "@/components/kvartovid/KvartovidPaymentPanel";
+import { KvartovidQuotaNotice } from "@/components/kvartovid/KvartovidQuotaNotice";
 import { DEAL_TYPE_LABELS, PROPERTY_TYPE_LABELS } from "@/lib/kvartovid/constants";
 import { formatPlatformTextsForExport } from "@/lib/kvartovid/platformTexts";
 import type { KvartovidSavedListing } from "@/types/kvartovid";
@@ -61,6 +63,15 @@ export function KvartovidCabinet() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [listings, setListings] = useState<KvartovidSavedListing[]>([]);
+  const [quota, setQuota] = useState<{
+    canGenerate?: boolean;
+    used?: number;
+    remaining?: number;
+    credits?: number;
+    listingsCount?: number;
+    freeListingsRemaining?: number;
+    usesGlobalQuota?: boolean;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -78,7 +89,8 @@ export function KvartovidCabinet() {
 
     try {
       const data = await fetchKvartovidListings();
-      setListings(data);
+      setListings(data.listings);
+      setQuota(data.quota ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось загрузить объявления.");
     } finally {
@@ -198,6 +210,11 @@ export function KvartovidCabinet() {
         </div>
 
         {error ? <p className="mt-6 rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p> : null}
+
+        <div className="mt-6 space-y-4">
+          <KvartovidQuotaNotice quota={quota} />
+          <KvartovidPaymentPanel quota={quota} />
+        </div>
 
         {activeListing ? (
           <div className="mt-8 space-y-6">
@@ -354,13 +371,33 @@ export function KvartovidCabinet() {
           </div>
         ) : (
           <div className="mt-8 rounded-card border border-white/10 bg-card/50 p-8 text-center">
-            <p className="text-muted">Пока нет сохранённых объявлений в кабинете.</p>
-            <Link href="/kvartovid/create" className="mt-6 inline-block">
-              <Button className="!border-amber-500 !bg-amber-500 !text-black hover:!bg-amber-400">
-                Создать объявление
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            {!quota?.canGenerate ? (
+              <p className="text-sm text-muted">Оплатите объявление в блоке выше, затем создайте новое.</p>
+            ) : quota?.used && (quota.listingsCount ?? 0) === 0 ? (
+              <>
+                <p className="font-semibold text-ink">Объявление не попало в историю</p>
+                <p className="mt-2 text-sm text-muted">
+                  Похоже, генерация не сохранилась, но у вас ещё есть бесплатное объявление в КвартоВид. Создайте его
+                  снова — результат появится здесь автоматически.
+                </p>
+                <Link href="/kvartovid/create" className="mt-6 inline-block">
+                  <Button className="!border-amber-500 !bg-amber-500 !text-black hover:!bg-amber-400">
+                    Создать объявление
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <p className="text-muted">Пока нет сохранённых объявлений в кабинете.</p>
+                <Link href="/kvartovid/create" className="mt-6 inline-block">
+                  <Button className="!border-amber-500 !bg-amber-500 !text-black hover:!bg-amber-400">
+                    Создать объявление
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         )}
       </main>

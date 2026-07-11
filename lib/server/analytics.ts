@@ -202,16 +202,60 @@ async function getRecentUsersByProduct(product: AdminProductId) {
   }
 
   if (product === "kvartovid") {
-    const activityRows = await db
+    const listingActivityRows = await db
       .select({
         userId: kvartovidListings.userId,
         projectListingsCount: count(),
         lastProjectActivityAt: sql<Date>`max(${kvartovidListings.updatedAt})`
       })
       .from(kvartovidListings)
-      .groupBy(kvartovidListings.userId)
-      .orderBy(desc(sql`max(${kvartovidListings.updatedAt})`))
-      .limit(10);
+      .groupBy(kvartovidListings.userId);
+
+    const visitActivityRows = await db
+      .select({
+        userId: analyticsEvents.userId,
+        lastVisitAt: sql<Date>`max(${analyticsEvents.createdAt})`
+      })
+      .from(analyticsEvents)
+      .where(and(productPathFilter(analyticsEvents.path, "kvartovid"), isNotNull(analyticsEvents.userId)))
+      .groupBy(analyticsEvents.userId);
+
+    const activityByUser = new Map<
+      string,
+      {
+        projectListingsCount: number;
+        lastProjectActivityAt: Date;
+      }
+    >();
+
+    for (const row of listingActivityRows) {
+      activityByUser.set(row.userId, {
+        projectListingsCount: row.projectListingsCount,
+        lastProjectActivityAt: row.lastProjectActivityAt
+      });
+    }
+
+    for (const row of visitActivityRows) {
+      const userId = row.userId!;
+      const existing = activityByUser.get(userId);
+
+      if (existing) {
+        if (row.lastVisitAt > existing.lastProjectActivityAt) {
+          existing.lastProjectActivityAt = row.lastVisitAt;
+        }
+        continue;
+      }
+
+      activityByUser.set(userId, {
+        projectListingsCount: 0,
+        lastProjectActivityAt: row.lastVisitAt
+      });
+    }
+
+    const activityRows = [...activityByUser.entries()]
+      .map(([userId, activity]) => ({ userId, ...activity }))
+      .sort((left, right) => right.lastProjectActivityAt.getTime() - left.lastProjectActivityAt.getTime())
+      .slice(0, 10);
 
     if (activityRows.length === 0) {
       return [];

@@ -953,7 +953,7 @@ export function AdminDashboard() {
             isStoryStudio
               ? `Пользователи с историями в ${productConfig.label}`
               : isKvartovid
-                ? `Пользователи с объявлениями в ${productConfig.label}`
+                ? `Зарегистрированные пользователи с визитами или объявлениями в ${productConfig.label}`
                 : `Пользователи с карточками или демо в ${productConfig.label}`
           }
           icon={<Users className="text-accent" size={20} />}
@@ -988,7 +988,7 @@ export function AdminDashboard() {
               </div>
             ))}
             {stats.recentUsers.length === 0 ? (
-              <p className="text-sm text-muted">Пока нет пользователей с активностью в этом проекте.</p>
+              <p className="text-sm text-muted">Пока нет зарегистрированных пользователей с визитами в этом проекте.</p>
             ) : null}
           </div>
           <div className="hidden overflow-x-auto md:block">

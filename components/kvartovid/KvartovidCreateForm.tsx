@@ -1,15 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { Copy, Download, ImagePlus, Loader2, Video, Wand2, X, FolderOpen } from "lucide-react";
 import { KvartovidPlatformTextsSection } from "@/components/kvartovid/KvartovidPlatformTextsSection";
 import { KvartovidFloorPlanSection } from "@/components/kvartovid/KvartovidFloorPlanSection";
+import { KvartovidQuotaNotice } from "@/components/kvartovid/KvartovidQuotaNotice";
+import { KvartovidPaymentPanel } from "@/components/kvartovid/KvartovidPaymentPanel";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { generateKvartovidListing, createKvartovidVideoOrder, fetchVideoOrderStatus } from "@/lib/api/kvartovid";
+import {
+  generateKvartovidListing,
+  createKvartovidVideoOrder,
+  fetchKvartovidQuota,
+  fetchVideoOrderStatus,
+  KvartovidApiError
+} from "@/lib/api/kvartovid";
 import { BRAND } from "@/lib/branding";
 import { DEAL_TYPE_LABELS, PROPERTY_TYPE_LABELS } from "@/lib/kvartovid/constants";
 import { formatPlatformTextsForExport } from "@/lib/kvartovid/platformTexts";
@@ -47,6 +56,9 @@ async function fileToPhoto(file: File): Promise<PhotoPreview> {
 
 export function KvartovidCreateForm() {
   const router = useRouter();
+  const { status } = useSession();
+  const [quota, setQuota] = useState<Awaited<ReturnType<typeof fetchKvartovidQuota>>>(null);
+  const [quotaLoading, setQuotaLoading] = useState(false);
   const [dealType, setDealType] = useState<KvartovidDealType>("sale");
   const [propertyType, setPropertyType] = useState<KvartovidPropertyType>("apartment");
   const [rooms, setRooms] = useState("2");
@@ -87,6 +99,21 @@ export function KvartovidCreateForm() {
     ];
     return lines.join("\n").trim();
   }, [result]);
+
+  useEffect(() => {
+    if (status !== "authenticated") {
+      setQuota(null);
+      return;
+    }
+
+    setQuotaLoading(true);
+    void fetchKvartovidQuota()
+      .then(setQuota)
+      .catch(() => setQuota(null))
+      .finally(() => setQuotaLoading(false));
+  }, [status]);
+
+  const canGenerate = quota?.canGenerate !== false;
 
   async function handlePhotosChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -156,17 +183,28 @@ export function KvartovidCreateForm() {
       });
 
       setResult(data);
+      setQuota(data.quota ?? quota);
       if (data.suggestedHighlights?.length && !selectedHighlights.length) {
         setSelectedHighlights(data.advantages.slice(0, 4));
       }
     } catch (err) {
-      const e = err as Error & { code?: string };
-      if (e.message.includes("401") || e.message.includes("Войдите")) {
-        router.push(`/register?callbackUrl=${encodeURIComponent("/kvartovid/create")}`);
+      if (err instanceof KvartovidApiError) {
+        if (err.message.includes("401") || err.message.includes("Войдите")) {
+          router.push(`/register?callbackUrl=${encodeURIComponent("/kvartovid/create")}`);
+          return;
+        }
+        if (err.code === "QUOTA_EXCEEDED") {
+          setQuota(err.quota ?? quota);
+          setError(err.message);
+          return;
+        }
+        setError(err.message);
         return;
       }
-      if (e.code === "QUOTA_EXCEEDED") {
-        setError("Бесплатные генерации закончились. Купите пакет в кабинете.");
+
+      const e = err as Error;
+      if (e.message.includes("401") || e.message.includes("Войдите")) {
+        router.push(`/register?callbackUrl=${encodeURIComponent("/kvartovid/create")}`);
         return;
       }
       setError(e.message || "Не удалось сгенерировать объявление.");
@@ -285,6 +323,14 @@ export function KvartovidCreateForm() {
 
   return (
     <div className="space-y-8">
+      {status === "authenticated" && !quotaLoading ? (
+        <>
+          <KvartovidQuotaNotice quota={quota} />
+          {!canGenerate ? <KvartovidQuotaNotice quota={quota} variant="blocked" /> : null}
+          <KvartovidPaymentPanel quota={quota} />
+        </>
+      ) : null}
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card backdrop-blur-sm">
           <h2 className="text-lg font-semibold text-ink">Фото квартиры</h2>
@@ -444,7 +490,7 @@ export function KvartovidCreateForm() {
         <Button
           type="submit"
           size="lg"
-          disabled={loading}
+          disabled={loading || !canGenerate}
           className="w-full !border-amber-500 !bg-amber-500 !text-black hover:!bg-amber-400 sm:w-auto"
         >
           {loading ? (

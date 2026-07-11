@@ -4,7 +4,7 @@ import { scanTextForProhibitedContent } from "@/lib/ai/contentPolicy";
 import { IMAGE_GENERATION_RETRY_MESSAGE } from "@/lib/ai/imageGenerationErrors";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
 import { generateKvartovidListing as runGeneration } from "@/lib/kvartovid/generate";
-import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
+import { consumeKvartovidGeneration, getKvartovidGenerationQuota } from "@/lib/server/kvartovidQuota";
 import { buildKvartovidSavedListing, saveKvartovidListing } from "@/lib/server/kvartovidListings";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import type { KvartovidListingInput } from "@/types/kvartovid";
@@ -54,11 +54,16 @@ export async function POST(request: Request) {
       return NextResponse.json(verificationError, { status: 403 });
     }
 
-    const quota = await getUserQuota(userId);
+    const quota = await getKvartovidGenerationQuota(userId);
     if (!quota.canGenerate) {
+      const errorMessage =
+        quota.listingsCount > 0
+          ? "Бесплатное объявление уже использовано. Оплатите следующее — от 99 ₽."
+          : "Квота на генерации закончилась. Оплатите объявление на странице тарифов.";
+
       return NextResponse.json(
         {
-          error: "Бесплатные генерации использованы. Купите пакет, чтобы продолжить.",
+          error: errorMessage,
           code: "QUOTA_EXCEEDED",
           quota
         },
@@ -96,7 +101,6 @@ export async function POST(request: Request) {
       includeCover: body.includeCover !== false,
       includeFloorPlan: body.includeFloorPlan !== false
     });
-    const updatedQuota = (await consumeGeneration(userId)).quota;
 
     if (body.includeCover !== false && !result.coverImageBase64 && !result.coverImageUrl && !result.coverImageError) {
       result.coverImageError = IMAGE_GENERATION_RETRY_MESSAGE;
@@ -105,6 +109,8 @@ export async function POST(request: Request) {
     const listing = buildKvartovidSavedListing(body, result);
     await saveKvartovidListing(userId, listing);
     result.listingId = listing.id;
+
+    const { quota: updatedQuota } = await consumeKvartovidGeneration(userId);
 
     return NextResponse.json({ ...result, quota: updatedQuota });
   } catch (error) {

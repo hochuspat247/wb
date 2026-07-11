@@ -56,11 +56,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, skipped: true });
   }
 
-  let userId: string | undefined;
+  let userId: string | null | undefined;
+  let authResolved = false;
 
   try {
     const session = await auth();
-    userId = session?.user?.id;
+    authResolved = true;
+    userId = session?.user?.id ?? null;
   } catch (error) {
     console.error("[MarketCard AI] presence auth lookup failed", error);
   }
@@ -74,8 +76,9 @@ export async function POST(request: Request) {
       lastActionLabel: body.lastActionLabel,
       guestId: body.guestId,
       userId,
+      authResolved,
       referrer: body.referrer,
-      isAuthed: Boolean(userId ?? body.isAuthed),
+      isAuthed: authResolved ? Boolean(userId) : undefined,
       isVisible: body.isVisible !== false
     });
 

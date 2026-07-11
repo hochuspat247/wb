@@ -53,8 +53,8 @@ function normalizePath(path: string, journeyZones: { id: string; label: string }
 }
 
 function getJourneyLabel(journey: UserJourney) {
-  if (journey.guestId) return `Гость ${journey.guestId.slice(0, 8)}`;
   if (journey.userId) return `User ${journey.userId.slice(0, 8)}`;
+  if (journey.guestId) return `Гость ${journey.guestId.slice(0, 8)}`;
   return `Сессия ${journey.sessionId.slice(0, 8)}`;
 }
 

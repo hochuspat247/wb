@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/Button";
 import { KVARTOVID_PRICING_PLANS } from "@/lib/kvartovid/pricing";
+import { KvartovidPricingPlanAction } from "@/components/kvartovid/KvartovidPricingPlanAction";
 
 export function KvartovidPricingSection() {
   return (
@@ -41,15 +40,9 @@ export function KvartovidPricingSection() {
                 </li>
               ))}
             </ul>
-            <Link href="/kvartovid/create" className="mt-6">
-              <Button
-                className="w-full !border-amber-500 !bg-amber-500 !text-black hover:!bg-amber-400"
-                variant={plan.soon ? "secondary" : "primary"}
-                disabled={plan.soon}
-              >
-                {plan.soon ? "Скоро" : "Попробовать"}
-              </Button>
-            </Link>
+            <div className="mt-6">
+              <KvartovidPricingPlanAction plan={plan} />
+            </div>
           </div>
         ))}
       </div>

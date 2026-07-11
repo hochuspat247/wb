@@ -14,7 +14,8 @@ export type PresenceUpsertInput = {
   lastAction?: string;
   lastActionLabel?: string;
   guestId?: string;
-  userId?: string;
+  userId?: string | null;
+  authResolved?: boolean;
   referrer?: string;
   isAuthed?: boolean;
   isVisible?: boolean;
@@ -64,12 +65,16 @@ export async function upsertVisitorPresence(input: PresenceUpsertInput) {
   const lastAction = input.lastAction?.slice(0, 120);
   const lastActionLabel = input.lastActionLabel?.slice(0, 240) || getActionLabel(lastAction);
 
+  const authResolved = input.authResolved !== false;
+  const resolvedUserId = authResolved ? (input.userId ?? null) : undefined;
+  const resolvedIsAuthed = authResolved ? Boolean(input.userId) : undefined;
+
   await withSqliteRetry(async () => {
     await db
       .insert(visitorPresence)
       .values({
         sessionId: input.sessionId.slice(0, 80),
-        userId: input.userId,
+        userId: resolvedUserId ?? null,
         guestId: input.guestId?.slice(0, 80),
         path,
         pathLabel,
@@ -78,7 +83,7 @@ export async function upsertVisitorPresence(input: PresenceUpsertInput) {
         lastAction,
         lastActionLabel,
         referrer: input.referrer?.slice(0, 500),
-        isAuthed: Boolean(input.isAuthed),
+        isAuthed: resolvedIsAuthed ?? false,
         isVisible: input.isVisible !== false,
         firstSeenAt: now,
         lastSeenAt: now
@@ -86,7 +91,12 @@ export async function upsertVisitorPresence(input: PresenceUpsertInput) {
       .onConflictDoUpdate({
         target: visitorPresence.sessionId,
         set: {
-          userId: input.userId,
+          ...(authResolved
+            ? {
+                userId: resolvedUserId ?? null,
+                isAuthed: resolvedIsAuthed ?? false
+              }
+            : {}),
           guestId: input.guestId?.slice(0, 80),
           path,
           pathLabel,
@@ -95,7 +105,6 @@ export async function upsertVisitorPresence(input: PresenceUpsertInput) {
           lastAction,
           lastActionLabel,
           referrer: input.referrer?.slice(0, 500),
-          isAuthed: Boolean(input.isAuthed),
           isVisible: input.isVisible !== false,
           lastSeenAt: now
         }
@@ -116,7 +125,9 @@ export async function getActiveVisitors(product: AdminProductId = "marketcard") 
   const presenceScope =
     product === "storystudio"
       ? sql`${visitorPresence.path} LIKE '/storystudio%'`
-      : sql`${visitorPresence.path} NOT LIKE '/storystudio%'`;
+      : product === "kvartovid"
+        ? sql`${visitorPresence.path} LIKE '/kvartovid%'`
+        : sql`${visitorPresence.path} NOT LIKE '/storystudio%' AND ${visitorPresence.path} NOT LIKE '/kvartovid%'`;
 
   const rows = await db
     .select({
@@ -158,7 +169,10 @@ export async function getActiveVisitors(product: AdminProductId = "marketcard") 
       sessionId: row.sessionId,
       guestId: row.guestId,
       userId: row.userId,
-      displayName: row.userEmail || row.userName || `Гость ${row.sessionId.slice(0, 8)}`,
+      displayName:
+        row.isAuthed && (row.userEmail || row.userName)
+          ? row.userEmail || row.userName || `Гость ${row.sessionId.slice(0, 8)}`
+          : `Гость ${row.sessionId.slice(0, 8)}`,
       path: row.path,
       pathLabel: row.pathLabel || getPathLabel(row.path),
       section: row.section,

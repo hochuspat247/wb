@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, desc, inArray, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   accounts,
@@ -63,6 +63,64 @@ export type AdminUsersFilter = {
   limit?: number;
   offset?: number;
 };
+
+function toTimestampMs(value: Date | number | string | null | undefined) {
+  if (value == null) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    const time = value.getTime();
+    return Number.isNaN(time) ? null : time;
+  }
+
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? null : time;
+}
+
+function toIsoString(value: Date | number | string | null | undefined) {
+  const time = toTimestampMs(value);
+  return new Date(time ?? 0).toISOString();
+}
+
+const IN_ARRAY_BATCH_SIZE = 400;
+
+function chunkValues<T>(values: T[], size = IN_ARRAY_BATCH_SIZE) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+
+  return chunks;
+}
+
+async function queryInBatches<T>(userIds: string[], query: (batchIds: string[]) => Promise<T[]>) {
+  if (!userIds.length) {
+    return [] as T[];
+  }
+
+  const batches = await Promise.all(chunkValues(userIds).map((batchIds) => query(batchIds)));
+  return batches.flat();
+}
+
+async function loadStoryDemoCounts(userIds: string[]) {
+  try {
+    return await queryInBatches(userIds, (batchIds) =>
+      db
+        .select({
+          userId: demoStories.userId,
+          count: sql<number>`count(*)`
+        })
+        .from(demoStories)
+        .where(and(inArray(demoStories.userId, batchIds), isNotNull(demoStories.userId)))
+        .groupBy(demoStories.userId)
+    );
+  } catch (error) {
+    console.warn("[Admin] demo_story counts unavailable", error);
+    return [];
+  }
+}
 
 function resolvePlanTier(user: {
   name?: string | null;
@@ -133,63 +191,68 @@ export async function listAdminUsers(filter: AdminUsersFilter = {}) {
 
   const [accountRows, paymentRows, storyCounts, listingCounts, cardCounts, demoCounts, storyDemoCounts] =
     await Promise.all([
-      db.query.accounts.findMany({
-        where: inArray(accounts.userId, userIds),
-        columns: { userId: true, provider: true }
-      }),
-      db
-        .select({
-          userId: payments.userId,
-          paymentsCount: sql<number>`count(*)`,
-          totalPaidRub: sql<number>`coalesce(sum(CASE WHEN ${payments.paid} = 1 THEN ${payments.amount} ELSE 0 END), 0)`
+      queryInBatches(userIds, (batchIds) =>
+        db.query.accounts.findMany({
+          where: inArray(accounts.userId, batchIds),
+          columns: { userId: true, provider: true }
         })
-        .from(payments)
-        .where(inArray(payments.userId, userIds))
-        .groupBy(payments.userId),
-      db
-        .select({
-          userId: storyProjects.userId,
-          count: sql<number>`count(*)`,
-          lastAt: sql<Date>`max(${storyProjects.updatedAt})`
-        })
-        .from(storyProjects)
-        .where(inArray(storyProjects.userId, userIds))
-        .groupBy(storyProjects.userId),
-      db
-        .select({
-          userId: kvartovidListings.userId,
-          count: sql<number>`count(*)`,
-          lastAt: sql<Date>`max(${kvartovidListings.updatedAt})`
-        })
-        .from(kvartovidListings)
-        .where(inArray(kvartovidListings.userId, userIds))
-        .groupBy(kvartovidListings.userId),
-      db
-        .select({
-          userId: productCards.userId,
-          count: sql<number>`count(*)`,
-          lastAt: sql<Date>`max(${productCards.createdAt})`
-        })
-        .from(productCards)
-        .where(inArray(productCards.userId, userIds))
-        .groupBy(productCards.userId),
-      db
-        .select({
-          userId: demoGenerations.userId,
-          count: sql<number>`count(*)`,
-          lastAt: sql<Date>`max(${demoGenerations.createdAt})`
-        })
-        .from(demoGenerations)
-        .where(and(inArray(demoGenerations.userId, userIds), isNotNull(demoGenerations.userId)))
-        .groupBy(demoGenerations.userId),
-      db
-        .select({
-          userId: demoStories.userId,
-          count: sql<number>`count(*)`
-        })
-        .from(demoStories)
-        .where(and(inArray(demoStories.userId, userIds), isNotNull(demoStories.userId)))
-        .groupBy(demoStories.userId)
+      ),
+      queryInBatches(userIds, (batchIds) =>
+        db
+          .select({
+            userId: payments.userId,
+            paymentsCount: sql<number>`count(*)`,
+            totalPaidRub: sql<number>`coalesce(sum(CASE WHEN ${payments.paid} = 1 THEN ${payments.amount} ELSE 0 END), 0)`
+          })
+          .from(payments)
+          .where(inArray(payments.userId, batchIds))
+          .groupBy(payments.userId)
+      ),
+      queryInBatches(userIds, (batchIds) =>
+        db
+          .select({
+            userId: storyProjects.userId,
+            count: sql<number>`count(*)`,
+            lastAt: sql<number>`max(${storyProjects.updatedAt})`
+          })
+          .from(storyProjects)
+          .where(inArray(storyProjects.userId, batchIds))
+          .groupBy(storyProjects.userId)
+      ),
+      queryInBatches(userIds, (batchIds) =>
+        db
+          .select({
+            userId: kvartovidListings.userId,
+            count: sql<number>`count(*)`,
+            lastAt: sql<number>`max(${kvartovidListings.updatedAt})`
+          })
+          .from(kvartovidListings)
+          .where(inArray(kvartovidListings.userId, batchIds))
+          .groupBy(kvartovidListings.userId)
+      ),
+      queryInBatches(userIds, (batchIds) =>
+        db
+          .select({
+            userId: productCards.userId,
+            count: sql<number>`count(*)`,
+            lastAt: sql<number>`max(${productCards.createdAt})`
+          })
+          .from(productCards)
+          .where(inArray(productCards.userId, batchIds))
+          .groupBy(productCards.userId)
+      ),
+      queryInBatches(userIds, (batchIds) =>
+        db
+          .select({
+            userId: demoGenerations.userId,
+            count: sql<number>`count(*)`,
+            lastAt: sql<number>`max(${demoGenerations.createdAt})`
+          })
+          .from(demoGenerations)
+          .where(and(inArray(demoGenerations.userId, batchIds), isNotNull(demoGenerations.userId)))
+          .groupBy(demoGenerations.userId)
+      ),
+      loadStoryDemoCounts(userIds)
     ]);
 
   const providersByUser = new Map<string, string[]>();
@@ -246,9 +309,11 @@ export async function listAdminUsers(filter: AdminUsersFilter = {}) {
     const registeredFromDemo =
       user.registeredFromDemo || projectDemosCount > 0 || Boolean(user.registrationCallbackUrl?.includes("fromDemo"));
 
-    const lastActivityCandidates = [story?.lastAt, listing?.lastAt, card?.lastAt, demo?.lastAt].filter(Boolean) as Date[];
+    const lastActivityCandidates = [story?.lastAt, listing?.lastAt, card?.lastAt, demo?.lastAt]
+      .map((value) => toTimestampMs(value))
+      .filter((value): value is number => value !== null);
     const lastActivityAt = lastActivityCandidates.length
-      ? new Date(Math.max(...lastActivityCandidates.map((value) => value.getTime()))).toISOString()
+      ? new Date(Math.max(...lastActivityCandidates)).toISOString()
       : null;
 
     const planTier = resolvePlanTier(user);
@@ -276,7 +341,7 @@ export async function listAdminUsers(filter: AdminUsersFilter = {}) {
       projectListingsCount,
       projectCardsCount,
       projectDemosCount,
-      createdAt: user.createdAt.toISOString(),
+      createdAt: toIsoString(user.createdAt),
       lastActivityAt
     };
   });

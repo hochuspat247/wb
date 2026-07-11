@@ -3,6 +3,16 @@ import { auth } from "@/auth";
 import { assessGenerationContentPolicy } from "@/lib/ai/contentPolicy";
 import { generateProductImageWithProvider, resolveImageProvider } from "@/lib/ai/imageProviders";
 import { IMAGE_GENERATION_RETRY_MESSAGE } from "@/lib/ai/imageGenerationErrors";
+import {
+  NANO_BANANA_ASPECT_RATIO,
+  NANO_BANANA_IMAGE_MODEL,
+  NANO_BANANA_OUTPUT_FORMAT,
+  NANO_BANANA_RESOLUTION,
+  normalizeDesignPreset,
+  normalizeImageMode,
+  normalizeImageProvider,
+  normalizeOptionalText
+} from "@/lib/marketplace/cardFormValidation";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
 import {
   consumeImageGenerationTicket,
@@ -43,14 +53,21 @@ type LegacyImageRequest = {
 function applyImageDefaults(input: GenerateImageRequest): GenerateImageRequest {
   return {
     ...input,
-    price: input.price?.trim() || "Цена: по запросу",
-    ctaText: input.ctaText?.trim() || "ДОБАВИТЬ В КОРЗИНУ",
-    designPreset: input.designPreset || "premium-marketplace",
-    style: input.style?.trim() || "Премиальный",
-    model: input.model || "nb2",
-    aspectRatio: input.aspectRatio || "4:5",
-    resolution: input.resolution || "1k",
-    outputFormat: input.outputFormat || "png"
+    productDescription: input.productDescription?.replace(/\s+/g, " ").trim() ?? "",
+    category: normalizeOptionalText(input.category, 120) ?? "",
+    marketplace: normalizeOptionalText(input.marketplace, 80) ?? "Wildberries",
+    style: normalizeOptionalText(input.style, 80) ?? "Премиальный",
+    title: input.title?.replace(/\s+/g, " ").trim() ?? "",
+    price: normalizeOptionalText(input.price, 40) || "Цена: по запросу",
+    ctaText: normalizeOptionalText(input.ctaText, 80) || "ДОБАВИТЬ В КОРЗИНУ",
+    headline: normalizeOptionalText(input.headline, 120),
+    designPreset: normalizeDesignPreset(input.designPreset),
+    imageProvider: normalizeImageProvider(input.imageProvider),
+    imageMode: normalizeImageMode(input.imageMode),
+    model: NANO_BANANA_IMAGE_MODEL,
+    aspectRatio: NANO_BANANA_ASPECT_RATIO,
+    resolution: NANO_BANANA_RESOLUTION,
+    outputFormat: NANO_BANANA_OUTPUT_FORMAT
   };
 }
 

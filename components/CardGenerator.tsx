@@ -22,6 +22,24 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
 import { getImageSettings } from "@/lib/imageSettings";
+import {
+  CARD_DESIGN_PRESETS,
+  CARD_MARKETPLACES,
+  CARD_SERIES_COUNTS,
+  CARD_STYLES,
+  CARD_TEXT_MODES,
+  NANO_BANANA_ASPECT_RATIO,
+  NANO_BANANA_IMAGE_MODEL,
+  NANO_BANANA_OUTPUT_FORMAT,
+  NANO_BANANA_RESOLUTION,
+  normalizeCardStyle,
+  normalizeCardsCount,
+  normalizeDesignPreset,
+  normalizeMarketplaceLabel,
+  normalizeProductCardInput,
+  normalizeTextMode,
+  resolveNanoBananaImageProvider
+} from "@/lib/marketplace/cardFormValidation";
 import { getImageGenerationRetryMessage, IMAGE_GENERATION_RETRY_MESSAGE } from "@/lib/ai/imageGenerationErrors";
 import { resolveCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
@@ -56,15 +74,11 @@ import type {
   CardSeriesCount,
   CardSeriesPlanItem,
   ImageDesignPreset,
-  ImageGenerationMode,
   ProductCardInput,
   ProductCardResult
 } from "@/types/product-card";
-import type { MarketplaceTextMode } from "@/types/marketplace";
 
-const marketplaces = ["Wildberries", "Ozon", "Avito", "Яндекс Маркет"];
-const styles = ["Минималистичный", "Премиальный", "Яркий", "Нежный", "Технологичный"];
-const cardCountOptions: CardSeriesCount[] = [1, 3, 5, 7, 10];
+const cardCountOptions = CARD_SERIES_COUNTS;
 
 function getRequiredGenerationsForCardsCount(count: CardSeriesCount, category: string) {
   if (count === 1) {
@@ -98,25 +112,6 @@ const DEMO_LOADING_STATUSES = [
   "Проверяем результат",
   "Осталось чуть-чуть",
   "Делаем последние штрихи"
-];
-
-const designPresets: Array<{ label: string; value: ImageDesignPreset }> = [
-  { label: "Premium Marketplace", value: "premium-marketplace" },
-  { label: "Luxury Catalog", value: "luxury-catalog" },
-  { label: "Standard", value: "standard" }
-];
-
-const imageModes: Array<{ label: string; value: ImageGenerationMode }> = [
-  { label: "ИИ-обложка (авто)", value: "pro" },
-  { label: "Быстрая генерация", value: "fast" },
-  { label: "Legacy", value: "legacy" }
-];
-
-const textModes: Array<{ label: string; value: MarketplaceTextMode }> = [
-  { label: "Безопасно для модерации", value: "marketplace_safe" },
-  { label: "Промо-креатив", value: "promo_creative" },
-  { label: "СЕО-описание", value: "seo" },
-  { label: "Полная карточка", value: "full_listing" }
 ];
 
 const GENERATE_BUTTON_CLASS =
@@ -203,7 +198,7 @@ export function CardGenerator({
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [marketplace, setMarketplace] = useState("Wildberries");
-  const [textMode, setTextMode] = useState<MarketplaceTextMode>("marketplace_safe");
+  const [textMode, setTextMode] = useState(normalizeTextMode("marketplace_safe"));
   const [brand, setBrand] = useState("");
   const [sellerSku, setSellerSku] = useState("");
   const [color, setColor] = useState("");
@@ -224,8 +219,7 @@ export function CardGenerator({
   const [headline, setHeadline] = useState("");
   const [price, setPrice] = useState("");
   const [ctaText, setCtaText] = useState("");
-  const [designPreset, setDesignPreset] = useState<ImageDesignPreset>("premium-marketplace");
-  const [imageMode, setImageMode] = useState<ImageGenerationMode>("pro");
+  const [designPreset, setDesignPreset] = useState<ImageDesignPreset>(normalizeDesignPreset("premium-marketplace"));
   const [removeBackground, setRemoveBackground] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [imageFileName, setImageFileName] = useState("");
@@ -348,8 +342,6 @@ export function CardGenerator({
 
   useEffect(() => {
     setHistory(getHistory());
-    const settings = getImageSettings();
-    setImageMode(settings.imageMode);
   }, []);
 
   useEffect(() => {
@@ -553,7 +545,6 @@ export function CardGenerator({
         price: price.trim() || undefined,
         ctaText: ctaText.trim() || undefined,
         designPreset,
-        imageMode,
         removeBackground,
         cardsCount: (options.seriesCount ?? preserveCard?.seriesCount ?? plannedGenerationCount) as CardSeriesCount,
         seriesIndex: planItem?.index,
@@ -607,7 +598,7 @@ export function CardGenerator({
     setSeriesCards([]);
     setRatingPromptCardId(null);
     const imagePayload = imageUrl ? dataUrlToBase64(imageUrl) : null;
-    const payload: ProductCardInput = {
+    const payload = normalizeProductCardInput({
       productDescription: description,
       category: effectiveCategory,
       marketplace,
@@ -620,20 +611,20 @@ export function CardGenerator({
       imageMimeType: imagePayload?.mimeType,
       platform: marketplaceLabelToPlatform(marketplace),
       textMode,
-      brand: brand.trim() || undefined,
-      sellerSku: sellerSku.trim() || undefined,
-      color: color.trim() || undefined,
-      size: size.trim() || undefined,
-      material: material.trim() || undefined,
-      dimensions: dimensions.trim() || undefined,
-      weight: weight.trim() || undefined,
-      packageContents: packageContents.trim() || undefined,
-      targetAudience: targetAudience.trim() || undefined,
-      useCase: useCase.trim() || undefined,
-      price: price.trim() || undefined,
-      oldPrice: oldPrice.trim() || undefined,
-      discount: discount.trim() || undefined
-    };
+      brand,
+      sellerSku,
+      color,
+      size,
+      material,
+      dimensions,
+      weight,
+      packageContents,
+      targetAudience,
+      useCase,
+      price,
+      oldPrice,
+      discount
+    });
 
     if (!persistToServer) {
       await handleDemoSubmit(payload);
@@ -753,12 +744,11 @@ export function CardGenerator({
           },
           imageBase64: image.base64,
           imageMimeType: image.mimeType,
-          imageProvider: getImageSettings().imageProvider,
-          imageMode,
+          imageProvider: resolveNanoBananaImageProvider(getImageSettings().imageProvider),
           headline: headline.trim() || undefined,
           price: price.trim() || undefined,
           ctaText: ctaText.trim() || undefined,
-          designPreset
+          designPreset: normalizeDesignPreset(designPreset)
         })
       });
       const data = await parseJsonResponse<{ id?: string; error?: string }>(response);
@@ -815,8 +805,7 @@ export function CardGenerator({
     setHeadline("");
     setPrice("");
     setCtaText("");
-    setDesignPreset("premium-marketplace");
-    setImageMode("pro");
+    setDesignPreset(normalizeDesignPreset("premium-marketplace"));
     setRemoveBackground(false);
     setImageUrl("");
     setImageFileName("");
@@ -956,14 +945,14 @@ export function CardGenerator({
   function handleOpenHistory(cardFromHistory: ProductCardResult) {
     setCard(cardFromHistory);
     setRatingPromptCardId(null);
-    setMarketplace(cardFromHistory.marketplace);
-    setTextMode(cardFromHistory.textMode ?? "marketplace_safe");
-    setStyle(cardFromHistory.style);
+    setMarketplace(normalizeMarketplaceLabel(cardFromHistory.marketplace));
+    setTextMode(normalizeTextMode(cardFromHistory.textMode));
+    setStyle(normalizeCardStyle(cardFromHistory.style));
     setCategory(cardFromHistory.category);
     setHeadline(cardFromHistory.headline || "");
     setPrice(cardFromHistory.price || "");
     setCtaText(cardFromHistory.ctaText || "");
-    setDesignPreset(cardFromHistory.designPreset || "premium-marketplace");
+    setDesignPreset(normalizeDesignPreset(cardFromHistory.designPreset));
     setImageUrl(cardFromHistory.imageDataUrl ?? "");
     setImageFileName(cardFromHistory.imageDataUrl ? "Фото из истории" : "");
     setNotice("Карточка открыта.");
@@ -1285,16 +1274,15 @@ export function CardGenerator({
           keywords: cardForImage.keywords,
           imageBase64: image.base64,
           imageMimeType: image.mimeType,
-          imageProvider: getImageSettings().imageProvider,
-          imageMode,
+          imageProvider: resolveNanoBananaImageProvider(getImageSettings().imageProvider),
           headline: headline.trim() || undefined,
           price: price.trim() || undefined,
           ctaText: ctaText.trim() || undefined,
-          designPreset,
-          model: "nb2",
-          aspectRatio: "4:5",
-          resolution: "1k",
-          outputFormat: "png",
+          designPreset: normalizeDesignPreset(designPreset),
+          model: NANO_BANANA_IMAGE_MODEL,
+          aspectRatio: NANO_BANANA_ASPECT_RATIO,
+          resolution: NANO_BANANA_RESOLUTION,
+          outputFormat: NANO_BANANA_OUTPUT_FORMAT,
           imageGenerationTicket: ticket,
           seriesStyleGuide: cardForImage.seriesStyleGuide,
           seriesCardType: cardForImage.seriesPlanItem?.type,
@@ -1604,8 +1592,10 @@ export function CardGenerator({
                     value={marketplace}
                     variant={selectVariant}
                   >
-                    {marketplaces.map((item) => (
-                      <option key={item}>{item}</option>
+                    {CARD_MARKETPLACES.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
                     ))}
                   </Select>
                 </label>
@@ -1614,21 +1604,9 @@ export function CardGenerator({
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                   Стиль
                   <Select onChange={(event) => setStyle(event.target.value)} value={style} variant={selectVariant}>
-                    {styles.map((item) => (
-                      <option key={item}>{item}</option>
-                    ))}
-                  </Select>
-                </label>
-                <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                  Режим изображения
-                  <Select
-                    onChange={(event) => setImageMode(event.target.value as ImageGenerationMode)}
-                    value={imageMode}
-                    variant={selectVariant}
-                  >
-                    {imageModes.map((item) => (
-                      <option key={item.value} value={item.value}>
-                        {item.label}
+                    {CARD_STYLES.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
                       </option>
                     ))}
                   </Select>
@@ -1643,7 +1621,7 @@ export function CardGenerator({
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                   Сколько карточек
                   <Select
-                    onChange={(event) => setCardsCount(Number(event.target.value) as CardSeriesCount)}
+                    onChange={(event) => setCardsCount(normalizeCardsCount(event.target.value))}
                     onDisabledOptionClick={() => setShowPaywall(true)}
                     value={cardsCount}
                     variant={selectVariant}
@@ -1717,11 +1695,11 @@ export function CardGenerator({
                   <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                     Режим текста
                     <Select
-                      onChange={(event) => setTextMode(event.target.value as MarketplaceTextMode)}
+                      onChange={(event) => setTextMode(normalizeTextMode(event.target.value))}
                       value={textMode}
                       variant={selectVariant}
                     >
-                      {textModes.map((item) => (
+                      {CARD_TEXT_MODES.map((item) => (
                         <option key={item.value} value={item.value}>
                           {item.label}
                         </option>
@@ -1818,7 +1796,7 @@ export function CardGenerator({
                     value={designPreset}
                     variant={selectVariant}
                   >
-                    {designPresets.map((item) => (
+                    {CARD_DESIGN_PRESETS.map((item) => (
                       <option key={item.value} value={item.value}>
                         {item.label}
                       </option>

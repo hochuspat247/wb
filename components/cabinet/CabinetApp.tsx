@@ -656,7 +656,7 @@ export function CabinetApp() {
 
               <Card padding="lg">
                 <h2 className="text-lg font-bold text-ink">ИИ-провайдер изображений</h2>
-                <p className="mt-1 text-sm text-muted">Настройки генерации обложек</p>
+                <p className="mt-1 text-sm text-muted">Обложки генерируются через NanoBanana Expert</p>
                 <div className="mt-5 grid gap-4">
                   <label className="grid gap-2 text-sm font-semibold text-ink">
                     Провайдер
@@ -667,27 +667,10 @@ export function CabinetApp() {
                           imageProvider: e.target.value as ImageSettings["imageProvider"]
                         }))
                       }
-                      value={imageSettings.imageProvider}
+                      value={imageSettings.imageProvider === "gemini" ? "nanobanana_expert" : imageSettings.imageProvider}
                     >
-                      <option value="auto">Авто (рекомендуется)</option>
                       <option value="nanobanana_expert">NanoBanana Expert</option>
-                      <option value="gemini">Gemini</option>
-                    </Select>
-                  </label>
-                  <label className="grid gap-2 text-sm font-semibold text-ink">
-                    Режим изображения
-                    <Select
-                      onChange={(e) =>
-                        setImageSettings((s) => ({
-                          ...s,
-                          imageMode: e.target.value as ImageSettings["imageMode"]
-                        }))
-                      }
-                      value={imageSettings.imageMode}
-                    >
-                      <option value="pro">Pro (лучшее качество)</option>
-                      <option value="fast">Быстрый</option>
-                      <option value="legacy">Legacy</option>
+                      <option value="auto">Авто</option>
                     </Select>
                   </label>
                 </div>

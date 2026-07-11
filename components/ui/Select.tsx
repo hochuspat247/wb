@@ -64,6 +64,26 @@ export function Select({
   const selected = options.find((option) => option.value === value) ?? options[0];
 
   useEffect(() => {
+    if (!onChange || disabled || !options.length) {
+      return;
+    }
+
+    const hasActiveMatch = options.some((option) => option.value === value && !option.disabled);
+
+    if (hasActiveMatch) {
+      return;
+    }
+
+    const fallback = options.find((option) => !option.disabled) ?? options[0];
+
+    if (fallback && fallback.value !== value) {
+      onChange({
+        target: { value: fallback.value }
+      } as ChangeEvent<HTMLSelectElement>);
+    }
+  }, [disabled, onChange, options, value]);
+
+  useEffect(() => {
     if (!open) return;
 
     const onPointerDown = (event: PointerEvent) => {

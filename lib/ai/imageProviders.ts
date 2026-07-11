@@ -1,6 +1,11 @@
 import { generateGeminiProductImage } from "@/lib/ai/geminiImage";
 import { generateNanoBananaExpertImage, isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
+import { normalizeImageProvider } from "@/lib/marketplace/cardFormValidation";
 import type { GenerateImageInput, GenerateImageResult, ImageGenerationMode, ImageProviderMode } from "@/types/product-card";
+
+function canUseGeminiImageProvider() {
+  return Boolean(process.env.GEMINI_API_KEY?.trim());
+}
 
 export function resolveImageProvider(
   fromRequest?: ImageProviderMode,
@@ -11,12 +16,26 @@ export function resolveImageProvider(
     .find(Boolean)
     ?.toLowerCase() as ImageProviderMode | undefined;
 
-  if (fromRequest && fromRequest !== "auto") {
-    return fromRequest;
+  let provider = normalizeImageProvider(fromRequest);
+
+  if (provider === "auto") {
+    provider = normalizeImageProvider(fromEnv);
   }
 
-  if (fromEnv && fromEnv !== "auto") {
-    return fromEnv;
+  if (provider === "gemini" && !canUseGeminiImageProvider()) {
+    return isNanoBananaExpertConfigured() ? "nanobanana_expert" : "auto";
+  }
+
+  if (provider !== "auto") {
+    return provider;
+  }
+
+  if (isNanoBananaExpertConfigured()) {
+    return "nanobanana_expert";
+  }
+
+  if (canUseGeminiImageProvider()) {
+    return "gemini";
   }
 
   return "auto";

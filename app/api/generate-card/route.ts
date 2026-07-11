@@ -4,7 +4,14 @@ import { assessGenerationContentPolicy, scanTextForProhibitedContent } from "@/l
 import { generateProductCard } from "@/lib/ai/providers";
 import { resolveProductContextFromImage } from "@/lib/ai/productVision";
 import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
-import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
+import {
+  normalizeCardStyle,
+  normalizeMarketplaceLabel,
+  normalizeMarketplacePlatform,
+  normalizeProductCardInput,
+  normalizeTextMode,
+  validateProductCardInput
+} from "@/lib/marketplace/cardFormValidation";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
 import {
   createImageGenerationTicket,
@@ -41,13 +48,11 @@ export async function POST(request: Request) {
       return NextResponse.json(verificationError, { status: 403 });
     }
 
-    const body = (await request.json()) as ProductCardInput;
+    const body = normalizeProductCardInput((await request.json()) as ProductCardInput);
+    const validationError = validateProductCardInput(body);
 
-    if (!body.productDescription?.trim()) {
-      return NextResponse.json(
-        { error: "Добавьте описание товара, чтобы сгенерировать карточку." },
-        { status: 400 }
-      );
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
     imageGenerationTicket = await createImageGenerationTicket(userId);
@@ -64,7 +69,7 @@ export async function POST(request: Request) {
       return createContentPolicyBlockedResponse(initialPolicy);
     }
 
-    const marketplace = body.marketplace || "Wildberries";
+    const marketplace = normalizeMarketplaceLabel(body.marketplace);
     const productContext = await resolveProductContextFromImage({
       productDescription: body.productDescription.trim(),
       category: body.category?.trim(),
@@ -89,14 +94,14 @@ export async function POST(request: Request) {
       return createContentPolicyBlockedResponse(resolvedPolicy);
     }
 
-    const platform = body.platform ?? marketplaceLabelToPlatform(marketplace);
-    const textMode = body.textMode ?? "marketplace_safe";
+    const platform = body.platform ?? normalizeMarketplacePlatform(marketplace);
+    const textMode = normalizeTextMode(body.textMode);
 
     const cardInput: ProductCardInput = {
       productDescription: productContext.productDescription,
       category,
       marketplace,
-      style: body.style || "Минималистичный",
+      style: normalizeCardStyle(body.style),
       includeSeo: Boolean(body.includeSeo),
       focusBenefits: Boolean(body.focusBenefits),
       includeInfographicText: Boolean(body.includeInfographicText),

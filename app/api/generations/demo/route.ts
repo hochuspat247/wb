@@ -4,6 +4,19 @@ import { assessGenerationContentPolicy, scanTextForProhibitedContent } from "@/l
 import { generateProductImageWithProvider, resolveImageProvider } from "@/lib/ai/imageProviders";
 import { resolveProductContextFromImage } from "@/lib/ai/productVision";
 import { generateProductCard } from "@/lib/ai/providers";
+import {
+  normalizeCardStyle,
+  normalizeDesignPreset,
+  normalizeMarketplaceLabel,
+  normalizeMarketplacePlatform,
+  normalizeProductCardInput,
+  normalizeTextMode,
+  NANO_BANANA_ASPECT_RATIO,
+  NANO_BANANA_IMAGE_MODEL,
+  NANO_BANANA_OUTPUT_FORMAT,
+  NANO_BANANA_RESOLUTION,
+  validateProductCardInput
+} from "@/lib/marketplace/cardFormValidation";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { generateMarketplaceTextFallback } from "@/lib/marketplace/textFallback";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
@@ -62,10 +75,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: inputError }, { status: 400 });
     }
 
-    const requestedCardInput = body.cardInput;
+    const requestedCardInput = body.cardInput ? normalizeProductCardInput(body.cardInput) : undefined;
 
     if (!requestedCardInput) {
       return NextResponse.json({ error: "Добавьте описание товара, чтобы создать демо-карточку." }, { status: 400 });
+    }
+
+    const cardValidationError = validateProductCardInput(requestedCardInput);
+    if (cardValidationError) {
+      return NextResponse.json({ error: cardValidationError }, { status: 400 });
     }
 
     const initialPolicy = scanTextForProhibitedContent(
@@ -121,7 +139,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const marketplace = requestedCardInput.marketplace || "Wildberries";
+    const marketplace = normalizeMarketplaceLabel(requestedCardInput.marketplace);
     const productContext = await resolveProductContextFromImage({
       productDescription: requestedCardInput.productDescription.trim(),
       category: requestedCardInput.category?.trim(),
@@ -145,14 +163,14 @@ export async function POST(request: Request) {
       return createContentPolicyBlockedResponse(resolvedPolicy);
     }
 
-    const platform = requestedCardInput.platform ?? marketplaceLabelToPlatform(marketplace);
-    const textMode = requestedCardInput.textMode ?? "marketplace_safe";
+    const platform = requestedCardInput.platform ?? normalizeMarketplacePlatform(marketplace);
+    const textMode = normalizeTextMode(requestedCardInput.textMode);
     const cardInput: ProductCardInput = {
       ...requestedCardInput,
       productDescription: productContext.productDescription,
       category,
       marketplace,
-      style: requestedCardInput.style || "Премиальный",
+      style: normalizeCardStyle(requestedCardInput.style),
       includeSeo: true,
       focusBenefits: true,
       includeInfographicText: true,
@@ -169,7 +187,7 @@ export async function POST(request: Request) {
       headline: body.headline,
       price: body.price,
       ctaText: body.ctaText,
-      designPreset: body.designPreset,
+      designPreset: normalizeDesignPreset(body.designPreset),
       imageMode: body.imageMode
     });
     const generatedImage = await generateDemoImage(card, body);
@@ -312,11 +330,11 @@ async function generateDemoImage(card: ProductCardResult, body: DemoGenerationRe
     price: body.price || card.price,
     ctaText: body.ctaText || card.ctaText,
     headline: body.headline || card.headline,
-    designPreset: body.designPreset || card.designPreset,
-    model: "nb2",
-    aspectRatio: "4:5",
-    resolution: "1k",
-    outputFormat: "png"
+    designPreset: normalizeDesignPreset(body.designPreset || card.designPreset),
+    model: NANO_BANANA_IMAGE_MODEL,
+    aspectRatio: NANO_BANANA_ASPECT_RATIO,
+    resolution: NANO_BANANA_RESOLUTION,
+    outputFormat: NANO_BANANA_OUTPUT_FORMAT
   };
   const provider = resolveImageProvider(undefined, ["DEMO_IMAGE_PROVIDER", "IMAGE_PROVIDER"]);
   const demoImageMode = resolveDemoImageMode();

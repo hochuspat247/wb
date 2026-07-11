@@ -2,9 +2,10 @@ import { DEMO_GENERATION_ERROR, parseJsonResponse } from "@/lib/api/parseJsonRes
 import { getImageSettings } from "@/lib/imageSettings";
 import { getOrCreateGuestId } from "@/lib/guest";
 import { dataUrlToBase64 } from "@/lib/image";
+import { normalizeDesignPreset, normalizeProductCardInput, resolveNanoBananaImageProvider } from "@/lib/marketplace/cardFormValidation";
 import type { AntiBotPayload } from "@/lib/server/botProtection";
 import type { ProductCardInput } from "@/types/product-card";
-import type { ImageDesignPreset, ImageGenerationMode } from "@/types/product-card";
+import type { ImageDesignPreset } from "@/types/product-card";
 
 export const HERO_DEMO_LOADING_STATUSES = [
   "Загружаем фото",
@@ -24,7 +25,6 @@ export const HERO_DEMO_PROGRESS_DURATION_MS = 280_000;
 type SubmitHeroDemoInput = {
   imageUrl: string;
   payload: ProductCardInput;
-  imageMode?: ImageGenerationMode;
   designPreset?: ImageDesignPreset;
   antiBot?: AntiBotPayload;
 };
@@ -32,7 +32,6 @@ type SubmitHeroDemoInput = {
 export async function submitHeroDemo({
   imageUrl,
   payload,
-  imageMode = "pro",
   designPreset = "premium-marketplace",
   antiBot
 }: SubmitHeroDemoInput) {
@@ -43,15 +42,11 @@ export async function submitHeroDemo({
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       guestId,
-      cardInput: {
-        ...payload,
-        cardsCount: 1
-      },
+      cardInput: normalizeProductCardInput(payload),
       imageBase64: image.base64,
       imageMimeType: image.mimeType,
-      imageProvider: getImageSettings().imageProvider,
-      imageMode,
-      designPreset,
+      imageProvider: resolveNanoBananaImageProvider(getImageSettings().imageProvider),
+      designPreset: normalizeDesignPreset(designPreset),
       ...antiBot
     })
   });

@@ -6,7 +6,7 @@ export type ImageSettings = {
 };
 
 const defaults: ImageSettings = {
-  imageProvider: "auto",
+  imageProvider: "nanobanana_expert",
   imageMode: "pro"
 };
 
@@ -24,9 +24,11 @@ export function getImageSettings(): ImageSettings {
     const imageProvider =
       parsed.imageProvider === "html" || !parsed.imageProvider
         ? defaults.imageProvider
-        : parsed.imageProvider === "nanobanana_expert" || parsed.imageProvider === "gemini" || parsed.imageProvider === "auto"
+        : parsed.imageProvider === "nanobanana_expert" || parsed.imageProvider === "auto"
           ? parsed.imageProvider
-          : defaults.imageProvider;
+          : parsed.imageProvider === "gemini"
+            ? "nanobanana_expert"
+            : defaults.imageProvider;
     const imageMode =
       parsed.imageMode === "html" || !parsed.imageMode
         ? defaults.imageMode

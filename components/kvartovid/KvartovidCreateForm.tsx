@@ -1,12 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Copy, Download, ImagePlus, Loader2, Video, Wand2, X, FolderOpen } from "lucide-react";
+import {
+  Building2,
+  Camera,
+  Copy,
+  Download,
+  ImagePlus,
+  LayoutGrid,
+  Loader2,
+  MapPin,
+  Sparkles,
+  Video,
+  Wand2,
+  X,
+  FolderOpen
+} from "lucide-react";
 import { KvartovidPlatformTextsSection } from "@/components/kvartovid/KvartovidPlatformTextsSection";
 import { KvartovidFloorPlanSection } from "@/components/kvartovid/KvartovidFloorPlanSection";
+import { KvartovidListingPhotosGallery } from "@/components/kvartovid/KvartovidListingPhotosGallery";
 import { KvartovidQuotaNotice } from "@/components/kvartovid/KvartovidQuotaNotice";
 import { KvartovidPaymentPanel } from "@/components/kvartovid/KvartovidPaymentPanel";
 import { Button } from "@/components/ui/Button";
@@ -19,6 +34,8 @@ import {
   fetchVideoOrderStatus,
   KvartovidApiError
 } from "@/lib/api/kvartovid";
+import { KVARTOVID_GENERATION_ERROR, toUserFacingError } from "@/lib/api/parseJsonResponse";
+import { dataUrlToBase64, resizeImageToDataUrl, validateImageFile } from "@/lib/image";
 import { BRAND } from "@/lib/branding";
 import { DEAL_TYPE_LABELS, PROPERTY_TYPE_LABELS } from "@/lib/kvartovid/constants";
 import { formatPlatformTextsForExport } from "@/lib/kvartovid/platformTexts";
@@ -26,6 +43,102 @@ import type { KvartovidDealType, KvartovidListingResult, KvartovidPropertyType }
 
 const MIN_PHOTOS = 3;
 const MAX_PHOTOS = 10;
+
+function FormSection({
+  step,
+  icon: Icon,
+  title,
+  description,
+  children
+}: {
+  step: number;
+  icon: typeof Building2;
+  title: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card backdrop-blur-sm">
+      <div className="flex items-start gap-4">
+        <div className="flex shrink-0 flex-col items-center gap-1">
+          <span className="grid h-9 w-9 place-items-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-sm font-bold text-amber-400">
+            {step}
+          </span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4 text-amber-400" />
+            <h2 className="text-lg font-semibold text-ink">{title}</h2>
+          </div>
+          {description ? <p className="mt-1 text-sm text-muted">{description}</p> : null}
+          <div className="mt-4">{children}</div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function OptionPill({
+  active,
+  onClick,
+  children
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
+        active
+          ? "border-amber-500/50 bg-amber-500/15 text-amber-100"
+          : "border-white/10 text-muted hover:border-amber-500/25 hover:text-ink"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function AiOptionCard({
+  checked,
+  onChange,
+  icon: Icon,
+  title,
+  description
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  icon: typeof Camera;
+  title: string;
+  description: string;
+}) {
+  return (
+    <label
+      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
+        checked
+          ? "border-amber-500/40 bg-amber-500/10"
+          : "border-white/10 bg-white/[0.03] hover:border-amber-500/20"
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 h-4 w-4 shrink-0 rounded accent-amber-500"
+      />
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+          <Icon className="h-4 w-4 text-amber-400" />
+          {title}
+        </div>
+        <p className="mt-1 text-xs leading-relaxed text-muted">{description}</p>
+      </div>
+    </label>
+  );
+}
 
 type PhotoPreview = {
   id: string;
@@ -36,21 +149,20 @@ type PhotoPreview = {
 };
 
 async function fileToPhoto(file: File): Promise<PhotoPreview> {
-  const buffer = await file.arrayBuffer();
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  const validationError = validateImageFile(file);
+  if (validationError) {
+    throw new Error(validationError);
   }
-  const base64 = btoa(binary);
-  const previewUrl = URL.createObjectURL(file);
+
+  const dataUrl = await resizeImageToDataUrl(file, 1600);
+  const { base64, mimeType } = dataUrlToBase64(dataUrl);
 
   return {
     id: crypto.randomUUID(),
     name: file.name,
-    previewUrl,
+    previewUrl: dataUrl,
     base64,
-    mimeType: file.type
+    mimeType
   };
 }
 
@@ -121,17 +233,20 @@ export function KvartovidCreateForm() {
 
     const remaining = MAX_PHOTOS - photos.length;
     const nextFiles = files.slice(0, remaining);
-    const nextPhotos = await Promise.all(nextFiles.map(fileToPhoto));
-    setPhotos((prev) => [...prev, ...nextPhotos].slice(0, MAX_PHOTOS));
-    e.target.value = "";
+    setError("");
+
+    try {
+      const nextPhotos = await Promise.all(nextFiles.map(fileToPhoto));
+      setPhotos((prev) => [...prev, ...nextPhotos].slice(0, MAX_PHOTOS));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Не удалось загрузить фото.");
+    } finally {
+      e.target.value = "";
+    }
   }
 
   function removePhoto(id: string) {
-    setPhotos((prev) => {
-      const photo = prev.find((p) => p.id === id);
-      if (photo) URL.revokeObjectURL(photo.previewUrl);
-      return prev.filter((p) => p.id !== id);
-    });
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
   }
 
   function toggleHighlight(item: string) {
@@ -207,7 +322,7 @@ export function KvartovidCreateForm() {
         router.push(`/register?callbackUrl=${encodeURIComponent("/kvartovid/create")}`);
         return;
       }
-      setError(e.message || "Не удалось сгенерировать объявление.");
+      setError(toUserFacingError(e, KVARTOVID_GENERATION_ERROR));
     } finally {
       setLoading(false);
     }
@@ -332,64 +447,82 @@ export function KvartovidCreateForm() {
       ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card backdrop-blur-sm">
-          <h2 className="text-lg font-semibold text-ink">Фото квартиры</h2>
-          <p className="mt-1 text-sm text-muted">Загрузите от {MIN_PHOTOS} до {MAX_PHOTOS} фото: комнаты, кухня, санузел, двор.</p>
+        <FormSection
+          step={1}
+          icon={Camera}
+          title="Фото квартиры"
+          description={`Загрузите от ${MIN_PHOTOS} до ${MAX_PHOTOS} фото: комнаты, кухня, санузел, двор.`}
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                photos.length >= MIN_PHOTOS
+                  ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                  : "border border-white/10 bg-white/5 text-muted"
+              }`}
+            >
+              {photos.length} / {MAX_PHOTOS} фото
+            </span>
+            {photos.length < MIN_PHOTOS ? (
+              <span className="text-xs text-amber-300">Ещё {MIN_PHOTOS - photos.length}</span>
+            ) : null}
+          </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
-            {photos.map((photo) => (
-              <div key={photo.id} className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {photos.map((photo, index) => (
+              <div
+                key={photo.id}
+                className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-white/10 bg-[#0a1210]/50"
+              >
                 <img src={photo.previewUrl} alt={photo.name} className="h-full w-full object-cover" />
+                <span className="absolute bottom-1.5 left-1.5 rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                  {index + 1}
+                </span>
                 <button
                   type="button"
                   onClick={() => removePhoto(photo.id)}
-                  className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/60 text-white opacity-0 transition group-hover:opacity-100"
+                  className="absolute right-1.5 top-1.5 grid h-7 w-7 place-items-center rounded-full bg-black/70 text-white opacity-100 transition hover:bg-red-500/90 sm:opacity-0 sm:group-hover:opacity-100"
+                  aria-label="Удалить фото"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
             ))}
             {photos.length < MAX_PHOTOS ? (
-              <label className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/20 bg-white/5 text-muted transition hover:border-amber-500/40 hover:text-amber-400">
-                <ImagePlus className="h-6 w-6" />
-                <span className="text-xs">Добавить</span>
+              <label className="flex aspect-[4/3] cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-amber-500/25 bg-amber-500/[0.04] text-muted transition hover:border-amber-500/45 hover:bg-amber-500/10 hover:text-amber-300">
+                <ImagePlus className="h-6 w-6 text-amber-400" />
+                <span className="text-xs font-medium">Добавить фото</span>
                 <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="hidden" onChange={handlePhotosChange} />
               </label>
             ) : null}
           </div>
-        </div>
+        </FormSection>
 
-        <div className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card backdrop-blur-sm">
-          <h2 className="text-lg font-semibold text-ink">Параметры объекта</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <FormSection step={2} icon={Building2} title="Параметры объекта">
+          <div className="space-y-5">
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-ink">Тип сделки</label>
-              <select
-                value={dealType}
-                onChange={(e) => setDealType(e.target.value as KvartovidDealType)}
-                className="w-full rounded-xl border border-white/10 bg-[#0a1210] px-3 py-2.5 text-sm text-ink"
-              >
-                {Object.entries(DEAL_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
+              <label className="mb-2 block text-sm font-medium text-ink">Тип сделки</label>
+              <div className="flex flex-wrap gap-2">
+                {(Object.entries(DEAL_TYPE_LABELS) as [KvartovidDealType, string][]).map(([value, label]) => (
+                  <OptionPill key={value} active={dealType === value} onClick={() => setDealType(value)}>
                     {label}
-                  </option>
+                  </OptionPill>
                 ))}
-              </select>
+              </div>
             </div>
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-ink">Тип жилья</label>
-              <select
-                value={propertyType}
-                onChange={(e) => setPropertyType(e.target.value as KvartovidPropertyType)}
-                className="w-full rounded-xl border border-white/10 bg-[#0a1210] px-3 py-2.5 text-sm text-ink"
-              >
-                {Object.entries(PROPERTY_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
+              <label className="mb-2 block text-sm font-medium text-ink">Тип жилья</label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {(Object.entries(PROPERTY_TYPE_LABELS) as [KvartovidPropertyType, string][]).map(([value, label]) => (
+                  <OptionPill key={value} active={propertyType === value} onClick={() => setPropertyType(value)}>
                     {label}
-                  </option>
+                  </OptionPill>
                 ))}
-              </select>
+              </div>
             </div>
+          </div>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-ink">Комнат</label>
               <Input value={rooms} onChange={(e) => setRooms(e.target.value)} placeholder="2" />
@@ -427,7 +560,10 @@ export function KvartovidCreateForm() {
               <Input value={renovation} onChange={(e) => setRenovation(e.target.value)} placeholder="Свежий ремонт 2024" />
             </div>
             <div className="sm:col-span-2">
-              <label className="mb-1.5 block text-sm font-medium text-ink">Дополнительно</label>
+              <label className="mb-1.5 flex items-center gap-2 text-sm font-medium text-ink">
+                <MapPin className="h-3.5 w-3.5 text-amber-400" />
+                Дополнительно
+              </label>
               <Textarea
                 value={extraFeatures}
                 onChange={(e) => setExtraFeatures(e.target.value)}
@@ -437,33 +573,38 @@ export function KvartovidCreateForm() {
             </div>
           </div>
 
-          <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-muted">
-            <input
-              type="checkbox"
-              checked={includeCover}
-              onChange={(e) => setIncludeCover(e.target.checked)}
-              className="h-4 w-4 rounded accent-amber-500"
-            />
-            Сгенерировать AI-обложку (NanoBanana Expert)
-          </label>
-          <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-muted">
-            <input
-              type="checkbox"
-              checked={includeFloorPlan}
-              onChange={(e) => setIncludeFloorPlan(e.target.checked)}
-              className="h-4 w-4 rounded accent-amber-500"
-            />
-            Сгенерировать схему планировки (SVG / PNG)
-          </label>
-          <p className="mt-2 text-xs text-muted">
-            Обложка — через NanoBanana Expert. Планировка — схематический чертёж по параметрам квартиры, не план БТИ.
-          </p>
-        </div>
+          <div className="mt-6 space-y-3">
+            <p className="text-sm font-medium text-ink">Дополнительные материалы</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <AiOptionCard
+                checked={includeCover}
+                onChange={setIncludeCover}
+                icon={Sparkles}
+                title="AI-обложка"
+                description="Продающая обложка для карточки объявления через NanoBanana Expert."
+              />
+              <AiOptionCard
+                checked={includeFloorPlan}
+                onChange={setIncludeFloorPlan}
+                icon={LayoutGrid}
+                title="Схема планировки"
+                description="Интерактивный чертёж по параметрам квартиры — можно подправить в конструкторе."
+              />
+            </div>
+            <p className="text-xs text-muted">
+              Планировка — схематический чертёж, не план БТИ. После генерации её можно отредактировать.
+            </p>
+          </div>
+        </FormSection>
 
         {selectedHighlights.length > 0 || result?.suggestedHighlights?.length ? (
-          <div className="rounded-card border border-white/10 bg-card/80 p-6">
-            <h2 className="text-lg font-semibold text-ink">Что подсветить (выберите правдивые пункты)</h2>
-            <div className="mt-3 flex flex-wrap gap-2">
+          <FormSection
+            step={3}
+            icon={Sparkles}
+            title="Что подсветить"
+            description="Выберите только правдивые пункты — они попадут в текст объявления."
+          >
+            <div className="flex flex-wrap gap-2">
               {(result?.suggestedHighlights ?? selectedHighlights).map((item) => {
                 const active = selectedHighlights.includes(item);
                 return (
@@ -482,11 +623,14 @@ export function KvartovidCreateForm() {
                 );
               })}
             </div>
-          </div>
+          </FormSection>
         ) : null}
 
-        {error ? <p className="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p> : null}
+        {error ? (
+          <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p>
+        ) : null}
 
+        <div className="sticky bottom-4 z-10 rounded-2xl border border-amber-500/20 bg-[#060d0b]/95 p-4 shadow-[0_16px_48px_rgba(0,0,0,0.45)] backdrop-blur-md sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:shadow-none sm:backdrop-blur-none">
         <Button
           type="submit"
           size="lg"
@@ -505,12 +649,16 @@ export function KvartovidCreateForm() {
             </>
           )}
         </Button>
+        </div>
       </form>
 
       {result ? (
-        <div className="space-y-6 rounded-card border border-amber-500/30 bg-amber-500/5 p-6">
+        <div className="space-y-6 rounded-2xl border border-amber-500/30 bg-gradient-to-b from-amber-500/8 to-transparent p-6 shadow-[0_24px_80px_rgba(0,0,0,0.35)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-bold text-ink">Готовое объявление</h2>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Результат</p>
+              <h2 className="mt-1 text-2xl font-bold text-ink">Готовое объявление</h2>
+            </div>
             <div className="flex flex-wrap items-center gap-3">
               {typeof result.qualityScore === "number" ? (
                 <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-sm font-semibold text-amber-400">
@@ -529,62 +677,60 @@ export function KvartovidCreateForm() {
             </div>
           </div>
 
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Заголовок</p>
-            <p className="mt-1 text-lg font-bold text-ink">{result.title}</p>
+          <KvartovidListingPhotosGallery
+            bestPhotoIndex={result.bestPhotoIndex}
+            coverError={result.coverImageError}
+            coverProvider={result.coverImageProvider}
+            coverSrc={coverPreviewSrc}
+            photos={photos.map((photo) => ({ previewUrl: photo.previewUrl, name: photo.name }))}
+            watermarkLocked={result.watermarkLocked}
+          />
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-xl border border-white/10 bg-[#0a1210]/50 p-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Заголовок</p>
+              <p className="mt-2 text-lg font-bold leading-snug text-ink">{result.title}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-[#0a1210]/50 p-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Преимущества</p>
+              <ul className="mt-2 space-y-1.5 text-sm text-muted">
+                {result.advantages.map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="text-amber-400">•</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
-          <div>
+          <div className="rounded-xl border border-white/10 bg-[#0a1210]/50 p-5">
             <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Универсальное описание</p>
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted">{result.description}</p>
+            <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-muted">{result.description}</p>
           </div>
 
           {result.platformTexts?.length ? (
             <KvartovidPlatformTextsSection platformTexts={result.platformTexts} />
           ) : null}
 
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Преимущества</p>
-            <ul className="mt-2 space-y-1 text-sm text-muted">
-              {result.advantages.map((item) => (
-                <li key={item}>• {item}</li>
-              ))}
-            </ul>
-          </div>
-
           {result.floorPlanSvg ? (
             <KvartovidFloorPlanSection
-              svg={result.floorPlanSvg}
-              layout={result.floorPlanLayout}
+              bestPhotoIndex={result.bestPhotoIndex}
               error={result.floorPlanError}
-              resetKey={result.generatedAt}
+              layout={result.floorPlanLayout}
               listingId={result.listingId}
+              photoPreviews={photos.map((photo) => ({ previewUrl: photo.previewUrl, name: photo.name }))}
+              resetKey={result.generatedAt}
+              svg={result.floorPlanSvg}
+              watermarkLocked={result.watermarkLocked}
               onChange={({ layout, svg }) =>
                 setResult((prev) => (prev ? { ...prev, floorPlanLayout: layout, floorPlanSvg: svg } : prev))
               }
             />
           ) : null}
 
-          {coverPreviewSrc ? (
-            <div>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-bold uppercase tracking-wider text-amber-400">AI-обложка</p>
-                {result.coverImageProvider ? (
-                  <span className="text-xs text-muted">{result.coverImageProvider}</span>
-                ) : null}
-              </div>
-              <img
-                src={coverPreviewSrc}
-                alt="Обложка объявления"
-                className="mt-3 max-h-80 w-full rounded-xl border border-white/10 object-cover"
-              />
-            </div>
-          ) : result.coverImageError ? (
-            <p className="rounded-xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{result.coverImageError}</p>
-          ) : null}
-
           {result.qualityTips?.length ? (
-            <div>
+            <div className="rounded-xl border border-white/10 bg-[#0a1210]/50 p-5">
               <p className="text-xs font-bold uppercase tracking-wider text-amber-400">Советы до публикации</p>
               <ul className="mt-2 space-y-1 text-sm text-muted">
                 {result.qualityTips.map((tip) => (
@@ -606,7 +752,7 @@ export function KvartovidCreateForm() {
             {coverPreviewSrc ? (
               <Button type="button" variant="secondary" onClick={downloadCover}>
                 <Download className="h-4 w-4" />
-                Скачать обложку
+                {result.watermarkLocked ? "Скачать обложку (DEMO)" : "Скачать обложку"}
               </Button>
             ) : null}
           </div>

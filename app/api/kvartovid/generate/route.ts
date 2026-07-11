@@ -6,6 +6,7 @@ import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyRe
 import { generateKvartovidListing as runGeneration } from "@/lib/kvartovid/generate";
 import { consumeKvartovidGeneration, getKvartovidGenerationQuota } from "@/lib/server/kvartovidQuota";
 import { buildKvartovidSavedListing, saveKvartovidListing } from "@/lib/server/kvartovidListings";
+import { applyDemoWatermarkToCoverBase64 } from "@/lib/server/kvartovidWatermark";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import type { KvartovidListingInput } from "@/types/kvartovid";
 
@@ -97,10 +98,24 @@ export async function POST(request: Request) {
       return createContentPolicyBlockedResponse(policy);
     }
 
+    const isFreeListing = quota.freeListingsRemaining > 0;
+
     const result = await runGeneration(body, {
       includeCover: body.includeCover !== false,
       includeFloorPlan: body.includeFloorPlan !== false
     });
+
+    if (isFreeListing) {
+      result.watermarkLocked = true;
+
+      if (result.coverImageBase64) {
+        const watermarked = await applyDemoWatermarkToCoverBase64(result.coverImageBase64);
+        result.coverImageBase64 = watermarked.base64;
+        result.coverImageMimeType = watermarked.mimeType;
+      }
+    } else {
+      result.watermarkLocked = false;
+    }
 
     if (body.includeCover !== false && !result.coverImageBase64 && !result.coverImageUrl && !result.coverImageError) {
       result.coverImageError = IMAGE_GENERATION_RETRY_MESSAGE;

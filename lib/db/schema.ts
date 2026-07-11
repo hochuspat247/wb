@@ -2,6 +2,7 @@ import type { AdapterAccountType } from "@auth/core/adapters";
 import { integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { ProductCardResult } from "@/types/product-card";
 import type { StoryProject } from "@/types/storystudio";
+import type { AdminProductId } from "@/lib/admin/products";
 import type { KvartovidSavedListing } from "@/types/kvartovid";
 import type {
   VideoAspectRatio,
@@ -231,6 +232,23 @@ export const kvartovidListings = sqliteTable("kvartovid_listing", {
   payload: text("payload", { mode: "json" }).$type<KvartovidSavedListing>().notNull(),
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updatedAt", { mode: "timestamp_ms" }).notNull()
+});
+
+export const promoCodes = sqliteTable("promo_code", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  code: text("code").notNull().unique(),
+  assignedEmail: text("assignedEmail").notNull(),
+  assignedUserId: text("assignedUserId").references(() => users.id, { onDelete: "set null" }),
+  product: text("product").$type<AdminProductId>().notNull(),
+  credits: integer("credits").notNull().default(1),
+  note: text("note"),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  redeemedAt: integer("redeemedAt", { mode: "timestamp_ms" }),
+  redeemedByUserId: text("redeemedByUserId").references(() => users.id, { onDelete: "set null" })
 });
 
 export const kvartovidVideoSources = sqliteTable("kvartovid_video_source", {

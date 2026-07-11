@@ -297,4 +297,22 @@ export function migrate(sqlite: Database.Database) {
     );
     CREATE INDEX IF NOT EXISTS kvartovid_video_source_user_idx ON kvartovid_video_source(userId);
   `);
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS promo_code (
+      id TEXT PRIMARY KEY NOT NULL,
+      code TEXT NOT NULL UNIQUE,
+      assignedEmail TEXT NOT NULL,
+      assignedUserId TEXT REFERENCES user(id) ON DELETE SET NULL,
+      product TEXT NOT NULL,
+      credits INTEGER NOT NULL DEFAULT 1,
+      note TEXT,
+      createdAt INTEGER NOT NULL,
+      redeemedAt INTEGER,
+      redeemedByUserId TEXT REFERENCES user(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS promo_code_email_idx ON promo_code(assignedEmail);
+    CREATE INDEX IF NOT EXISTS promo_code_product_idx ON promo_code(product);
+    CREATE INDEX IF NOT EXISTS promo_code_redeemed_idx ON promo_code(redeemedAt);
+  `);
 }

@@ -1,7 +1,8 @@
-import { and, count, desc, eq, gte, inArray, isNotNull, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   analyticsEvents,
+  accounts,
   demoGenerations,
   kvartovidListings,
   productCards,
@@ -11,6 +12,7 @@ import {
   visitorPresence
 } from "@/lib/db/schema";
 import type { AdminProductId } from "@/lib/admin/products";
+import { formatUserAuthMethods } from "@/lib/admin/auth-methods";
 import { buildSessionDurationStats } from "@/lib/server/session-duration";
 import { getFunnel7d, type Funnel7dStep } from "@/lib/server/funnel7d";
 import { getStoryStudioAdminData } from "@/lib/server/storyAdminAnalytics";
@@ -111,42 +113,68 @@ type RecentUserExtras = {
   lastProjectActivityAt?: Date;
 };
 
-function mapRecentUser(user: RecentUserDbRow, extras: RecentUserExtras = {}) {
+function mergeLastProjectActivity(activityByUser: Map<string, RecentUserExtras>, userId: string, lastAt: Date) {
+  const existing = activityByUser.get(userId);
+
+  if (existing) {
+    if (!existing.lastProjectActivityAt || toTimestampMs(lastAt) > toTimestampMs(existing.lastProjectActivityAt)) {
+      existing.lastProjectActivityAt = lastAt;
+    }
+    return;
+  }
+
+  activityByUser.set(userId, { lastProjectActivityAt: lastAt });
+}
+
+async function mergeVisitActivityForProduct(product: AdminProductId, activityByUser: Map<string, RecentUserExtras>) {
+  const visitActivityRows = await db
+    .select({
+      userId: analyticsEvents.userId,
+      lastVisitAt: sql<Date>`max(${analyticsEvents.createdAt})`
+    })
+    .from(analyticsEvents)
+    .where(and(productPathFilter(analyticsEvents.path, product), isNotNull(analyticsEvents.userId)))
+    .groupBy(analyticsEvents.userId);
+
+  for (const row of visitActivityRows) {
+    if (!row.userId) {
+      continue;
+    }
+
+    mergeLastProjectActivity(activityByUser, row.userId, row.lastVisitAt);
+  }
+
+  const presenceRows = await db
+    .select({
+      userId: visitorPresence.userId,
+      lastVisitAt: sql<Date>`max(${visitorPresence.lastSeenAt})`
+    })
+    .from(visitorPresence)
+    .where(and(productPresenceFilter(visitorPresence.path, product), isNotNull(visitorPresence.userId)))
+    .groupBy(visitorPresence.userId);
+
+  for (const row of presenceRows) {
+    if (!row.userId) {
+      continue;
+    }
+
+    mergeLastProjectActivity(activityByUser, row.userId, row.lastVisitAt);
+  }
+}
+
+function mapRecentUser(user: RecentUserDbRow, extras: RecentUserExtras = {}, authMethods = "—") {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     emailVerified: Boolean(user.emailVerified),
     hasPasswordAccount: Boolean(user.passwordHash),
+    authMethods,
     generationsUsed: user.generationsUsed,
     generationCredits: user.generationCredits,
     createdAt: user.createdAt,
     ...extras
   };
-}
-
-async function getProductActiveUserCount(product: AdminProductId) {
-  if (product === "storystudio") {
-    const [row] = await db
-      .select({ value: sql<number>`count(distinct ${storyProjects.userId})` })
-      .from(storyProjects);
-    return row?.value ?? 0;
-  }
-
-  if (product === "kvartovid") {
-    const [row] = await db
-      .select({ value: sql<number>`count(distinct ${kvartovidListings.userId})` })
-      .from(kvartovidListings);
-    return row?.value ?? 0;
-  }
-
-  const cardUsers = await db.selectDistinct({ userId: productCards.userId }).from(productCards);
-  const demoUsers = await db
-    .selectDistinct({ userId: demoGenerations.userId })
-    .from(demoGenerations)
-    .where(isNotNull(demoGenerations.userId));
-
-  return new Set([...cardUsers.map((row) => row.userId), ...demoUsers.map((row) => row.userId!)]).size;
 }
 
 async function getRecentUsersByProduct(product: AdminProductId) {
@@ -161,6 +189,17 @@ async function getRecentUsersByProduct(product: AdminProductId) {
     createdAt: true
   } as const;
 
+  const userRows = await db.query.users.findMany({
+    columns: userColumns,
+    orderBy: [desc(users.createdAt)]
+  });
+
+  if (userRows.length === 0) {
+    return [];
+  }
+
+  const activityByUser = new Map<string, RecentUserExtras>();
+
   if (product === "storystudio") {
     const activityRows = await db
       .select({
@@ -169,39 +208,15 @@ async function getRecentUsersByProduct(product: AdminProductId) {
         lastProjectActivityAt: sql<Date>`max(${storyProjects.updatedAt})`
       })
       .from(storyProjects)
-      .groupBy(storyProjects.userId)
-      .orderBy(desc(sql`max(${storyProjects.updatedAt})`))
-      .limit(10);
+      .groupBy(storyProjects.userId);
 
-    if (activityRows.length === 0) {
-      return [];
+    for (const row of activityRows) {
+      activityByUser.set(row.userId, {
+        projectStoriesCount: row.projectStoriesCount,
+        lastProjectActivityAt: row.lastProjectActivityAt
+      });
     }
-
-    const userRows = await db.query.users.findMany({
-      where: inArray(
-        users.id,
-        activityRows.map((row) => row.userId)
-      ),
-      columns: userColumns
-    });
-    const userMap = new Map(userRows.map((user) => [user.id, user]));
-
-    return activityRows
-      .map((activity) => {
-        const user = userMap.get(activity.userId);
-        if (!user) {
-          return null;
-        }
-
-        return mapRecentUser(user, {
-          projectStoriesCount: activity.projectStoriesCount,
-          lastProjectActivityAt: activity.lastProjectActivityAt
-        });
-      })
-      .filter((user): user is NonNullable<typeof user> => user != null);
-  }
-
-  if (product === "kvartovid") {
+  } else if (product === "kvartovid") {
     const listingActivityRows = await db
       .select({
         userId: kvartovidListings.userId,
@@ -211,163 +226,247 @@ async function getRecentUsersByProduct(product: AdminProductId) {
       .from(kvartovidListings)
       .groupBy(kvartovidListings.userId);
 
-    const visitActivityRows = await db
-      .select({
-        userId: analyticsEvents.userId,
-        lastVisitAt: sql<Date>`max(${analyticsEvents.createdAt})`
-      })
-      .from(analyticsEvents)
-      .where(and(productPathFilter(analyticsEvents.path, "kvartovid"), isNotNull(analyticsEvents.userId)))
-      .groupBy(analyticsEvents.userId);
-
-    const activityByUser = new Map<
-      string,
-      {
-        projectListingsCount: number;
-        lastProjectActivityAt: Date;
-      }
-    >();
-
     for (const row of listingActivityRows) {
       activityByUser.set(row.userId, {
         projectListingsCount: row.projectListingsCount,
         lastProjectActivityAt: row.lastProjectActivityAt
       });
     }
+  } else {
+    const cardActivityRows = await db
+      .select({
+        userId: productCards.userId,
+        projectCardsCount: count(),
+        lastAt: sql<Date>`max(${productCards.createdAt})`
+      })
+      .from(productCards)
+      .groupBy(productCards.userId);
 
-    for (const row of visitActivityRows) {
-      const userId = row.userId!;
-      const existing = activityByUser.get(userId);
+    const demoActivityRows = await db
+      .select({
+        userId: demoGenerations.userId,
+        projectDemosCount: count(),
+        lastAt: sql<Date>`max(${demoGenerations.createdAt})`
+      })
+      .from(demoGenerations)
+      .where(isNotNull(demoGenerations.userId))
+      .groupBy(demoGenerations.userId);
 
+    for (const row of cardActivityRows) {
+      activityByUser.set(row.userId, {
+        projectCardsCount: row.projectCardsCount,
+        projectDemosCount: 0,
+        lastProjectActivityAt: row.lastAt
+      });
+    }
+
+    for (const row of demoActivityRows) {
+      if (!row.userId) {
+        continue;
+      }
+
+      const existing = activityByUser.get(row.userId);
       if (existing) {
-        if (row.lastVisitAt > existing.lastProjectActivityAt) {
-          existing.lastProjectActivityAt = row.lastVisitAt;
+        existing.projectDemosCount = row.projectDemosCount;
+        if (toTimestampMs(row.lastAt) > toTimestampMs(existing.lastProjectActivityAt ?? new Date(0))) {
+          existing.lastProjectActivityAt = row.lastAt;
         }
         continue;
       }
 
-      activityByUser.set(userId, {
-        projectListingsCount: 0,
-        lastProjectActivityAt: row.lastVisitAt
+      activityByUser.set(row.userId, {
+        projectCardsCount: 0,
+        projectDemosCount: row.projectDemosCount,
+        lastProjectActivityAt: row.lastAt
       });
     }
-
-    const activityRows = [...activityByUser.entries()]
-      .map(([userId, activity]) => ({ userId, ...activity }))
-      .sort((left, right) => right.lastProjectActivityAt.getTime() - left.lastProjectActivityAt.getTime())
-      .slice(0, 10);
-
-    if (activityRows.length === 0) {
-      return [];
-    }
-
-    const userRows = await db.query.users.findMany({
-      where: inArray(
-        users.id,
-        activityRows.map((row) => row.userId)
-      ),
-      columns: userColumns
-    });
-    const userMap = new Map(userRows.map((user) => [user.id, user]));
-
-    return activityRows
-      .map((activity) => {
-        const user = userMap.get(activity.userId);
-        if (!user) {
-          return null;
-        }
-
-        return mapRecentUser(user, {
-          projectListingsCount: activity.projectListingsCount,
-          lastProjectActivityAt: activity.lastProjectActivityAt
-        });
-      })
-      .filter((user): user is NonNullable<typeof user> => user != null);
   }
 
-  const cardActivityRows = await db
-    .select({
-      userId: productCards.userId,
-      projectCardsCount: count(),
-      lastAt: sql<Date>`max(${productCards.createdAt})`
+  await mergeVisitActivityForProduct(product, activityByUser);
+
+  const accountRows =
+    userRows.length > 0
+      ? await db.query.accounts.findMany({
+          where: inArray(
+            accounts.userId,
+            userRows.map((user) => user.id)
+          ),
+          columns: {
+            userId: true,
+            provider: true
+          }
+        })
+      : [];
+
+  const providersByUser = new Map<string, string[]>();
+
+  for (const row of accountRows) {
+    const current = providersByUser.get(row.userId) ?? [];
+    if (!current.includes(row.provider)) {
+      current.push(row.provider);
+    }
+    providersByUser.set(row.userId, current);
+  }
+
+  return userRows
+    .map((user) => {
+      const extras = activityByUser.get(user.id) ?? {};
+      return {
+        user,
+        extras,
+        sortAt: extras.lastProjectActivityAt ?? user.createdAt,
+        authMethods: formatUserAuthMethods({
+          passwordHash: user.passwordHash,
+          providers: providersByUser.get(user.id) ?? []
+        })
+      };
     })
-    .from(productCards)
-    .groupBy(productCards.userId);
+    .sort((left, right) => toTimestampMs(right.sortAt) - toTimestampMs(left.sortAt))
+    .map(({ user, extras, authMethods }) => mapRecentUser(user, extras, authMethods));
+}
 
-  const demoActivityRows = await db
+type ReturningVisitorIdentity = {
+  userId: string | null;
+  guestId: string | null;
+  visitSessions: number;
+  visitDays: number;
+  firstVisitAt: Date;
+  lastVisitAt: Date;
+};
+
+function mapReturningVisitor(
+  row: ReturningVisitorIdentity,
+  user?: {
+    id: string;
+    name: string | null;
+    email: string;
+    emailVerified: Date | null;
+    passwordHash: string | null;
+  },
+  authMethods = "—"
+) {
+  const isRegistered = Boolean(row.userId && user);
+
+  return {
+    id: row.userId ?? row.guestId ?? "",
+    kind: isRegistered ? ("registered" as const) : ("guest" as const),
+    userId: row.userId,
+    guestId: row.guestId,
+    name: user?.name ?? null,
+    email: user?.email ?? null,
+    emailVerified: Boolean(user?.emailVerified),
+    hasPasswordAccount: Boolean(user?.passwordHash),
+    authMethods,
+    visitSessions: Number(row.visitSessions ?? 0),
+    visitDays: Number(row.visitDays ?? 0),
+    firstVisitAt: row.firstVisitAt,
+    lastVisitAt: row.lastVisitAt
+  };
+}
+
+async function getReturningVisitorsByProduct(product: AdminProductId) {
+  const pathFilter = productPresenceFilter(visitorPresence.path, product);
+  const returningSessionsFilter = sql`count(distinct ${visitorPresence.sessionId}) >= 2`;
+
+  const authedActivity = await db
     .select({
-      userId: demoGenerations.userId,
-      projectDemosCount: count(),
-      lastAt: sql<Date>`max(${demoGenerations.createdAt})`
+      userId: visitorPresence.userId,
+      visitSessions: sql<number>`count(distinct ${visitorPresence.sessionId})`,
+      visitDays: sql<number>`count(distinct strftime('%Y-%m-%d', ${visitorPresence.firstSeenAt} / 1000, 'unixepoch'))`,
+      firstVisitAt: sql<Date>`min(${visitorPresence.firstSeenAt})`,
+      lastVisitAt: sql<Date>`max(${visitorPresence.lastSeenAt})`
     })
-    .from(demoGenerations)
-    .where(isNotNull(demoGenerations.userId))
-    .groupBy(demoGenerations.userId);
+    .from(visitorPresence)
+    .where(and(pathFilter, isNotNull(visitorPresence.userId)))
+    .groupBy(visitorPresence.userId)
+    .having(returningSessionsFilter);
 
-  const activityByUser = new Map<
-    string,
-    { projectCardsCount: number; projectDemosCount: number; lastProjectActivityAt: Date }
-  >();
+  const guestActivity = await db
+    .select({
+      guestId: visitorPresence.guestId,
+      visitSessions: sql<number>`count(distinct ${visitorPresence.sessionId})`,
+      visitDays: sql<number>`count(distinct strftime('%Y-%m-%d', ${visitorPresence.firstSeenAt} / 1000, 'unixepoch'))`,
+      firstVisitAt: sql<Date>`min(${visitorPresence.firstSeenAt})`,
+      lastVisitAt: sql<Date>`max(${visitorPresence.lastSeenAt})`
+    })
+    .from(visitorPresence)
+    .where(and(pathFilter, isNull(visitorPresence.userId), isNotNull(visitorPresence.guestId)))
+    .groupBy(visitorPresence.guestId)
+    .having(returningSessionsFilter);
 
-  for (const row of cardActivityRows) {
-    activityByUser.set(row.userId, {
-      projectCardsCount: row.projectCardsCount,
-      projectDemosCount: 0,
-      lastProjectActivityAt: row.lastAt
-    });
-  }
-
-  for (const row of demoActivityRows) {
-    if (!row.userId) {
-      continue;
-    }
-
-    const existing = activityByUser.get(row.userId);
-    if (existing) {
-      existing.projectDemosCount = row.projectDemosCount;
-      if (toTimestampMs(row.lastAt) > toTimestampMs(existing.lastProjectActivityAt)) {
-        existing.lastProjectActivityAt = row.lastAt;
-      }
-      continue;
-    }
-
-    activityByUser.set(row.userId, {
-      projectCardsCount: 0,
-      projectDemosCount: row.projectDemosCount,
-      lastProjectActivityAt: row.lastAt
-    });
-  }
-
-  const sortedActivity = [...activityByUser.entries()]
-    .sort(
-      (left, right) =>
-        toTimestampMs(right[1].lastProjectActivityAt) - toTimestampMs(left[1].lastProjectActivityAt)
-    )
-    .slice(0, 10);
-
-  if (sortedActivity.length === 0) {
-    return [];
-  }
-
-  const userRows = await db.query.users.findMany({
-    where: inArray(
-      users.id,
-      sortedActivity.map(([userId]) => userId)
-    ),
-    columns: userColumns
-  });
+  const userIds = authedActivity.map((row) => row.userId).filter((value): value is string => Boolean(value));
+  const userRows =
+    userIds.length > 0
+      ? await db.query.users.findMany({
+          where: inArray(users.id, userIds),
+          columns: {
+            id: true,
+            name: true,
+            email: true,
+            emailVerified: true,
+            passwordHash: true
+          }
+        })
+      : [];
   const userMap = new Map(userRows.map((user) => [user.id, user]));
 
-  return sortedActivity
-    .map(([userId, activity]) => {
-      const user = userMap.get(userId);
-      if (!user) {
-        return null;
-      }
+  const accountRows =
+    userIds.length > 0
+      ? await db.query.accounts.findMany({
+          where: inArray(accounts.userId, userIds),
+          columns: {
+            userId: true,
+            provider: true
+          }
+        })
+      : [];
 
-      return mapRecentUser(user, activity);
+  const providersByUser = new Map<string, string[]>();
+
+  for (const row of accountRows) {
+    const current = providersByUser.get(row.userId) ?? [];
+    if (!current.includes(row.provider)) {
+      current.push(row.provider);
+    }
+    providersByUser.set(row.userId, current);
+  }
+
+  const registered = authedActivity.map((row) => {
+    const user = row.userId ? userMap.get(row.userId) : undefined;
+
+    return mapReturningVisitor(
+      {
+        userId: row.userId,
+        guestId: null,
+        visitSessions: row.visitSessions,
+        visitDays: row.visitDays,
+        firstVisitAt: row.firstVisitAt,
+        lastVisitAt: row.lastVisitAt
+      },
+      user,
+      user
+        ? formatUserAuthMethods({
+            passwordHash: user.passwordHash,
+            providers: providersByUser.get(user.id) ?? []
+          })
+        : "—"
+    );
+  });
+
+  const guests = guestActivity.map((row) =>
+    mapReturningVisitor({
+      userId: null,
+      guestId: row.guestId,
+      visitSessions: row.visitSessions,
+      visitDays: row.visitDays,
+      firstVisitAt: row.firstVisitAt,
+      lastVisitAt: row.lastVisitAt
     })
-    .filter((user): user is NonNullable<typeof user> => user != null);
+  );
+
+  return [...registered, ...guests].sort(
+    (left, right) => toTimestampMs(right.lastVisitAt) - toTimestampMs(left.lastVisitAt)
+  );
 }
 
 export async function getAdminAnalytics(pathFilter = "/", product: AdminProductId = "marketcard") {
@@ -375,7 +474,11 @@ export async function getAdminAnalytics(pathFilter = "/", product: AdminProductI
   const since30d = daysAgo(30);
   const pathScope = productPathFilter(analyticsEvents.path, product);
 
-  const productUserCount = await safeAnalyticsQuery("product user count", getProductActiveUserCount(product), 0);
+  const [totalUserCount] = await safeAnalyticsQuery(
+    "total user count",
+    db.select({ value: count() }).from(users),
+    [{ value: 0 }]
+  );
   const [cardCount] = await safeAnalyticsQuery("card count", db.select({ value: count() }).from(productCards), [{ value: 0 }]);
   const [demoCount] = await safeAnalyticsQuery("demo count", db.select({ value: count() }).from(demoGenerations), [{ value: 0 }]);
   const [generationsSum] = await safeAnalyticsQuery(
@@ -515,6 +618,11 @@ export async function getAdminAnalytics(pathFilter = "/", product: AdminProductI
   );
 
   const recentUsers = await safeAnalyticsQuery("recent users", getRecentUsersByProduct(product), []);
+  const returningVisitors = await safeAnalyticsQuery(
+    "returning visitors",
+    getReturningVisitorsByProduct(product),
+    []
+  );
 
   const recentCards = await safeAnalyticsQuery(
     "recent cards",
@@ -703,7 +811,7 @@ export async function getAdminAnalytics(pathFilter = "/", product: AdminProductI
   return {
     product,
     overview: {
-      users: product === "kvartovid" ? (kvartovidData?.overview.users ?? productUserCount) : productUserCount,
+      users: totalUserCount?.value ?? 0,
       cards:
         product === "kvartovid"
           ? (kvartovidData?.overview.listings ?? 0)
@@ -731,6 +839,7 @@ export async function getAdminAnalytics(pathFilter = "/", product: AdminProductI
     generationsByDay,
     sessionDuration,
     recentUsers,
+    returningVisitors,
     recentCards: recentCards.map((row) => ({
       id: row.id,
       userId: row.userId,

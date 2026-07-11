@@ -20,8 +20,7 @@ export function KvartovidQuotaNotice({ quota, variant = "banner" }: Props) {
   if (quota.canGenerate && (quota.freeListingsRemaining ?? 0) > 0) {
     return (
       <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-100">
-        У вас доступно {quota.freeListingsRemaining} бесплатное объявление КвартоВид — оно не связано с квотой
-        MarketCard.
+        У вас доступно {quota.freeListingsRemaining} бесплатное объявление КвартоВид.
       </div>
     );
   }

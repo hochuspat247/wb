@@ -2,6 +2,7 @@ import type { CreateKvartovidVideoInput, KvartovidListingInput, KvartovidListing
 import type { KvartovidPaidPlanId } from "@/lib/kvartovid/pricing";
 import type { CreateVideoOrderResponse } from "@/types/video-generation";
 import { fetchVideoOrderStatus } from "@/lib/api/video";
+import { KVARTOVID_GENERATION_ERROR, parseJsonResponse } from "@/lib/api/parseJsonResponse";
 
 type ListingQuota = {
   canGenerate?: boolean;
@@ -35,14 +36,16 @@ export async function generateKvartovidListing(
     body: JSON.stringify(input)
   });
 
-  const data = (await response.json()) as KvartovidListingResult & {
-    error?: string;
-    code?: string;
-    quota?: ListingQuota;
-  };
+  const data = await parseJsonResponse<
+    KvartovidListingResult & {
+      error?: string;
+      code?: string;
+      quota?: ListingQuota;
+    }
+  >(response, KVARTOVID_GENERATION_ERROR);
 
   if (!response.ok) {
-    throw new KvartovidApiError(data.error || "Не удалось сгенерировать объявление.", {
+    throw new KvartovidApiError(data.error || KVARTOVID_GENERATION_ERROR, {
       code: data.code,
       quota: data.quota
     });
@@ -60,7 +63,10 @@ export async function createKvartovidVideoOrder(
     body: JSON.stringify(input)
   });
 
-  const data = (await response.json()) as CreateVideoOrderResponse & { error?: string; code?: string };
+  const data = await parseJsonResponse<CreateVideoOrderResponse & { error?: string; code?: string }>(
+    response,
+    "Не удалось создать заказ на видео."
+  );
 
   if (!response.ok) {
     const error = new Error(data.error || "Не удалось создать заказ на видео.") as Error & { code?: string };
@@ -85,7 +91,11 @@ export async function createKvartovidPayment(planId: KvartovidPaidPlanId, custom
       throw new Error("UNAUTHORIZED");
     }
 
-    const data = (await response.json().catch(() => null)) as { code?: string; error?: string } | null;
+    const data = await parseJsonResponse<{ code?: string; error?: string }>(
+      response,
+      "Не удалось создать платёж."
+    ).catch(() => null);
+
     if (data?.code === "EMAIL_REQUIRED") {
       throw new Error("EMAIL_REQUIRED");
     }
@@ -93,12 +103,15 @@ export async function createKvartovidPayment(planId: KvartovidPaidPlanId, custom
     throw new Error(data?.error || "FAILED_TO_CREATE_PAYMENT");
   }
 
-  return response.json() as Promise<{ id: string; confirmationUrl: string }>;
+  return parseJsonResponse<{ id: string; confirmationUrl: string }>(response, "Не удалось создать платёж.");
 }
 
 export async function fetchKvartovidQuota() {
   const response = await fetch("/api/kvartovid/quota", { cache: "no-store" });
-  const data = (await response.json()) as { quota?: ListingQuota; error?: string };
+  const data = await parseJsonResponse<{ quota?: ListingQuota; error?: string }>(
+    response,
+    "Не удалось загрузить квоту."
+  );
 
   if (!response.ok) {
     throw new Error(data.error || "Не удалось загрузить квоту.");
@@ -109,20 +122,11 @@ export async function fetchKvartovidQuota() {
 
 export async function fetchKvartovidListings() {
   const response = await fetch("/api/kvartovid/listings", { cache: "no-store" });
-  const data = (await response.json()) as {
+  const data = await parseJsonResponse<{
     listings?: import("@/types/kvartovid").KvartovidSavedListing[];
-    quota?: {
-      canGenerate?: boolean;
-      used?: number;
-      remaining?: number;
-      credits?: number;
-      listingsCount?: number;
-      freeListingsRemaining?: number;
-      freeListingsLimit?: number;
-      usesGlobalQuota?: boolean;
-    };
+    quota?: ListingQuota;
     error?: string;
-  };
+  }>(response, "Не удалось загрузить объявления.");
 
   if (!response.ok) {
     throw new Error(data.error || "Не удалось загрузить объявления.");
@@ -136,7 +140,7 @@ export async function fetchKvartovidListings() {
 
 export async function deleteKvartovidListing(listingId: string) {
   const response = await fetch(`/api/kvartovid/listings/${listingId}`, { method: "DELETE" });
-  const data = (await response.json()) as { error?: string };
+  const data = await parseJsonResponse<{ error?: string }>(response, "Не удалось удалить объявление.");
 
   if (!response.ok) {
     throw new Error(data.error || "Не удалось удалить объявление.");
@@ -152,10 +156,10 @@ export async function updateKvartovidListingFloorPlan(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
   });
-  const data = (await response.json()) as {
+  const data = await parseJsonResponse<{
     listing?: import("@/types/kvartovid").KvartovidSavedListing;
     error?: string;
-  };
+  }>(response, "Не удалось сохранить планировку.");
 
   if (!response.ok) {
     throw new Error(data.error || "Не удалось сохранить планировку.");
@@ -163,4 +167,3 @@ export async function updateKvartovidListingFloorPlan(
 
   return data.listing;
 }
-

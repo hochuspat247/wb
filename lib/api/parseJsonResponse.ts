@@ -1,9 +1,12 @@
 export const DEMO_GENERATION_ERROR =
   "Не получилось создать карточку. Попробуйте ещё раз или загрузите другое фото в формате JPG или PNG.";
 
+export const KVARTOVID_GENERATION_ERROR =
+  "Не удалось сгенерировать объявление. Попробуйте уменьшить фото или повторить через минуту.";
+
 function getFriendlyHttpError(status: number, fallback: string) {
   if (status === 413) {
-    return "Фото слишком большое. Попробуйте другое изображение в формате JPG или PNG до 10 МБ.";
+    return "Фото слишком большие. Загрузите меньше снимков или уменьшите их размер (JPG/PNG/WebP до 5 МБ каждое).";
   }
 
   if (status === 408 || status === 504) {

@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accounts, users } from "@/lib/db/schema";
+import { isPlaceholderOAuthEmail } from "@/lib/auth/email-utils";
 import { FREE_TRIAL_CARDS } from "@/lib/pricing";
 
 type VkUserInfoResponse = {
@@ -16,6 +17,78 @@ type VkUserInfoResponse = {
 
 function getVkAppId() {
   return process.env.AUTH_VK_ID || process.env.NEXT_PUBLIC_VK_APP_ID || "";
+}
+
+function normalizeOAuthEmail(email?: string | null) {
+  const trimmed = email?.trim();
+  if (!trimmed || !trimmed.includes("@")) {
+    return null;
+  }
+
+  return trimmed.toLowerCase();
+}
+
+function buildPlaceholderVkEmail(vkUserId: string) {
+  return `vk_${vkUserId}@oauth.marketcard.local`;
+}
+
+async function updateLinkedVkAccountAccessToken(userId: string, vkUserId: string, accessToken: string) {
+  await db
+    .update(accounts)
+    .set({ access_token: accessToken })
+    .where(and(eq(accounts.userId, userId), eq(accounts.provider, "vk"), eq(accounts.providerAccountId, vkUserId)));
+}
+
+async function syncLinkedVkUser(
+  userId: string,
+  vkUserId: string,
+  profile: {
+    name: string;
+    image?: string;
+    realEmail: string | null;
+    accessToken: string;
+  }
+) {
+  const existingUser = await db.query.users.findFirst({
+    where: eq(users.id, userId)
+  });
+
+  if (!existingUser) {
+    return null;
+  }
+
+  let nextEmail = existingUser.email;
+  const updates: {
+    email?: string;
+    emailVerified?: Date;
+    name?: string | null;
+    image?: string | null;
+  } = {
+    name: existingUser.name || profile.name,
+    image: existingUser.image || profile.image || null
+  };
+
+  if (profile.realEmail && isPlaceholderOAuthEmail(existingUser.email)) {
+    const conflictingUser = await db.query.users.findFirst({
+      where: eq(users.email, profile.realEmail)
+    });
+
+    if (!conflictingUser || conflictingUser.id === existingUser.id) {
+      nextEmail = profile.realEmail;
+      updates.email = profile.realEmail;
+      updates.emailVerified = new Date();
+    }
+  }
+
+  await db.update(users).set(updates).where(eq(users.id, existingUser.id));
+  await updateLinkedVkAccountAccessToken(existingUser.id, vkUserId, profile.accessToken);
+
+  return {
+    id: existingUser.id,
+    email: nextEmail,
+    name: updates.name || existingUser.name,
+    image: updates.image || existingUser.image
+  };
 }
 
 export async function authenticateVkAccessToken(accessToken: string) {
@@ -43,8 +116,8 @@ export async function authenticateVkAccessToken(accessToken: string) {
 
   const vkUserId = String(data.user.user_id);
   const name = [data.user.first_name, data.user.last_name].filter(Boolean).join(" ") || "Пользователь VK";
-  const realEmail = data.user.email?.trim();
-  const email = realEmail || `vk_${vkUserId}@oauth.marketcard.local`;
+  const realEmail = normalizeOAuthEmail(data.user.email);
+  const email = realEmail || buildPlaceholderVkEmail(vkUserId);
   const image = data.user.avatar;
   const emailVerified = new Date();
 
@@ -53,18 +126,12 @@ export async function authenticateVkAccessToken(accessToken: string) {
   });
 
   if (linkedAccount) {
-    const existingUser = await db.query.users.findFirst({
-      where: eq(users.id, linkedAccount.userId)
+    return syncLinkedVkUser(linkedAccount.userId, vkUserId, {
+      name,
+      image,
+      realEmail,
+      accessToken
     });
-
-    if (existingUser) {
-      return {
-        id: existingUser.id,
-        email: existingUser.email,
-        name: existingUser.name || name,
-        image: existingUser.image || image
-      };
-    }
   }
 
   const emailUser = await db.query.users.findFirst({
@@ -83,6 +150,25 @@ export async function authenticateVkAccessToken(accessToken: string) {
       })
       .onConflictDoNothing();
 
+    if (realEmail && isPlaceholderOAuthEmail(emailUser.email)) {
+      await db
+        .update(users)
+        .set({
+          email: realEmail,
+          emailVerified,
+          name: emailUser.name || name,
+          image: emailUser.image || image
+        })
+        .where(eq(users.id, emailUser.id));
+
+      return {
+        id: emailUser.id,
+        email: realEmail,
+        name: emailUser.name || name,
+        image: emailUser.image || image
+      };
+    }
+
     return {
       id: emailUser.id,
       email: emailUser.email,
@@ -98,7 +184,7 @@ export async function authenticateVkAccessToken(accessToken: string) {
     email,
     name,
     image,
-    emailVerified,
+    emailVerified: realEmail ? emailVerified : null,
     generationCredits: FREE_TRIAL_CARDS,
     generationsUsed: 0,
     createdAt: new Date()

@@ -40,6 +40,7 @@ export function buildKvartovidSavedListing(
     floorPlanSvg: result.floorPlanSvg,
     floorPlanLayout: result.floorPlanLayout,
     floorPlanError: result.floorPlanError,
+    watermarkLocked: result.watermarkLocked,
     createdAt: now,
     updatedAt: now
   };

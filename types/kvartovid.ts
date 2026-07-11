@@ -72,6 +72,7 @@ export type KvartovidListingResult = {
   floorPlanSvg?: string;
   floorPlanLayout?: KvartovidFloorPlanLayout;
   floorPlanError?: string;
+  watermarkLocked?: boolean;
   generatedAt: string;
   listingId?: string;
 };
@@ -106,6 +107,7 @@ export type KvartovidSavedListing = {
   floorPlanSvg?: string;
   floorPlanLayout?: KvartovidFloorPlanLayout;
   floorPlanError?: string;
+  watermarkLocked?: boolean;
   createdAt: string;
   updatedAt: string;
 };

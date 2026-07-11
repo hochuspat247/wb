@@ -44,6 +44,7 @@ import {
 } from "@/lib/api/user";
 import { GUEST_ID_KEY, INTENDED_GENERATION_KEY, CABINET_DEMO_HINT_DISMISSED_KEY } from "@/lib/guest";
 import { CabinetDemoWelcomeHint } from "@/components/cabinet/CabinetDemoWelcomeHint";
+import { PromoCodeForm } from "@/components/promo/PromoCodeForm";
 import { downloadCardImageAsset } from "@/lib/client/cardImage";
 import { applyDownloadPolicyToCard, canDownloadCardImage, type DownloadPolicy } from "@/lib/client/watermarkPolicy";
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
@@ -693,6 +694,13 @@ export function CabinetApp() {
                 <Button className="mt-5" onClick={handleSaveImageSettings} size="sm">
                   Сохранить настройки
                 </Button>
+              </Card>
+
+              <Card padding="lg">
+                <PromoCodeForm
+                  product="marketcard"
+                  onSuccess={(result) => handleQuotaChange(result.quota)}
+                />
               </Card>
 
               <Card padding="lg">

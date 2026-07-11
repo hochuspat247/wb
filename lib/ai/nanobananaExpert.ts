@@ -155,6 +155,7 @@ export type ReferenceImageEditOptions = {
   prompt: string;
   imageBase64: string;
   imageMimeType: string;
+  additionalReferenceImages?: Array<{ base64: string; mimeType: string }>;
   aspectRatio?: string;
   resolution?: "1k" | "2k" | "4k";
   outputFormat?: "png" | "jpeg" | "webp";
@@ -204,7 +205,12 @@ export async function generateNanoBananaExpertReferenceEdit(
   const referenceImages = [
     options.imageBase64.startsWith("data:")
       ? options.imageBase64
-      : `data:${options.imageMimeType || "image/png"};base64,${options.imageBase64}`
+      : `data:${options.imageMimeType || "image/png"};base64,${options.imageBase64}`,
+    ...(options.additionalReferenceImages ?? []).map((image) =>
+      image.base64.startsWith("data:")
+        ? image.base64
+        : `data:${image.mimeType || "image/png"};base64,${image.base64}`
+    )
   ];
 
   return runNanoBananaGeneration({

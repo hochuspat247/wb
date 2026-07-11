@@ -2,15 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { BarChart3, BookOpen, Building2, Clapperboard, Eye, Film, MousePointerClick, Star, Users, X } from "lucide-react";
+import { BarChart3, BookOpen, Building2, Clapperboard, Eye, Film, MousePointerClick, RotateCcw, Star, Ticket, Users, X } from "lucide-react";
 import { Funnel7dPanel } from "@/components/admin/Funnel7dPanel";
 import { LiveVisitorsPanel } from "@/components/admin/LiveVisitorsPanel";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { CollapsibleAdminSection } from "@/components/admin/CollapsibleAdminSection";
 import { DemoErrorsPanel } from "@/components/admin/DemoErrorsPanel";
 import { SessionDurationPanel } from "@/components/admin/SessionDurationPanel";
+import { KvartovidListingDetailModal, type AdminKvartovidListingDetail } from "@/components/admin/KvartovidListingDetailModal";
 import { StoryDetailModal, type AdminStoryDetail } from "@/components/admin/StoryDetailModal";
 import { UserJourneysMapPanel } from "@/components/admin/UserJourneysMapPanel";
+import { PromoCodesPanel } from "@/components/admin/PromoCodesPanel";
 import { CardSavedVideosPanel } from "@/components/video/CardSavedVideosPanel";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -137,6 +139,7 @@ type AdminStats = {
     email: string;
     emailVerified: boolean;
     hasPasswordAccount: boolean;
+    authMethods: string;
     generationsUsed: number;
     generationCredits: number;
     createdAt: Date;
@@ -145,6 +148,21 @@ type AdminStats = {
     projectCardsCount?: number;
     projectDemosCount?: number;
     lastProjectActivityAt?: Date;
+  }[];
+  returningVisitors: {
+    id: string;
+    kind: "registered" | "guest";
+    userId: string | null;
+    guestId: string | null;
+    name: string | null;
+    email: string | null;
+    emailVerified: boolean;
+    hasPasswordAccount: boolean;
+    authMethods: string;
+    visitSessions: number;
+    visitDays: number;
+    firstVisitAt: Date;
+    lastVisitAt: Date;
   }[];
   recentCards: {
     id: string;
@@ -671,6 +689,8 @@ export function AdminDashboard() {
   const [demoLoading, setDemoLoading] = useState(false);
   const [selectedStory, setSelectedStory] = useState<AdminStoryDetail | null>(null);
   const [storyLoading, setStoryLoading] = useState(false);
+  const [selectedListing, setSelectedListing] = useState<AdminKvartovidListingDetail | null>(null);
+  const [listingLoading, setListingLoading] = useState(false);
 
   const productConfig = ADMIN_PRODUCTS[product];
   const isStoryStudio = product === "storystudio";
@@ -783,6 +803,28 @@ export function AdminDashboard() {
     }
   }
 
+  async function openListing(listingId: string) {
+    setListingLoading(true);
+    setSelectedListing(null);
+
+    try {
+      const response = await fetch(`/api/admin/kvartovid/listings/${encodeURIComponent(listingId)}`, {
+        cache: "no-store"
+      });
+      const data = await readJsonResponse(response);
+
+      if (!response.ok) {
+        throw new Error(data.error || "Не удалось загрузить объявление");
+      }
+
+      setSelectedListing(data as AdminKvartovidListingDetail);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Не удалось загрузить объявление");
+    } finally {
+      setListingLoading(false);
+    }
+  }
+
   if (loading && !stats) {
     return (
       <div className="grid min-h-screen place-items-center bg-paper">
@@ -828,7 +870,7 @@ export function AdminDashboard() {
             <div className="flex min-w-0 items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">
-                  Пользователи проекта
+                  Всего пользователей
                 </p>
                 <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.users}</p>
               </div>
@@ -942,6 +984,16 @@ export function AdminDashboard() {
           </div>
         </CollapsibleAdminSection>
 
+        <CollapsibleAdminSection
+          description="Компенсационные коды: минимальный тариф без оплаты, одноразово и только для указанного пользователя"
+          icon={<Ticket className="text-accent" size={20} />}
+          id="promo-codes"
+          scope="global"
+          title="Промокоды"
+        >
+          <PromoCodesPanel />
+        </CollapsibleAdminSection>
+
         <LiveVisitorsPanel product={product} />
 
         <SessionDurationPanel product={product} stats={stats.sessionDuration} />
@@ -949,19 +1001,24 @@ export function AdminDashboard() {
         {!isStoryStudio && !isKvartovid && stats ? <DemoErrorsPanel errors={stats.recentDemoErrors ?? []} product={product} /> : null}
 
         <CollapsibleAdminSection
+          badge={
+            <span className="rounded-button bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+              {stats.recentUsers.length}
+            </span>
+          }
           description={
             isStoryStudio
-              ? `Пользователи с историями в ${productConfig.label}`
+              ? `Все зарегистрированные пользователи. Активность — по ${productConfig.label}.`
               : isKvartovid
-                ? `Зарегистрированные пользователи с визитами или объявлениями в ${productConfig.label}`
-                : `Пользователи с карточками или демо в ${productConfig.label}`
+                ? `Все зарегистрированные пользователи. Активность — по ${productConfig.label}.`
+                : `Все зарегистрированные пользователи. Активность — по ${productConfig.label}.`
           }
           icon={<Users className="text-accent" size={20} />}
           id="recent-users"
           scope={product}
-          title="Последние пользователи"
+          title="Все пользователи"
         >
-          <div className="grid gap-3 md:hidden">
+          <div className="grid max-h-[70vh] gap-3 overflow-y-auto md:hidden">
             {stats.recentUsers.map((user) => (
               <div className="rounded-card border border-clay bg-paper/40 p-4" key={user.id}>
                 <div className="flex items-start justify-between gap-3">
@@ -971,6 +1028,7 @@ export function AdminDashboard() {
                     <p className="mt-1 text-xs font-semibold text-muted">
                       Email: {getEmailVerificationLabel(user)}
                     </p>
+                    <p className="mt-1 text-xs font-semibold text-muted">Вход: {user.authMethods}</p>
                   </div>
                   <span className="shrink-0 rounded-button bg-accent/10 px-3 py-1 text-sm font-black text-accent">
                     {isStoryStudio
@@ -988,20 +1046,22 @@ export function AdminDashboard() {
               </div>
             ))}
             {stats.recentUsers.length === 0 ? (
-              <p className="text-sm text-muted">Пока нет зарегистрированных пользователей с визитами в этом проекте.</p>
+              <p className="text-sm text-muted">Пока нет зарегистрированных пользователей.</p>
             ) : null}
           </div>
-          <div className="hidden overflow-x-auto md:block">
+          <div className="hidden max-h-[70vh] overflow-auto md:block">
             <table className="min-w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-clay text-muted">
                   <th className="px-3 py-2 font-semibold">Имя</th>
                   <th className="px-3 py-2 font-semibold">Email</th>
                   <th className="px-3 py-2 font-semibold">Статус email</th>
+                  <th className="px-3 py-2 font-semibold">Способ входа</th>
                   <th className="px-3 py-2 font-semibold">
                     {isStoryStudio ? "Историй" : isKvartovid ? "Объявлений" : "Активность"}
                   </th>
                   <th className="px-3 py-2 font-semibold">Квота</th>
+                  <th className="px-3 py-2 font-semibold">Регистрация</th>
                   <th className="px-3 py-2 font-semibold">Последняя активность</th>
                 </tr>
               </thead>
@@ -1011,6 +1071,7 @@ export function AdminDashboard() {
                     <td className="px-3 py-3 font-medium text-ink">{user.name || "—"}</td>
                     <td className="px-3 py-3 text-muted">{formatAccountEmail(user.email)}</td>
                     <td className="px-3 py-3 text-muted">{getEmailVerificationLabel(user)}</td>
+                    <td className="px-3 py-3 text-muted">{user.authMethods}</td>
                     <td className="px-3 py-3 text-muted">
                       {isStoryStudio
                         ? user.projectStoriesCount ?? 0
@@ -1022,16 +1083,125 @@ export function AdminDashboard() {
                       {user.generationsUsed}/{user.generationCredits}
                     </td>
                     <td className="px-3 py-3 text-muted">
+                      {new Date(user.createdAt).toLocaleDateString("ru-RU")}
+                    </td>
+                    <td className="px-3 py-3 text-muted">
                       {user.lastProjectActivityAt
                         ? new Date(user.lastProjectActivityAt).toLocaleDateString("ru-RU")
-                        : new Date(user.createdAt).toLocaleDateString("ru-RU")}
+                        : "—"}
                     </td>
                   </tr>
                 ))}
                 {stats.recentUsers.length === 0 ? (
                   <tr>
-                    <td className="px-3 py-6 text-muted" colSpan={6}>
-                      Пока нет пользователей с активностью в этом проекте.
+                    <td className="px-3 py-6 text-muted" colSpan={8}>
+                      Пока нет зарегистрированных пользователей.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
+        </CollapsibleAdminSection>
+
+        <CollapsibleAdminSection
+          badge={
+            <span className="rounded-button bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+              {stats.returningVisitors.length}
+            </span>
+          }
+          description={`Зарегистрированные и гостевые пользователи с 2+ визитами в ${productConfig.label}`}
+          icon={<RotateCcw className="text-accent" size={20} />}
+          id="returning-visitors"
+          scope={product}
+          title="Повторные визиты"
+        >
+          <div className="grid max-h-[70vh] gap-3 overflow-y-auto md:hidden">
+            {stats.returningVisitors.map((visitor) => (
+              <div className="rounded-card border border-clay bg-paper/40 p-4" key={visitor.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-bold text-ink">
+                      {visitor.kind === "registered" ? visitor.name || "—" : "Гость"}
+                    </p>
+                    <p className="mt-1 break-all text-sm text-muted">
+                      {visitor.kind === "registered"
+                        ? formatAccountEmail(visitor.email)
+                        : `Guest ID: ${visitor.guestId?.slice(0, 12) ?? "—"}…`}
+                    </p>
+                    {visitor.kind === "registered" && visitor.email ? (
+                      <p className="mt-1 text-xs font-semibold text-muted">
+                        Email: {getEmailVerificationLabel({ ...visitor, email: visitor.email })}
+                      </p>
+                    ) : null}
+                    {visitor.kind === "registered" ? (
+                      <p className="mt-1 text-xs font-semibold text-muted">Вход: {visitor.authMethods}</p>
+                    ) : null}
+                  </div>
+                  <span className="shrink-0 rounded-button bg-emerald-500/10 px-3 py-1 text-sm font-black text-emerald-400">
+                    {visitor.visitSessions} виз.
+                  </span>
+                </div>
+                <p className="mt-3 text-xs font-semibold text-muted">
+                  {visitor.visitDays} дн. · первый {new Date(visitor.firstVisitAt).toLocaleDateString("ru-RU")} ·
+                  последний {new Date(visitor.lastVisitAt).toLocaleDateString("ru-RU")}
+                </p>
+              </div>
+            ))}
+            {stats.returningVisitors.length === 0 ? (
+              <p className="text-sm text-muted">Пока нет пользователей с повторными визитами в этом проекте.</p>
+            ) : null}
+          </div>
+          <div className="hidden max-h-[70vh] overflow-auto md:block">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-clay text-muted">
+                  <th className="px-3 py-2 font-semibold">Тип</th>
+                  <th className="px-3 py-2 font-semibold">Имя</th>
+                  <th className="px-3 py-2 font-semibold">Email / Guest ID</th>
+                  <th className="px-3 py-2 font-semibold">Способ входа</th>
+                  <th className="px-3 py-2 font-semibold">Визитов</th>
+                  <th className="px-3 py-2 font-semibold">Дней</th>
+                  <th className="px-3 py-2 font-semibold">Первый визит</th>
+                  <th className="px-3 py-2 font-semibold">Последний визит</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.returningVisitors.map((visitor) => (
+                  <tr className="border-b border-clay/70" key={visitor.id}>
+                    <td className="px-3 py-3 text-muted">
+                      {visitor.kind === "registered" ? "Аккаунт" : "Гость"}
+                    </td>
+                    <td className="px-3 py-3 font-medium text-ink">
+                      {visitor.kind === "registered" ? visitor.name || "—" : "—"}
+                    </td>
+                    <td className="px-3 py-3 text-muted">
+                      {visitor.kind === "registered"
+                        ? formatAccountEmail(visitor.email)
+                        : visitor.guestId ?? "—"}
+                    </td>
+                    <td className="px-3 py-3 text-muted">
+                      {visitor.kind === "registered" ? visitor.authMethods : "—"}
+                    </td>
+                    <td className="px-3 py-3 font-semibold text-emerald-400">{visitor.visitSessions}</td>
+                    <td className="px-3 py-3 text-muted">{visitor.visitDays}</td>
+                    <td className="px-3 py-3 text-muted">
+                      {new Date(visitor.firstVisitAt).toLocaleDateString("ru-RU")}
+                    </td>
+                    <td className="px-3 py-3 text-muted">
+                      {new Date(visitor.lastVisitAt).toLocaleString("ru-RU", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </td>
+                  </tr>
+                ))}
+                {stats.returningVisitors.length === 0 ? (
+                  <tr>
+                    <td className="px-3 py-6 text-muted" colSpan={8}>
+                      Пока нет пользователей с повторными визитами в этом проекте.
                     </td>
                   </tr>
                 ) : null}
@@ -1140,20 +1310,22 @@ export function AdminDashboard() {
             <CollapsibleAdminSection
               badge={
                 <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
-                  {stats.kvartovid?.recentListings.length ?? 0} последних
+                  {stats.kvartovid?.recentListings.length ?? 0}
                 </span>
               }
-              description="Объявления из кабинета: город, параметры, обложка и планировка"
+              description="Нажмите на объявление, чтобы открыть тексты, обложку, планировку и параметры объекта"
               icon={<Building2 className="text-accent" size={20} />}
               id="recent-listings"
               scope={product}
-              title="Последние объявления"
+              title="Все объявления"
             >
-              <div className="grid gap-3">
+              <div className="grid max-h-[70vh] gap-3 overflow-y-auto">
                 {(stats.kvartovid?.recentListings ?? []).map((listing) => (
-                  <div
-                    className="rounded-card border border-clay bg-paper/40 p-4"
+                  <button
+                    className="rounded-card border border-clay bg-paper/40 p-4 text-left transition hover:border-accent/45 hover:bg-paper"
                     key={listing.id}
+                    onClick={() => void openListing(listing.id)}
+                    type="button"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -1172,11 +1344,12 @@ export function AdminDashboard() {
                           {typeof listing.qualityScore === "number" ? ` · готовность ${listing.qualityScore}/100` : ""}
                         </p>
                       </div>
-                      <span className="rounded-button bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+                      <span className="inline-flex shrink-0 items-center gap-2 rounded-button border border-clay bg-card px-4 py-2 text-sm font-bold text-ink">
+                        <Eye size={16} />
                         {listing.userListingsCount === 1 ? "1 объект" : `${listing.userListingsCount} объявл.`}
                       </span>
                     </div>
-                  </div>
+                  </button>
                 ))}
                 {!stats.kvartovid?.recentListings.length ? (
                   <p className="text-sm text-muted">Объявлений пока нет</p>
@@ -1292,6 +1465,14 @@ export function AdminDashboard() {
         onClose={() => {
           setSelectedStory(null);
           setStoryLoading(false);
+        }}
+      />
+      <KvartovidListingDetailModal
+        detail={selectedListing}
+        loading={listingLoading}
+        onClose={() => {
+          setSelectedListing(null);
+          setListingLoading(false);
         }}
       />
     </AdminShell>

@@ -166,8 +166,7 @@ export async function getKvartovidAdminData() {
     })
     .from(kvartovidListings)
     .leftJoin(users, eq(kvartovidListings.userId, users.id))
-    .orderBy(desc(kvartovidListings.updatedAt))
-    .limit(20);
+    .orderBy(desc(kvartovidListings.updatedAt));
 
   const userListingCounts = new Map(listingCounts.map((row) => [row.userId, row.listingsCount]));
 

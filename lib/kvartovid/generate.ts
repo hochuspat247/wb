@@ -2,7 +2,7 @@ import { callGigaChatJson } from "@/lib/ai/gigachat";
 import { IMAGE_GENERATION_RETRY_MESSAGE } from "@/lib/ai/imageGenerationErrors";
 import { isNanoBananaExpertConfigured } from "@/lib/ai/nanobananaExpert";
 import { extractJsonObject } from "@/lib/json";
-import { buildKvartovidCoverHeadline, generateKvartovidCoverImage } from "@/lib/kvartovid/coverImage";
+import { buildCoverBannerCopy, generateKvartovidCoverImage, pickSecondaryPhotoIndexes } from "@/lib/kvartovid/coverImage";
 import { generateKvartovidFloorPlan } from "@/lib/kvartovid/floorPlan";
 import { buildKvartovidListingPrompt } from "@/lib/kvartovid/prompt";
 import { normalizePlatformTexts } from "@/lib/kvartovid/platformTexts";
@@ -14,6 +14,16 @@ type RawListingResponse = {
   advantages?: string[];
   suggestedHighlights?: string[];
   bestPhotoIndex?: number;
+  secondaryPhotoIndexes?: number[];
+  coverBanner?: {
+    headline?: string;
+    locationBadge?: string;
+    specs?: Array<{ value?: string; label?: string }>;
+    ribbonBadge?: string;
+    footerItems?: string[];
+    cta?: string;
+    advantages?: string[];
+  };
   qualityScore?: number;
   qualityTips?: string[];
   platformTexts?: Partial<Record<KvartovidPlatformId, { title?: string; description?: string }>>;
@@ -22,6 +32,14 @@ type RawListingResponse = {
 function asStringArray(value: unknown, max = 12): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((item) => String(item).trim()).filter(Boolean).slice(0, max);
+}
+
+function asNumberArray(value: unknown, max = 3): number[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => Number(item))
+    .filter((item) => Number.isFinite(item))
+    .slice(0, max);
 }
 
 function clampPhotoIndex(index: number, photoCount: number) {
@@ -77,10 +95,14 @@ export async function generateKvartovidListing(
     if (!isNanoBananaExpertConfigured()) {
       result.coverImageError = "NanoBanana Expert не настроен (NANOBANANA_EXPERT_API_KEY).";
     } else {
-      const photo = input.photos[bestPhotoIndex];
       const avitoTitle = platformTexts.find((item) => item.platform === "avito")?.title;
-      const coverHeadline = buildKvartovidCoverHeadline(input, title, avitoTitle);
-      const image = await generateKvartovidCoverImage(input, photo, coverHeadline, result.advantages);
+      const coverCopy = buildCoverBannerCopy(input, parsed.coverBanner, title, avitoTitle, result.advantages);
+      const secondaryPhotoIndexes = pickSecondaryPhotoIndexes(
+        bestPhotoIndex,
+        photoCount,
+        asNumberArray(parsed.secondaryPhotoIndexes, 3)
+      );
+      const image = await generateKvartovidCoverImage(input, coverCopy, bestPhotoIndex, secondaryPhotoIndexes);
 
       if (image.imageBase64 || image.imageUrl) {
         result.coverImageBase64 = image.imageBase64 ?? undefined;

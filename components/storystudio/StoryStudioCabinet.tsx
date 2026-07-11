@@ -25,6 +25,7 @@ import { StoryOverviewEditor } from "@/components/storystudio/StoryOverviewEdito
 import { StoryVideoSeries } from "@/components/storystudio/StoryVideoSeries";
 import { StoryPaymentButton } from "@/components/storystudio/StoryPaymentButton";
 import { StoryPricingCard } from "@/components/storystudio/StoryPricingCard";
+import { PromoCodeForm } from "@/components/promo/PromoCodeForm";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
 import {
@@ -413,6 +414,17 @@ export function StoryStudioCabinet() {
                         1 генерация = история, персонаж, глава или портрет ·{" "}
                         <strong>{formatStoryRub(STORY_GENERATION_PRICE_RUB)}</strong>
                       </p>
+                    </div>
+                    <div className="rounded-card border border-white/10 bg-card/50 p-5">
+                      <PromoCodeForm
+                        product="storystudio"
+                        onSuccess={(result) => {
+                          setQuota({
+                            remaining: result.quota.remaining,
+                            credits: result.quota.credits
+                          });
+                        }}
+                      />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-3">
                       {STORY_PACKAGES.map((pkg) => {

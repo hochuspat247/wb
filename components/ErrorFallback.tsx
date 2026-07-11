@@ -9,6 +9,7 @@ type ErrorFallbackProps = {
   title?: string;
   description?: string;
   reset?: () => void;
+  resetLabel?: string;
   homeHref?: string;
 };
 
@@ -16,6 +17,7 @@ export function ErrorFallback({
   title = "Что-то пошло не так",
   description = "Страница столкнулась с ошибкой. Попробуйте обновить — ваши данные и генерации сохранены.",
   reset,
+  resetLabel = "Попробовать снова",
   homeHref = "/"
 }: ErrorFallbackProps) {
   return (
@@ -28,7 +30,7 @@ export function ErrorFallback({
           {reset ? (
             <Button onClick={reset} type="button">
               <RefreshCcw size={16} />
-              Попробовать снова
+              {resetLabel}
             </Button>
           ) : null}
           <Link

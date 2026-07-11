@@ -8,6 +8,7 @@ import { CookieBanner } from "@/components/CookieBanner";
 import { TopMailRu } from "@/components/analytics/TopMailRu";
 import { YandexMetrika } from "@/components/analytics/YandexMetrika";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import { DeploymentRefreshGuard } from "@/components/DeploymentRefreshGuard";
 import { VkIdCallbackHandler } from "@/components/auth/VkIdCallbackHandler";
 import { rootMetadata } from "@/lib/seo";
 import "./globals.css";
@@ -24,11 +25,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const buildId = process.env.NEXT_BUILD_ID ?? "dev";
+
   return (
     <html className={inter.variable} lang="ru">
       <body className="font-sans antialiased">
         <AuthProvider>
           {children}
+          <DeploymentRefreshGuard initialBuildId={buildId} />
           <AnalyticsTracker />
           <SectionViewTracker />
           <HashViewTracker />

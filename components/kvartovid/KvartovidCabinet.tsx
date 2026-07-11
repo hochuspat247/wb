@@ -13,7 +13,10 @@ import { Button } from "@/components/ui/Button";
 import { Loader } from "@/components/ui/Loader";
 import { deleteKvartovidListing, fetchKvartovidListings } from "@/lib/api/kvartovid";
 import { KvartovidPaymentPanel } from "@/components/kvartovid/KvartovidPaymentPanel";
+import { PromoCodeForm } from "@/components/promo/PromoCodeForm";
 import { KvartovidQuotaNotice } from "@/components/kvartovid/KvartovidQuotaNotice";
+import { KvartovidProtectedMedia } from "@/components/kvartovid/KvartovidProtectedMedia";
+import { KvartovidDemoBanner } from "@/components/kvartovid/KvartovidDemoBanner";
 import { DEAL_TYPE_LABELS, PROPERTY_TYPE_LABELS } from "@/lib/kvartovid/constants";
 import { formatPlatformTextsForExport } from "@/lib/kvartovid/platformTexts";
 import type { KvartovidSavedListing } from "@/types/kvartovid";
@@ -213,6 +216,9 @@ export function KvartovidCabinet() {
 
         <div className="mt-6 space-y-4">
           <KvartovidQuotaNotice quota={quota} />
+          <div className="rounded-card border border-amber-500/20 bg-amber-500/5 p-5">
+            <PromoCodeForm product="kvartovid" onSuccess={() => void loadListings()} />
+          </div>
           <KvartovidPaymentPanel quota={quota} />
         </div>
 
@@ -244,17 +250,30 @@ export function KvartovidCabinet() {
               </div>
 
               {coverSrc(activeListing) ? (
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-amber-400">AI-обложка</p>
+                <KvartovidProtectedMedia
+                  locked={activeListing.watermarkLocked}
+                  className="overflow-hidden rounded-2xl border border-amber-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.35)]"
+                >
                   <img
                     src={coverSrc(activeListing)!}
                     alt="Обложка объявления"
-                    className="mt-3 max-h-80 w-full rounded-xl border border-white/10 object-cover"
+                    className="aspect-[3/2] w-full object-cover"
+                    draggable={!activeListing.watermarkLocked}
                   />
-                </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-t border-white/10 bg-[#0a1210]/80 px-4 py-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-amber-400">AI-обложка</p>
+                    <span className="text-xs text-muted">При создании: {activeListing.photoCount} фото</span>
+                  </div>
+                </KvartovidProtectedMedia>
               ) : activeListing.coverImageError ? (
                 <p className="rounded-xl bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{activeListing.coverImageError}</p>
+              ) : activeListing.photoCount > 0 ? (
+                <div className="rounded-xl border border-white/10 bg-[#0a1210]/50 px-4 py-3 text-sm text-muted">
+                  При создании загружено {activeListing.photoCount} фото. Обложка не сохранилась — можно сгенерировать заново.
+                </div>
               ) : null}
+
+              {activeListing.watermarkLocked ? <KvartovidDemoBanner compact /> : null}
 
               {activeListing.floorPlanSvg ? (
                 <KvartovidFloorPlanSection
@@ -263,6 +282,7 @@ export function KvartovidCabinet() {
                   error={activeListing.floorPlanError}
                   resetKey={activeListing.id}
                   listingId={activeListing.id}
+                  watermarkLocked={activeListing.watermarkLocked}
                   onSaved={({ layout, svg }) =>
                     setListings((prev) =>
                       prev.map((listing) =>
@@ -319,7 +339,7 @@ export function KvartovidCabinet() {
                 {coverSrc(activeListing) ? (
                   <Button type="button" variant="secondary" onClick={() => downloadCover(activeListing)}>
                     <Download className="h-4 w-4" />
-                    Скачать обложку
+                    {activeListing.watermarkLocked ? "Скачать обложку (DEMO)" : "Скачать обложку"}
                   </Button>
                 ) : null}
                 <Button
@@ -364,6 +384,9 @@ export function KvartovidCabinet() {
                     <p className="line-clamp-2 font-semibold text-ink">{listing.title}</p>
                     <p className="mt-1 text-sm text-muted">{listingSubtitle(listing)}</p>
                     <p className="mt-2 text-xs text-muted">{formatListingDate(listing.updatedAt)}</p>
+                    {listing.photoCount > 0 ? (
+                      <p className="mt-1 text-xs text-amber-400/90">{listing.photoCount} фото при создании</p>
+                    ) : null}
                   </div>
                 </button>
               );

@@ -48,6 +48,10 @@ export function getVkAppName() {
   return process.env.NEXT_PUBLIC_VK_APP_NAME || BRAND.marketCard;
 }
 
+export function getVkIdScope() {
+  return process.env.NEXT_PUBLIC_VK_SCOPE || "email";
+}
+
 export function initVkIdConfig() {
   const appId = getVkAppId();
 
@@ -64,7 +68,7 @@ export function initVkIdConfig() {
         redirectUrl,
         responseMode: VKID.ConfigResponseMode.Callback,
         source: VKID.ConfigSource.LOWCODE,
-        scope: ""
+        scope: getVkIdScope()
       });
       initialized = true;
     } catch (error) {

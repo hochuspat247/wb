@@ -12,8 +12,8 @@ import {
   Trash2,
   X
 } from "lucide-react";
-import { PaymentButton } from "@/components/PaymentButton";
 import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
+import { WILDBERRIES_DEMO_CATALOG_CARDS } from "@/components/wildberries/wildberriesDemoCatalog";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -25,7 +25,6 @@ import {
   updateWildberriesCard
 } from "@/lib/api/wildberries";
 import { reachGoal } from "@/lib/metrika";
-import { WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
 import type { WildberriesCatalogCard } from "@/types/wildberries";
 
 type WildberriesCardsCatalogProps = {
@@ -61,7 +60,7 @@ function cardToEditor(card: WildberriesCatalogCard): EditorState {
 }
 
 export function WildberriesCardsCatalog({ wbConnected, wbUnlocked, onNeedConnect }: WildberriesCardsCatalogProps) {
-  const starterPack = calculatePackagePrice(WB_INTEGRATION_MIN_PACKAGE);
+  const previewMode = !wbUnlocked;
   const [source, setSource] = useState<"active" | "trash">("active");
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
@@ -119,6 +118,10 @@ export function WildberriesCardsCatalog({ wbConnected, wbUnlocked, onNeedConnect
     setSelected(card);
     setEditor(cardToEditor(card));
 
+    if (previewMode) {
+      return;
+    }
+
     try {
       const fresh = await fetchWildberriesCard(card.nmId);
       setSelected(fresh);
@@ -174,48 +177,9 @@ export function WildberriesCardsCatalog({ wbConnected, wbUnlocked, onNeedConnect
     }
   }
 
-  if (!wbUnlocked) {
-    return (
-      <Card padding="lg">
-        <div className="flex items-start gap-4">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#CB11AB]/12 text-[#CB11AB]">
-            <Store size={22} />
-          </div>
-          <div>
-            <h2 className="text-xl font-black text-ink">Карточки на Wildberries</h2>
-            <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">
-              Просмотр и редактирование карточек с WB доступны с тарифа «Рост» — от {WB_INTEGRATION_MIN_PACKAGE}{" "}
-              генераций ({formatRub(starterPack.total)}).
-            </p>
-            <PaymentButton className="mt-4" count={WB_INTEGRATION_MIN_PACKAGE} metrikaPlan="wb_catalog_pack5" size="sm">
-              Открыть каталог WB
-            </PaymentButton>
-          </div>
-        </div>
-      </Card>
-    );
-  }
-
-  if (!wbConnected) {
-    return (
-      <Card padding="lg">
-        <div className="flex items-start gap-4">
-          <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[#CB11AB]/12 text-[#CB11AB]">
-            <Store size={22} />
-          </div>
-          <div>
-            <h2 className="text-xl font-black text-ink">Карточки на Wildberries</h2>
-            <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">
-              Подключите WB API-токен, чтобы подтянуть активные карточки и карточки из корзины WB.
-            </p>
-            <Button className="mt-4" onClick={onNeedConnect} size="sm">
-              Подключить WB API
-            </Button>
-          </div>
-        </div>
-      </Card>
-    );
-  }
+  const visibleCards = previewMode
+    ? WILDBERRIES_DEMO_CATALOG_CARDS
+    : cards;
 
   return (
     <div className="space-y-5">
@@ -238,6 +202,23 @@ export function WildberriesCardsCatalog({ wbConnected, wbUnlocked, onNeedConnect
         </div>
 
         <WildberriesBetaNotice className="mt-4" compact />
+
+        {!previewMode && !wbConnected ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#CB11AB]/25 bg-[#CB11AB]/8 px-4 py-3">
+            <p className="text-sm font-semibold text-muted">
+              Подключите WB API-токен, чтобы подтянуть активные карточки и карточки из корзины WB.
+            </p>
+            <Button onClick={onNeedConnect} size="sm">
+              Подключить WB API
+            </Button>
+          </div>
+        ) : null}
+
+        {previewMode ? (
+          <p className="mt-4 text-xs font-semibold text-muted">
+            Пример каталога — после оплаты подтянем ваши реальные карточки с WB.
+          </p>
+        ) : null}
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="grid flex-1 gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -272,13 +253,13 @@ export function WildberriesCardsCatalog({ wbConnected, wbUnlocked, onNeedConnect
         {error ? <p className="mt-4 text-sm font-semibold text-red-500">{error}</p> : null}
       </Card>
 
-      {loading && !cards.length ? (
+      {loading && !visibleCards.length ? (
         <div className="grid place-items-center py-16">
           <Loader label="Загружаем карточки WB…" />
         </div>
       ) : null}
 
-      {!loading && !cards.length ? (
+      {!loading && !previewMode && !visibleCards.length ? (
         <Card className="py-14 text-center" padding="lg">
           <p className="text-lg font-bold text-ink">
             {source === "trash" ? "В корзине WB пока пусто" : "Карточки WB не найдены"}
@@ -289,9 +270,9 @@ export function WildberriesCardsCatalog({ wbConnected, wbUnlocked, onNeedConnect
         </Card>
       ) : null}
 
-      {cards.length ? (
+      {visibleCards.length ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {cards.map((card) => (
+          {visibleCards.map((card) => (
             <button
               className="overflow-hidden rounded-[20px] border border-clay bg-card text-left transition hover:border-[#CB11AB]/35 hover:shadow-[0_16px_40px_rgba(203,17,171,0.08)]"
               key={`${card.nmId}-${card.updatedAt}`}
@@ -331,7 +312,7 @@ export function WildberriesCardsCatalog({ wbConnected, wbUnlocked, onNeedConnect
         </div>
       ) : null}
 
-      {hasMore ? (
+      {!previewMode && hasMore ? (
         <div className="flex justify-center">
           <Button disabled={loading} onClick={() => void loadCards({ append: true })} variant="secondary">
             {loading ? <Loader2 className="animate-spin" size={16} /> : null}

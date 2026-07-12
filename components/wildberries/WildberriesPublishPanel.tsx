@@ -14,14 +14,13 @@ import {
   Wand2,
   X
 } from "lucide-react";
-import { PaymentButton } from "@/components/PaymentButton";
 import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
+import { WildberriesSubscriptionOverlay } from "@/components/wildberries/WildberriesSubscriptionOverlay";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { publishWildberriesCard, searchWildberriesSubjects } from "@/lib/api/wildberries";
 import { fileToBase64, getGeneratedCoverSrc, validateImageFile } from "@/lib/image";
 import { reachGoal } from "@/lib/metrika";
-import { WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
 import type { ProductCardResult } from "@/types/product-card";
 import type { WildberriesPublishResult, WildberriesSubject } from "@/types/wildberries";
 
@@ -97,8 +96,6 @@ export function WildberriesPublishPanel({
   const [wbSearching, setWbSearching] = useState(false);
   const [wbPublishMessage, setWbPublishMessage] = useState("");
   const [wbPublishResult, setWbPublishResult] = useState<WildberriesPublishResult | null>(null);
-
-  const starterPack = useMemo(() => calculatePackagePrice(WB_INTEGRATION_MIN_PACKAGE), []);
 
   useEffect(() => {
     const initialSlides = [
@@ -257,36 +254,7 @@ export function WildberriesPublishPanel({
     }
   }
 
-  if (!wbUnlocked) {
-    return (
-      <div className="overflow-hidden rounded-[22px] border border-[#CB11AB]/25 bg-[linear-gradient(135deg,rgba(203,17,171,0.12),rgba(124,255,107,0.06))] p-5">
-        <div className="flex items-start gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#CB11AB]/15 text-[#CB11AB]">
-            <UploadCloud size={20} />
-          </div>
-          <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#CB11AB]">Wildberries</p>
-            <h3 className="mt-1 text-lg font-black text-ink">Публикация на WB — в тарифе «Рост»</h3>
-            <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">
-              Загрузите карточку из истории прямо на Wildberries: фото, название, описание и характеристики. Доступно с
-              пакета от {WB_INTEGRATION_MIN_PACKAGE} генераций — {formatRub(starterPack.total)}.
-            </p>
-            <p className="mt-2 text-xs font-semibold text-muted">Beta — возможны ошибки.</p>
-            <PaymentButton
-              className="mt-4"
-              count={WB_INTEGRATION_MIN_PACKAGE}
-              metrikaPlan="wb_integration_pack5"
-              size="sm"
-            >
-              Открыть публикацию на WB
-            </PaymentButton>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
+  const panelContent = (
     <div
       className={`overflow-hidden rounded-[22px] border border-[#CB11AB]/20 bg-[linear-gradient(160deg,rgba(203,17,171,0.08),rgba(255,255,255,0.02))] ${
         compact ? "p-4" : "p-5 sm:p-6"
@@ -561,4 +529,10 @@ export function WildberriesPublishPanel({
       ) : null}
     </div>
   );
+
+  if (!wbUnlocked && compact) {
+    return <WildberriesSubscriptionOverlay unlocked={false}>{panelContent}</WildberriesSubscriptionOverlay>;
+  }
+
+  return panelContent;
 }

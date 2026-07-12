@@ -1,19 +1,13 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
+import { WildberriesLandingPreview } from "@/components/wildberries/WildberriesLandingPreview";
 import { BRAND } from "@/lib/branding";
 import { WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
-import { CheckCircle2, ImageUp, Plus, Store, UploadCloud, Wand2 } from "lucide-react";
+import { ImageUp, Store, UploadCloud, Wand2 } from "lucide-react";
 import Link from "next/link";
 
 const starterPack = calculatePackagePrice(WB_INTEGRATION_MIN_PACKAGE);
-
-const mockSlides = [
-  { label: "Титульник", accent: true },
-  { label: "Преимущества" },
-  { label: "Характеристики" },
-  { label: "Как использовать" }
-];
 
 export function WildberriesLandingSection() {
   return (
@@ -81,58 +75,7 @@ export function WildberriesLandingSection() {
           </Reveal>
 
           <Reveal delay={2}>
-            <div className="overflow-hidden rounded-[28px] border border-[#CB11AB]/20 bg-[linear-gradient(160deg,rgba(203,17,171,0.1),rgba(124,255,107,0.05))] p-5 shadow-[0_24px_80px_rgba(203,17,171,0.12)]">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-[#CB11AB]">Кабинет → История → WB</p>
-                  <h3 className="mt-1 text-lg font-black text-ink">Карусель перед публикацией</h3>
-                </div>
-                <span className="rounded-full bg-mint/15 px-3 py-1 text-xs font-black text-mint">API WB</span>
-              </div>
-
-              <div className="mt-5 flex gap-3 overflow-hidden">
-                {mockSlides.map((slide) => (
-                  <div
-                    className={`w-[108px] shrink-0 overflow-hidden rounded-[16px] border ${
-                      slide.accent ? "border-[#CB11AB] shadow-[0_10px_30px_rgba(203,17,171,0.18)]" : "border-clay"
-                    }`}
-                    key={slide.label}
-                  >
-                    <div className="relative aspect-[4/5] bg-[linear-gradient(180deg,#f7f2ff,#efe8fb)]">
-                      <div className="absolute inset-4 rounded-[12px] border border-white/70 bg-white/70" />
-                      {slide.accent ? (
-                        <span className="absolute left-2 top-2 rounded-full bg-[#CB11AB] px-2 py-0.5 text-[9px] font-black uppercase text-white">
-                          Титульник
-                        </span>
-                      ) : null}
-                    </div>
-                    <div className="border-t border-clay/70 bg-card/80 px-2 py-2 text-center text-[11px] font-bold text-ink">
-                      {slide.label}
-                    </div>
-                  </div>
-                ))}
-                <div className="grid w-[108px] shrink-0 place-items-center gap-1 rounded-[16px] border border-dashed border-[#CB11AB]/40 bg-[#CB11AB]/5 px-2 py-3 text-center">
-                  <Plus className="text-[#CB11AB]" size={20} />
-                  <span className="text-[10px] font-black text-ink">Добавить</span>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-[18px] border border-clay bg-card/80 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-black text-ink">Кроссовки женские оверсайз</p>
-                    <p className="mt-1 text-xs text-muted">Категория WB · бренд · габариты · вес</p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[#CB11AB]/12 px-3 py-1 text-xs font-black text-[#CB11AB]">
-                    <CheckCircle2 size={14} />
-                    4 фото
-                  </span>
-                </div>
-                <div className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-button bg-[#CB11AB] text-sm font-semibold text-white">
-                  Опубликовать на Wildberries
-                </div>
-              </div>
-            </div>
+            <WildberriesLandingPreview />
           </Reveal>
         </div>
       </div>

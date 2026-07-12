@@ -228,6 +228,12 @@ section[id],
   box-shadow: none;
 }
 
+.cabinet-sidebar-link.active-wb {
+  color: #FFFFFF;
+  background: #CB11AB;
+  box-shadow: 0 12px 32px rgba(203, 17, 171, 0.28);
+}
+
 .cabinet-pricing-cta {
   display: inline-flex;
   align-items: center;

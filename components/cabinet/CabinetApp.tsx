@@ -13,6 +13,7 @@ import {
   Plus,
   Scale,
   Settings,
+  Store,
   Trash2,
   Wand2,
   X
@@ -27,7 +28,7 @@ import { HistorySection } from "@/components/HistorySection";
 import { Logo } from "@/components/Logo";
 import { PaymentButton } from "@/components/PaymentButton";
 import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
-import { WildberriesCardsCatalog } from "@/components/wildberries/WildberriesCardsCatalog";
+import { WildberriesCabinetSection } from "@/components/wildberries/WildberriesCabinetSection";
 import { WildberriesPublishPanel } from "@/components/wildberries/WildberriesPublishPanel";
 import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
 import { Button } from "@/components/ui/Button";
@@ -48,6 +49,7 @@ import {
 } from "@/lib/api/user";
 import { GUEST_ID_KEY, INTENDED_GENERATION_KEY, CABINET_DEMO_HINT_DISMISSED_KEY } from "@/lib/guest";
 import { CabinetDemoWelcomeHint } from "@/components/cabinet/CabinetDemoWelcomeHint";
+import { CabinetExamplesSection } from "@/components/cabinet/CabinetExamplesSection";
 import { PromoCodeForm } from "@/components/promo/PromoCodeForm";
 import { downloadCardImageAsset } from "@/lib/client/cardImage";
 import { applyDownloadPolicyToCard, canDownloadCardImage, type DownloadPolicy } from "@/lib/client/watermarkPolicy";
@@ -64,7 +66,7 @@ import {
 import type { ProductCardResult } from "@/types/product-card";
 import type { WildberriesIntegrationStatus } from "@/types/wildberries";
 
-type Tab = "create" | "history" | "examples" | "compare" | "settings";
+type Tab = "create" | "history" | "wildberries" | "examples" | "compare" | "settings";
 
 function getThumbnail(card: ProductCardResult) {
   return getGeneratedCoverSrc(card) || card.imageDataUrl || null;
@@ -118,7 +120,6 @@ export function CabinetApp() {
   const [wbMessage, setWbMessage] = useState("");
   const [wbSaving, setWbSaving] = useState(false);
   const [wildberriesUnlocked, setWildberriesUnlocked] = useState(false);
-  const [historyView, setHistoryView] = useState<"local" | "wb">("local");
 
   const handleQuotaChange = useCallback(
     (quota: {
@@ -128,10 +129,11 @@ export function CabinetApp() {
       cleanDownloadGenerationId?: string | null;
       downloadsFullyUnlocked?: boolean;
       wildberriesUnlocked?: boolean;
+      unlimited?: boolean;
     }) => {
       setRemainingGenerations(quota.remaining);
       setGenerationsUsed(quota.used ?? 0);
-      setWildberriesUnlocked(Boolean(quota.wildberriesUnlocked));
+      setWildberriesUnlocked(Boolean(quota.wildberriesUnlocked || quota.unlimited));
       setDownloadPolicy({
         cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
         downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
@@ -210,7 +212,7 @@ export function CabinetApp() {
             cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
             downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
           });
-          setWildberriesUnlocked(Boolean(quota.wildberriesUnlocked));
+          setWildberriesUnlocked(Boolean(quota.wildberriesUnlocked || quota.unlimited));
         }
         setNeedsEmailVerification(Boolean(profile.needsEmailVerification));
         setEmailDisplay(profile.emailDisplay || profile.email);
@@ -270,6 +272,10 @@ export function CabinetApp() {
       setTab("history");
     }
 
+    if (window.location.hash === "#wildberries") {
+      setTab("wildberries");
+    }
+
     const pendingVideoOrder = searchParams.get("videoOrder");
     if (pendingVideoOrder) {
       setVideoOrderId(pendingVideoOrder);
@@ -278,7 +284,7 @@ export function CabinetApp() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (loading || tab !== "history") {
+    if (loading || (tab !== "history" && tab !== "wildberries")) {
       return;
     }
 
@@ -461,6 +467,7 @@ export function CabinetApp() {
   const tabTitles: Record<Tab, string> = {
     create: "Создать карточку",
     history: "История генераций",
+    wildberries: "Wildberries",
     examples: "Примеры карточек",
     compare: "Сравнение с альтернативами",
     settings: "Настройки"
@@ -469,6 +476,7 @@ export function CabinetApp() {
   const tabTitlesMobile: Record<Tab, string> = {
     create: "Создать карточку",
     history: "История",
+    wildberries: "WB",
     examples: "Примеры",
     compare: "Сравнение",
     settings: "Настройки"
@@ -477,6 +485,7 @@ export function CabinetApp() {
   const nav = [
     { id: "create" as const, label: "Создать", shortLabel: "Создать", icon: Wand2 },
     { id: "history" as const, label: "История", shortLabel: "История", icon: History },
+    { id: "wildberries" as const, label: "Wildberries", shortLabel: "WB", icon: Store, accent: "wb" as const },
     { id: "examples" as const, label: "Примеры", shortLabel: "Примеры", icon: ImageIcon },
     { id: "compare" as const, label: "Сравнение", shortLabel: "Сравн.", icon: Scale },
     { id: "settings" as const, label: "Настройки", shortLabel: "Ещё", icon: Settings }
@@ -507,7 +516,9 @@ export function CabinetApp() {
         <nav className="mt-6 grid gap-1">
           {nav.map((item) => (
             <button
-              className={`cabinet-sidebar-link ${tab === item.id ? "active" : ""}`}
+              className={`cabinet-sidebar-link ${
+                tab === item.id ? (item.accent === "wb" ? "active-wb" : "active") : ""
+              }`}
               key={item.id}
               onClick={() => setTab(item.id)}
               type="button"
@@ -637,36 +648,7 @@ export function CabinetApp() {
           ) : null}
 
           {tab === "history" ? (
-            <div className={`mx-auto space-y-6 ${historyView === "wb" ? "max-w-6xl" : "max-w-4xl"}`}>
-              <div className="flex flex-wrap gap-2 rounded-[18px] border border-clay bg-card p-1.5">
-                <button
-                  className={`rounded-[14px] px-4 py-2 text-sm font-black transition ${
-                    historyView === "local" ? "bg-accent text-paper" : "text-muted hover:text-ink"
-                  }`}
-                  onClick={() => setHistoryView("local")}
-                  type="button"
-                >
-                  Мои генерации
-                </button>
-                <button
-                  className={`rounded-[14px] px-4 py-2 text-sm font-black transition ${
-                    historyView === "wb" ? "bg-[#CB11AB] text-white" : "text-muted hover:text-ink"
-                  }`}
-                  onClick={() => setHistoryView("wb")}
-                  type="button"
-                >
-                  На Wildberries
-                </button>
-              </div>
-
-              {historyView === "wb" ? (
-                <WildberriesCardsCatalog
-                  onNeedConnect={openSettingsTab}
-                  wbConnected={wbStatus.connected}
-                  wbUnlocked={wildberriesUnlocked}
-                />
-              ) : (
-                <>
+            <div className="mx-auto max-w-4xl space-y-6">
               {isQuotaExhausted ? (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
                   <div className="min-w-0">
@@ -726,26 +708,25 @@ export function CabinetApp() {
                   }
                 }}
               />
-                </>
-              )}
             </div>
           ) : null}
 
+          {tab === "wildberries" ? (
+            <WildberriesCabinetSection
+              cards={cards}
+              onGenerateMore={openCreateTab}
+              onNeedConnect={openSettingsTab}
+              onOpenCard={(card) => {
+                setSelected(card);
+                setTab("history");
+              }}
+              wbConnected={wbStatus.connected}
+              wbUnlocked={wildberriesUnlocked}
+            />
+          ) : null}
+
           {tab === "examples" ? (
-            <div className="mx-auto max-w-2xl text-center">
-              <Card padding="lg">
-                <h2 className="text-xl font-bold text-ink">Примеры карточек</h2>
-                <p className="mt-3 text-muted">
-                  Посмотрите галерею премиальных карточек на главной странице — до и после обработки.
-                </p>
-                <Link className="mt-6 inline-block" href="/#examples">
-                  <Button>
-                    <ExternalLink size={16} />
-                    Открыть примеры
-                  </Button>
-                </Link>
-              </Card>
-            </div>
+            <CabinetExamplesSection />
           ) : null}
 
           {tab === "compare" ? (
@@ -872,12 +853,16 @@ export function CabinetApp() {
         </main>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-5 gap-0.5 border-t border-clay bg-card/95 p-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 grid grid-cols-6 gap-0.5 border-t border-clay bg-card/95 p-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
         {nav.map((item) => (
           <button
             aria-label={item.label}
-            className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] px-1 py-2 ${
-              tab === item.id ? "bg-accent text-paper" : "text-muted"
+            className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-[12px] px-0.5 py-2 ${
+              tab === item.id
+                ? item.accent === "wb"
+                  ? "bg-[#CB11AB] text-white"
+                  : "bg-accent text-paper"
+                : "text-muted"
             }`}
             key={item.id}
             onClick={() => setTab(item.id)}

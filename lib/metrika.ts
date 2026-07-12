@@ -36,6 +36,7 @@ export type MetrikaGoal =
   | "download_json"
   | "copy_description"
   | "save_to_history"
+  | "wb_publish"
   | "select_marketplace"
   | "select_design_preset"
   | "pricing_click"

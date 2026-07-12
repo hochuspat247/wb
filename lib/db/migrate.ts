@@ -366,4 +366,18 @@ export function migrate(sqlite: Database.Database) {
   } catch {
     // column already exists
   }
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS wildberries_integration (
+      userId TEXT PRIMARY KEY NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+      tokenCiphertext TEXT NOT NULL,
+      tokenIv TEXT NOT NULL,
+      tokenTag TEXT NOT NULL,
+      isSandbox INTEGER NOT NULL DEFAULT 0,
+      lastCheckedAt INTEGER,
+      lastError TEXT,
+      createdAt INTEGER NOT NULL,
+      updatedAt INTEGER NOT NULL
+    );
+  `);
 }

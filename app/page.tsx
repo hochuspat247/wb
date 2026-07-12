@@ -10,6 +10,7 @@ import { PricingCalculatorSection } from "@/components/PricingCalculatorSection"
 import { PricingSection } from "@/components/PricingSection";
 import { HomeJsonLd } from "@/components/seo/HomeJsonLd";
 import { TestimonialsSection } from "@/components/TestimonialsSection";
+import { WildberriesLandingSection } from "@/components/wildberries/WildberriesLandingSection";
 import { createPageMetadata, siteConfig } from "@/lib/seo";
 
 export const metadata = createPageMetadata({
@@ -29,6 +30,7 @@ export default function Home() {
 
       <PainSection />
       <CompareSection />
+      <WildberriesLandingSection />
       <PricingSection />
       <PricingCalculatorSection />
       <TestimonialsSection />

@@ -93,6 +93,7 @@ export async function fetchUserQuota() {
     storyPremiumUnlocked?: boolean;
     cleanDownloadGenerationId?: string | null;
     downloadsFullyUnlocked?: boolean;
+    wildberriesUnlocked?: boolean;
   }>;
 }
 

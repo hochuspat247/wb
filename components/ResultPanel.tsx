@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
-import { AlertTriangle, Clipboard, Download, FileJson, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clipboard, Download, FileJson, Search, ShieldCheck, UploadCloud } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { TabPanel, Tabs } from "@/components/ui/Tabs";
 import {
   copyCardDescription,
@@ -17,8 +18,10 @@ import {
 } from "@/lib/download";
 import { base64ToDataUrl, downloadBase64Image, downloadImageFromUrl } from "@/lib/image";
 import { reachGoal } from "@/lib/metrika";
+import { publishWildberriesCard, searchWildberriesSubjects } from "@/lib/api/wildberries";
 import type { MarketplacePlatform } from "@/types/marketplace";
 import type { ImageDesignPreset, ProductCardResult } from "@/types/product-card";
+import type { WildberriesPublishResult, WildberriesSubject } from "@/types/wildberries";
 
 type ResultPanelProps = {
   card: ProductCardResult | null;
@@ -120,10 +123,44 @@ export function ResultPanel({
   const platform = card?.platform ?? card?.marketplaceText?.platform;
   const tabs = useMemo(() => orderTabs(platform), [platform]);
   const [activeTab, setActiveTab] = useState<string>(tabs[0]?.id ?? "general");
+  const [wbPublishOpen, setWbPublishOpen] = useState(false);
+  const [wbSubjectQuery, setWbSubjectQuery] = useState("");
+  const [wbSubjects, setWbSubjects] = useState<WildberriesSubject[]>([]);
+  const [wbSelectedSubject, setWbSelectedSubject] = useState<WildberriesSubject | null>(null);
+  const [wbVendorCode, setWbVendorCode] = useState("");
+  const [wbBrand, setWbBrand] = useState("");
+  const [wbPrice, setWbPrice] = useState("");
+  const [wbDimensions, setWbDimensions] = useState("");
+  const [wbWeight, setWbWeight] = useState("");
+  const [wbTechSize, setWbTechSize] = useState("");
+  const [wbWbSize, setWbWbSize] = useState("");
+  const [wbBarcode, setWbBarcode] = useState("");
+  const [wbPublishing, setWbPublishing] = useState(false);
+  const [wbSearching, setWbSearching] = useState(false);
+  const [wbPublishMessage, setWbPublishMessage] = useState("");
+  const [wbPublishResult, setWbPublishResult] = useState<WildberriesPublishResult | null>(null);
 
   useEffect(() => {
     setActiveTab(tabs[0]?.id ?? "general");
   }, [card?.id, tabs]);
+
+  useEffect(() => {
+    const source = card?.sourceInput;
+    setWbPublishOpen(false);
+    setWbSubjectQuery(card?.category || source?.category || "");
+    setWbSubjects([]);
+    setWbSelectedSubject(null);
+    setWbVendorCode(source?.sellerSku || "");
+    setWbBrand(source?.brand || "");
+    setWbPrice(source?.price || card?.price || "");
+    setWbDimensions(source?.dimensions || "");
+    setWbWeight(source?.weight || "");
+    setWbTechSize(source?.size || "0");
+    setWbWbSize(source?.size || "");
+    setWbBarcode("");
+    setWbPublishMessage("");
+    setWbPublishResult(null);
+  }, [card?.id, card?.category, card?.price, card?.sourceInput]);
 
   if (!card) {
     return null;
@@ -201,6 +238,61 @@ export function ResultPanel({
     downloadJson(currentCard);
   }
 
+  async function handleSearchWbSubjects() {
+    setWbSearching(true);
+    setWbPublishMessage("");
+    setWbPublishResult(null);
+
+    try {
+      const subjects = await searchWildberriesSubjects(wbSubjectQuery);
+      setWbSubjects(subjects);
+      if (subjects.length === 1) {
+        setWbSelectedSubject(subjects[0]);
+      }
+      if (!subjects.length) {
+        setWbPublishMessage("WB не нашел категорию. Попробуйте другое название или укажите предмет точнее.");
+      }
+    } catch (caught) {
+      setWbPublishMessage(caught instanceof Error ? caught.message : "Не удалось найти категории WB.");
+    } finally {
+      setWbSearching(false);
+    }
+  }
+
+  async function handlePublishWildberries() {
+    if (!wbSelectedSubject) {
+      setWbPublishMessage("Выберите категорию WB перед созданием карточки.");
+      return;
+    }
+
+    setWbPublishing(true);
+    setWbPublishMessage("");
+    setWbPublishResult(null);
+
+    try {
+      const result = await publishWildberriesCard({
+        card: currentCard,
+        subjectId: wbSelectedSubject.subjectID,
+        techSize: wbTechSize,
+        wbSize: wbWbSize,
+        barcode: wbBarcode,
+        vendorCode: wbVendorCode,
+        brand: wbBrand,
+        price: wbPrice,
+        dimensions: wbDimensions,
+        weight: wbWeight
+      });
+      setWbPublishResult(result);
+      setWbPublishMessage(
+        "Карточка отправлена в WB. Синхронизация на стороне Wildberries может занять до 30 минут."
+      );
+    } catch (caught) {
+      setWbPublishMessage(caught instanceof Error ? caught.message : "Не удалось создать карточку в WB.");
+    } finally {
+      setWbPublishing(false);
+    }
+  }
+
   const wb = mt?.platformSpecific?.wildberries;
   const oz = mt?.platformSpecific?.ozon;
   const av = mt?.platformSpecific?.avito;
@@ -258,6 +350,157 @@ export function ResultPanel({
               <div>
                 <h4 className={headingClass}>Характеристики WB</h4>
                 <CharList dark={dark} items={wb.wbCharacteristics} />
+              </div>
+              <div className={`rounded-[16px] border p-4 ${dark ? "border-white/10 bg-white/5" : "border-clay bg-paper/45"}`}>
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h4 className={headingClass}>Создание в WB</h4>
+                    <p className={`mt-1 ${textClass}`}>
+                      Поля ниже уже заполнены из данных генерации. Перед отправкой выберите категорию WB.
+                    </p>
+                  </div>
+                  <Button onClick={() => setWbPublishOpen((value) => !value)} size="sm" variant={dark ? "dark" : "secondary"}>
+                    <UploadCloud size={16} />
+                    {wbPublishOpen ? "Свернуть" : "Создать в WB"}
+                  </Button>
+                </div>
+
+                {wbPublishOpen ? (
+                  <div className="mt-4 space-y-4">
+                    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                      <Input
+                        className={dark ? "border-white/15 bg-white/5 text-white placeholder:text-white/35" : ""}
+                        onChange={(event) => setWbSubjectQuery(event.target.value)}
+                        placeholder="Например: кроссовки"
+                        value={wbSubjectQuery}
+                      />
+                      <Button disabled={wbSearching} onClick={() => void handleSearchWbSubjects()} size="sm" variant="secondary">
+                        <Search size={16} />
+                        {wbSearching ? "Ищем..." : "Найти"}
+                      </Button>
+                    </div>
+
+                    {wbSubjects.length ? (
+                      <div className="grid gap-2">
+                        {wbSubjects.map((subject) => (
+                          <button
+                            className={`rounded-[12px] border px-3 py-2 text-left text-sm font-semibold transition ${
+                              wbSelectedSubject?.subjectID === subject.subjectID
+                                ? "border-accent bg-accent/15 text-ink"
+                                : dark
+                                  ? "border-white/10 bg-white/5 text-white/75 hover:border-white/25"
+                                  : "border-clay bg-card text-muted hover:border-accent/35 hover:text-ink"
+                            }`}
+                            key={subject.subjectID}
+                            onClick={() => setWbSelectedSubject(subject)}
+                            type="button"
+                          >
+                            {subject.subjectName}
+                            {subject.parentName ? <span className="ml-2 text-xs opacity-60">{subject.parentName}</span> : null}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <label className={`grid gap-1 text-xs font-black uppercase ${dark ? "text-white/45" : "text-muted"}`}>
+                        Артикул продавца
+                        <Input
+                          className={dark ? "border-white/15 bg-white/5 text-white placeholder:text-white/35" : ""}
+                          onChange={(event) => setWbVendorCode(event.target.value)}
+                          placeholder="SKU-12345"
+                          value={wbVendorCode}
+                        />
+                      </label>
+                      <label className={`grid gap-1 text-xs font-black uppercase ${dark ? "text-white/45" : "text-muted"}`}>
+                        Бренд
+                        <Input
+                          className={dark ? "border-white/15 bg-white/5 text-white placeholder:text-white/35" : ""}
+                          onChange={(event) => setWbBrand(event.target.value)}
+                          placeholder="Нет бренда"
+                          value={wbBrand}
+                        />
+                      </label>
+                      <label className={`grid gap-1 text-xs font-black uppercase ${dark ? "text-white/45" : "text-muted"}`}>
+                        Цена
+                        <Input
+                          className={dark ? "border-white/15 bg-white/5 text-white placeholder:text-white/35" : ""}
+                          onChange={(event) => setWbPrice(event.target.value)}
+                          placeholder="1490 ₽"
+                          value={wbPrice}
+                        />
+                      </label>
+                      <label className={`grid gap-1 text-xs font-black uppercase ${dark ? "text-white/45" : "text-muted"}`}>
+                        Штрихкод
+                        <Input
+                          className={dark ? "border-white/15 bg-white/5 text-white placeholder:text-white/35" : ""}
+                          onChange={(event) => setWbBarcode(event.target.value)}
+                          placeholder="Пусто — сгенерируем в WB"
+                          value={wbBarcode}
+                        />
+                      </label>
+                      <label className={`grid gap-1 text-xs font-black uppercase ${dark ? "text-white/45" : "text-muted"}`}>
+                        Габариты
+                        <Input
+                          className={dark ? "border-white/15 bg-white/5 text-white placeholder:text-white/35" : ""}
+                          onChange={(event) => setWbDimensions(event.target.value)}
+                          placeholder="20x15x8 см"
+                          value={wbDimensions}
+                        />
+                      </label>
+                      <label className={`grid gap-1 text-xs font-black uppercase ${dark ? "text-white/45" : "text-muted"}`}>
+                        Вес
+                        <Input
+                          className={dark ? "border-white/15 bg-white/5 text-white placeholder:text-white/35" : ""}
+                          onChange={(event) => setWbWeight(event.target.value)}
+                          placeholder="350 г"
+                          value={wbWeight}
+                        />
+                      </label>
+                      <label className={`grid gap-1 text-xs font-black uppercase ${dark ? "text-white/45" : "text-muted"}`}>
+                        Размер продавца
+                        <Input
+                          className={dark ? "border-white/15 bg-white/5 text-white placeholder:text-white/35" : ""}
+                          onChange={(event) => setWbTechSize(event.target.value)}
+                          placeholder="0"
+                          value={wbTechSize}
+                        />
+                      </label>
+                      <label className={`grid gap-1 text-xs font-black uppercase ${dark ? "text-white/45" : "text-muted"}`}>
+                        Размер WB
+                        <Input
+                          className={dark ? "border-white/15 bg-white/5 text-white placeholder:text-white/35" : ""}
+                          onChange={(event) => setWbWbSize(event.target.value)}
+                          placeholder="Можно оставить пустым"
+                          value={wbWbSize}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        disabled={wbPublishing || !wbSelectedSubject}
+                        onClick={() => void handlePublishWildberries()}
+                        size="sm"
+                      >
+                        <UploadCloud size={16} />
+                        {wbPublishing ? "Отправляем..." : "Отправить в WB"}
+                      </Button>
+                      {wbPublishResult ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-mint">
+                          <CheckCircle2 size={15} />
+                          Артикул {wbPublishResult.vendorCode}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    {wbPublishMessage ? (
+                      <p className={`text-xs font-semibold leading-relaxed ${wbPublishResult ? "text-mint" : textClass}`}>
+                        {wbPublishMessage}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
           ) : (
@@ -455,6 +698,20 @@ export function ResultPanel({
           <Clipboard size={16} />
           Скопировать для WB
         </Button>
+        {wb ? (
+          <Button
+            className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"}
+            onClick={() => {
+              setActiveTab("wildberries");
+              setWbPublishOpen(true);
+            }}
+            size="sm"
+            variant="secondary"
+          >
+            <UploadCloud size={16} />
+            Создать в WB
+          </Button>
+        ) : null}
         <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("ozon")} size="sm" variant="secondary">
           <Clipboard size={16} />
           Скопировать для Ozon

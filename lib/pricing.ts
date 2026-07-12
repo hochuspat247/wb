@@ -22,6 +22,7 @@ export const FREE_DEMO_CARDS = 1;
 export const FREE_TRIAL_CARDS = 2;
 export const FREE_TOTAL_MARKETING_CARDS = FREE_DEMO_CARDS + FREE_TRIAL_CARDS;
 export const CARD_GENERATION_PRICE_RUB = 55;
+export const WB_INTEGRATION_MIN_PACKAGE = 5;
 
 /** Минимальная цена видео (4 сек, standard). */
 export const VIDEO_GENERATION_START_PRICE_RUB = VIDEO_STANDARD_PRICE_4_SEC;

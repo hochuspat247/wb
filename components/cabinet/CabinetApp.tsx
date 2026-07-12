@@ -26,9 +26,13 @@ import { CompareSection } from "@/components/CompareSection";
 import { HistorySection } from "@/components/HistorySection";
 import { Logo } from "@/components/Logo";
 import { PaymentButton } from "@/components/PaymentButton";
+import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
+import { WildberriesCardsCatalog } from "@/components/wildberries/WildberriesCardsCatalog";
+import { WildberriesPublishPanel } from "@/components/wildberries/WildberriesPublishPanel";
 import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { Input } from "@/components/ui/Input";
 import { Loader } from "@/components/ui/Loader";
 import { Select } from "@/components/ui/Select";
@@ -52,7 +56,13 @@ import { DEFAULT_IMAGE_SETTINGS, getImageSettings, saveImageSettings, type Image
 import { reachGoal } from "@/lib/metrika";
 import { FREE_TRIAL_CARDS, FREE_TOTAL_MARKETING_CARDS, calculatePackagePrice, formatRub } from "@/lib/pricing";
 import { clearHistory, getHistory } from "@/lib/storage";
+import {
+  disconnectWildberries,
+  fetchWildberriesSettings,
+  saveWildberriesSettings
+} from "@/lib/api/wildberries";
 import type { ProductCardResult } from "@/types/product-card";
+import type { WildberriesIntegrationStatus } from "@/types/wildberries";
 
 type Tab = "create" | "history" | "examples" | "compare" | "settings";
 
@@ -99,6 +109,16 @@ export function CabinetApp() {
   const [verificationMessage, setVerificationMessage] = useState("");
   const [resendingVerification, setResendingVerification] = useState(false);
   const [demoWelcomeHint, setDemoWelcomeHint] = useState<{ cardId: string; title?: string } | null>(null);
+  const [wbStatus, setWbStatus] = useState<WildberriesIntegrationStatus>({
+    connected: false,
+    isSandbox: false
+  });
+  const [wbToken, setWbToken] = useState("");
+  const [wbSandbox, setWbSandbox] = useState(false);
+  const [wbMessage, setWbMessage] = useState("");
+  const [wbSaving, setWbSaving] = useState(false);
+  const [wildberriesUnlocked, setWildberriesUnlocked] = useState(false);
+  const [historyView, setHistoryView] = useState<"local" | "wb">("local");
 
   const handleQuotaChange = useCallback(
     (quota: {
@@ -107,9 +127,11 @@ export function CabinetApp() {
       credits?: number;
       cleanDownloadGenerationId?: string | null;
       downloadsFullyUnlocked?: boolean;
+      wildberriesUnlocked?: boolean;
     }) => {
       setRemainingGenerations(quota.remaining);
       setGenerationsUsed(quota.used ?? 0);
+      setWildberriesUnlocked(Boolean(quota.wildberriesUnlocked));
       setDownloadPolicy({
         cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
         downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
@@ -143,8 +165,27 @@ export function CabinetApp() {
     ? canDownloadCardImage(selectedDisplayCard, downloadPolicy, true)
     : false;
 
+  const selectedSeriesCards = useMemo(() => {
+    if (!selected?.seriesId) {
+      return [];
+    }
+
+    return cards.filter((card) => card.seriesId === selected.seriesId && card.id !== selected.id);
+  }, [cards, selected]);
+
   useEffect(() => {
     setImageSettings(getImageSettings());
+  }, []);
+
+  useEffect(() => {
+    fetchWildberriesSettings()
+      .then((status) => {
+        setWbStatus(status);
+        setWbSandbox(status.isSandbox);
+      })
+      .catch(() => {
+        setWbStatus({ connected: false, isSandbox: false });
+      });
   }, []);
 
   useEffect(() => {
@@ -169,6 +210,7 @@ export function CabinetApp() {
             cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
             downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
           });
+          setWildberriesUnlocked(Boolean(quota.wildberriesUnlocked));
         }
         setNeedsEmailVerification(Boolean(profile.needsEmailVerification));
         setEmailDisplay(profile.emailDisplay || profile.email);
@@ -280,6 +322,12 @@ export function CabinetApp() {
     window.history.replaceState(null, "", "/cabinet#create");
   }
 
+  function openSettingsTab() {
+    setSelected(null);
+    setTab("settings");
+    window.history.replaceState(null, "", "/cabinet#settings");
+  }
+
   const stats = useMemo(() => {
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     return {
@@ -318,6 +366,39 @@ export function CabinetApp() {
       setProfileName(saved.name);
     } catch {
       setProfileName(editName);
+    }
+  }
+
+  async function handleSaveWildberries() {
+    setWbSaving(true);
+    setWbMessage("");
+
+    try {
+      const status = await saveWildberriesSettings({ token: wbToken, isSandbox: wbSandbox });
+      setWbStatus(status);
+      setWbToken("");
+      setWbMessage("WB API подключен. Теперь карточки можно отправлять в личный кабинет WB.");
+    } catch (caught) {
+      setWbMessage(caught instanceof Error ? caught.message : "Не удалось подключить WB API.");
+    } finally {
+      setWbSaving(false);
+    }
+  }
+
+  async function handleDisconnectWildberries() {
+    setWbSaving(true);
+    setWbMessage("");
+
+    try {
+      const status = await disconnectWildberries();
+      setWbStatus(status);
+      setWbSandbox(false);
+      setWbToken("");
+      setWbMessage("WB API отключен.");
+    } catch (caught) {
+      setWbMessage(caught instanceof Error ? caught.message : "Не удалось отключить WB API.");
+    } finally {
+      setWbSaving(false);
     }
   }
 
@@ -518,8 +599,8 @@ export function CabinetApp() {
                     <p className="text-sm font-black text-ink">Бесплатные генерации закончились</p>
                     <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
                       Купите тариф, чтобы продолжить создавать карточки для Wildberries и Ozon. Пакет из 10 карточек —{" "}
-                      {formatRub(starterPack.total)} ({formatRub(starterPack.pricePerUnit)} за штуку). Все сохранённые
-                      карточки станут без водяного знака.
+                      {formatRub(starterPack.total)} ({formatRub(starterPack.pricePerUnit)} за штуку). Все созданные
+                      карточки можно скачать в истории.
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col gap-2 sm:items-end">
@@ -556,13 +637,42 @@ export function CabinetApp() {
           ) : null}
 
           {tab === "history" ? (
-            <div className="mx-auto max-w-4xl space-y-6">
+            <div className={`mx-auto space-y-6 ${historyView === "wb" ? "max-w-6xl" : "max-w-4xl"}`}>
+              <div className="flex flex-wrap gap-2 rounded-[18px] border border-clay bg-card p-1.5">
+                <button
+                  className={`rounded-[14px] px-4 py-2 text-sm font-black transition ${
+                    historyView === "local" ? "bg-accent text-paper" : "text-muted hover:text-ink"
+                  }`}
+                  onClick={() => setHistoryView("local")}
+                  type="button"
+                >
+                  Мои генерации
+                </button>
+                <button
+                  className={`rounded-[14px] px-4 py-2 text-sm font-black transition ${
+                    historyView === "wb" ? "bg-[#CB11AB] text-white" : "text-muted hover:text-ink"
+                  }`}
+                  onClick={() => setHistoryView("wb")}
+                  type="button"
+                >
+                  На Wildberries
+                </button>
+              </div>
+
+              {historyView === "wb" ? (
+                <WildberriesCardsCatalog
+                  onNeedConnect={openSettingsTab}
+                  wbConnected={wbStatus.connected}
+                  wbUnlocked={wildberriesUnlocked}
+                />
+              ) : (
+                <>
               {isQuotaExhausted ? (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
                   <div className="min-w-0">
                     <p className="text-sm font-black text-ink">Бесплатные генерации закончились</p>
                     <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
-                      Купите тариф, чтобы снова создавать карточки и снять демо-метку со всех сохранённых результатов.
+                      Купите тариф, чтобы снова создавать карточки. Скачать уже созданные можно в любой момент.
                     </p>
                   </div>
                   <PaymentButton className="w-full sm:w-auto" count={10} metrikaPlan="cabinet_history_pack10" size="sm">
@@ -616,6 +726,8 @@ export function CabinetApp() {
                   }
                 }}
               />
+                </>
+              )}
             </div>
           ) : null}
 
@@ -652,6 +764,68 @@ export function CabinetApp() {
                 <Button className="mt-5" onClick={handleSaveProfile} size="sm">
                   Сохранить
                 </Button>
+              </Card>
+
+              <Card padding="lg">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-bold text-ink">Wildberries API</h2>
+                    <p className="mt-1 text-sm text-muted">
+                      Подключите токен с категорией Content. Публикация карточек из истории доступна с тарифа «Рост».
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-black ${
+                      wbStatus.connected ? "bg-mint/15 text-mint" : "bg-paper text-muted"
+                    }`}
+                  >
+                    {wbStatus.connected ? "Подключено" : "Не подключено"}
+                  </span>
+                </div>
+                <WildberriesBetaNotice className="mt-4" compact />
+                <label className="mt-5 grid gap-2 text-sm font-semibold text-ink">
+                  WB API-токен
+                  <Input
+                    autoComplete="off"
+                    onChange={(event) => setWbToken(event.target.value)}
+                    placeholder={wbStatus.connected ? "Вставьте новый токен, чтобы заменить текущий" : "eyJhbGciOi..."}
+                    type="password"
+                    value={wbToken}
+                  />
+                </label>
+                <Checkbox
+                  checked={wbSandbox}
+                  className="mt-3"
+                  label="Использовать sandbox WB"
+                  onChange={(event) => setWbSandbox(event.target.checked)}
+                />
+                {wbStatus.updatedAt ? (
+                  <p className="mt-3 text-xs font-semibold text-muted">
+                    Обновлено: {new Date(wbStatus.updatedAt).toLocaleString("ru-RU")}
+                  </p>
+                ) : null}
+                {wbStatus.lastError ? (
+                  <p className="mt-3 text-xs font-semibold text-red-500">{wbStatus.lastError}</p>
+                ) : null}
+                {wbMessage ? <p className="mt-3 text-xs font-semibold text-muted">{wbMessage}</p> : null}
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <Button disabled={wbSaving || !wbToken.trim()} onClick={() => void handleSaveWildberries()} size="sm">
+                    {wbSaving ? "Проверяем..." : wbStatus.connected ? "Заменить токен" : "Подключить WB"}
+                  </Button>
+                  {wbStatus.connected ? (
+                    <Button
+                      disabled={wbSaving}
+                      onClick={() => void handleDisconnectWildberries()}
+                      size="sm"
+                      variant="ghost"
+                    >
+                      Отключить
+                    </Button>
+                  ) : null}
+                </div>
+                <p className="mt-4 text-xs font-semibold leading-relaxed text-muted">
+                  Токен хранится в зашифрованном виде. Пароль от личного кабинета WB здесь не нужен.
+                </p>
               </Card>
 
               <Card padding="lg">
@@ -768,13 +942,6 @@ export function CabinetApp() {
                       <p className="text-sm leading-relaxed text-muted">{selected.shortDescription}</p>
                       {selected.price ? <p className="text-2xl font-bold text-ink">{selected.price}</p> : null}
                       <p className="text-xs text-muted">{new Date(selected.generatedAt).toLocaleString("ru-RU")}</p>
-                      {selectedDisplayCard?.watermarkLocked ? (
-                        <p className="text-xs font-semibold text-muted">
-                          {canDownloadSelected
-                            ? "Первая карточка — скачивание без водяного знака доступно."
-                            : "Скачать можно только первую карточку из истории. Для этой нужен пакет генераций."}
-                        </p>
-                      ) : null}
                       <div className="grid gap-2 sm:grid-cols-2">
                         <Button
                           className="w-full"
@@ -791,6 +958,16 @@ export function CabinetApp() {
                         </Button>
                       </div>
                       <CardSavedVideosPanel card={selected} compact />
+                      <WildberriesPublishPanel
+                        card={selected}
+                        compact
+                        historyCards={cards}
+                        onGenerateMore={openCreateTab}
+                        onNeedConnect={openSettingsTab}
+                        relatedCards={selectedSeriesCards}
+                        wbConnected={wbStatus.connected}
+                        wbUnlocked={wildberriesUnlocked}
+                      />
                     </>
                   ) : null}
                   <VideoFromCardFlow

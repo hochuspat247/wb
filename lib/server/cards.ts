@@ -2,12 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { productCards } from "@/lib/db/schema";
 import { hydrateUserCardsWithVideos } from "@/lib/server/cardVideos";
-import {
-  backfillCleanDownloadGeneration,
-  getUserDownloadAccess,
-  isGenerationDownloadUnlocked,
-  registerGenerationForCleanDownload
-} from "@/lib/server/downloadAccess";
+import { registerGenerationForCleanDownload } from "@/lib/server/downloadAccess";
 import { downloadRemoteImageAsBase64 } from "@/lib/server/remoteImage";
 import type { ProductCardResult } from "@/types/product-card";
 
@@ -41,41 +36,20 @@ async function persistCardImagePayload(card: ProductCardResult) {
   };
 }
 
-function sanitizeCardForClient(
-  card: ProductCardResult,
-  access: Awaited<ReturnType<typeof getUserDownloadAccess>>
-): ProductCardResult {
-  const downloadUnlocked = isGenerationDownloadUnlocked(access, card.id);
+function sanitizeCardForClient(card: ProductCardResult): ProductCardResult {
   const previewImageUrl = `/api/cards/${card.id}/image?variant=preview`;
-  const imageDownloadUrl = downloadUnlocked
-    ? `/api/cards/${card.id}/image?variant=original&download=1`
-    : undefined;
-
-  if (downloadUnlocked) {
-    return {
-      ...card,
-      downloadUnlocked: true,
-      watermarkLocked: false,
-      previewImageUrl,
-      imageDownloadUrl
-    };
-  }
+  const imageDownloadUrl = `/api/cards/${card.id}/image?variant=original&download=1`;
 
   return {
     ...card,
-    generatedImageBase64: null,
-    generatedImageDataUrl: undefined,
-    generatedImageUrl: null,
-    downloadUnlocked: false,
-    watermarkLocked: true,
+    downloadUnlocked: true,
+    watermarkLocked: false,
     previewImageUrl,
     imageDownloadUrl
   };
 }
 
 export async function getUserCards(userId: string): Promise<ProductCardResult[]> {
-  await backfillCleanDownloadGeneration(userId);
-
   const rows = await db
     .select()
     .from(productCards)
@@ -89,8 +63,7 @@ export async function getUserCards(userId: string): Promise<ProductCardResult[]>
       .filter((item): item is ProductCardResult => item !== null)
   );
 
-  const access = await getUserDownloadAccess(userId);
-  return cards.map((card) => sanitizeCardForClient(card, access));
+  return cards.map((card) => sanitizeCardForClient(card));
 }
 
 export async function getUserCardImagePayload(userId: string, cardId: string) {
@@ -107,12 +80,9 @@ export async function getUserCardImagePayload(userId: string, cardId: string) {
     return null;
   }
 
-  const access = await getUserDownloadAccess(userId);
-  const downloadUnlocked = isGenerationDownloadUnlocked(access, card.id);
-
   return {
     card,
-    downloadUnlocked
+    downloadUnlocked: true
   };
 }
 

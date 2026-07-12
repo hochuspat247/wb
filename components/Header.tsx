@@ -13,6 +13,7 @@ import type { MetrikaGoal } from "@/lib/metrika";
 const links = [
   ["Примеры", "/#examples"],
   ["Сравнение", "/#compare"],
+  ["Wildberries", "/#wildberries"],
   ["Генератор", "/cabinet#create"],
   ["Тарифы", "/#pricing"],
   ["FAQ", "/#faq"]
@@ -21,6 +22,7 @@ const links = [
 const NAV_LINK_GOALS: Record<string, MetrikaGoal> = {
   "/#examples": "examples_click",
   "/#compare": "compare_view",
+  "/#wildberries": "compare_view",
   "/#pricing": "pricing_click",
   "/#faq": "faq_view"
 };

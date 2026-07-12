@@ -137,11 +137,7 @@ export function HistorySection({
                     {card.marketplace} · {card.style} · {new Date(card.generatedAt).toLocaleDateString("ru-RU")}
                   </p>
                   {card.watermarkLocked ? (
-                    <p className="mt-1 text-xs font-semibold text-muted">
-                      {card.downloadUnlocked
-                        ? "Доступна для скачивания"
-                        : "Скачивание недоступно — нужен пакет"}
-                    </p>
+                    <p className="mt-1 text-xs font-semibold text-muted">Доступна для скачивания</p>
                   ) : null}
                   {presetLabel ? <p className="mt-0.5 text-xs text-muted">{presetLabel}</p> : null}
                   {videoCount > 0 ? (

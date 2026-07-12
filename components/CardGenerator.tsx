@@ -963,22 +963,12 @@ export function CardGenerator({
       return;
     }
 
-    if (!canDownloadCardImage(displayCard, downloadPolicy, persistToServer)) {
-      setShowPaywall(true);
-      setNotice("Скачать можно только первую карточку. Для остальных нужен пакет генераций.");
-      return;
-    }
-
     reachGoal("download_png");
     trackConversion("download_png", {
       source: persistToServer ? "cabinet" : "local",
       series: Boolean(displayCard.seriesId)
     });
     await downloadBestImage(displayCard, renderedImageUrl, previewRef.current);
-
-    if (displayCard.watermarkLocked) {
-      setNotice("Скачана версия с демо-меткой. Без водяного знака — первая карточка или после покупки пакета.");
-    }
 
     if (persistToServer && hasGeneratedAiCover(displayCard)) {
       setEmphasizeVideoOffer(true);
@@ -995,27 +985,13 @@ export function CardGenerator({
         ? applyDownloadPolicyToCard(seriesCard, downloadPolicy, persistToServer)
         : seriesCard;
 
-    if (!canDownloadCardImage(displaySeriesCard, downloadPolicy, persistToServer)) {
-      setShowPaywall(true);
-      setNotice("Скачать можно только первую карточку. Для остальных нужен пакет генераций.");
-      return;
-    }
-
     reachGoal("download_png", { source: "series", seriesIndex: seriesCard.seriesIndex ?? index + 1 });
     trackConversion("download_png", { source: "series", seriesIndex: seriesCard.seriesIndex ?? index + 1 });
     await downloadCardImage(displaySeriesCard, `marketcard-series-${seriesCard.seriesIndex ?? index + 1}.png`);
   }
 
   async function handleDownloadSeriesZip() {
-    const downloadableCards = displaySeriesCards.filter((seriesCard) =>
-      canDownloadCardImage(seriesCard, downloadPolicy, persistToServer)
-    );
-
-    if (!downloadableCards.length) {
-      setShowPaywall(true);
-      setNotice("Скачать можно только первую карточку. Для остальных нужен пакет генераций.");
-      return;
-    }
+    const downloadableCards = displaySeriesCards;
 
     const files = await Promise.all(
       downloadableCards.map(async (seriesCard, index) => {
@@ -1934,13 +1910,6 @@ export function CardGenerator({
                   )}
                   {displayCard?.watermarkLocked && hasAiCover ? <WatermarkOverlay /> : null}
                 </div>
-                {displayCard?.watermarkLocked && hasAiCover ? (
-                  <p className={`mt-3 text-sm font-semibold leading-relaxed ${darkConsole ? "text-white/55" : "text-muted"}`}>
-                    {canDownloadCurrentCard
-                      ? "Карточка с демо-меткой. Скачать без водяного знака можно для первой генерации или после покупки пакета."
-                      : "Скачать можно только первую карточку из истории. Для этой — купите пакет генераций."}
-                  </p>
-                ) : null}
                 {shouldShowGenerationRatingPrompt ? (
                   <GenerationRatingPrompt
                     darkConsole={darkConsole}

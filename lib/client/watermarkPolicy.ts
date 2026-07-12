@@ -6,80 +6,25 @@ export type DownloadPolicy = {
 };
 
 export function canDownloadCardImage(
-  card: ProductCardResult,
-  policy: DownloadPolicy | null,
-  persistToServer: boolean
+  _card: ProductCardResult,
+  _policy: DownloadPolicy | null,
+  _persistToServer: boolean
 ) {
-  if (!persistToServer) {
-    return true;
-  }
-
-  if (policy?.downloadsFullyUnlocked) {
-    return true;
-  }
-
-  if (card.downloadUnlocked) {
-    return true;
-  }
-
-  if (policy?.cleanDownloadGenerationId && card.id === policy.cleanDownloadGenerationId) {
-    return true;
-  }
-
-  return false;
-}
-
-function stripWatermarkedCard(card: ProductCardResult): ProductCardResult {
-  return {
-    ...card,
-    generatedImageBase64: null,
-    generatedImageDataUrl: undefined,
-    generatedImageUrl: null,
-    downloadUnlocked: false,
-    watermarkLocked: true,
-    previewImageUrl: card.previewImageUrl ?? `/api/cards/${card.id}/image?variant=preview`
-  };
+  return true;
 }
 
 export function applyDownloadPolicyToCard(
   card: ProductCardResult,
-  policy: DownloadPolicy | null,
+  _policy: DownloadPolicy | null,
   persistToServer: boolean
 ): ProductCardResult {
   if (!persistToServer) {
     return card;
   }
 
-  if (policy?.downloadsFullyUnlocked) {
-    return {
-      ...card,
-      downloadUnlocked: true,
-      watermarkLocked: false
-    };
-  }
-
-  if (card.watermarkLocked) {
-    return stripWatermarkedCard(card);
-  }
-
-  if (card.downloadUnlocked) {
-    return {
-      ...card,
-      watermarkLocked: false
-    };
-  }
-
-  if (!policy) {
-    return card;
-  }
-
-  if (card.id === policy.cleanDownloadGenerationId) {
-    return {
-      ...card,
-      downloadUnlocked: true,
-      watermarkLocked: false
-    };
-  }
-
-  return stripWatermarkedCard(card);
+  return {
+    ...card,
+    downloadUnlocked: true,
+    watermarkLocked: false
+  };
 }

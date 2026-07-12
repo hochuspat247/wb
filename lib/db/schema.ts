@@ -96,6 +96,24 @@ export const productCards = sqliteTable("product_card", {
   createdAt: integer("createdAt", { mode: "timestamp_ms" }).notNull()
 });
 
+export const wildberriesIntegrations = sqliteTable("wildberries_integration", {
+  userId: text("userId")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  tokenCiphertext: text("tokenCiphertext").notNull(),
+  tokenIv: text("tokenIv").notNull(),
+  tokenTag: text("tokenTag").notNull(),
+  isSandbox: integer("isSandbox", { mode: "boolean" }).notNull().default(false),
+  lastCheckedAt: integer("lastCheckedAt", { mode: "timestamp_ms" }),
+  lastError: text("lastError"),
+  createdAt: integer("createdAt", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updatedAt", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date())
+});
+
 export const demoGenerations = sqliteTable("demo_generation", {
   id: text("id").primaryKey(),
   guestId: text("guestId").notNull(),

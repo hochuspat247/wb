@@ -11,6 +11,7 @@ type SeriesTypePickerProps = {
   selectedTypes: string[];
   onChange: (types: string[]) => void;
   darkConsole?: boolean;
+  availableTypes?: string[];
 };
 
 const VISIBLE_COUNT = 8;
@@ -21,19 +22,20 @@ export function SeriesTypePicker({
   style,
   selectedTypes,
   onChange,
-  darkConsole = false
+  darkConsole = false,
+  availableTypes
 }: SeriesTypePickerProps) {
   const [expanded, setExpanded] = useState(false);
-  const availableTypes = getAvailableSeriesTypes(category);
-  const hiddenCount = Math.max(0, availableTypes.length - VISIBLE_COUNT);
-  const visibleTypes = expanded ? availableTypes : availableTypes.slice(0, VISIBLE_COUNT);
+  const catalog = availableTypes ?? getAvailableSeriesTypes(category);
+  const hiddenCount = Math.max(0, catalog.length - VISIBLE_COUNT);
+  const visibleTypes = expanded ? catalog : catalog.slice(0, VISIBLE_COUNT);
 
   useEffect(() => {
-    const hasHiddenSelected = selectedTypes.some((type) => availableTypes.indexOf(type) >= VISIBLE_COUNT);
+    const hasHiddenSelected = selectedTypes.some((type) => catalog.indexOf(type) >= VISIBLE_COUNT);
     if (hasHiddenSelected) {
       setExpanded(true);
     }
-  }, [availableTypes, selectedTypes]);
+  }, [catalog, selectedTypes]);
 
   function toggleType(type: string) {
     if (selectedTypes.includes(type)) {
@@ -46,7 +48,7 @@ export function SeriesTypePicker({
     }
 
     onChange(
-      [...selectedTypes, type].sort((left, right) => availableTypes.indexOf(left) - availableTypes.indexOf(right))
+      [...selectedTypes, type].sort((left, right) => catalog.indexOf(left) - catalog.indexOf(right))
     );
   }
 

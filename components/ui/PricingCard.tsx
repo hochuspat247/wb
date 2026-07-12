@@ -1,9 +1,26 @@
 import { Check } from "lucide-react";
+import type { ReactNode } from "react";
 import { MetrikaGoalLink } from "@/components/analytics/MetrikaGoalLink";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { PaymentButton } from "@/components/PaymentButton";
+
+const WB_ACCENT_CLASS = "font-black text-[#CB11AB]";
+
+function highlightWildberries(text: string): ReactNode {
+  const parts = text.split(/(Wildberries|ВБ|WB)/g);
+
+  return parts.map((part, index) =>
+    part === "Wildberries" || part === "ВБ" || part === "WB" ? (
+      <span className={WB_ACCENT_CLASS} key={index}>
+        {part}
+      </span>
+    ) : (
+      part
+    )
+  );
+}
 
 type PricingCardProps = {
   name: string;
@@ -62,7 +79,7 @@ export function PricingCard({
         {features.map((feature) => (
           <li className="flex items-start gap-3 text-sm" key={feature}>
             <Check className={`mt-0.5 shrink-0 ${highlighted ? "text-mint" : "text-accent"}`} size={16} />
-            <span className="text-muted">{feature}</span>
+            <span className="text-muted">{highlightWildberries(feature)}</span>
           </li>
         ))}
       </ul>

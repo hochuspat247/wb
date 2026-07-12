@@ -6,6 +6,7 @@ import { BRAND } from "@/lib/branding";
 
 const footerLinks = [
   { label: "Wildberries", href: "/wildberries", goal: "examples_click" as const },
+  { label: "Публикация на WB", href: "/#wildberries", goal: "examples_click" as const },
   { label: "Ozon", href: "/ozon", goal: "examples_click" as const },
   { label: "Авито", href: "/avito", goal: "examples_click" as const },
   { label: BRAND.storyStudio, href: "/storystudio", goal: "examples_click" as const },
@@ -26,7 +27,7 @@ export function Footer() {
           <div>
             <Logo light />
             <p className="mt-4 max-w-xs text-sm font-medium leading-relaxed text-white/55">
-              Инструмент для продавцов маркетплейсов: тексты, СЕО, обложки 4:5 из одного фото и видео из готовой карточки.
+              ИИ-генератор карточек для Wildberries, Ozon и Авито: тексты, СЕО, обложки 4:5 из одного фото, публикация на ВБ через API и видео из карточки.
             </p>
           </div>
           <div>

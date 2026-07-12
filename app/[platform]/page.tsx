@@ -4,16 +4,16 @@ import { createPageMetadata } from "@/lib/seo";
 import { notFound } from "next/navigation";
 
 type PageProps = {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ platform: string }>;
 };
 
 export async function generateStaticParams() {
-  return [{ slug: "wildberries" }, { slug: "ozon" }, { slug: "avito" }];
+  return [{ platform: "wildberries" }, { platform: "ozon" }, { platform: "avito" }];
 }
 
 export async function generateMetadata({ params }: PageProps) {
-  const { slug } = await params;
-  const page = getPlatformPage(slug);
+  const { platform } = await params;
+  const page = getPlatformPage(platform);
 
   if (!page) {
     return createPageMetadata({ title: "Страница не найдена", noIndex: true });
@@ -22,13 +22,14 @@ export async function generateMetadata({ params }: PageProps) {
   return createPageMetadata({
     title: page.title,
     description: page.description,
+    keywords: page.keywords,
     path: page.path
   });
 }
 
 export default async function PlatformPage({ params }: PageProps) {
-  const { slug } = await params;
-  const page = getPlatformPage(slug);
+  const { platform } = await params;
+  const page = getPlatformPage(platform);
 
   if (!page) {
     notFound();

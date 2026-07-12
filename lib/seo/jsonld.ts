@@ -107,7 +107,26 @@ export function buildHomeJsonLd() {
         name: siteConfig.name,
         url: absoluteUrl("/"),
         inLanguage: "ru-RU",
-        description: siteConfig.description
+        description: siteConfig.description,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: {
+            "@type": "EntryPoint",
+            urlTemplate: `${absoluteUrl("/")}#faq`
+          },
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Главная",
+            item: absoluteUrl("/")
+          }
+        ]
       },
       {
         "@type": "WebPage",
@@ -136,10 +155,29 @@ export function buildHomeJsonLd() {
         },
         featureList: [
           "Генерация карточки товара по фото",
-          "Тексты и СЕО для ВБ, Озон, Авито",
+          "Тексты и СЕО для ВБ, Озон, Авито и Яндекс Маркета",
           "ИИ-обложка 4:5",
+          "Карусель слайдов для карточки товара",
+          "Публикация на Wildberries через API",
+          "Редактирование карточек WB в каталоге",
           "Видео из готовой карточки без звука"
         ],
+        url: absoluteUrl("/")
+      },
+      {
+        "@type": "Service",
+        name: "Генерация карточек товара для маркетплейсов",
+        description: siteConfig.description,
+        provider: {
+          "@type": "Organization",
+          name: siteConfig.name,
+          url: absoluteUrl("/")
+        },
+        areaServed: {
+          "@type": "Country",
+          name: "Россия"
+        },
+        serviceType: "ИИ-генерация карточек товара",
         url: absoluteUrl("/")
       },
       {
@@ -147,11 +185,12 @@ export function buildHomeJsonLd() {
         name: "Как сделать карточку товара для маркетплейса",
         description: "Пошаговый процесс генерации карточки товара в МаркетКард ИИ",
         step: [
-          { "@type": "HowToStep", name: "Загрузите фото товара", text: "Добавьте исходное фото товара в генератор." },
-          { "@type": "HowToStep", name: "Опишите товар", text: "Укажите категорию, преимущества и площадку." },
-          { "@type": "HowToStep", name: "Получите тексты и СЕО", text: "Нейросеть подготовит название, описание и ключи." },
-          { "@type": "HowToStep", name: "Сгенерируйте обложку 4:5", text: "ИИ создаст визуал карточки под маркетплейс." },
-          { "@type": "HowToStep", name: "Скачайте PNG", text: "Экспортируйте карточку и загрузите на площадку." }
+          { "@type": "HowToStep", name: "Загрузите фото товара", text: "Добавьте исходное фото товара в генератор на главной странице или в кабинете." },
+          { "@type": "HowToStep", name: "Опишите товар", text: "Укажите категорию, преимущества и площадку: Wildberries, Ozon, Авито или Яндекс Маркет." },
+          { "@type": "HowToStep", name: "Получите тексты и СЕО", text: "Нейросеть подготовит название, описание и ключевые слова для поиска на маркетплейсе." },
+          { "@type": "HowToStep", name: "Сгенерируйте обложку 4:5", text: "ИИ создаст визуал карточки с инфографикой под требования площадки." },
+          { "@type": "HowToStep", name: "Соберите карусель слайдов", text: "Добавьте слайды преимуществ, характеристик и сценариев использования в кабинете." },
+          { "@type": "HowToStep", name: "Опубликуйте или скачайте", text: "Скачайте PNG или отправьте карточку на Wildberries через API из кабинета." }
         ]
       },
       buildOfferCatalog(),

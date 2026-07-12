@@ -508,3 +508,72 @@ export function sortSeriesTypes(types: string[], category: string) {
   const catalog = getAvailableSeriesTypes(category);
   return [...types].sort((left, right) => catalog.indexOf(left) - catalog.indexOf(right));
 }
+
+export function getSeriesAnchorId(card: ProductCardResult) {
+  return card.seriesId || card.id;
+}
+
+export function getSeriesSiblingCards(cards: ProductCardResult[], sourceCard: ProductCardResult) {
+  const anchorId = getSeriesAnchorId(sourceCard);
+
+  return cards
+    .filter((card) => card.id !== sourceCard.id && card.seriesId === anchorId)
+    .sort((left, right) => (left.seriesIndex ?? 0) - (right.seriesIndex ?? 0));
+}
+
+export function getExistingSeriesTypes(cards: ProductCardResult[]) {
+  return new Set(
+    cards
+      .map((card) => card.seriesPlanItem?.type || card.sourceInput?.seriesType)
+      .filter((type): type is string => Boolean(type))
+  );
+}
+
+export function getMissingSeriesTypes(category: string, cards: ProductCardResult[]) {
+  const existing = getExistingSeriesTypes(cards);
+  return getAvailableSeriesTypes(category).filter((type) => !existing.has(type));
+}
+
+export function getDefaultAppendSeriesTypes(missingTypes: string[]) {
+  const preferred = ["benefits", "features", "how_to_use", "use_cases", "safety", "ingredients", "final_cta"];
+  const picked = preferred.filter((type) => missingTypes.includes(type));
+
+  if (picked.length) {
+    return picked.slice(0, Math.min(3, picked.length));
+  }
+
+  return missingTypes.slice(0, Math.min(3, missingTypes.length));
+}
+
+export function buildAppendCardSeriesPlanFromTypes(
+  selectedTypes: string[],
+  {
+    marketplace,
+    style,
+    productDescription,
+    headline
+  }: {
+    category: string;
+    marketplace: string;
+    style: string;
+    productDescription: string;
+    headline: string;
+  },
+  startIndex: number
+): CardSeriesPlanItem[] {
+  const productName = cleanProductName(headline || productDescription);
+
+  return selectedTypes.map((type, offset) => {
+    const definition = getSeriesDefinition(type, productName, marketplace, style);
+
+    return {
+      index: startIndex + offset + 1,
+      type,
+      ...definition
+    };
+  });
+}
+
+export function getSeriesStartIndex(cards: ProductCardResult[]) {
+  return cards.reduce((max, card) => Math.max(max, card.seriesIndex ?? 0), 0);
+}

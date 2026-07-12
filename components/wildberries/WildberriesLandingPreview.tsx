@@ -1,20 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { CheckCircle2, Plus, Sparkles, UploadCloud, Wand2, X } from "lucide-react";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { PaymentButton } from "@/components/PaymentButton";
 import { Button } from "@/components/ui/Button";
 import { WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
+import fanAfter from "@/publick/70a7dada-44df-4fe2-84bb-22290fbc0aa7.png";
+import steamerAfter from "@/publick/b96119e8-f03b-43dc-8f66-c52a0b4ed245.png";
+import waterTesterAfter from "@/publick/bdc93c3d-6c98-45de-bd5f-58f0e4618213.png";
+import faceCreamAfter from "@/publick/8270a01e-bd48-4474-b18d-1a3b6eb2e6fc.png";
 
 const starterPack = calculatePackagePrice(WB_INTEGRATION_MIN_PACKAGE);
 
-const mockSlides = [
-  { label: "Титульник", accent: true },
-  { label: "Преимущества" },
-  { label: "Характеристики" },
-  { label: "Как использовать" }
+const mockSlides: Array<{ label: string; accent?: boolean; image: StaticImageData }> = [
+  { label: "Титульник", accent: true, image: fanAfter },
+  { label: "Преимущества", image: steamerAfter },
+  { label: "Характеристики", image: waterTesterAfter },
+  { label: "Как использовать", image: faceCreamAfter }
 ];
 
 type WildberriesSubscribeModalProps = {
@@ -120,13 +125,13 @@ export function WildberriesLandingPreview() {
       <div className="overflow-hidden rounded-[28px] border border-[#CB11AB]/20 bg-[linear-gradient(160deg,rgba(203,17,171,0.1),rgba(124,255,107,0.05))] p-5 shadow-[0_24px_80px_rgba(203,17,171,0.12)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#CB11AB]">Кабинет → История → WB</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#CB11AB]">Кабинет → Wildberries</p>
             <h3 className="mt-1 text-lg font-black text-ink">Карусель перед публикацией</h3>
           </div>
           <span className="rounded-full bg-mint/15 px-3 py-1 text-xs font-black text-mint">API WB</span>
         </div>
 
-        <div className="mt-5 flex gap-3 overflow-hidden">
+        <div className="mt-5 flex gap-3 overflow-x-auto pb-1">
           {mockSlides.map((slide) => (
             <div
               className={`w-[108px] shrink-0 overflow-hidden rounded-[16px] border ${
@@ -134,10 +139,16 @@ export function WildberriesLandingPreview() {
               }`}
               key={slide.label}
             >
-              <div className="relative aspect-[4/5] bg-[linear-gradient(180deg,#f7f2ff,#efe8fb)]">
-                <div className="absolute inset-4 rounded-[12px] border border-white/70 bg-white/70" />
+              <div className="relative aspect-[4/5] bg-paper">
+                <Image
+                  alt={slide.label}
+                  className="h-full w-full object-cover"
+                  fill
+                  sizes="108px"
+                  src={slide.image}
+                />
                 {slide.accent ? (
-                  <span className="absolute left-2 top-2 rounded-full bg-[#CB11AB] px-2 py-0.5 text-[9px] font-black uppercase text-white">
+                  <span className="absolute left-2 top-2 z-10 rounded-full bg-[#CB11AB] px-2 py-0.5 text-[9px] font-black uppercase text-white">
                     Титульник
                   </span>
                 ) : null}
@@ -155,9 +166,14 @@ export function WildberriesLandingPreview() {
 
         <div className="mt-5 rounded-[18px] border border-clay bg-card/80 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-black text-ink">Кроссовки женские оверсайз</p>
-              <p className="mt-1 text-xs text-muted">Категория WB · бренд · габариты · вес</p>
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="relative h-14 w-11 shrink-0 overflow-hidden rounded-[12px] border border-clay bg-paper">
+                <Image alt="" className="object-cover" fill sizes="44px" src={fanAfter} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-black text-ink">Кроссовки женские оверсайз</p>
+                <p className="mt-1 text-xs text-muted">Категория WB · бренд · габариты · вес</p>
+              </div>
             </div>
             <span className="inline-flex items-center gap-1 rounded-full bg-[#CB11AB]/12 px-3 py-1 text-xs font-black text-[#CB11AB]">
               <CheckCircle2 size={14} />

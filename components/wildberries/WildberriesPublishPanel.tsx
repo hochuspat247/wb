@@ -15,6 +15,7 @@ import {
   X
 } from "lucide-react";
 import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
+import { WildberriesGenerateCarouselPanel } from "@/components/wildberries/WildberriesGenerateCarouselPanel";
 import { WildberriesSubscriptionOverlay } from "@/components/wildberries/WildberriesSubscriptionOverlay";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -42,7 +43,8 @@ type WildberriesPublishPanelProps = {
   wbUnlocked: boolean;
   compact?: boolean;
   onNeedConnect?: () => void;
-  onGenerateMore?: () => void;
+  onCardsGenerated?: (cards: ProductCardResult[]) => void;
+  onQuotaChange?: (quota: { remaining: number; used: number; credits: number }) => void;
 };
 
 function buildMainSlide(card: ProductCardResult): PublishSlide {
@@ -73,10 +75,12 @@ export function WildberriesPublishPanel({
   wbUnlocked,
   compact = false,
   onNeedConnect,
-  onGenerateMore
+  onCardsGenerated,
+  onQuotaChange
 }: WildberriesPublishPanelProps) {
   const carouselRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
   const [slides, setSlides] = useState<PublishSlide[]>([]);
   const [activeSlideId, setActiveSlideId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -366,7 +370,7 @@ export function WildberriesPublishPanel({
             </button>
             <button
               className="grid flex-1 place-items-center gap-2 rounded-[18px] border border-dashed border-clay bg-card/60 px-3 py-4 text-center transition hover:border-accent/40 hover:bg-accent/5"
-              onClick={onGenerateMore}
+              onClick={() => setGenerateOpen((value) => !value)}
               type="button"
             >
               <Wand2 size={22} />
@@ -421,6 +425,22 @@ export function WildberriesPublishPanel({
             ))}
           </div>
         </div>
+      ) : null}
+
+      {generateOpen ? (
+        <WildberriesGenerateCarouselPanel
+          historyCards={historyCards}
+          onClose={() => setGenerateOpen(false)}
+          onGenerated={(cards) => {
+            for (const generatedCard of cards) {
+              addCardSlide(generatedCard);
+            }
+            setGenerateOpen(false);
+            onCardsGenerated?.(cards);
+          }}
+          onQuotaChange={onQuotaChange}
+          sourceCard={card}
+        />
       ) : null}
 
       {!wbConnected ? (

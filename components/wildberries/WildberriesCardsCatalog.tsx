@@ -13,6 +13,7 @@ import {
   X
 } from "lucide-react";
 import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
+import { WB_API_INTEGRATIONS_URL } from "@/lib/wildberries/connectGuide";
 import { WILDBERRIES_DEMO_CATALOG_CARDS } from "@/components/wildberries/wildberriesDemoCatalog";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -204,13 +205,29 @@ export function WildberriesCardsCatalog({ wbConnected, wbUnlocked, onNeedConnect
         <WildberriesBetaNotice className="mt-4" compact />
 
         {!previewMode && !wbConnected ? (
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-[#CB11AB]/25 bg-[#CB11AB]/8 px-4 py-3">
+          <div className="mt-4 space-y-3 rounded-[16px] border border-[#CB11AB]/25 bg-[#CB11AB]/8 px-4 py-3">
             <p className="text-sm font-semibold text-muted">
-              Подключите WB API-токен, чтобы подтянуть активные карточки и карточки из корзины WB.
+              Подключите WB API-токен, чтобы подтянуть активные карточки и карточки из корзины WB. Токен создаётся в
+              кабинете продавца:{" "}
+              <a className="font-black text-[#CB11AB] underline-offset-2 hover:underline" href={WB_API_INTEGRATIONS_URL} rel="noreferrer" target="_blank">
+                seller.wildberries.ru → Интеграции по API
+              </a>
+              . Нужна категория <span className="text-ink">Контент (чтение и запись)</span>.
             </p>
-            <Button onClick={onNeedConnect} size="sm">
-              Подключить WB API
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={onNeedConnect} size="sm">
+                Вставить токен в настройках
+              </Button>
+              <a
+                className="inline-flex min-h-9 items-center gap-2 rounded-button border border-clay bg-card px-4 text-sm font-semibold text-ink transition hover:border-[#CB11AB]/35"
+                href={WB_API_INTEGRATIONS_URL}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <ExternalLink size={15} />
+                Создать токен в WB
+              </a>
+            </div>
           </div>
         ) : null}
 

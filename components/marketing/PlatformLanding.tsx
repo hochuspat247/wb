@@ -1,40 +1,19 @@
 import Link from "next/link";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/ui/Reveal";
-import type { PlatformPageConfig } from "@/lib/marketing/platformPages";
-import { absoluteUrl } from "@/lib/seo";
+import { getOtherPlatformPages, type PlatformPageConfig } from "@/lib/marketing/platformPages";
+import { buildPlatformJsonLd } from "@/lib/seo/platform-jsonld";
 
 type PlatformLandingProps = {
   page: PlatformPageConfig;
 };
 
 export function PlatformLanding({ page }: PlatformLandingProps) {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "WebPage",
-        name: page.title,
-        description: page.description,
-        url: absoluteUrl(page.path),
-        inLanguage: "ru-RU"
-      },
-      {
-        "@type": "FAQPage",
-        mainEntity: page.faq.map((item) => ({
-          "@type": "Question",
-          name: item.question,
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: item.answer
-          }
-        }))
-      }
-    ]
-  };
+  const jsonLd = buildPlatformJsonLd(page);
+  const otherPlatforms = getOtherPlatformPages(page.slug);
 
   return (
     <main className="min-h-screen bg-paper">
@@ -42,6 +21,13 @@ export function PlatformLanding({ page }: PlatformLandingProps) {
       <Header />
       <section className="section-shell py-12 md:py-16">
         <Reveal immediate>
+          <nav aria-label="Хлебные крошки" className="mb-6 flex flex-wrap items-center gap-1 text-sm font-semibold text-muted">
+            <Link className="transition hover:text-ink" href="/">
+              Главная
+            </Link>
+            <ChevronRight aria-hidden className="text-clay" size={14} />
+            <span className="text-ink">{page.marketplaceLabel}</span>
+          </nav>
           <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">{page.marketplaceLabel}</p>
           <h1 className="mt-4 max-w-4xl text-balance text-4xl font-black leading-tight text-ink md:text-5xl">{page.h1}</h1>
           <p className="mt-6 max-w-3xl text-lg font-medium leading-relaxed text-muted">{page.lead}</p>
@@ -57,6 +43,13 @@ export function PlatformLanding({ page }: PlatformLandingProps) {
                 Создать аккаунт
               </Button>
             </Link>
+            {page.slug === "wildberries" ? (
+              <Link href="/#wildberries">
+                <Button className="py-3" type="button" variant="secondary">
+                  Публикация на WB
+                </Button>
+              </Link>
+            ) : null}
           </div>
         </Reveal>
       </section>
@@ -84,6 +77,43 @@ export function PlatformLanding({ page }: PlatformLandingProps) {
               <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">{item.answer}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="border-t border-clay bg-card py-14 md:py-20">
+        <div className="section-shell">
+          <h2 className="text-3xl font-black text-ink">Другие площадки</h2>
+          <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-muted">
+            Тот же генератор карточек — разные тексты и СЕО под Wildberries, Ozon и Авито.
+          </p>
+          <ul className="mt-8 grid gap-4 sm:grid-cols-2">
+            {otherPlatforms.map((platform) => (
+              <li key={platform.slug}>
+                <Link
+                  className="flex items-center justify-between rounded-[18px] border border-clay bg-paper/70 p-5 transition hover:border-accent/35 hover:bg-paper"
+                  href={platform.path}
+                >
+                  <div>
+                    <p className="text-base font-black text-ink">{platform.marketplaceLabel}</p>
+                    <p className="mt-1 text-sm font-medium text-muted">{platform.h1}</p>
+                  </div>
+                  <ArrowRight className="shrink-0 text-accent" size={18} />
+                </Link>
+              </li>
+            ))}
+            <li>
+              <Link
+                className="flex items-center justify-between rounded-[18px] border border-clay bg-paper/70 p-5 transition hover:border-accent/35 hover:bg-paper"
+                href="/"
+              >
+                <div>
+                  <p className="text-base font-black text-ink">Все площадки</p>
+                  <p className="mt-1 text-sm font-medium text-muted">Главная с примерами, тарифами и демо-генератором</p>
+                </div>
+                <ArrowRight className="shrink-0 text-accent" size={18} />
+              </Link>
+            </li>
+          </ul>
         </div>
       </section>
 

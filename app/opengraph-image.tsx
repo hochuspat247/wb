@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { CARD_GENERATION_PRICE_RUB, formatRub } from "@/lib/pricing";
+import { describeFreeQuotaMarketing, formatRub, CARD_GENERATION_PRICE_RUB } from "@/lib/pricing";
 import { siteConfig } from "@/lib/seo";
 
 export const runtime = "edge";
@@ -23,15 +23,15 @@ export default function OpenGraphImage() {
           fontFamily: "Arial, sans-serif"
         }}
       >
-        <div style={{ fontSize: 28, opacity: 0.8 }}>ИИ для продавцов маркетплейсов</div>
+        <div style={{ fontSize: 28, opacity: 0.8 }}>ИИ для продавцов Wildberries, Ozon и Авито</div>
         <div>
           <div style={{ fontSize: 72, fontWeight: 800, lineHeight: 1.05 }}>{siteConfig.name}</div>
           <div style={{ marginTop: 24, fontSize: 34, maxWidth: 900, lineHeight: 1.3 }}>
-            Карточки и видео для ВБ, Озон, Авито за 2 минуты
+            Карточки, СЕО и публикация на ВБ за 1 минуту
           </div>
         </div>
         <div style={{ fontSize: 24, opacity: 0.85 }}>
-          Текст · СЕО · Обложка 4:5 · Видео из карточки · от {formatRub(CARD_GENERATION_PRICE_RUB)}/фото
+          {describeFreeQuotaMarketing()} · Обложка 4:5 · WB API · от {formatRub(CARD_GENERATION_PRICE_RUB)}/фото
         </div>
       </div>
     ),

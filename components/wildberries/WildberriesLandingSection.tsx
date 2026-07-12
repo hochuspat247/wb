@@ -1,6 +1,7 @@
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
+import { WildberriesConnectGuide } from "@/components/wildberries/WildberriesConnectGuide";
 import { WildberriesLandingPreview } from "@/components/wildberries/WildberriesLandingPreview";
 import { BRAND } from "@/lib/branding";
 import { WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
@@ -78,6 +79,10 @@ export function WildberriesLandingSection() {
             <WildberriesLandingPreview />
           </Reveal>
         </div>
+
+        <Reveal delay={3}>
+          <WildberriesConnectGuide className="mt-12" />
+        </Reveal>
       </div>
     </section>
   );

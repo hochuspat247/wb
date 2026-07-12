@@ -6,9 +6,11 @@ import { WildberriesCardsCatalog } from "@/components/wildberries/WildberriesCar
 import { WildberriesPublishPanel } from "@/components/wildberries/WildberriesPublishPanel";
 import { WildberriesSubscriptionOverlay } from "@/components/wildberries/WildberriesSubscriptionOverlay";
 import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
+import { WildberriesConnectGuide } from "@/components/wildberries/WildberriesConnectGuide";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { getGeneratedCoverSrc } from "@/lib/image";
+import { getSeriesSiblingCards } from "@/lib/series/plan";
 import type { ProductCardResult } from "@/types/product-card";
 
 type WildberriesCabinetSectionProps = {
@@ -18,6 +20,8 @@ type WildberriesCabinetSectionProps = {
   onNeedConnect: () => void;
   onOpenCard: (card: ProductCardResult) => void;
   onGenerateMore: () => void;
+  onCardsRefresh?: () => void;
+  onQuotaChange?: (quota: { remaining: number; used: number; credits: number }) => void;
 };
 
 function getThumbnail(card: ProductCardResult) {
@@ -30,13 +34,13 @@ export function WildberriesCabinetSection({
   wbUnlocked,
   onNeedConnect,
   onOpenCard,
-  onGenerateMore
+  onGenerateMore,
+  onCardsRefresh,
+  onQuotaChange
 }: WildberriesCabinetSectionProps) {
   const [publishCardId, setPublishCardId] = useState<string | null>(cards[0]?.id ?? null);
   const publishCard = cards.find((item) => item.id === publishCardId) ?? cards[0] ?? null;
-  const relatedCards = publishCard?.seriesId
-    ? cards.filter((item) => item.seriesId === publishCard.seriesId && item.id !== publishCard.id)
-    : [];
+  const relatedCards = publishCard ? getSeriesSiblingCards(cards, publishCard) : [];
 
   return (
     <WildberriesSubscriptionOverlay className="mx-auto max-w-6xl space-y-6" unlocked={wbUnlocked}>
@@ -69,6 +73,7 @@ export function WildberriesCabinetSection({
           </div>
         </div>
         <WildberriesBetaNotice className="mt-4" />
+        {!wbConnected ? <WildberriesConnectGuide className="mt-4" onOpenSettings={onNeedConnect} /> : null}
       </Card>
 
       <section className="space-y-4">
@@ -132,8 +137,9 @@ export function WildberriesCabinetSection({
               <WildberriesPublishPanel
                 card={publishCard}
                 historyCards={cards}
-                onGenerateMore={onGenerateMore}
+                onCardsGenerated={() => onCardsRefresh?.()}
                 onNeedConnect={onNeedConnect}
+                onQuotaChange={onQuotaChange}
                 relatedCards={relatedCards}
                 wbConnected={wbConnected}
                 wbUnlocked={wbUnlocked}

@@ -28,6 +28,7 @@ import { HistorySection } from "@/components/HistorySection";
 import { Logo } from "@/components/Logo";
 import { PaymentButton } from "@/components/PaymentButton";
 import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
+import { WildberriesConnectGuide } from "@/components/wildberries/WildberriesConnectGuide";
 import { WildberriesCabinetSection } from "@/components/wildberries/WildberriesCabinetSection";
 import { WildberriesPublishPanel } from "@/components/wildberries/WildberriesPublishPanel";
 import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
@@ -56,6 +57,7 @@ import { applyDownloadPolicyToCard, canDownloadCardImage, type DownloadPolicy } 
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
 import { DEFAULT_IMAGE_SETTINGS, getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { reachGoal } from "@/lib/metrika";
+import { getSeriesSiblingCards } from "@/lib/series/plan";
 import {
   FREE_TRIAL_CARDS,
   calculatePackagePrice,
@@ -190,11 +192,11 @@ export function CabinetApp() {
     : false;
 
   const selectedSeriesCards = useMemo(() => {
-    if (!selected?.seriesId) {
+    if (!selected) {
       return [];
     }
 
-    return cards.filter((card) => card.seriesId === selected.seriesId && card.id !== selected.id);
+    return getSeriesSiblingCards(cards, selected);
   }, [cards, selected]);
 
   useEffect(() => {
@@ -743,12 +745,14 @@ export function CabinetApp() {
           {tab === "wildberries" ? (
             <WildberriesCabinetSection
               cards={cards}
+              onCardsRefresh={refreshCards}
               onGenerateMore={openCreateTab}
               onNeedConnect={openSettingsTab}
               onOpenCard={(card) => {
                 setSelected(card);
                 setTab("history");
               }}
+              onQuotaChange={handleQuotaChange}
               wbConnected={wbStatus.connected}
               wbUnlocked={wildberriesUnlocked}
             />
@@ -793,6 +797,7 @@ export function CabinetApp() {
                   </span>
                 </div>
                 <WildberriesBetaNotice className="mt-4" compact />
+                <WildberriesConnectGuide className="mt-5" compact onOpenSettings={openSettingsTab} />
                 <label className="mt-5 grid gap-2 text-sm font-semibold text-ink">
                   WB API-токен
                   <Input
@@ -976,8 +981,9 @@ export function CabinetApp() {
                         card={selected}
                         compact
                         historyCards={cards}
-                        onGenerateMore={openCreateTab}
+                        onCardsGenerated={refreshCards}
                         onNeedConnect={openSettingsTab}
+                        onQuotaChange={handleQuotaChange}
                         relatedCards={selectedSeriesCards}
                         wbConnected={wbStatus.connected}
                         wbUnlocked={wildberriesUnlocked}

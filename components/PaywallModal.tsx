@@ -6,11 +6,7 @@ import { Film, Sparkles, X } from "lucide-react";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { PaymentButton } from "@/components/PaymentButton";
 import { Button } from "@/components/ui/Button";
-import {
-  FREE_TRIAL_CARDS,
-  calculatePackagePrice,
-  formatRub
-} from "@/lib/pricing";
+import { FREE_TRIAL_CARDS, calculatePackagePrice, formatMonthlyFreeResetHint, formatRub } from "@/lib/pricing";
 import {
   VIDEO_RESULT_UPSELL_DURATION_LABEL,
   VIDEO_RESULT_UPSELL_PRICE_LABEL
@@ -20,9 +16,10 @@ type PaywallModalProps = {
   open: boolean;
   onClose: () => void;
   onCreateVideo?: () => void;
+  monthlyFreeResetsAt?: string | null;
 };
 
-export function PaywallModal({ open, onClose, onCreateVideo }: PaywallModalProps) {
+export function PaywallModal({ open, onClose, onCreateVideo, monthlyFreeResetsAt }: PaywallModalProps) {
   const pack10 = calculatePackagePrice(10);
 
   useEffect(() => {
@@ -33,7 +30,7 @@ export function PaywallModal({ open, onClose, onCreateVideo }: PaywallModalProps
 
   if (!open) return null;
 
-  const trialLabel = `${FREE_TRIAL_CARDS} бесплатные карточки после входа`;
+  const resetHint = formatMonthlyFreeResetHint(monthlyFreeResetsAt);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -56,11 +53,11 @@ export function PaywallModal({ open, onClose, onCreateVideo }: PaywallModalProps
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Лимит использован</p>
             <h3 className="mt-2 text-2xl font-black leading-snug text-ink">
-              Вы использовали {trialLabel} 🎉
+              Вы использовали {FREE_TRIAL_CARDS} бесплатные карточки в этом месяце 🎉
             </h3>
             <p className="mt-2 text-sm font-medium leading-relaxed text-muted">
-              Если результат понравился — докупите пакет карточек. Все ранее созданные карточки станут доступны без
-              водяного знака. Или оживите готовую обложку в короткое видео для рекламы и соцсетей.
+              {resetHint} Если результат понравился — докупите пакет карточек. Все ранее созданные карточки можно
+              скачать без водяного знака. Или оживите готовую обложку в короткое видео для рекламы и соцсетей.
             </p>
           </div>
         </div>

@@ -19,8 +19,64 @@ export {
 export const VIDEO_STANDARD_PRICE_3_SEC = VIDEO_STANDARD_PRICE_4_SEC;
 
 export const FREE_DEMO_CARDS = 1;
-export const FREE_TRIAL_CARDS = 2;
+export const FREE_TRIAL_CARDS = 3;
+export const MONTHLY_FREE_RESET_DAYS = 30;
+export const MONTHLY_FREE_RESET_MS = MONTHLY_FREE_RESET_DAYS * 24 * 60 * 60 * 1000;
 export const FREE_TOTAL_MARKETING_CARDS = FREE_DEMO_CARDS + FREE_TRIAL_CARDS;
+
+export function describeMonthlyFreeQuotaShort() {
+  return `${FREE_TRIAL_CARDS} карточки каждый месяц`;
+}
+
+export function describeFreeQuotaMarketing() {
+  return `1 демо без входа + ${FREE_TRIAL_CARDS} карточки каждый месяц`;
+}
+
+export function describeMonthlyFreeReset() {
+  return `Бесплатные ${FREE_TRIAL_CARDS} карточки обновляются каждые ${MONTHLY_FREE_RESET_DAYS} дней`;
+}
+
+export function formatMonthlyFreeResetDate(value: Date | string | number | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
+}
+
+export function formatMonthlyFreeResetHint(resetsAt?: string | null) {
+  const label = formatMonthlyFreeResetDate(resetsAt);
+  return label ? `Следующее обновление бесплатных карточек — ${label}.` : describeMonthlyFreeReset();
+}
+
+export function formatCabinetQuotaBanner(input: {
+  remaining: number;
+  unlimited?: boolean;
+  monthlyFreeRemaining?: number;
+  monthlyFreeAllowance?: number;
+  monthlyFreeResetsAt?: string | null;
+}) {
+  if (input.unlimited || input.remaining >= 999_000) {
+    return "Безлимитные генерации для вашего аккаунта.";
+  }
+
+  const allowance = input.monthlyFreeAllowance ?? FREE_TRIAL_CARDS;
+  const monthlyRemaining = input.monthlyFreeRemaining ?? Math.min(input.remaining, allowance);
+  const resetHint = formatMonthlyFreeResetHint(input.monthlyFreeResetsAt);
+
+  if (input.remaining === 0) {
+    return `Бесплатные ${allowance} карточки в этом месяце использованы. ${resetHint} Или купите пакет — генерации не сгорают.`;
+  }
+
+  return `${describeFreeQuotaMarketing()}. Сейчас доступно: ${input.remaining} (${monthlyRemaining} из ${allowance} бесплатных в этом месяце). ${resetHint}`;
+}
+
 export const CARD_GENERATION_PRICE_RUB = 55;
 export const WB_INTEGRATION_MIN_PACKAGE = 5;
 

@@ -2,7 +2,6 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accounts, users } from "@/lib/db/schema";
 import { isPlaceholderOAuthEmail } from "@/lib/auth/email-utils";
-import { FREE_TRIAL_CARDS } from "@/lib/pricing";
 
 type VkUserInfoResponse = {
   user?: {
@@ -185,8 +184,10 @@ export async function authenticateVkAccessToken(accessToken: string) {
     name,
     image,
     emailVerified: realEmail ? emailVerified : null,
-    generationCredits: FREE_TRIAL_CARDS,
+    generationCredits: 0,
     generationsUsed: 0,
+    monthlyFreeUsed: 0,
+    monthlyFreePeriodStart: new Date(),
     createdAt: new Date()
   });
 

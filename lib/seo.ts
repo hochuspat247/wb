@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { BRAND } from "@/lib/branding";
 import {
   CARD_GENERATION_PRICE_RUB,
-  FREE_TOTAL_MARKETING_CARDS,
+  describeFreeQuotaMarketing,
+  describeMonthlyFreeReset,
   formatRub
 } from "@/lib/pricing";
 
@@ -11,7 +12,7 @@ const defaultSiteUrl = "https://marketcard-ai.avenir-team.ru";
 export const siteConfig = {
   name: BRAND.marketCard,
   title: `${BRAND.marketCard} — генератор карточек товара для ВБ, Озон и Авито`,
-  description: `Нейросеть для карточек товара: загрузите фото — получите ИИ-обложку 4:5, название, описание, СЕО и инфографику для Вайлдберриз, Ozon, Авито и Яндекс Маркета. ${FREE_TOTAL_MARKETING_CARDS} карточки бесплатно, далее ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото.`,
+  description: `Нейросеть для карточек товара: загрузите фото — получите ИИ-обложку 4:5, название, описание, СЕО и инфографику для Вайлдберриз, Ozon, Авито и Яндекс Маркета. ${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}. Далее ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото.`,
   keywords: [
     "генератор карточек товара",
     "нейросеть для карточек товара",

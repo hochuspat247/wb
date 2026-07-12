@@ -90,6 +90,12 @@ export async function fetchUserQuota() {
     remaining: number;
     canGenerate: boolean;
     unlimited?: boolean;
+    monthlyFreeAllowance?: number;
+    monthlyFreeUsed?: number;
+    monthlyFreeRemaining?: number;
+    monthlyFreeResetsAt?: string;
+    paidCredits?: number;
+    paidCreditsUsed?: number;
     storyPremiumUnlocked?: boolean;
     cleanDownloadGenerationId?: string | null;
     downloadsFullyUnlocked?: boolean;

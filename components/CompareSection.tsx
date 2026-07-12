@@ -3,9 +3,10 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { BRAND } from "@/lib/branding";
 import {
   CARD_GENERATION_PRICE_RUB,
-  FREE_TOTAL_MARKETING_CARDS,
   FREE_TRIAL_CARDS,
+  MONTHLY_FREE_RESET_DAYS,
   VIDEO_GENERATION_START_PRICE_RUB,
+  describeFreeQuotaMarketing,
   formatRub,
   formatVideoPriceRub
 } from "@/lib/pricing";
@@ -17,7 +18,7 @@ const rows = [
     "внутренний ресурс",
     "от 1 500 ₽",
     "от 990 ₽ за пакет",
-    `${FREE_TOTAL_MARKETING_CARDS} бесплатно, далее ${formatRub(CARD_GENERATION_PRICE_RUB)}/фото`
+    `${describeFreeQuotaMarketing()}, ${FREE_TRIAL_CARDS} обновляются каждые ${MONTHLY_FREE_RESET_DAYS} дн., далее ${formatRub(CARD_GENERATION_PRICE_RUB)}/фото`
   ],
   [
     "Видео из карточки",

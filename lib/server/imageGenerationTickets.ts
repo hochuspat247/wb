@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { and, eq, gt, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { imageGenerationTickets, users } from "@/lib/db/schema";
-import { FREE_TRIAL_CARDS } from "@/lib/pricing";
+import { getUserQuota } from "@/lib/server/quota";
 import { hasUnlimitedGenerations } from "@/lib/server/unlimitedGenerations";
 
 const TICKET_TTL_MS = 20 * 60 * 1000;
@@ -53,11 +53,10 @@ export async function createImageGenerationTicket(userId: string, purpose = "car
     }
 
     if (!hasUnlimitedGenerations(user)) {
-      const credits = user.generationCredits ?? FREE_TRIAL_CARDS;
-      const used = user.generationsUsed ?? 0;
+      const quota = await getUserQuota(userId);
       const activeTickets = await countActiveImageGenerationTickets(userId, tx, now);
 
-      if (used + activeTickets >= credits) {
+      if (quota.remaining <= activeTickets) {
         throw new ImageGenerationQuotaExceededError();
       }
     }

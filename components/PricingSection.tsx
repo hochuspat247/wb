@@ -4,10 +4,11 @@ import { PricingCard } from "@/components/ui/PricingCard";
 import { getVideoRateRubPerSecond } from "@/config/video-pricing";
 import {
   CARD_GENERATION_PRICE_RUB,
-  FREE_TOTAL_MARKETING_CARDS,
   FREE_TRIAL_CARDS,
+  MONTHLY_FREE_RESET_DAYS,
   VIDEO_GENERATION_START_PRICE_RUB,
   calculatePackagePrice,
+  describeMonthlyFreeReset,
   formatRub,
   formatVideoPriceRub,
   getVideoMarketingPrices
@@ -24,10 +25,11 @@ const plans = [
     name: "Старт",
     subtitle: "Попробовать сервис",
     price: "0 ₽",
-    unit: `${FREE_TOTAL_MARKETING_CARDS} шт`,
+    unit: `${FREE_TRIAL_CARDS} в месяц`,
     features: [
       "1 демо без входа",
-      `${FREE_TRIAL_CARDS} карточки после регистрации`,
+      `${FREE_TRIAL_CARDS} карточки каждый месяц после регистрации`,
+      `Обновление бесплатных карточек каждые ${MONTHLY_FREE_RESET_DAYS} дней`,
       "Скачивание без водяного знака",
       "Тексты и СЕО",
       "ИИ-обложка 4:5",
@@ -91,7 +93,7 @@ export function PricingSection() {
     <section className="border-t border-clay bg-paper-alt py-20 md:py-28" id="pricing">
       <div className="section-shell">
         <SectionHeader
-          description={`Карточка — ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото. Видео из готовой карточки — отдельная опция после генерации обложки.`}
+          description={`${describeMonthlyFreeReset()}. Карточка — ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото. Видео из готовой карточки — отдельная опция после генерации обложки.`}
           title="Начните бесплатно, масштабируйте после проверки"
         />
 

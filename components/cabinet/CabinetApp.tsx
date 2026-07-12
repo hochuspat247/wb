@@ -56,7 +56,14 @@ import { applyDownloadPolicyToCard, canDownloadCardImage, type DownloadPolicy } 
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
 import { DEFAULT_IMAGE_SETTINGS, getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { reachGoal } from "@/lib/metrika";
-import { FREE_TRIAL_CARDS, FREE_TOTAL_MARKETING_CARDS, calculatePackagePrice, formatRub } from "@/lib/pricing";
+import {
+  FREE_TRIAL_CARDS,
+  calculatePackagePrice,
+  formatCabinetQuotaBanner,
+  formatMonthlyFreeResetDate,
+  formatMonthlyFreeResetHint,
+  formatRub
+} from "@/lib/pricing";
 import { clearHistory, getHistory } from "@/lib/storage";
 import {
   disconnectWildberries,
@@ -120,8 +127,10 @@ export function CabinetApp() {
   const [wbMessage, setWbMessage] = useState("");
   const [wbSaving, setWbSaving] = useState(false);
   const [wildberriesUnlocked, setWildberriesUnlocked] = useState(false);
+  const [monthlyFreeResetsAt, setMonthlyFreeResetsAt] = useState<string | null>(null);
+  const [monthlyFreeRemaining, setMonthlyFreeRemaining] = useState<number | null>(null);
 
-  const handleQuotaChange = useCallback(
+  const applyQuotaState = useCallback(
     (quota: {
       remaining: number;
       used?: number;
@@ -130,16 +139,29 @@ export function CabinetApp() {
       downloadsFullyUnlocked?: boolean;
       wildberriesUnlocked?: boolean;
       unlimited?: boolean;
+      monthlyFreeRemaining?: number;
+      monthlyFreeResetsAt?: string | null;
     }) => {
       setRemainingGenerations(quota.remaining);
       setGenerationsUsed(quota.used ?? 0);
       setWildberriesUnlocked(Boolean(quota.wildberriesUnlocked || quota.unlimited));
+      setMonthlyFreeRemaining(
+        typeof quota.monthlyFreeRemaining === "number" ? quota.monthlyFreeRemaining : null
+      );
+      setMonthlyFreeResetsAt(quota.monthlyFreeResetsAt ?? null);
       setDownloadPolicy({
         cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
         downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
       });
     },
     []
+  );
+
+  const handleQuotaChange = useCallback(
+    (quota: Parameters<typeof applyQuotaState>[0]) => {
+      applyQuotaState(quota);
+    },
+    [applyQuotaState]
   );
 
   async function refreshDownloadPolicy() {
@@ -208,11 +230,7 @@ export function CabinetApp() {
         setRemainingGenerations(quota?.remaining ?? profile.quota?.remaining ?? 0);
         setGenerationsUsed(quota?.used ?? profile.quota?.used ?? 0);
         if (quota) {
-          setDownloadPolicy({
-            cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
-            downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
-          });
-          setWildberriesUnlocked(Boolean(quota.wildberriesUnlocked || quota.unlimited));
+          applyQuotaState(quota);
         }
         setNeedsEmailVerification(Boolean(profile.needsEmailVerification));
         setEmailDisplay(profile.emailDisplay || profile.email);
@@ -503,7 +521,13 @@ export function CabinetApp() {
             {remainingGenerations >= 999_000 ? "Безлимит" : remainingGenerations}
           </p>
           <p className="mt-1 text-xs font-semibold text-white/45">
-            {isQuotaExhausted ? "лимит исчерпан — нужен тариф" : "генераций доступно"}
+            {isQuotaExhausted
+              ? formatMonthlyFreeResetDate(monthlyFreeResetsAt)
+                ? `обновятся ${formatMonthlyFreeResetDate(monthlyFreeResetsAt)}`
+                : "лимит исчерпан — нужен тариф"
+              : monthlyFreeRemaining !== null
+                ? `${monthlyFreeRemaining} из ${FREE_TRIAL_CARDS} бесплатных в месяце`
+                : "генераций доступно"}
           </p>
           {isQuotaExhausted ? (
             <PaymentButton className="mt-4" count={10} metrikaPlan="cabinet_sidebar_pack10" size="sm">
@@ -607,11 +631,11 @@ export function CabinetApp() {
               {isQuotaExhausted ? (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-black text-ink">Бесплатные генерации закончились</p>
+                    <p className="text-sm font-black text-ink">Бесплатные генерации в этом месяце закончились</p>
                     <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
-                      Купите тариф, чтобы продолжить создавать карточки для Wildberries и Ozon. Пакет из 10 карточек —{" "}
-                      {formatRub(starterPack.total)} ({formatRub(starterPack.pricePerUnit)} за штуку). Все созданные
-                      карточки можно скачать в истории.
+                      {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} Купите тариф, чтобы продолжить создавать карточки
+                      для Wildberries и Ozon без ожидания. Пакет из 10 карточек — {formatRub(starterPack.total)} (
+                      {formatRub(starterPack.pricePerUnit)} за штуку). Все созданные карточки можно скачать в истории.
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col gap-2 sm:items-end">
@@ -624,9 +648,12 @@ export function CabinetApp() {
               ) : (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-mint/20 bg-mint/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-3">
                   <p className="text-xs font-bold text-mint sm:text-sm">
-                    {remainingGenerations >= 999_000
-                      ? "Безлимитные генерации для вашего аккаунта."
-                      : `${FREE_TOTAL_MARKETING_CARDS} карточки бесплатно (1 демо + ${FREE_TRIAL_CARDS} после входа). Доступно: ${remainingGenerations}`}
+                    {formatCabinetQuotaBanner({
+                      remaining: remainingGenerations,
+                      unlimited: remainingGenerations >= 999_000,
+                      monthlyFreeRemaining: monthlyFreeRemaining ?? undefined,
+                      monthlyFreeResetsAt
+                    })}
                   </p>
                   <CabinetPricingLink className="self-start sm:self-auto" onLight />
                 </div>
@@ -652,9 +679,10 @@ export function CabinetApp() {
               {isQuotaExhausted ? (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-black text-ink">Бесплатные генерации закончились</p>
+                    <p className="text-sm font-black text-ink">Бесплатные генерации в этом месяце закончились</p>
                     <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
-                      Купите тариф, чтобы снова создавать карточки. Скачать уже созданные можно в любой момент.
+                      {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} Купите тариф, чтобы снова создавать карточки.
+                      Скачать уже созданные можно в любой момент.
                     </p>
                   </div>
                   <PaymentButton className="w-full sm:w-auto" count={10} metrikaPlan="cabinet_history_pack10" size="sm">
@@ -687,6 +715,7 @@ export function CabinetApp() {
                 <EmptyState
                   generationsUsed={generationsUsed}
                   isQuotaExhausted={isQuotaExhausted}
+                  monthlyFreeResetsAt={monthlyFreeResetsAt}
                   onCreate={openCreateTab}
                   remainingGenerations={remainingGenerations}
                   starterPackTotal={starterPack.total}
@@ -976,13 +1005,15 @@ function EmptyState({
   generationsUsed,
   remainingGenerations,
   isQuotaExhausted,
-  starterPackTotal
+  starterPackTotal,
+  monthlyFreeResetsAt
 }: {
   onCreate: () => void;
   generationsUsed: number;
   remainingGenerations: number;
   isQuotaExhausted: boolean;
   starterPackTotal: number;
+  monthlyFreeResetsAt?: string | null;
 }) {
   const lostGeneration = generationsUsed > 0 && !isQuotaExhausted;
 
@@ -1001,8 +1032,9 @@ function EmptyState({
       <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
         {isQuotaExhausted ? (
           <>
-            Бесплатные генерации уже использованы. Купите тариф за {formatRub(starterPackTotal)}, чтобы продолжить
-            создавать карточки — новые результаты сразу появятся здесь.
+            Бесплатные {FREE_TRIAL_CARDS} карточки в этом месяце уже использованы. {formatMonthlyFreeResetHint(monthlyFreeResetsAt)}{" "}
+            Купите тариф за {formatRub(starterPackTotal)}, чтобы продолжить создавать карточки — новые результаты сразу
+            появятся здесь.
           </>
         ) : lostGeneration ? (
           <>

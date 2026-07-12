@@ -1,8 +1,8 @@
 import { BRAND } from "@/lib/branding";
 import {
   CARD_GENERATION_PRICE_RUB,
-  FREE_TOTAL_MARKETING_CARDS,
-  FREE_TRIAL_CARDS,
+  describeFreeQuotaMarketing,
+  describeMonthlyFreeReset,
   formatRub,
   formatVideoPriceRub,
   getVideoMarketingPrices
@@ -35,7 +35,7 @@ export function getMarketingFaqItems(): MarketingFaqItem[] {
     {
       id: "free",
       question: "Можно ли попробовать бесплатно?",
-      answer: `Да, 1 демо без входа и ${FREE_TRIAL_CARDS} карточки после регистрации — всего ${FREE_TOTAL_MARKETING_CARDS} бесплатно. Все карточки после регистрации можно скачать без водяного знака. Далее — ${formatRub(CARD_GENERATION_PRICE_RUB)} за одну генерацию фото.`
+      answer: `Да, ${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}. Все карточки после регистрации можно скачать без водяного знака. Далее — ${formatRub(CARD_GENERATION_PRICE_RUB)} за одну генерацию фото или пакеты со скидкой.`
     },
     {
       id: "watermark",

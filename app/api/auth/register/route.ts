@@ -5,7 +5,6 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { getEmailDomainError, normalizeEmail } from "@/lib/auth/email-validation";
 import { rollbackRegisteredUser, sendVerificationEmail } from "@/lib/auth/send-verification-email";
-import { FREE_TRIAL_CARDS } from "@/lib/pricing";
 import { applySignupContextOnRegister, parseSignupProduct } from "@/lib/server/signupContext";
 import {
   botProtectionErrorResponse,
@@ -81,8 +80,10 @@ export async function POST(request: Request) {
       email,
       name,
       passwordHash,
-      generationCredits: FREE_TRIAL_CARDS,
+      generationCredits: 0,
       generationsUsed: 0,
+      monthlyFreeUsed: 0,
+      monthlyFreePeriodStart: new Date(),
       createdAt: new Date()
     });
 

@@ -23,8 +23,10 @@ export const users = sqliteTable("user", {
   emailVerified: integer("emailVerified", { mode: "timestamp_ms" }),
   image: text("image"),
   passwordHash: text("passwordHash"),
-  generationCredits: integer("generationCredits").notNull().default(2),
+  generationCredits: integer("generationCredits").notNull().default(0),
   generationsUsed: integer("generationsUsed").notNull().default(0),
+  monthlyFreeUsed: integer("monthlyFreeUsed").notNull().default(0),
+  monthlyFreePeriodStart: integer("monthlyFreePeriodStart", { mode: "timestamp_ms" }),
   videoCredits: integer("videoCredits").notNull().default(0),
   freeCleanDownloadGenerationId: text("freeCleanDownloadGenerationId"),
   hasPurchasedGenerationCredits: integer("hasPurchasedGenerationCredits", { mode: "boolean" })

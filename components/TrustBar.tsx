@@ -1,10 +1,10 @@
-import { FREE_TOTAL_MARKETING_CARDS, FREE_TRIAL_CARDS } from "@/lib/pricing";
+import { FREE_TRIAL_CARDS, MONTHLY_FREE_RESET_DAYS, describeFreeQuotaMarketing } from "@/lib/pricing";
 
 const stats = [
   ["1 демо без входа", ""],
   ["~60 сек до результата", ""],
-  [`${FREE_TRIAL_CARDS} карточки после входа`, `всего ${FREE_TOTAL_MARKETING_CARDS} бесплатно`],
-  ["WB / Ozon / Avito / Яндекс Маркет", ""]
+  [`${FREE_TRIAL_CARDS} карточки каждый месяц`, `обновление каждые ${MONTHLY_FREE_RESET_DAYS} дней`],
+  ["WB / Ozon / Avito / Яндекс Маркет", describeFreeQuotaMarketing()]
 ];
 
 export function TrustBar() {

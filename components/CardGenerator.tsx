@@ -22,6 +22,7 @@ import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
 import { getImageSettings } from "@/lib/imageSettings";
+import { formatMonthlyFreeResetHint } from "@/lib/pricing";
 import {
   CARD_DESIGN_PRESETS,
   CARD_MARKETPLACES,
@@ -238,6 +239,7 @@ export function CardGenerator({
   const [isSavingGenerationRating, setIsSavingGenerationRating] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const [remainingGenerations, setRemainingGenerations] = useState<number | null>(null);
+  const [monthlyFreeResetsAt, setMonthlyFreeResetsAt] = useState<string | null>(null);
   const [downloadPolicy, setDownloadPolicy] = useState<DownloadPolicy | null>(null);
   const [hasUnlimitedAccess, setHasUnlimitedAccess] = useState(false);
   const [demoStatusIndex, setDemoStatusIndex] = useState(0);
@@ -263,6 +265,7 @@ export function CardGenerator({
   async function refreshDownloadPolicy() {
     const quota = await fetchUserQuota();
     setRemainingGenerations(quota.remaining);
+    setMonthlyFreeResetsAt(quota.monthlyFreeResetsAt ?? null);
     setHasUnlimitedAccess(Boolean(quota.unlimited));
     setDownloadPolicy({
       cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
@@ -1480,6 +1483,7 @@ export function CardGenerator({
   return (
     <section className={sectionClass} id={embedded ? undefined : "demo"}>
       <PaywallModal
+        monthlyFreeResetsAt={monthlyFreeResetsAt}
         onClose={() => setShowPaywall(false)}
         onCreateVideo={
           card && hasGeneratedAiCover(card)
@@ -1790,9 +1794,16 @@ export function CardGenerator({
                 </p>
               ) : null}
               {persistToServer && remainingGenerations !== null && !isLoading ? (
-                <p className="text-sm font-semibold text-muted">
-                  Доступно генераций: <span className="text-accent">{remainingGenerations}</span>
-                </p>
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-muted">
+                    Доступно генераций: <span className="text-accent">{remainingGenerations}</span>
+                  </p>
+                  {remainingGenerations === 0 ? (
+                    <p className="text-xs font-semibold text-muted">{formatMonthlyFreeResetHint(monthlyFreeResetsAt)}</p>
+                  ) : monthlyFreeResetsAt ? (
+                    <p className="text-xs font-semibold text-muted">{formatMonthlyFreeResetHint(monthlyFreeResetsAt)}</p>
+                  ) : null}
+                </div>
               ) : null}
               <div className={`flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap sm:gap-3 ${darkConsole ? "border-white/10" : "border-clay"}`}>
                 <Button

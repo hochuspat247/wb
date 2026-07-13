@@ -1121,7 +1121,7 @@ export function AdminDashboard() {
               {stats.returningVisitors.length}
             </span>
           }
-          description={`Зарегистрированные и гостевые пользователи с 2+ визитами в ${productConfig.label}`}
+          description={`Зарегистрированные и гостевые пользователи с 2+ визитами (сессии или дни) в ${productConfig.label}`}
           icon={<RotateCcw className="text-accent" size={20} />}
           id="returning-visitors"
           scope={product}

@@ -77,7 +77,8 @@ export async function POST(request: Request) {
       description: `${BRAND.marketCard}: ${count} генераций`,
       idempotenceKey,
       returnUrl: `${siteUrl}/cabinet?payment=return`,
-      userId
+      userId,
+      metadata: { product: "marketcard" }
     });
 
     const confirmationUrl = payment.confirmation?.confirmation_url;
@@ -93,6 +94,7 @@ export async function POST(request: Request) {
       amount: amountToMinorUnits(payment.amount.value),
       currency: payment.amount.currency,
       credits: count,
+      product: "marketcard",
       paid: payment.paid,
       confirmationUrl,
       idempotenceKey,

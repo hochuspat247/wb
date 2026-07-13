@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { scanTextForProhibitedContent } from "@/lib/ai/contentPolicy";
 import { generateStoryChapter } from "@/lib/storystudio/generate";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
-import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
+import { consumeStoryGeneration, getStoryUserQuota } from "@/lib/server/storyQuota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import { db } from "@/lib/db";
 import { storyProjects } from "@/lib/db/schema";
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const verificationError = getEmailVerificationError(user);
     if (verificationError) return NextResponse.json(verificationError, { status: 403 });
 
-    const quota = await getUserQuota(userId);
+    const quota = await getStoryUserQuota(userId);
     if (!quota.canGenerate) {
       return NextResponse.json(
         { error: "Генерации закончились.", code: "QUOTA_EXCEEDED", quota },
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
       .set({ payload: story, updatedAt: now })
       .where(eq(storyProjects.id, body.storyId));
 
-    const updatedQuota = (await consumeGeneration(userId)).quota;
+    const updatedQuota = (await consumeStoryGeneration(userId, "text")).quota;
     return NextResponse.json({ story, quota: updatedQuota });
   } catch (error) {
     console.error("[storystudio/chapters/generate]", error);

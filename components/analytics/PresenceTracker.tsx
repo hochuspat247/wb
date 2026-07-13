@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { getAnalyticsSessionId } from "@/lib/analytics/session";
-import { GUEST_ID_KEY } from "@/lib/guest";
+import { getOrCreateGuestId } from "@/lib/guest";
 import { getActionLabel, TRACKED_SECTION_IDS } from "@/lib/presence/labels";
 import { getPresenceAction, getPresenceSection, recordPresenceAction, setPresenceSection } from "@/lib/presence/client-state";
 
@@ -15,7 +15,7 @@ async function sendPresence() {
   if (window.location.pathname.startsWith("/admin")) return;
 
   const action = getPresenceAction();
-  const guestId = window.localStorage.getItem(GUEST_ID_KEY) || undefined;
+  const guestId = getOrCreateGuestId();
 
   await fetch("/api/presence", {
     method: "POST",

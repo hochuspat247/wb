@@ -100,6 +100,21 @@ export async function fetchUserQuota() {
     cleanDownloadGenerationId?: string | null;
     downloadsFullyUnlocked?: boolean;
     wildberriesUnlocked?: boolean;
+    story?: {
+      credits: number;
+      used: number;
+      remaining: number;
+      canGenerate: boolean;
+      canGeneratePortrait?: boolean;
+      portraitFreeRemaining?: number;
+      portraitFreeAllowance?: number;
+      monthlyFreeRemaining?: number;
+      monthlyFreeAllowance?: number;
+      monthlyFreeResetsAt?: string;
+      paidCredits?: number;
+      paidCreditsUsed?: number;
+      unlimited?: boolean;
+    };
   }>;
 }
 

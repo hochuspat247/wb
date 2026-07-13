@@ -10,9 +10,20 @@ export function amountToMinorUnits(value: string | number) {
   return Math.round(numericValue * 100);
 }
 
+function resolvePaymentProduct(payment: YooKassaPayment, localProduct?: string | null) {
+  return payment.metadata?.product || localProduct || "marketcard";
+}
+
 export async function applyVerifiedPayment(payment: YooKassaPayment) {
   const isSucceeded = payment.status === "succeeded" && payment.paid;
   const now = new Date();
+
+  const localPayment = await db.query.payments.findFirst({
+    where: eq(payments.id, payment.id),
+    columns: { product: true }
+  });
+
+  const product = resolvePaymentProduct(payment, localPayment?.product);
 
   await db
     .update(payments)
@@ -45,18 +56,27 @@ export async function applyVerifiedPayment(payment: YooKassaPayment) {
     return { credited: false };
   }
 
-  await db
-    .update(users)
-    .set({
-      generationCredits: sql`${users.generationCredits} + ${creditedPayment.credits}`
-    })
-    .where(eq(users.id, creditedPayment.userId));
+  if (product === "storystudio") {
+    await db
+      .update(users)
+      .set({
+        storyGenerationCredits: sql`${users.storyGenerationCredits} + ${creditedPayment.credits}`
+      })
+      .where(eq(users.id, creditedPayment.userId));
 
-  if (creditedPayment.credits >= STORY_PREMIUM_MIN_PACKAGE_CREDITS) {
-    await unlockStoryPremium(creditedPayment.userId);
+    if (creditedPayment.credits >= STORY_PREMIUM_MIN_PACKAGE_CREDITS) {
+      await unlockStoryPremium(creditedPayment.userId);
+    }
+  } else {
+    await db
+      .update(users)
+      .set({
+        generationCredits: sql`${users.generationCredits} + ${creditedPayment.credits}`
+      })
+      .where(eq(users.id, creditedPayment.userId));
   }
 
   await unlockAllDownloadsForUser(creditedPayment.userId);
 
-  return { credited: true, credits: creditedPayment.credits };
+  return { credited: true, credits: creditedPayment.credits, product };
 }

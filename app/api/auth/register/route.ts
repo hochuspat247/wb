@@ -84,6 +84,11 @@ export async function POST(request: Request) {
       generationsUsed: 0,
       monthlyFreeUsed: 0,
       monthlyFreePeriodStart: new Date(),
+      storyGenerationCredits: 0,
+      storyGenerationsUsed: 0,
+      storyMonthlyFreeUsed: 0,
+      storyMonthlyFreePeriodStart: new Date(),
+      storyMonthlyFreePortraitUsed: 0,
       createdAt: new Date()
     });
 

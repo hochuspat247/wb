@@ -398,6 +398,49 @@ export function migrate(sqlite: Database.Database) {
     WHERE monthlyFreePeriodStart IS NULL;
   `);
 
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN storyGenerationCredits INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN storyGenerationsUsed INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN storyMonthlyFreeUsed INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN storyMonthlyFreePeriodStart INTEGER`);
+  } catch {
+    // column already exists
+  }
+
+  try {
+    sqlite.exec(`ALTER TABLE user ADD COLUMN storyMonthlyFreePortraitUsed INTEGER NOT NULL DEFAULT 0`);
+  } catch {
+    // column already exists
+  }
+
+  sqlite.exec(`
+    UPDATE user
+    SET
+      storyMonthlyFreePeriodStart = COALESCE(storyMonthlyFreePeriodStart, createdAt, CAST((strftime('%s', 'now') * 1000) AS INTEGER))
+    WHERE storyMonthlyFreePeriodStart IS NULL;
+  `);
+
+  try {
+    sqlite.exec(`ALTER TABLE payment ADD COLUMN product TEXT`);
+  } catch {
+    // column already exists
+  }
+
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS wildberries_integration (
       userId TEXT PRIMARY KEY NOT NULL REFERENCES user(id) ON DELETE CASCADE,

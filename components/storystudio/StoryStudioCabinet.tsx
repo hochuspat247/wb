@@ -60,7 +60,12 @@ export function StoryStudioCabinet() {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
   const [loading, setLoading] = useState(true);
-  const [quota, setQuota] = useState<{ remaining: number; credits: number; storyPremiumUnlocked?: boolean } | null>(null);
+  const [quota, setQuota] = useState<{
+    remaining: number;
+    credits: number;
+    portraitFreeRemaining?: number;
+    storyPremiumUnlocked?: boolean;
+  } | null>(null);
   const [chapterLoading, setChapterLoading] = useState(false);
   const [characterLoading, setCharacterLoading] = useState(false);
   const [portraitLoadingId, setPortraitLoadingId] = useState<string | null>(null);
@@ -83,12 +88,14 @@ export function StoryStudioCabinet() {
         }
       }
 
-      const [storyList, quotaData] = await Promise.all([fetchStoryProjects(), fetchUserQuota()]);
+      const [storyList, accountQuota] = await Promise.all([fetchStoryProjects(), fetchUserQuota()]);
       setStories(storyList);
+      const storyQuota = accountQuota.story;
       setQuota({
-        remaining: quotaData.remaining,
-        credits: quotaData.credits,
-        storyPremiumUnlocked: quotaData.storyPremiumUnlocked
+        remaining: storyQuota?.remaining ?? 0,
+        credits: storyQuota?.credits ?? 0,
+        portraitFreeRemaining: storyQuota?.portraitFreeRemaining,
+        storyPremiumUnlocked: accountQuota.storyPremiumUnlocked
       });
 
       const storyId = searchParams.get("story") || searchParams.get("fromDemo");
@@ -144,6 +151,21 @@ export function StoryStudioCabinet() {
     }
   }
 
+  function applyStoryQuota(q: unknown) {
+    const quotaData = q as {
+      remaining: number;
+      credits: number;
+      portraitFreeRemaining?: number;
+    };
+
+    setQuota((current) => ({
+      remaining: quotaData.remaining,
+      credits: quotaData.credits,
+      portraitFreeRemaining: quotaData.portraitFreeRemaining,
+      storyPremiumUnlocked: current?.storyPremiumUnlocked
+    }));
+  }
+
   async function handleGenerateCharacter() {
     if (!activeStory) return;
     setCharacterLoading(true);
@@ -151,7 +173,7 @@ export function StoryStudioCabinet() {
     try {
       const { story, quota: q } = await generateStoryCharacter(activeStory.id, { hint: charHint.trim() || undefined });
       handleStoryUpdate(story);
-      setQuota({ remaining: (q as { remaining: number }).remaining, credits: (q as { credits: number }).credits });
+      applyStoryQuota(q);
       setSelectedCharacterId(story.characters[story.characters.length - 1]?.id ?? null);
       setCharHint("");
       setTab("characters");
@@ -169,7 +191,7 @@ export function StoryStudioCabinet() {
     try {
       const { story, quota: q } = await generateCharacterPortrait(activeStory.id, characterId);
       handleStoryUpdate(story);
-      setQuota({ remaining: (q as { remaining: number }).remaining, credits: (q as { credits: number }).credits });
+      applyStoryQuota(q);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка генерации портрета");
     } finally {
@@ -184,7 +206,7 @@ export function StoryStudioCabinet() {
     try {
       const { story, quota: q } = await regenerateStoryFoundation(activeStory.id);
       handleStoryUpdate(story);
-      setQuota({ remaining: (q as { remaining: number }).remaining, credits: (q as { credits: number }).credits });
+      applyStoryQuota(q);
       setSelectedCharacterId(story.characters[0]?.id ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Не удалось перегенерировать историю");
@@ -200,7 +222,7 @@ export function StoryStudioCabinet() {
     try {
       const { story, quota: q } = await generateStoryChapter(activeStory.id, { instructions });
       handleStoryUpdate(story);
-      setQuota({ remaining: (q as { remaining: number }).remaining, credits: (q as { credits: number }).credits });
+      applyStoryQuota(q);
       setTab("editor");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка генерации главы");
@@ -246,6 +268,12 @@ export function StoryStudioCabinet() {
             {quota && (
               <p className="text-sm text-muted">
                 Осталось генераций: <span className="text-violet">{quota.remaining}</span> из {quota.credits}
+                {typeof quota.portraitFreeRemaining === "number" && (
+                  <>
+                    {" "}
+                    · портретов: <span className="text-violet">{quota.portraitFreeRemaining}</span>
+                  </>
+                )}
               </p>
             )}
           </div>
@@ -454,7 +482,7 @@ export function StoryStudioCabinet() {
                     )}
                     <div className="rounded-card border border-violet/30 bg-violet/10 p-5">
                       <p className="text-sm">
-                        1 генерация = история, персонаж, глава или портрет ·{" "}
+                        1 генерация = история, персонаж или глава · портрет — отдельная квота ·{" "}
                         <strong>{formatStoryRub(STORY_GENERATION_PRICE_RUB)}</strong>
                       </p>
                     </div>
@@ -462,10 +490,7 @@ export function StoryStudioCabinet() {
                       <PromoCodeForm
                         product="storystudio"
                         onSuccess={(result) => {
-                          setQuota({
-                            remaining: result.quota.remaining,
-                            credits: result.quota.credits
-                          });
+                          applyStoryQuota(result.quota);
                         }}
                       />
                     </div>

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { backfillCleanDownloadGeneration, getUserDownloadAccess } from "@/lib/server/downloadAccess";
 import { getUserQuota } from "@/lib/server/quota";
 import { hasStoryPremiumUnlocked } from "@/lib/server/storyPremium";
+import { getStoryUserQuota } from "@/lib/server/storyQuota";
 import { hasWildberriesAccess } from "@/lib/server/wildberriesAccess";
 
 export async function GET() {
@@ -14,8 +15,9 @@ export async function GET() {
   }
 
   await backfillCleanDownloadGeneration(userId);
-  const [quota, access, storyPremiumUnlocked, wildberriesUnlocked] = await Promise.all([
+  const [quota, storyQuota, access, storyPremiumUnlocked, wildberriesUnlocked] = await Promise.all([
     getUserQuota(userId),
+    getStoryUserQuota(userId),
     getUserDownloadAccess(userId),
     hasStoryPremiumUnlocked(userId),
     hasWildberriesAccess(userId)
@@ -23,6 +25,7 @@ export async function GET() {
 
   return NextResponse.json({
     ...quota,
+    story: storyQuota,
     storyPremiumUnlocked,
     wildberriesUnlocked,
     cleanDownloadGenerationId: access.freeCleanDownloadGenerationId,

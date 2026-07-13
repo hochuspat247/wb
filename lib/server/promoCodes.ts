@@ -8,6 +8,8 @@ import { promoCodes, users } from "@/lib/db/schema";
 import { getPromoMinimumCredits, PROMO_PRODUCT_PREFIX } from "@/lib/promo/minimumTariff";
 import { unlockAllDownloadsForUser } from "@/lib/server/downloadAccess";
 import { addGenerationCredits, getUserQuota } from "@/lib/server/quota";
+import { addStoryGenerationCredits, getStoryUserQuota } from "@/lib/server/storyQuota";
+import { STORY_PREMIUM_MIN_PACKAGE_CREDITS, unlockStoryPremium } from "@/lib/server/storyPremium";
 import type { PromoCodeRecord, PromoRedeemErrorCode, PromoRedeemResult } from "@/types/promo";
 
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -230,10 +232,19 @@ export async function redeemPromoCode(input: {
     throw new PromoCodeError("Этот промокод уже был использован.", "ALREADY_REDEEMED");
   }
 
-  await addGenerationCredits(input.userId, promo.credits);
+  if (input.product === "storystudio") {
+    await addStoryGenerationCredits(input.userId, promo.credits);
+
+    if (promo.credits >= STORY_PREMIUM_MIN_PACKAGE_CREDITS) {
+      await unlockStoryPremium(input.userId);
+    }
+  } else {
+    await addGenerationCredits(input.userId, promo.credits);
+  }
+
   await unlockAllDownloadsForUser(input.userId);
 
-  const quota = await getUserQuota(input.userId);
+  const quota = input.product === "storystudio" ? await getStoryUserQuota(input.userId) : await getUserQuota(input.userId);
 
   return {
     ok: true,

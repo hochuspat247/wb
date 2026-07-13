@@ -98,6 +98,7 @@ export async function POST(request: Request) {
       amount: amountToMinorUnits(payment.amount.value),
       currency: payment.amount.currency,
       credits: checkout.credits,
+      product: "kvartovid",
       paid: payment.paid,
       confirmationUrl,
       idempotenceKey,

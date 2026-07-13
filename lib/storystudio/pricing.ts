@@ -1,8 +1,13 @@
 import { BRAND } from "@/lib/branding";
+import { MONTHLY_FREE_RESET_DAYS, MONTHLY_FREE_RESET_MS } from "@/lib/pricing";
 
 /** Тарифы ${BRAND.storyStudio}. */
 
+export const STORY_MONTHLY_RESET_DAYS = MONTHLY_FREE_RESET_DAYS;
+export const STORY_MONTHLY_RESET_MS = MONTHLY_FREE_RESET_MS;
 export const STORY_FREE_TRIAL = 2;
+export const STORY_FREE_PORTRAIT = 1;
+export const STORY_DEMO_MONTHLY_LIMIT = 1;
 export const STORY_GENERATION_PRICE_RUB = 39;
 
 export type StoryPackage = {
@@ -90,6 +95,10 @@ export function formatStoryRub(value: number) {
   return `${value.toLocaleString("ru-RU")} ₽`;
 }
 
+export function describeStoryFreeQuotaMarketing() {
+  return `${STORY_DEMO_MONTHLY_LIMIT} демо-история в месяц + ${STORY_FREE_TRIAL} ИИ-генерации и ${STORY_FREE_PORTRAIT} портрет персонажа после регистрации`;
+}
+
 export const STORY_PRICING_PLANS = [
   {
     id: "free",
@@ -97,10 +106,10 @@ export const STORY_PRICING_PLANS = [
     price: "0 ₽",
     period: "",
     features: [
-      "1 история с ИИ-основой",
-      "2 бесплатные генерации после регистрации",
-      "Персонажи и дерево связей",
-      "Редактор глав"
+      "1 демо-история с ИИ в месяц",
+      `${STORY_FREE_TRIAL} ИИ-генерации после регистрации`,
+      `${STORY_FREE_PORTRAIT} портрет персонажа в месяц`,
+      "Персонажи, дерево связей и редактор глав"
     ],
     cta: "Начать бесплатно",
     highlighted: false

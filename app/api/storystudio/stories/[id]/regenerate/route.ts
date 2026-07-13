@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { isStoryFoundationEmpty, regenerateStoryFoundation } from "@/lib/storystudio/generate";
-import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
+import { consumeStoryGeneration, getStoryUserQuota } from "@/lib/server/storyQuota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import { db } from "@/lib/db";
 import { storyProjects } from "@/lib/db/schema";
@@ -41,7 +41,7 @@ export async function POST(_request: Request, context: RouteContext) {
 
     const wasEmpty = isStoryFoundationEmpty(row.payload);
     if (!wasEmpty) {
-      const quota = await getUserQuota(userId);
+      const quota = await getStoryUserQuota(userId);
       if (!quota.canGenerate) {
         return NextResponse.json(
           { error: "Генерации закончились. Купите пакет в кабинете.", code: "QUOTA_EXCEEDED", quota },
@@ -58,7 +58,7 @@ export async function POST(_request: Request, context: RouteContext) {
       .set({ payload: story, updatedAt: now })
       .where(eq(storyProjects.id, id));
 
-    const updatedQuota = wasEmpty ? await getUserQuota(userId) : (await consumeGeneration(userId)).quota;
+    const updatedQuota = wasEmpty ? await getStoryUserQuota(userId) : (await consumeStoryGeneration(userId, "text")).quota;
 
     return NextResponse.json({ story, quota: updatedQuota });
   } catch (error) {

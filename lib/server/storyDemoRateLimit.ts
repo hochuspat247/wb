@@ -8,8 +8,7 @@ import {
   hashRateLimitIdentity,
   recordRateLimitAttempts
 } from "@/lib/server/rateLimit";
-
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+import { STORY_DEMO_MONTHLY_LIMIT, STORY_MONTHLY_RESET_MS } from "@/lib/storystudio/pricing";
 
 export type StoryDemoRateLimitResult =
   | { allowed: true }
@@ -21,12 +20,12 @@ export type StoryDemoRateLimitResult =
     };
 
 export async function checkGuestStoryDemoAllowed(request: Request, guestId: string): Promise<StoryDemoRateLimitResult> {
-  const sinceMs = ONE_DAY_MS;
-  const dailyGuestLimit = getPositiveIntegerEnv("STORY_DEMO_DAILY_LIMIT", 1);
-  const dailyIpLimit = getPositiveIntegerEnv("STORY_DEMO_IP_DAILY_LIMIT", 3);
-  const dailyAttemptLimit = getPositiveIntegerEnv("STORY_DEMO_ATTEMPT_DAILY_LIMIT", 3);
-  const dailyIpAttemptLimit = getPositiveIntegerEnv("STORY_DEMO_IP_ATTEMPT_DAILY_LIMIT", 10);
-  const dailyFingerprintLimit = getPositiveIntegerEnv("STORY_DEMO_FINGERPRINT_DAILY_LIMIT", 3);
+  const sinceMs = STORY_MONTHLY_RESET_MS;
+  const monthlyGuestLimit = getPositiveIntegerEnv("STORY_DEMO_MONTHLY_LIMIT", STORY_DEMO_MONTHLY_LIMIT);
+  const monthlyIpLimit = getPositiveIntegerEnv("STORY_DEMO_IP_MONTHLY_LIMIT", 3);
+  const monthlyAttemptLimit = getPositiveIntegerEnv("STORY_DEMO_ATTEMPT_MONTHLY_LIMIT", 3);
+  const monthlyIpAttemptLimit = getPositiveIntegerEnv("STORY_DEMO_IP_ATTEMPT_MONTHLY_LIMIT", 10);
+  const monthlyFingerprintLimit = getPositiveIntegerEnv("STORY_DEMO_FINGERPRINT_MONTHLY_LIMIT", 3);
 
   const clientIpHash = hashDemoClientIp(request);
   const fingerprintHash = buildClientFingerprint(request);
@@ -36,19 +35,19 @@ export async function checkGuestStoryDemoAllowed(request: Request, guestId: stri
       identityType: "story_demo_guest_attempt",
       identityHash: hashRateLimitIdentity(guestId),
       windowMs: sinceMs,
-      max: dailyAttemptLimit
+      max: monthlyAttemptLimit
     },
     {
       identityType: "story_demo_ip_attempt",
       identityHash: clientIpHash,
       windowMs: sinceMs,
-      max: dailyIpAttemptLimit
+      max: monthlyIpAttemptLimit
     },
     {
       identityType: "story_demo_fingerprint_attempt",
       identityHash: fingerprintHash,
       windowMs: sinceMs,
-      max: dailyFingerprintLimit
+      max: monthlyFingerprintLimit
     }
   ]);
 
@@ -68,7 +67,7 @@ export async function checkGuestStoryDemoAllowed(request: Request, guestId: stri
     .from(demoStories)
     .where(and(eq(demoStories.guestId, guestId), gte(demoStories.createdAt, since)));
 
-  if (Number(guestCount?.value ?? 0) >= dailyGuestLimit) {
+  if (Number(guestCount?.value ?? 0) >= monthlyGuestLimit) {
     return buildLimitError();
   }
 
@@ -77,7 +76,7 @@ export async function checkGuestStoryDemoAllowed(request: Request, guestId: stri
     .from(demoStories)
     .where(and(eq(demoStories.clientIpHash, clientIpHash), gte(demoStories.createdAt, since)));
 
-  if (Number(ipCount?.value ?? 0) >= dailyIpLimit) {
+  if (Number(ipCount?.value ?? 0) >= monthlyIpLimit) {
     return buildLimitError();
   }
 
@@ -99,8 +98,8 @@ function buildLimitError(): StoryDemoRateLimitResult {
   return {
     allowed: false,
     code: "DEMO_LIMIT_EXCEEDED",
-    retryAfterSeconds: Math.ceil(ONE_DAY_MS / 1000),
-    error: "Бесплатное демо уже использовано. Зарегистрируйтесь, чтобы продолжить работу над историей."
+    retryAfterSeconds: Math.ceil(STORY_MONTHLY_RESET_MS / 1000),
+    error: "Бесплатное демо на этот месяц уже использовано. Зарегистрируйтесь, чтобы продолжить работу над историей."
   };
 }
 

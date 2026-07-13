@@ -364,35 +364,76 @@ function mapReturningVisitor(
   };
 }
 
+function buildReturningVisitorPageViewFilter(product: AdminProductId) {
+  return and(
+    eq(analyticsEvents.eventType, "page_view"),
+    productPathFilter(analyticsEvents.path, product),
+    sql`${analyticsEvents.path} NOT LIKE '/admin%'`
+  );
+}
+
+const returningVisitorSessionsExpr = sql<number>`count(distinct ${analyticsEvents.sessionId})`;
+const returningVisitorDaysExpr = sql<number>`count(distinct strftime('%Y-%m-%d', ${analyticsEvents.createdAt} / 1000, 'unixepoch'))`;
+const returningVisitorHaving = sql`${returningVisitorSessionsExpr} >= 2 OR ${returningVisitorDaysExpr} >= 2`;
+const analyticsGuestIdExpr = sql<string>`coalesce(
+  nullif(trim(json_extract(${analyticsEvents.metadata}, '$.guestId')), ''),
+  nullif(trim(json_extract(${analyticsEvents.metadata}, '$.storyGuestId')), '')
+)`;
+
 async function getReturningVisitorsByProduct(product: AdminProductId) {
-  const pathFilter = productPresenceFilter(visitorPresence.path, product);
-  const returningSessionsFilter = sql`count(distinct ${visitorPresence.sessionId}) >= 2`;
+  const pageViewFilter = buildReturningVisitorPageViewFilter(product);
 
   const authedActivity = await db
     .select({
-      userId: visitorPresence.userId,
-      visitSessions: sql<number>`count(distinct ${visitorPresence.sessionId})`,
-      visitDays: sql<number>`count(distinct strftime('%Y-%m-%d', ${visitorPresence.firstSeenAt} / 1000, 'unixepoch'))`,
-      firstVisitAt: sql<Date>`min(${visitorPresence.firstSeenAt})`,
-      lastVisitAt: sql<Date>`max(${visitorPresence.lastSeenAt})`
+      userId: analyticsEvents.userId,
+      visitSessions: returningVisitorSessionsExpr,
+      visitDays: returningVisitorDaysExpr,
+      firstVisitAt: sql<Date>`min(${analyticsEvents.createdAt})`,
+      lastVisitAt: sql<Date>`max(${analyticsEvents.createdAt})`
     })
-    .from(visitorPresence)
-    .where(and(pathFilter, isNotNull(visitorPresence.userId)))
-    .groupBy(visitorPresence.userId)
-    .having(returningSessionsFilter);
+    .from(analyticsEvents)
+    .where(and(pageViewFilter, isNotNull(analyticsEvents.userId)))
+    .groupBy(analyticsEvents.userId)
+    .having(returningVisitorHaving);
 
-  const guestActivity = await db
+  const guestActivityByGuestId = await db
     .select({
-      guestId: visitorPresence.guestId,
-      visitSessions: sql<number>`count(distinct ${visitorPresence.sessionId})`,
-      visitDays: sql<number>`count(distinct strftime('%Y-%m-%d', ${visitorPresence.firstSeenAt} / 1000, 'unixepoch'))`,
-      firstVisitAt: sql<Date>`min(${visitorPresence.firstSeenAt})`,
-      lastVisitAt: sql<Date>`max(${visitorPresence.lastSeenAt})`
+      guestId: analyticsGuestIdExpr,
+      visitSessions: returningVisitorSessionsExpr,
+      visitDays: returningVisitorDaysExpr,
+      firstVisitAt: sql<Date>`min(${analyticsEvents.createdAt})`,
+      lastVisitAt: sql<Date>`max(${analyticsEvents.createdAt})`
     })
-    .from(visitorPresence)
-    .where(and(pathFilter, isNull(visitorPresence.userId), isNotNull(visitorPresence.guestId)))
-    .groupBy(visitorPresence.guestId)
-    .having(returningSessionsFilter);
+    .from(analyticsEvents)
+    .where(
+      and(
+        pageViewFilter,
+        isNull(analyticsEvents.userId),
+        sql`${analyticsGuestIdExpr} IS NOT NULL`,
+        sql`trim(${analyticsGuestIdExpr}) != ''`
+      )
+    )
+    .groupBy(analyticsGuestIdExpr)
+    .having(returningVisitorHaving);
+
+  const guestActivityBySession = await db
+    .select({
+      guestId: analyticsEvents.sessionId,
+      visitSessions: returningVisitorSessionsExpr,
+      visitDays: returningVisitorDaysExpr,
+      firstVisitAt: sql<Date>`min(${analyticsEvents.createdAt})`,
+      lastVisitAt: sql<Date>`max(${analyticsEvents.createdAt})`
+    })
+    .from(analyticsEvents)
+    .where(
+      and(
+        pageViewFilter,
+        isNull(analyticsEvents.userId),
+        sql`(${analyticsGuestIdExpr} IS NULL OR trim(${analyticsGuestIdExpr}) = '')`
+      )
+    )
+    .groupBy(analyticsEvents.sessionId)
+    .having(returningVisitorHaving);
 
   const userIds = authedActivity.map((row) => row.userId).filter((value): value is string => Boolean(value));
   const userRows =
@@ -453,16 +494,28 @@ async function getReturningVisitorsByProduct(product: AdminProductId) {
     );
   });
 
-  const guests = guestActivity.map((row) =>
-    mapReturningVisitor({
-      userId: null,
-      guestId: row.guestId,
-      visitSessions: row.visitSessions,
-      visitDays: row.visitDays,
-      firstVisitAt: row.firstVisitAt,
-      lastVisitAt: row.lastVisitAt
-    })
-  );
+  const guests = [
+    ...guestActivityByGuestId.map((row) =>
+      mapReturningVisitor({
+        userId: null,
+        guestId: row.guestId,
+        visitSessions: row.visitSessions,
+        visitDays: row.visitDays,
+        firstVisitAt: row.firstVisitAt,
+        lastVisitAt: row.lastVisitAt
+      })
+    ),
+    ...guestActivityBySession.map((row) =>
+      mapReturningVisitor({
+        userId: null,
+        guestId: row.guestId ? `session:${row.guestId.slice(0, 12)}` : null,
+        visitSessions: row.visitSessions,
+        visitDays: row.visitDays,
+        firstVisitAt: row.firstVisitAt,
+        lastVisitAt: row.lastVisitAt
+      })
+    )
+  ];
 
   return [...registered, ...guests].sort(
     (left, right) => toTimestampMs(right.lastVisitAt) - toTimestampMs(left.lastVisitAt)

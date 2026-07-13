@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { getAnalyticsSessionId } from "@/lib/analytics/session";
 import { storeLastVisitedProduct } from "@/lib/auth/signup-context-client";
-import { GUEST_ID_KEY } from "@/lib/guest";
+import { getOrCreateGuestId, getOrCreateStoryGuestId } from "@/lib/guest";
 import { recordPresenceAction } from "@/lib/presence/client-state";
 
 function getSessionId() {
@@ -24,7 +24,9 @@ type TrackPayload = {
 async function sendEvents(events: TrackPayload[]) {
   if (!events.length || typeof window === "undefined") return;
 
-  const guestId = window.localStorage.getItem(GUEST_ID_KEY) || undefined;
+  const guestId = getOrCreateGuestId();
+  const storyGuestId =
+    window.location.pathname.startsWith("/storystudio") ? getOrCreateStoryGuestId() : undefined;
 
   await fetch("/api/analytics", {
     method: "POST",
@@ -35,7 +37,8 @@ async function sendEvents(events: TrackPayload[]) {
         ...event,
         metadata: {
           ...(event.metadata || {}),
-          ...(guestId ? { guestId } : {})
+          guestId,
+          ...(storyGuestId ? { storyGuestId } : {})
         },
         path: window.location.pathname + window.location.hash,
         referrer: document.referrer || undefined,

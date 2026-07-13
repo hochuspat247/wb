@@ -67,7 +67,8 @@ export async function POST(request: Request) {
       description: `${BRAND.storyStudio}: ${count} генераций`,
       idempotenceKey,
       returnUrl: `${siteUrl}/storystudio/cabinet?payment=return`,
-      userId
+      userId,
+      metadata: { product: "storystudio" }
     });
 
     const confirmationUrl = payment.confirmation?.confirmation_url;
@@ -84,6 +85,7 @@ export async function POST(request: Request) {
       amount: amountToMinorUnits(payment.amount.value),
       currency: payment.amount.currency,
       credits: count,
+      product: "storystudio",
       paid: payment.paid,
       confirmationUrl,
       idempotenceKey,

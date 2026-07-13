@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { scanTextForProhibitedContent } from "@/lib/ai/contentPolicy";
 import { generateStoryFoundation } from "@/lib/storystudio/generate";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
-import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
+import { consumeStoryGeneration, getStoryUserQuota } from "@/lib/server/storyQuota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import { hasStoryPremiumUnlocked } from "@/lib/server/storyPremium";
 import { db } from "@/lib/db";
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       return NextResponse.json(verificationError, { status: 403 });
     }
 
-    const quota = await getUserQuota(userId);
+    const quota = await getStoryUserQuota(userId);
     if (!quota.canGenerate) {
       return NextResponse.json(
         { error: "Генерации закончились. Купите пакет в кабинете.", code: "QUOTA_EXCEEDED", quota },
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       updatedAt: now
     });
 
-    const updatedQuota = (await consumeGeneration(userId)).quota;
+    const updatedQuota = (await consumeStoryGeneration(userId, "text")).quota;
 
     return NextResponse.json({ story, quota: updatedQuota });
   } catch (error) {

@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { generatePromptOnlyImage } from "@/lib/ai/promptOnlyImage";
 import { formatImageProviderError } from "@/lib/ai/imageGenerationErrors";
 import { buildCharacterPortraitPrompt } from "@/lib/storystudio/prompt";
-import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
+import { consumeStoryGeneration, getStoryUserQuota } from "@/lib/server/storyQuota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import { db } from "@/lib/db";
 import { storyProjects } from "@/lib/db/schema";
@@ -26,10 +26,10 @@ export async function POST(request: Request) {
     const verificationError = getEmailVerificationError(user);
     if (verificationError) return NextResponse.json(verificationError, { status: 403 });
 
-    const quota = await getUserQuota(userId);
-    if (!quota.canGenerate) {
+    const quota = await getStoryUserQuota(userId);
+    if (!quota.canGeneratePortrait) {
       return NextResponse.json(
-        { error: "Генерации закончились.", code: "QUOTA_EXCEEDED", quota },
+        { error: "Генерации портретов закончились.", code: "QUOTA_EXCEEDED", quota },
         { status: 402 }
       );
     }
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       .set({ payload: story, updatedAt: now })
       .where(eq(storyProjects.id, body.storyId));
 
-    const updatedQuota = (await consumeGeneration(userId)).quota;
+    const updatedQuota = (await consumeStoryGeneration(userId, "portrait")).quota;
     return NextResponse.json({ story, quota: updatedQuota });
   } catch (error) {
     console.error("[storystudio/characters/image]", error);

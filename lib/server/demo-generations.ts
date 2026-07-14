@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { demoGenerations } from "@/lib/db/schema";
 import { saveUserCard } from "@/lib/server/cards";
@@ -46,6 +46,28 @@ export async function getDemoGeneration(id: string) {
   return db.query.demoGenerations.findFirst({
     where: eq(demoGenerations.id, id)
   });
+}
+
+export async function getLatestDemoGenerationForGuest(
+  guestId: string,
+  options?: { maxAgeMs?: number }
+) {
+  const trimmed = guestId.trim();
+  if (!trimmed) return null;
+
+  const row = await db.query.demoGenerations.findFirst({
+    where: eq(demoGenerations.guestId, trimmed),
+    orderBy: [desc(demoGenerations.createdAt)]
+  });
+
+  if (!row) return null;
+
+  if (options?.maxAgeMs != null) {
+    const ageMs = Date.now() - new Date(row.createdAt).getTime();
+    if (ageMs > options.maxAgeMs) return null;
+  }
+
+  return row;
 }
 
 export async function attachGuestGenerationsToUser(guestId: string, userId: string) {

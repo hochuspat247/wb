@@ -45,7 +45,8 @@ export async function POST(request: Request) {
     }
 
     const policy = scanTextForProhibitedContent(
-      [body.title, body.premise, body.charactersHint].filter(Boolean).join("\n")
+      [body.title, body.premise, body.charactersHint].filter(Boolean).join("\n"),
+      { product: "storystudio", allowAdult: Boolean(body.premiumMode) }
     );
     if (!policy.allowed) {
       return createContentPolicyBlockedResponse(policy);

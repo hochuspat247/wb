@@ -3,6 +3,10 @@ import { assessGenerationContentPolicy } from "@/lib/ai/contentPolicy";
 import { createImageGenerationError } from "@/lib/ai/imageGenerationErrors";
 import type { GenerateImageInput, GenerateImageResult } from "@/types/product-card";
 
+export const NANOBANANA_IMAGE_RETENTION_DAYS = 14;
+export const NANOBANANA_IMAGE_RETENTION_NOTICE =
+  "Сгенерированные изображения хранятся на сервере 14 дней, после чего удаляются. Скачайте их заранее.";
+
 export type NanoBananaExpertBalance = {
   bananas: number;
   generation_coupons: number;

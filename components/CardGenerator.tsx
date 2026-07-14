@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, Download, FileImage, ImageUp, Loader2, Pencil, RefreshCcw, RotateCcw, Star, WifiOff, Wand2, X } from "lucide-react";
+import { NanoBananaRetentionNotice } from "@/components/NanoBananaRetentionNotice";
 import { CardEditPanel } from "@/components/CardEditPanel";
 import { GeneratedCoverPreview } from "@/components/GeneratedCoverPreview";
 import { GeneratedCardPreview } from "@/components/GeneratedCardPreview";
@@ -60,6 +61,7 @@ import { clearHistory, getHistory, removeFromHistory, saveToHistory } from "@/li
 import { fetchUserQuota, saveUserCardRemote } from "@/lib/api/user";
 import { DEMO_GENERATION_ERROR, parseJsonResponse, toUserFacingError } from "@/lib/api/parseJsonResponse";
 import { getOrCreateGuestId } from "@/lib/guest";
+import { fetchLatestGuestDemoId } from "@/lib/hero/submitHeroDemo";
 import { reachGoal } from "@/lib/metrika";
 import { buildPreviousCardSnapshot } from "@/lib/series/editing";
 import {
@@ -733,9 +735,10 @@ export function CardGenerator({
     setCard(null);
     setSeriesCards([]);
 
+    const guestId = getOrCreateGuestId();
+
     try {
       const image = dataUrlToBase64(imageUrl);
-      const guestId = getOrCreateGuestId();
       const response = await fetch("/api/generations/demo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -754,9 +757,21 @@ export function CardGenerator({
           designPreset: normalizeDesignPreset(designPreset)
         })
       });
-      const data = await parseJsonResponse<{ id?: string; error?: string }>(response);
+      const data = await parseJsonResponse<{
+        id?: string;
+        existingDemoId?: string;
+        error?: string;
+        code?: string;
+      }>(response);
 
-      if (!response.ok || !data.id) {
+      const generationId =
+        data.existingDemoId ||
+        (response.ok ? data.id : undefined) ||
+        (data.code === "DEMO_LIMIT_EXCEEDED"
+          ? data.id || (await fetchLatestGuestDemoId(guestId))
+          : undefined);
+
+      if (!generationId) {
         throw new Error(data.error || DEMO_GENERATION_ERROR);
       }
 
@@ -765,11 +780,30 @@ export function CardGenerator({
       setDemoProgress(100);
       trackMarketingEvent("demo_generation_completed", {
         marketplace,
-        generationId: data.id
+        generationId
       });
-      router.push(`/generations/${data.id}?guestId=${encodeURIComponent(guestId)}`);
+      router.push(`/generations/${generationId}?guestId=${encodeURIComponent(guestId)}`);
     } catch (caught) {
       const message = toUserFacingError(caught);
+      const looksTransient =
+        /слишком много времени|временно недоступен|failed to fetch|networkerror|load failed|не получилось создать карточку/i.test(
+          message
+        );
+
+      if (looksTransient) {
+        const recoveredId = await fetchLatestGuestDemoId(guestId, { maxAgeMs: 30 * 60 * 1000 });
+        if (recoveredId) {
+          setDemoProgress(100);
+          trackMarketingEvent("demo_generation_completed", {
+            marketplace,
+            generationId: recoveredId,
+            recovered: true
+          });
+          router.push(`/generations/${recoveredId}?guestId=${encodeURIComponent(guestId)}`);
+          return;
+        }
+      }
+
       setError(message);
       setIsDemoGenerating(false);
       setIsLoading(false);
@@ -1884,6 +1918,9 @@ export function CardGenerator({
                     </Button>
                   </div>
                 </div>
+                {hasAiCover ? (
+                  <NanoBananaRetentionNotice className="mt-4" variant={darkConsole ? "dark" : "default"} />
+                ) : null}
                 <div className={`relative mt-4 overflow-hidden rounded-card border ${previewFrameClass} ${darkConsole ? "border-white/10 bg-ink-soft" : "border-clay bg-paper"}`}>
                   {isGeneratingAiImage ? (
                     <div className="grid aspect-[4/5] max-h-[360px] place-items-center gap-4 px-6">

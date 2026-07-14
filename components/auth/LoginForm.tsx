@@ -8,20 +8,38 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { VkIdAuthPanel } from "@/components/auth/VkIdAuthPanel";
 import { YandexIdButton } from "@/components/auth/YandexIdButton";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
-import { recordSignupContext, storeSignupCallbackUrl } from "@/lib/auth/signup-context-client";
+import {
+  readSignupCallbackUrl,
+  recordSignupContext,
+  storeSignupCallbackUrl
+} from "@/lib/auth/signup-context-client";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
+function resolveLoginCallbackUrl(paramCallback: string | null) {
+  if (paramCallback) return paramCallback;
+  // Email verify often lands on /login?verified=1 without callback — keep Story Studio / demo return path.
+  if (typeof window !== "undefined") {
+    return readSignupCallbackUrl("/cabinet");
+  }
+  return "/cabinet";
+}
+
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/cabinet";
+  const paramCallback = searchParams.get("callbackUrl");
+  const [callbackUrl, setCallbackUrl] = useState(() => paramCallback || "/cabinet");
   const initialEmail = searchParams.get("email") || "";
 
   useEffect(() => {
-    storeSignupCallbackUrl(callbackUrl);
-  }, [callbackUrl]);
+    const next = resolveLoginCallbackUrl(paramCallback);
+    setCallbackUrl(next);
+    if (paramCallback) {
+      storeSignupCallbackUrl(paramCallback);
+    }
+  }, [paramCallback]);
 
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");

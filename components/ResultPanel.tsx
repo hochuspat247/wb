@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { RefObject } from "react";
 import { AlertTriangle, CheckCircle2, Clipboard, Download, FileJson, Search, ShieldCheck, UploadCloud } from "lucide-react";
+import { NanoBananaRetentionNotice } from "@/components/NanoBananaRetentionNotice";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -680,6 +681,7 @@ export function ResultPanel({
       </div>
 
       <div className={`mt-6 grid gap-2 ${compact ? "grid-cols-1" : "grid-cols-1 sm:flex sm:flex-wrap"}`}>
+        {hasAiImage ? <NanoBananaRetentionNotice className="w-full sm:mb-1" variant={dark ? "dark" : "default"} /> : null}
         <Button
           className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"}
           disabled={!canDownload}

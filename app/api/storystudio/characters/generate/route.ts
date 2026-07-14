@@ -46,7 +46,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "История не найдена." }, { status: 404 });
     }
 
-    const policy = scanTextForProhibitedContent([body.hint, body.name, body.role].filter(Boolean).join("\n"));
+    const policy = scanTextForProhibitedContent([body.hint, body.name, body.role].filter(Boolean).join("\n"), {
+      product: "storystudio",
+      allowAdult: Boolean(row.payload.premiumMode)
+    });
     if (!policy.allowed) return createContentPolicyBlockedResponse(policy);
 
     const { character, relations } = await generateStoryCharacter(row.payload, {

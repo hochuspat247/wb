@@ -59,7 +59,10 @@ export type MetrikaGoal =
   | "video_generation_started"
   | "video_generation_completed"
   | "video_generation_failed"
-  | "video_download";
+  | "video_download"
+  | "story_created"
+  | "story_chapter_generated"
+  | "story_cabinet_tab_view";
 
 export function reachGoal(goal: MetrikaGoal, params?: Record<string, unknown>) {
   if (typeof window === "undefined") return;

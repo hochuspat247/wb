@@ -55,7 +55,10 @@ export const ACTION_LABELS: Record<string, string> = {
   video_upsell_view: "Увидел оффер видео",
   link_click: "Клик по ссылке",
   ui_click: "Клик по элементу",
-  page_view: "Открыл страницу"
+  page_view: "Открыл страницу",
+  story_created: "Создал историю",
+  story_chapter_generated: "Сгенерировал главу",
+  story_cabinet_tab_view: "Вкладка кабинета истории"
 };
 
 import { BRAND } from "@/lib/branding";

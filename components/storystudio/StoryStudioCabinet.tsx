@@ -24,12 +24,14 @@ import { StoryEditor } from "@/components/storystudio/StoryEditor";
 import { StoryOverviewEditor } from "@/components/storystudio/StoryOverviewEditor";
 import { StoryVideoSeries } from "@/components/storystudio/StoryVideoSeries";
 import { StoryAiRefreshBanner } from "@/components/storystudio/StoryAiRefreshBanner";
+import { StoryOnboardingChecklist } from "@/components/storystudio/StoryOnboardingChecklist";
 import { StoryPaymentButton } from "@/components/storystudio/StoryPaymentButton";
 import { StoryPremiumUpsellBanner } from "@/components/storystudio/StoryPremiumUpsellBanner";
 import { StoryPricingCard } from "@/components/storystudio/StoryPricingCard";
 import { PromoCodeForm } from "@/components/promo/PromoCodeForm";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
+import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 import {
   calculateStoryPackagePrice,
   formatStoryRub,
@@ -46,11 +48,22 @@ import {
   updateStoryProject,
 } from "@/lib/api/storystudio";
 import { fetchUserQuota } from "@/lib/api/user";
-import { STORY_GUEST_ID_KEY } from "@/lib/guest";
+import {
+  STORY_GUEST_ID_KEY,
+  STORY_INTENDED_STORY_KEY,
+  buildStoryCabinetFromDemoUrl
+} from "@/lib/guest";
 import { isStoryFoundationEmpty } from "@/lib/storystudio/storyState";
 import type { CharacterRelation, StoryCharacter, StoryProject } from "@/types/storystudio";
 
 type Tab = "overview" | "characters" | "relations" | "editor" | "series" | "pricing";
+
+const VALID_TABS: Tab[] = ["overview", "characters", "relations", "editor", "series", "pricing"];
+
+function parseTabParam(value: string | null): Tab | null {
+  if (!value) return null;
+  return VALID_TABS.includes(value as Tab) ? (value as Tab) : null;
+}
 
 export function StoryStudioCabinet() {
   const { status } = useSession();
@@ -74,11 +87,24 @@ export function StoryStudioCabinet() {
   const [regenerateLoading, setRegenerateLoading] = useState(false);
   const [demoWelcomeStoryId, setDemoWelcomeStoryId] = useState<string | null>(searchParams.get("fromDemo"));
   const [videoOrderId, setVideoOrderId] = useState<string | null>(searchParams.get("videoOrder"));
+  const [registerCallbackUrl, setRegisterCallbackUrl] = useState("/storystudio/cabinet");
+
+  useEffect(() => {
+    const intendedStoryId = window.localStorage.getItem(STORY_INTENDED_STORY_KEY);
+    setRegisterCallbackUrl(
+      intendedStoryId ? buildStoryCabinetFromDemoUrl(intendedStoryId) : "/storystudio/cabinet"
+    );
+  }, []);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
+      const fromDemoParam = searchParams.get("fromDemo");
+      const fromDemoStored = window.localStorage.getItem(STORY_INTENDED_STORY_KEY);
+      const fromDemoId = fromDemoParam || fromDemoStored || null;
+      const storyId = searchParams.get("story") || fromDemoId;
+
       const guestId = window.localStorage.getItem(STORY_GUEST_ID_KEY);
       if (guestId) {
         try {
@@ -98,16 +124,25 @@ export function StoryStudioCabinet() {
         storyPremiumUnlocked: accountQuota.storyPremiumUnlocked
       });
 
-      const storyId = searchParams.get("story") || searchParams.get("fromDemo");
-      const picked = storyId ? storyList.find((s) => s.id === storyId) : storyList[0];
+      const picked = storyId
+        ? storyList.find((s) => s.id === storyId) ?? (fromDemoId ? storyList[0] : undefined)
+        : storyList[0];
       if (picked) {
         setActiveStory({ ...picked, episodes: picked.episodes ?? [] });
         setSelectedCharacterId(picked.characters[0]?.id ?? null);
-        if (searchParams.get("videoOrder")) {
+        const tabFromUrl = parseTabParam(searchParams.get("tab"));
+        if (tabFromUrl) {
+          setTab(tabFromUrl);
+        } else if (searchParams.get("videoOrder")) {
           setTab("series");
-        } else if (searchParams.get("fromDemo")) {
-          setTab("overview");
+        } else if (fromDemoId || searchParams.get("story")) {
+          setTab("editor");
         }
+      }
+
+      if (fromDemoId) {
+        window.localStorage.removeItem(STORY_INTENDED_STORY_KEY);
+        setDemoWelcomeStoryId(fromDemoId);
       }
     } catch {
       setError("Не удалось загрузить данные.");
@@ -224,10 +259,21 @@ export function StoryStudioCabinet() {
       handleStoryUpdate(story);
       applyStoryQuota(q);
       setTab("editor");
+      trackMarketingEvent("story_chapter_generated", {
+        storyId: story.id,
+        chapterCount: story.chapters.length
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Ошибка генерации главы");
     } finally {
       setChapterLoading(false);
+    }
+  }
+
+  function handleTabChange(next: Tab) {
+    setTab(next);
+    if (activeStory) {
+      trackMarketingEvent("story_cabinet_tab_view", { storyId: activeStory.id, tab: next });
     }
   }
 
@@ -239,7 +285,10 @@ export function StoryStudioCabinet() {
           <Sparkles className="mb-4 h-10 w-10 text-violet" />
           <h1 className="text-2xl font-bold">Войдите в аккаунт</h1>
           <p className="mt-2 text-muted">Чтобы работать с историями и персонажами</p>
-          <Link href="/register?callbackUrl=/storystudio/cabinet" className="mt-6">
+          <Link
+            href={`/register?callbackUrl=${encodeURIComponent(registerCallbackUrl)}`}
+            className="mt-6"
+          >
             <Button className="!bg-violet !text-white !border-violet">Создать аккаунт</Button>
           </Link>
         </div>
@@ -346,7 +395,7 @@ export function StoryStudioCabinet() {
                     <button
                       key={t.id}
                       type="button"
-                      onClick={() => setTab(t.id)}
+                      onClick={() => handleTabChange(t.id)}
                       className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-sm transition sm:px-3.5 ${
                         tab === t.id
                           ? "bg-violet/20 text-ink"
@@ -369,6 +418,8 @@ export function StoryStudioCabinet() {
                     {error}
                   </div>
                 )}
+
+                <StoryOnboardingChecklist story={activeStory} onGoToTab={handleTabChange} />
 
                 {tab === "overview" && (
                   <div className="space-y-6">
@@ -471,14 +522,14 @@ export function StoryStudioCabinet() {
                     initialVideoOrderId={videoOrderId}
                     onGeneratePortrait={handleGeneratePortrait}
                     portraitLoadingId={portraitLoadingId}
-                    onOpenCharacters={() => setTab("characters")}
+                    onOpenCharacters={() => handleTabChange("characters")}
                   />
                 )}
 
                 {tab === "pricing" && (
                   <div id="pricing" className="space-y-6">
                     {!quota?.storyPremiumUnlocked && (
-                      <StoryPremiumUpsellBanner onOpenPricing={() => setTab("pricing")} />
+                      <StoryPremiumUpsellBanner onOpenPricing={() => handleTabChange("pricing")} />
                     )}
                     <div className="rounded-card border border-violet/30 bg-violet/10 p-5">
                       <p className="text-sm">

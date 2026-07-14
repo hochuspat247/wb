@@ -1,5 +1,6 @@
 "use client";
 
+import { NanoBananaRetentionNotice } from "@/components/NanoBananaRetentionNotice";
 import type { StoryCharacter } from "@/types/storystudio";
 import { User, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -28,7 +29,11 @@ export function CharacterGrid({
   }
 
   return (
-    <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div className="space-y-4">
+      {characters.some((character) => character.imageBase64 || character.imageUrl) ? (
+        <NanoBananaRetentionNotice variant="violet" />
+      ) : null}
+      <div className="grid items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {characters.map((character) => {
         const selected = selectedId === character.id;
         const imageSrc = character.imageBase64
@@ -88,6 +93,7 @@ export function CharacterGrid({
           </article>
         );
       })}
+      </div>
     </div>
   );
 }

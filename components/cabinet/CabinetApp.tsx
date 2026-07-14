@@ -19,6 +19,7 @@ import {
   X
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import { NanoBananaRetentionNotice } from "@/components/NanoBananaRetentionNotice";
 import { CardGenerator } from "@/components/CardGenerator";
 import { VideoFromCardFlow, type VideoFlowPhase } from "@/components/video/VideoFromCardFlow";
 import { VideoHistorySection } from "@/components/video/VideoHistorySection";
@@ -846,6 +847,7 @@ export function CabinetApp() {
               <Card padding="lg">
                 <h2 className="text-lg font-bold text-ink">ИИ-провайдер изображений</h2>
                 <p className="mt-1 text-sm text-muted">Обложки генерируются через NanoBanana Expert</p>
+                <NanoBananaRetentionNotice className="mt-3" />
                 <div className="mt-5 grid gap-4">
                   <label className="grid gap-2 text-sm font-semibold text-ink">
                     Провайдер

@@ -58,9 +58,29 @@ export async function getUserCards(userId: string): Promise<ProductCardResult[]>
 
   const cards = await hydrateUserCardsWithVideos(
     userId,
-    rows
-      .map((row) => normalizeCard(row.payload))
-      .filter((item): item is ProductCardResult => item !== null)
+    (
+      await Promise.all(
+        rows.map(async (row) => {
+          const card = normalizeCard(row.payload);
+          if (!card) {
+            return null;
+          }
+
+          const persisted = await persistCardImagePayload(card);
+          if (
+            persisted.generatedImageBase64 &&
+            persisted.generatedImageBase64 !== card.generatedImageBase64
+          ) {
+            await db
+              .update(productCards)
+              .set({ payload: persisted })
+              .where(eq(productCards.id, card.id));
+          }
+
+          return persisted;
+        })
+      )
+    ).filter((item): item is ProductCardResult => item !== null)
   );
 
   return cards.map((card) => sanitizeCardForClient(card));

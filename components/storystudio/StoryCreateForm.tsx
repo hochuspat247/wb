@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { StoryPremiumUpsellBanner } from "@/components/storystudio/StoryPremiumUpsellBanner";
+import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 import { generateStoryDemo, generateStoryFoundation } from "@/lib/api/storystudio";
 import { fetchUserQuota } from "@/lib/api/user";
 import { getOrCreateStoryGuestId } from "@/lib/guest";
@@ -85,12 +86,14 @@ export function StoryCreateForm() {
     try {
       if (isAuthenticated) {
         const { story } = await generateStoryFoundation(input);
-        router.push(`/storystudio/cabinet?story=${story.id}`);
+        trackMarketingEvent("story_created", { storyId: story.id, source: "auth" });
+        router.push(`/storystudio/cabinet?story=${story.id}&tab=editor`);
         return;
       }
 
       const guestId = getOrCreateStoryGuestId();
       const { story } = await generateStoryDemo({ ...input, guestId });
+      trackMarketingEvent("story_created", { storyId: story.id, source: "demo" });
       router.push(`/storystudio/preview/${story.id}?guestId=${encodeURIComponent(guestId)}`);
     } catch (err) {
       if (err instanceof Error && err.message === "Failed to fetch") {

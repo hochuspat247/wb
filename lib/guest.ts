@@ -15,7 +15,7 @@ export function buildCabinetFromDemoUrl(generationId: string) {
 }
 
 export function buildStoryCabinetFromDemoUrl(storyId: string) {
-  return `/storystudio/cabinet?fromDemo=${encodeURIComponent(storyId)}&story=${encodeURIComponent(storyId)}`;
+  return `/storystudio/cabinet?fromDemo=${encodeURIComponent(storyId)}&story=${encodeURIComponent(storyId)}&tab=editor`;
 }
 
 export function getOrCreateGuestId() {

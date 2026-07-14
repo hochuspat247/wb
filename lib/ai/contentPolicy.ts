@@ -181,6 +181,8 @@ const CONTENT_POLICY_RULES: ContentPolicyRule[] = [
   }
 ];
 
+export type ContentPolicyProduct = "marketcard" | "storystudio" | "kvartovid";
+
 const USER_FACING_MESSAGES: Record<ContentPolicyCategory, string> = {
   weapons:
     "Генерация изображений с оружием и боеприпасами запрещена политикой ИИ-провайдера. Загрузите другой товар или измените описание.",
@@ -195,6 +197,32 @@ const USER_FACING_MESSAGES: Record<ContentPolicyCategory, string> = {
   illegal:
     "Генерация изображений для незаконных товаров запрещена."
 };
+
+/** Fiction may include weapons, fights, crime — MarketCard image rules must not block Story Studio. */
+const STORY_SKIP_CATEGORIES = new Set<ContentPolicyCategory>(["weapons", "violence", "drugs"]);
+
+const STORY_USER_FACING_MESSAGES: Record<ContentPolicyCategory, string> = {
+  weapons: "Это описание нельзя использовать. Измените идею истории.",
+  adult_content:
+    "Контент 18+ в историях доступен только с премиум-режимом. Включите режим 18+ или измените описание.",
+  drugs: "Это описание нельзя использовать. Измените идею истории.",
+  violence: "Это описание нельзя использовать. Измените идею истории.",
+  hate: "Истории с экстремистским или оскорбительным содержанием запрещены. Измените описание.",
+  illegal: "Описание содержит призывы к незаконной деятельности. Измените идею истории."
+};
+
+export type ScanContentPolicyOptions = {
+  product?: ContentPolicyProduct;
+  /** Story Studio: allow adult themes when premium 18+ mode is on */
+  allowAdult?: boolean;
+};
+
+function messageForPolicy(category: ContentPolicyCategory, product: ContentPolicyProduct = "marketcard") {
+  if (product === "storystudio") {
+    return STORY_USER_FACING_MESSAGES[category];
+  }
+  return USER_FACING_MESSAGES[category];
+}
 
 type VisionModerationResult = {
   allowed: boolean;
@@ -251,14 +279,27 @@ function findPatternMatch(text: string, rule: ContentPolicyRule): string | null 
   return null;
 }
 
-export function scanTextForProhibitedContent(text: string): ContentPolicyResult {
+export function scanTextForProhibitedContent(
+  text: string,
+  options?: ScanContentPolicyOptions
+): ContentPolicyResult {
   const normalized = normalizePolicyText(text);
+  const product = options?.product ?? "marketcard";
 
   if (!normalized) {
     return { allowed: true };
   }
 
   for (const rule of CONTENT_POLICY_RULES) {
+    if (product === "storystudio") {
+      if (STORY_SKIP_CATEGORIES.has(rule.category)) {
+        continue;
+      }
+      if (rule.category === "adult_content" && options?.allowAdult) {
+        continue;
+      }
+    }
+
     const match = findPatternMatch(normalized, rule);
 
     if (match) {
@@ -266,7 +307,7 @@ export function scanTextForProhibitedContent(text: string): ContentPolicyResult 
         allowed: false,
         code: "CONTENT_POLICY_BLOCKED",
         category: rule.category,
-        error: USER_FACING_MESSAGES[rule.category],
+        error: messageForPolicy(rule.category, product),
         source: "text",
         matches: [match]
       };

@@ -39,15 +39,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Укажите storyId." }, { status: 400 });
     }
 
-    const policy = scanTextForProhibitedContent(body.instructions ?? "");
-    if (!policy.allowed) return createContentPolicyBlockedResponse(policy);
-
     const row = await db.query.storyProjects.findFirst({
       where: and(eq(storyProjects.id, body.storyId), eq(storyProjects.userId, userId))
     });
     if (!row) {
       return NextResponse.json({ error: "История не найдена." }, { status: 404 });
     }
+
+    const policy = scanTextForProhibitedContent(body.instructions ?? "", {
+      product: "storystudio",
+      allowAdult: Boolean(row.payload.premiumMode)
+    });
+    if (!policy.allowed) return createContentPolicyBlockedResponse(policy);
 
     const chapterNumber = row.payload.chapters.length + 1;
     const chapter = await generateStoryChapter(row.payload, chapterNumber, body.instructions);

@@ -20,7 +20,7 @@ import {
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { generateMarketplaceTextFallback } from "@/lib/marketplace/textFallback";
 import { createContentPolicyBlockedResponse } from "@/lib/server/contentPolicyResponse";
-import { createDemoGeneration } from "@/lib/server/demo-generations";
+import { createDemoGeneration, getLatestDemoGenerationForGuest } from "@/lib/server/demo-generations";
 import { getErrorMessage, logDemoGenerationError } from "@/lib/server/demo-errors";
 import { checkGuestDemoGenerationAllowed, hashDemoClientIp } from "@/lib/server/demoRateLimit";
 import { consumeGeneration, getUserQuota } from "@/lib/server/quota";
@@ -129,8 +129,17 @@ export async function POST(request: Request) {
           source: "server"
         });
 
+        // Demo often succeeds on server after client timeout — return the existing result instead of a dead end.
+        const existing = await getLatestDemoGenerationForGuest(guestId);
+
         return NextResponse.json(
-          { error: limit.error, code: limit.code },
+          {
+            error: limit.error,
+            code: limit.code,
+            existingDemoId: existing?.id,
+            id: existing?.id,
+            previewUrl: existing ? `/api/generations/${existing.id}/preview` : undefined
+          },
           {
             status: 429,
             headers: { "Retry-After": String(limit.retryAfterSeconds) }

@@ -5,6 +5,7 @@ import { generatePromptOnlyImage } from "@/lib/ai/promptOnlyImage";
 import { formatImageProviderError } from "@/lib/ai/imageGenerationErrors";
 import { buildCharacterPortraitPrompt } from "@/lib/storystudio/prompt";
 import { consumeStoryGeneration, getStoryUserQuota } from "@/lib/server/storyQuota";
+import { downloadRemoteImageAsBase64 } from "@/lib/server/remoteImage";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import { db } from "@/lib/db";
 import { storyProjects } from "@/lib/db/schema";
@@ -73,15 +74,26 @@ export async function POST(request: Request) {
       );
     }
 
+    let imageBase64 = result.imageBase64 ?? null;
+    let imageMimeType = result.mimeType ?? null;
+
+    if (!imageBase64 && result.imageUrl) {
+      const downloaded = await downloadRemoteImageAsBase64(result.imageUrl);
+      if (downloaded) {
+        imageBase64 = downloaded.base64;
+        imageMimeType = downloaded.mimeType;
+      }
+    }
+
     const story = {
       ...row.payload,
       characters: row.payload.characters.map((c) =>
         c.id === body.characterId
           ? {
               ...c,
-              imageBase64: result.imageBase64 ?? null,
-              imageMimeType: result.mimeType ?? null,
-              imageUrl: result.imageUrl ?? null
+              imageBase64,
+              imageMimeType,
+              imageUrl: imageBase64 ? null : result.imageUrl ?? null
             }
           : c
       ),

@@ -1,7 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { LogOut, RefreshCw } from "lucide-react";
+import { LogOut, Download, RefreshCw } from "lucide-react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AdminProductSwitcher } from "@/components/admin/AdminProductSwitcher";
 import { Button } from "@/components/ui/Button";
@@ -16,6 +17,33 @@ type Props = {
 
 export function AdminShell({ product, onProductChange, onRefresh, children }: Props) {
   const router = useRouter();
+  const [exporting, setExporting] = useState(false);
+
+  async function handleGptExport(format: "markdown" | "json") {
+    setExporting(true);
+
+    try {
+      const response = await fetch(`/api/admin/export?format=${format}`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("Не удалось выгрузить отчёт");
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match?.[1] || `admin-gpt-export.${format === "markdown" ? "md" : "json"}`;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      window.alert("Не удалось выгрузить отчёт для GPT. Попробуйте ещё раз.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-paper">
@@ -31,6 +59,10 @@ export function AdminShell({ product, onProductChange, onRefresh, children }: Pr
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <AdminProductSwitcher value={product.id} onChange={onProductChange} />
+              <Button disabled={exporting} onClick={() => void handleGptExport("markdown")} size="sm" variant="secondary">
+                <Download size={16} />
+                {exporting ? "Выгрузка…" : "Для GPT"}
+              </Button>
               <Button onClick={onRefresh} size="sm" variant="secondary">
                 <RefreshCw size={16} />
                 Обновить

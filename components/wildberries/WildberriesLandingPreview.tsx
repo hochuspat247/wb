@@ -34,39 +34,52 @@ function WildberriesSubscribeModal({ open, onClose }: WildberriesSubscribeModalP
     }
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   if (!open) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center sm:p-4">
       <button aria-label="Закрыть" className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} type="button" />
 
-      <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-[28px] border border-[#CB11AB]/25 bg-card p-6 shadow-[0_24px_80px_rgba(203,17,171,0.18)] md:p-8">
+      <div className="relative z-10 max-h-[92dvh] w-full overflow-y-auto rounded-t-[24px] border border-[#CB11AB]/25 bg-card p-5 shadow-[0_24px_80px_rgba(203,17,171,0.18)] sm:max-h-[90vh] sm:max-w-lg sm:rounded-[28px] sm:p-6 md:p-8">
         <button
           aria-label="Закрыть"
-          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full border border-clay text-muted transition hover:text-ink"
+          className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border border-clay text-muted transition hover:text-ink sm:right-4 sm:top-4"
           onClick={onClose}
           type="button"
         >
           <X size={16} />
         </button>
 
-        <div className="flex items-start gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[#CB11AB]/15 text-[#CB11AB]">
+        <div className="flex items-start gap-3 pr-8">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[#CB11AB]/15 text-[#CB11AB] sm:h-11 sm:w-11">
             <UploadCloud size={20} />
           </div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#CB11AB]">Wildberries · Beta</p>
-            <h3 className="mt-2 text-2xl font-black leading-snug text-ink">Купите комплект и опубликуйте на WB</h3>
+          <div className="min-w-0">
+            <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[#CB11AB] sm:text-xs">
+              Wildberries · Beta
+            </p>
+            <h3 className="mt-2 text-xl font-black leading-snug text-ink sm:text-2xl">
+              Купите комплект и опубликуйте на WB
+            </h3>
             <p className="mt-2 text-sm font-medium leading-relaxed text-muted">
-              Публикация на WB доступна с тарифа «{PLAN_SKU_KIT_NAME}». Сначала соберите комплект слайдов для SKU,
-              затем отправьте всё в Wildberries одной кнопкой.
+              Публикация на WB доступна с тарифа «{PLAN_SKU_KIT_NAME}». Сначала соберите комплект слайдов для SKU, затем
+              отправьте всё в Wildberries одной кнопкой.
             </p>
           </div>
         </div>
 
-        <div className="mt-6 space-y-3">
+        <div className="mt-5 space-y-2.5 sm:mt-6 sm:space-y-3">
           {[
             {
               icon: Sparkles,
@@ -88,7 +101,7 @@ function WildberriesSubscribeModal({ open, onClose }: WildberriesSubscribeModalP
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#CB11AB]/10 text-[#CB11AB]">
                 <step.icon size={17} />
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-black text-ink">{step.title}</p>
                 <p className="mt-0.5 text-xs font-semibold text-muted">{step.text}</p>
               </div>
@@ -96,7 +109,7 @@ function WildberriesSubscribeModal({ open, onClose }: WildberriesSubscribeModalP
           ))}
         </div>
 
-        <div className="mt-6 rounded-[18px] border border-[#CB11AB]/20 bg-[#CB11AB]/8 p-4">
+        <div className="mt-5 rounded-[18px] border border-[#CB11AB]/20 bg-[#CB11AB]/8 p-4 sm:mt-6">
           <p className="text-sm font-black text-ink">
             {PLAN_SKU_KIT_NAME} — {formatRub(starterPack.total)}
           </p>
@@ -112,13 +125,13 @@ function WildberriesSubscribeModal({ open, onClose }: WildberriesSubscribeModalP
           </PaymentButton>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Link className="flex-1" href="/register">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Link className="w-full sm:flex-1" href="/register">
             <Button className="w-full" variant="secondary">
               Создать аккаунт
             </Button>
           </Link>
-          <Link className="flex-1" href="/cabinet#create">
+          <Link className="w-full sm:flex-1" href="/cabinet#create">
             <Button className="w-full" variant="ghost">
               Сгенерировать карточки
             </Button>
@@ -134,19 +147,23 @@ export function WildberriesLandingPreview() {
 
   return (
     <>
-      <div className="overflow-hidden rounded-[28px] border border-[#CB11AB]/20 bg-[linear-gradient(160deg,rgba(203,17,171,0.1),rgba(124,255,107,0.05))] p-5 shadow-[0_24px_80px_rgba(203,17,171,0.12)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-[#CB11AB]">Кабинет → Wildberries</p>
-            <h3 className="mt-1 text-lg font-black text-ink">Карусель перед публикацией</h3>
+      <div className="min-w-0 overflow-hidden rounded-[22px] border border-[#CB11AB]/20 bg-[linear-gradient(160deg,rgba(203,17,171,0.1),rgba(191,249,63,0.08))] p-3.5 shadow-[0_24px_80px_rgba(203,17,171,0.1)] sm:rounded-[28px] sm:p-5">
+        <div className="flex items-start justify-between gap-2 sm:items-center sm:gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-black uppercase tracking-[0.14em] text-[#CB11AB] sm:text-xs sm:tracking-[0.16em]">
+              Кабинет → Wildberries
+            </p>
+            <h3 className="mt-1 text-base font-black leading-snug text-ink sm:text-lg">Карусель перед публикацией</h3>
           </div>
-          <span className="rounded-full bg-mint/15 px-3 py-1 text-xs font-black text-mint">API WB</span>
+          <span className="shrink-0 rounded-full bg-accent/25 px-2.5 py-1 text-[10px] font-black text-accent-ink sm:px-3 sm:text-xs">
+            API WB
+          </span>
         </div>
 
-        <div className="mt-5 flex gap-3 overflow-x-auto pb-1">
+        <div className="-mx-0.5 mt-4 flex gap-2.5 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] sm:mt-5 sm:gap-3 [&::-webkit-scrollbar]:hidden">
           {mockSlides.map((slide) => (
             <div
-              className={`w-[108px] shrink-0 overflow-hidden rounded-[16px] border ${
+              className={`w-[86px] shrink-0 overflow-hidden rounded-[14px] border sm:w-[108px] sm:rounded-[16px] ${
                 slide.accent ? "border-[#CB11AB] shadow-[0_10px_30px_rgba(203,17,171,0.18)]" : "border-clay"
               }`}
               key={slide.label}
@@ -156,44 +173,46 @@ export function WildberriesLandingPreview() {
                   alt={slide.label}
                   className="h-full w-full object-cover"
                   fill
-                  sizes="108px"
+                  sizes="(max-width:640px) 86px, 108px"
                   src={slide.image}
                 />
                 {slide.accent ? (
-                  <span className="absolute left-2 top-2 z-10 rounded-full bg-[#CB11AB] px-2 py-0.5 text-[9px] font-black uppercase text-white">
+                  <span className="absolute left-1.5 top-1.5 z-10 rounded-full bg-[#CB11AB] px-1.5 py-0.5 text-[8px] font-black uppercase text-white sm:left-2 sm:top-2 sm:px-2 sm:text-[9px]">
                     Титульник
                   </span>
                 ) : null}
               </div>
-              <div className="border-t border-clay/70 bg-card/80 px-2 py-2 text-center text-[11px] font-bold text-ink">
+              <div className="truncate border-t border-clay/70 bg-card/80 px-1.5 py-1.5 text-center text-[10px] font-bold text-ink sm:px-2 sm:py-2 sm:text-[11px]">
                 {slide.label}
               </div>
             </div>
           ))}
-          <div className="grid w-[108px] shrink-0 place-items-center gap-1 rounded-[16px] border border-dashed border-[#CB11AB]/40 bg-[#CB11AB]/5 px-2 py-3 text-center">
-            <Plus className="text-[#CB11AB]" size={20} />
+          <div className="grid w-[86px] shrink-0 place-items-center gap-1 rounded-[14px] border border-dashed border-[#CB11AB]/40 bg-[#CB11AB]/5 px-2 py-3 text-center sm:w-[108px] sm:rounded-[16px]">
+            <Plus className="text-[#CB11AB]" size={18} />
             <span className="text-[10px] font-black text-ink">Добавить</span>
           </div>
         </div>
 
-        <div className="mt-5 rounded-[18px] border border-clay bg-card/80 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="relative h-14 w-11 shrink-0 overflow-hidden rounded-[12px] border border-clay bg-paper">
+        <div className="mt-4 rounded-[16px] border border-clay bg-card/80 p-3 sm:mt-5 sm:rounded-[18px] sm:p-4">
+          <div className="flex items-start justify-between gap-3 sm:items-center">
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+              <div className="relative h-12 w-9 shrink-0 overflow-hidden rounded-[10px] border border-clay bg-paper sm:h-14 sm:w-11 sm:rounded-[12px]">
                 <Image alt="" className="object-cover" fill sizes="44px" src={fanAfter} />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-black text-ink">Кроссовки женские оверсайз</p>
-                <p className="mt-1 text-xs text-muted">Категория WB · бренд · габариты · вес</p>
+                <p className="truncate text-sm font-black text-ink">Кроссовки женские оверсайз</p>
+                <p className="mt-0.5 truncate text-[11px] text-muted sm:mt-1 sm:text-xs">
+                  Категория WB · бренд · габариты · вес
+                </p>
               </div>
             </div>
-            <span className="inline-flex items-center gap-1 rounded-full bg-[#CB11AB]/12 px-3 py-1 text-xs font-black text-[#CB11AB]">
-              <CheckCircle2 size={14} />
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[#CB11AB]/12 px-2.5 py-1 text-[11px] font-black text-[#CB11AB] sm:px-3 sm:text-xs">
+              <CheckCircle2 size={13} />
               4 фото
             </span>
           </div>
           <button
-            className="mt-4 inline-flex min-h-10 w-full cursor-pointer items-center justify-center rounded-button bg-[#CB11AB] text-sm font-semibold text-white transition hover:-translate-y-px hover:brightness-105"
+            className="mt-3 inline-flex min-h-11 w-full cursor-pointer items-center justify-center rounded-button bg-[#CB11AB] px-3 text-sm font-semibold text-white transition hover:-translate-y-px hover:brightness-105 sm:mt-4"
             onClick={() => setModalOpen(true)}
             type="button"
           >

@@ -27,7 +27,7 @@ export function CookieBanner() {
     <div className="fixed bottom-4 left-4 right-4 z-[90] mx-auto max-w-4xl rounded-[18px] border border-clay bg-card/95 p-4 shadow-soft backdrop-blur-xl md:bottom-6 md:flex md:items-center md:gap-4">
       <p className="pr-8 text-sm font-semibold leading-relaxed text-ink md:pr-0">
         Мы используем файлы cookie для улучшения работы сайта и анализа трафика. Продолжая использовать сайт, вы соглашаетесь с{" "}
-        <Link className="text-accent underline-offset-2 hover:underline" href="/legal/personal-data">
+        <Link className="text-accent-ink underline-offset-2 hover:underline" href="/legal/personal-data">
           политикой обработки персональных данных
         </Link>
         .

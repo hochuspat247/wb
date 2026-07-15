@@ -173,7 +173,7 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
           <X size={16} />
         </button>
 
-        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">{BRAND.googleVeo} {BRAND.veoVersion} Фаст</p>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-accent-ink">{BRAND.googleVeo} {BRAND.veoVersion} Фаст</p>
         <h3 className="mt-3 text-2xl font-black text-ink">Видео из вашей карточки</h3>
         <p className="mt-2 text-sm font-medium text-muted">
           Мы анимируем уже готовую карточку, сохранив товар, текст, цвета и композицию. Формат карточки 4:5 отправляется
@@ -288,7 +288,7 @@ export function VideoConfigModal({ open, card, videoCredits, onClose, onOrderCre
             <p className="mt-1 text-xs font-semibold text-muted">{generateAudio ? "Со звуком" : "Без звука"}</p>
           )}
           {isUnlimited ? (
-            <p className="mt-1 text-xs font-semibold text-mint">Безлимитный аккаунт — оплата не требуется</p>
+            <p className="mt-1 text-xs font-semibold text-accent-ink">Безлимитный аккаунт — оплата не требуется</p>
           ) : null}
           {canUseCredit ? (
             <p className="mt-1 text-xs font-semibold text-muted">Доступно video-credits: {videoCredits}</p>

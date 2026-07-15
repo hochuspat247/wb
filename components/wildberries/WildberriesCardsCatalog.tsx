@@ -454,7 +454,7 @@ export function WildberriesCardsCatalog({ wbConnected, wbUnlocked, onNeedConnect
                   </div>
 
                   {message ? (
-                    <p className={`text-sm font-semibold ${message.includes("отправлены") ? "text-mint" : "text-muted"}`}>
+                    <p className={`text-sm font-semibold ${message.includes("отправлены") ? "text-accent-ink" : "text-muted"}`}>
                       {message.includes("отправлены") ? (
                         <span className="inline-flex items-center gap-1.5">
                           <CheckCircle2 size={15} />

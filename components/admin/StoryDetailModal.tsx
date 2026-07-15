@@ -122,7 +122,7 @@ export function StoryDetailModal({
       <Card className="max-h-[92vh] w-full max-w-6xl overflow-hidden p-0" padding="none">
         <div className="flex items-center justify-between gap-4 border-b border-clay px-5 py-4">
           <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-accent">История пользователя</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-accent-ink">История пользователя</p>
             <h3 className="mt-1 truncate text-lg font-black text-ink">{story?.title || "Загрузка..."}</h3>
           </div>
           <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-paper" onClick={onClose} type="button">
@@ -242,7 +242,7 @@ export function StoryDetailModal({
                       </p>
                       <TextBlock label="Сцена" value={episode.sceneDescription} />
                       {episode.videoUrl ? (
-                        <a className="mt-2 inline-flex text-sm font-bold text-accent hover:underline" href={episode.videoUrl} rel="noreferrer" target="_blank">
+                        <a className="mt-2 inline-flex text-sm font-bold text-accent-ink hover:underline" href={episode.videoUrl} rel="noreferrer" target="_blank">
                           Открыть видео
                         </a>
                       ) : null}

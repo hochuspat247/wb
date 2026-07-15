@@ -39,10 +39,10 @@ export function StoryPremiumUpsellBanner({ variant = "card", onOpenPricing }: St
           <Sparkles className="h-5 w-5 text-violet" />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold text-ink">Премиум 18+ — только с подпиской</h3>
+          <h3 className="font-semibold text-ink">Premium — сильнее сюжет и 18+</h3>
           <p className="mt-1 text-sm text-muted">
-            Взрослые темы, откровенные сцены и грубая лексика доступны с пакетом «{authorPackage?.label ?? "Автор"}» (50
-            генераций) или «Студия». Это защищает сервис и помогает соблюдать возрастные ограничения.
+            Premium сильнее держит сюжет, глубже прорабатывает мир и героев и открывает 18+. Доступен с пакетом «
+            {authorPackage?.label ?? "Автор"}» (50 генераций) или «Студия».
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {onOpenPricing ? (

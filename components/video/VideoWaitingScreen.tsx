@@ -8,7 +8,7 @@ import type { VideoGenerationStatus } from "@/types/video-generation";
 
 const WAITING_STEPS = [
   "Готовим карточку",
-  "Передаём изображение в Гугл Вео 3.1",
+  "Передаём изображение в Google Veo 3.1",
   "Добавляем плавное движение",
   "Проверяем, чтобы текст не поплыл",
   "Готовим видео",
@@ -106,7 +106,7 @@ export function VideoWaitingScreen({ orderId, onDone, onError, compact }: VideoW
           : "min-w-0 overflow-hidden rounded-[24px] border border-clay bg-card p-4 sm:p-6 md:p-8"
       }
     >
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">GenAPI · Veo 3.1 Fast</p>
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-accent-ink">GenAPI · Veo 3.1 Fast</p>
       <h3 className={`font-black text-ink ${compact ? "mt-2 text-xl" : "mt-3 text-2xl"}`}>Оживляем карточку</h3>
       <p className="mt-2 text-sm font-medium text-muted">Видео уже создаётся. Обычно это занимает 2–3 минуты.</p>
 

@@ -3,19 +3,15 @@ import { BRAND } from "@/lib/branding";
 import { absoluteUrl, siteConfig, siteIcons } from "@/lib/seo";
 import {
   STORY_GENERATION_PRICE_RUB,
-  calculateStoryPackagePrice,
   formatStoryRub
 } from "@/lib/storystudio/pricing";
 import { VIDEO_STANDARD_PRICE_4_SEC, formatVideoPriceRub } from "@/config/video-pricing";
 
-const pack10 = calculateStoryPackagePrice(10);
-
 export const storyStudioConfig = {
   name: BRAND.storyStudio,
-  brand: `${BRAND.storyStudio} — ИИ генератор историй`,
-  title:
-    `${BRAND.storyStudio} — генератор историй, романов и фанфиков с ИИ`,
-  description: `Создавайте книги, новеллы и фанфики с нейросетью: синопсис, персонажи с портретами, интерактивная карта связей, редактор глав и видео-серии через ${BRAND.googleVeo} ${BRAND.veoVersion}. Русскоязычный ИИ для авторов. От ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию, пакеты от ${formatStoryRub(pack10.total)}. Без подписки.`,
+  brand: `${BRAND.storyStudio} — рабочая среда для историй с ИИ`,
+  title: `${BRAND.storyStudio} — напишите историю с ИИ от идеи до глав`,
+  description: `${BRAND.storyStudio} хранит персонажей, мир и отношения, помогает планировать сюжет и писать главы без потери контекста. Русский язык, демо без регистрации, от ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию.`,
   keywords: [
     "стористудио",
     "story studio ии",
@@ -152,6 +148,6 @@ export function createStoryStudioMetadata({
 export const storyStudioLandingDescription = storyStudioConfig.description;
 
 export const storyStudioCreateDescription =
-  "Опишите идею романа или новеллы — ИИ создаст синопсис, персонажей, карту связей и план сюжета. Жанры, объём и Премиум 18+ на выбор.";
+  "Опишите идею — ИИ соберёт синопсис, персонажей, мир и план сюжета. Продолжайте главы в кабинете, не теряя контекст произведения.";
 
-export const storyStudioVideoSnippet = `Видео-серии из портретов — от ${formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)} за 4 сек через ${BRAND.googleVeo} ${BRAND.veoVersion}.`;
+export const storyStudioVideoSnippet = `Видео-сцены из портретов — отдельно, от ${formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)} за 4 сек через ${BRAND.googleVeo} ${BRAND.veoVersion}.`;

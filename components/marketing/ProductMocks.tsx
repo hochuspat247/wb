@@ -14,7 +14,7 @@ export function BeforePhotoMock({ label = "Фото с телефона" }: { la
 export function AfterCardMock() {
   return (
     <div className="relative aspect-[4/5] overflow-hidden rounded-card bg-gradient-to-br from-[#0c4a6e] via-[#134e4a] to-[#111111]">
-      <div className="absolute left-4 top-4 rounded-md bg-white/90 px-2.5 py-1 text-[10px] font-bold tracking-wide text-paper">
+      <div className="absolute left-4 top-4 rounded-md bg-white/90 px-2.5 py-1 text-[10px] font-bold tracking-wide text-ink">
         4:5
       </div>
 
@@ -31,7 +31,7 @@ export function AfterCardMock() {
 
       <div className="absolute bottom-4 right-4 space-y-1.5">
         {["Контроль солей", "Термометр", "Проводимость"].map((text) => (
-          <div className="rounded-md bg-white/95 px-2.5 py-1 text-[9px] font-semibold text-paper shadow-sm" key={text}>
+          <div className="rounded-md bg-white/95 px-2.5 py-1 text-[9px] font-semibold text-ink shadow-sm" key={text}>
             {text}
           </div>
         ))}

@@ -3,11 +3,14 @@ import { extractJsonObject } from "@/lib/json";
 import {
   buildChapterPrompt,
   buildCharacterPrompt,
+  buildStoryAnalysisPrompt,
   buildStoryFoundationPrompt
 } from "@/lib/storystudio/prompt";
 import type {
   CharacterRelation,
   CreateStoryInput,
+  StoryAnalysis,
+  StoryAnalysisRemark,
   StoryCharacter,
   StoryChapter,
   StoryProject
@@ -268,6 +271,10 @@ export async function regenerateStoryFoundation(story: StoryProject): Promise<St
     id: story.id,
     createdAt: story.createdAt,
     episodes: story.episodes ?? [],
+    shareId: story.shareId,
+    isPublic: story.isPublic,
+    media: story.media ?? [],
+    analysis: story.analysis ?? null,
     needsAiRefresh: false
   };
 }
@@ -324,4 +331,51 @@ export async function generateStoryChapter(
   };
 
   return chapter;
+}
+
+export async function generateStoryAnalysis(story: StoryProject, focus?: string): Promise<StoryAnalysis> {
+  const rawText = await callGigaChatJson(buildStoryAnalysisPrompt(story, focus), {
+    maxTokens: 3500,
+    temperature: 0.4
+  });
+  const data = parseJson<{
+    summary?: string;
+    remarks?: Array<{
+      severity?: string;
+      title?: string;
+      detail?: string;
+      suggestion?: string;
+    }>;
+  }>(rawText);
+
+  const remarks: StoryAnalysisRemark[] = asArray(data.remarks)
+    .map((item): StoryAnalysisRemark | null => {
+      const severityRaw = String(item.severity ?? "attention");
+      const severity: StoryAnalysisRemark["severity"] =
+        severityRaw === "critical" || severityRaw === "good" ? severityRaw : "attention";
+      const detail = String(item.detail ?? "").trim();
+      if (!detail) return null;
+
+      return {
+        id: crypto.randomUUID(),
+        severity,
+        title: String(item.title ?? "").trim() || "Замечание",
+        detail,
+        suggestion: String(item.suggestion ?? "").trim() || undefined,
+        status: "pending"
+      };
+    })
+    .filter((item): item is StoryAnalysisRemark => Boolean(item));
+
+  if (!remarks.length) {
+    throw new Error("ИИ не вернул анализ.");
+  }
+
+  return {
+    id: crypto.randomUUID(),
+    focus: focus?.trim() || undefined,
+    summary: String(data.summary ?? "").trim() || "Анализ готов.",
+    remarks,
+    createdAt: new Date().toISOString()
+  };
 }

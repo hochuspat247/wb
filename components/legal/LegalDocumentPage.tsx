@@ -58,7 +58,7 @@ export function LegalDocumentPage({ document }: LegalDocumentPageProps) {
             <p className="text-xs font-semibold uppercase tracking-wide text-muted">Другие документы</p>
             <LegalFooterLinks
               className="mt-3 flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1"
-              linkClassName="text-sm font-semibold text-accent transition hover:underline"
+              linkClassName="text-sm font-semibold text-accent-ink transition hover:underline"
               separator=""
             />
           </footer>

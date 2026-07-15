@@ -11,10 +11,11 @@ export function StoryStudioFaqSection() {
 
   return (
     <section id="faq" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
-      <h2 className="mb-2 text-center text-2xl font-bold sm:text-3xl">Частые вопросы</h2>
+      <p className="story-fairy-eyebrow text-center">Ответы</p>
+      <h2 className="story-fairy-title mb-2 mt-3 text-center text-3xl text-moon sm:text-4xl">Частые вопросы</h2>
       <p className="mb-10 text-center text-muted">Всё про {BRAND.storyStudio}, карту связей и видео-серии</p>
 
-      <div className="mx-auto max-w-3xl divide-y divide-white/10 rounded-card border border-white/10 bg-card/40">
+      <div className="story-fairy-panel mx-auto max-w-3xl divide-y divide-[rgba(212,180,131,0.12)] rounded-card">
         {faq.map((item) => {
           const isOpen = openId === item.id;
 
@@ -26,10 +27,10 @@ export function StoryStudioFaqSection() {
                 onClick={() => setOpenId(isOpen ? null : item.id)}
                 aria-expanded={isOpen}
               >
-                <span className="text-sm font-semibold text-ink sm:text-base lg:text-lg">{item.question}</span>
+                <span className="font-fairy text-base font-semibold text-moon sm:text-lg">{item.question}</span>
                 <span
-                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border border-white/15 text-muted transition ${
-                    isOpen ? "rotate-45 bg-violet text-white" : ""
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full border border-[rgba(212,180,131,0.25)] text-muted transition ${
+                    isOpen ? "rotate-45 bg-gold text-[#1a140f]" : ""
                   }`}
                 >
                   +

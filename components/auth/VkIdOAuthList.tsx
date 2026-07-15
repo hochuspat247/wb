@@ -12,10 +12,16 @@ type VkIdOAuthListProps = {
 export function VkIdOAuthList({ callbackUrl = "/cabinet" }: VkIdOAuthListProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
+  const [available, setAvailable] = useState(true);
   const signInWithVk = useVkIdSignIn(callbackUrl);
 
   useEffect(() => {
-    if (!containerRef.current || !initVkIdConfig()) {
+    if (!containerRef.current) {
+      return;
+    }
+
+    if (!initVkIdConfig()) {
+      setAvailable(false);
       return;
     }
 
@@ -30,7 +36,11 @@ export function VkIdOAuthList({ callbackUrl = "/cabinet" }: VkIdOAuthListProps) 
           oauthList: [VKID.OAuthName.VK, VKID.OAuthName.MAIL]
         })
         .on(VKID.WidgetEvents.ERROR, (vkError: unknown) => {
-          console.error(vkError);
+          const message = vkError instanceof Error ? vkError.message : String(vkError ?? "");
+          if (/failed to fetch|networkerror|load failed/i.test(message)) {
+            setAvailable(false);
+            return;
+          }
           setError("Не удалось войти через ВКонтакте.");
         })
         .on(VKID.OAuthListInternalEvents.LOGIN_SUCCESS, async (payload: { code: string; device_id: string }) => {
@@ -38,7 +48,7 @@ export function VkIdOAuthList({ callbackUrl = "/cabinet" }: VkIdOAuthListProps) 
             setError("");
             await signInWithVk(payload);
           } catch (vkError) {
-            console.error(vkError);
+            console.warn("[VK ID] sign-in failed", vkError);
             setError("Ошибка авторизации VK ID.");
           }
         });
@@ -47,20 +57,23 @@ export function VkIdOAuthList({ callbackUrl = "/cabinet" }: VkIdOAuthListProps) 
         container.replaceChildren();
       };
     } catch (vkError) {
-      console.error("[VK ID] widget init failed", vkError);
-      setError("Не удалось загрузить вход через VK.");
+      const message = vkError instanceof Error ? vkError.message : String(vkError ?? "");
+      if (!/failed to fetch|networkerror|load failed/i.test(message)) {
+        console.warn("[VK ID] widget init failed", vkError);
+      }
+      setAvailable(false);
       return undefined;
     }
   }, [callbackUrl, signInWithVk]);
 
-  if (!process.env.NEXT_PUBLIC_VK_APP_ID) {
+  if (!process.env.NEXT_PUBLIC_VK_APP_ID || !available) {
     return null;
   }
 
   return (
     <div className="space-y-2">
       <div className="min-h-[44px] overflow-hidden rounded-2xl" ref={containerRef} />
-      {error ? <p className="text-sm font-semibold text-coral">{error}</p> : null}
+      {error ? <p className="text-sm font-semibold text-red-600">{error}</p> : null}
     </div>
   );
 }

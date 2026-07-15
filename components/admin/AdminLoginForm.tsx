@@ -59,7 +59,7 @@ export function AdminLoginForm() {
     <div className="grid min-h-[100svh] place-items-center bg-paper px-4 py-6 sm:px-5 sm:py-12">
       <Card className="w-full max-w-md" padding="lg">
         <div className="mb-5 text-center sm:mb-6">
-          <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent/10 text-accent">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-accent/10 text-accent-ink">
             <Shield size={22} />
           </div>
           <h1 className="mt-4 text-2xl font-black leading-tight text-ink">Вход в админку</h1>
@@ -81,7 +81,7 @@ export function AdminLoginForm() {
               value={password}
             />
           </label>
-          {error ? <p className="text-sm font-semibold text-accent">{error}</p> : null}
+          {error ? <p className="text-sm font-semibold text-accent-ink">{error}</p> : null}
           <Button className="min-h-12 w-full" disabled={loading} type="submit">
             {loading ? <Loader2 className="animate-spin" size={18} /> : null}
             Войти

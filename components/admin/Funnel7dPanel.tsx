@@ -51,12 +51,12 @@ export function Funnel7dPanel({ steps, onRefresh, product = "marketcard" }: Funn
   return (
     <CollapsibleAdminSection
       badge={
-        <span className="rounded-full bg-mint/15 px-2.5 py-1 text-xs font-black text-mint">
+        <span className="rounded-full bg-mint/15 px-2.5 py-1 text-xs font-black text-accent-ink">
           {steps[0]?.count ?? 0}
         </span>
       }
       description="Уникальные сессии за 7 дней без внутренних аккаунтов (ADMIN_EMAILS). Проценты — переход к следующему шагу."
-      icon={<Filter className="text-mint" size={20} />}
+      icon={<Filter className="text-accent-ink" size={20} />}
       id="funnel-7d"
       scope={product}
       title="Воронка за 7 дней"
@@ -73,7 +73,7 @@ export function Funnel7dPanel({ steps, onRefresh, product = "marketcard" }: Funn
       </div>
       ) : null}
 
-      {cleanupMessage ? <p className="mb-4 text-sm font-semibold text-mint">{cleanupMessage}</p> : null}
+      {cleanupMessage ? <p className="mb-4 text-sm font-semibold text-accent-ink">{cleanupMessage}</p> : null}
       {cleanupError ? <p className="mb-4 text-sm font-semibold text-red-400">{cleanupError}</p> : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
@@ -91,7 +91,7 @@ export function Funnel7dPanel({ steps, onRefresh, product = "marketcard" }: Funn
               </div>
               {index < steps.length - 1 ? (
                 <div className="flex items-center gap-2 py-2 pl-4 text-xs font-bold text-muted">
-                  <span className="text-base leading-none text-accent">↓</span>
+                  <span className="text-base leading-none text-accent-ink">↓</span>
                   <span>
                     {step.count > 0
                       ? `${formatPercent(steps[index + 1].fromPreviousPercent)} к «${steps[index + 1].label}»`

@@ -8,11 +8,11 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants = {
   primary:
-    "bg-accent text-paper border border-accent hover:bg-[#9BFF8D] hover:-translate-y-px active:translate-y-0",
+    "wow-btn bg-accent text-on-accent border border-accent shadow-[0_10px_28px_rgba(191,249,63,0.35)] hover:bg-[#D4FF6B] hover:shadow-[0_14px_34px_rgba(191,249,63,0.45)]",
   secondary:
-    "border border-clay bg-card text-ink hover:border-accent/35 hover:bg-sand active:translate-y-0",
-  ghost: "bg-transparent text-muted hover:bg-white/5 hover:text-ink",
-  dark: "bg-ink text-paper border border-ink hover:bg-white hover:-translate-y-px"
+    "wow-btn border border-clay bg-card text-ink hover:border-ink/20 hover:bg-sand",
+  ghost: "wow-btn bg-transparent text-muted hover:bg-ink/[0.04] hover:text-ink",
+  dark: "wow-btn bg-ink text-white border border-ink hover:bg-ink-soft shadow-[0_10px_28px_rgba(28,28,28,0.18)]"
 };
 
 const sizes = {
@@ -30,7 +30,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 font-semibold transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-semibold disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:translate-y-0 ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
     >
       {children}

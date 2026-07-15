@@ -14,7 +14,7 @@ export function CabinetDemoWelcomeHint({ cardTitle, onDismiss, onOpenCard }: Cab
     <div className="mb-6 rounded-[20px] border border-accent/25 bg-[linear-gradient(135deg,rgba(124,255,107,0.14),rgba(124,255,107,0.04))] p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-accent">
+          <div className="flex items-center gap-2 text-accent-ink">
             <Sparkles size={18} />
             <p className="text-xs font-black uppercase tracking-[0.16em]">Первая карточка в кабинете</p>
           </div>

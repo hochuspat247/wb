@@ -328,7 +328,7 @@ function KvartovidUserSegmentTable({
                   <p className="font-medium text-ink">{user.name || "—"}</p>
                   <p className="text-xs text-muted">{formatAccountEmail(user.email)}</p>
                 </td>
-                <td className="px-2 py-3 font-semibold text-accent">{user.listingsCount}</td>
+                <td className="px-2 py-3 font-semibold text-accent-ink">{user.listingsCount}</td>
                 <td className="px-2 py-3 text-muted">
                   <p className="line-clamp-2">{user.latestListingTitle}</p>
                   <p className="mt-1 text-xs">
@@ -429,7 +429,7 @@ function RatingValue({ rating }: { rating?: number | null }) {
     <span className="inline-flex items-center gap-1 text-sm font-black text-ink">
       {Array.from({ length: 5 }).map((_, index) => (
         <Star
-          className={index < rating ? "fill-accent text-accent" : "text-clay"}
+          className={index < rating ? "fill-accent text-accent-ink" : "text-clay"}
           key={index}
           size={16}
         />
@@ -493,7 +493,7 @@ function CardDetailModal({
       <Card className="max-h-[92vh] w-full max-w-6xl overflow-hidden p-0" padding="none">
         <div className="flex items-center justify-between gap-4 border-b border-clay px-5 py-4">
           <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-accent">Карточка пользователя</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-accent-ink">Карточка пользователя</p>
             <h3 className="mt-1 truncate text-lg font-black text-ink">{card?.title || "Загрузка..."}</h3>
           </div>
           <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-paper" onClick={onClose} type="button">
@@ -615,7 +615,7 @@ function DemoDetailModal({
       <Card className="max-h-[92vh] w-full max-w-6xl overflow-hidden p-0" padding="none">
         <div className="flex items-center justify-between gap-4 border-b border-clay px-5 py-4">
           <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-accent">Демо гостя</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-accent-ink">Демо гостя</p>
             <h3 className="mt-1 truncate text-lg font-black text-ink">{card?.title || "Загрузка..."}</h3>
           </div>
           <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-paper" onClick={onClose} type="button">
@@ -861,7 +861,7 @@ export function AdminDashboard() {
     >
         <CollapsibleAdminSection
           description={`Ключевые метрики: ${productConfig.label}`}
-          icon={<BarChart3 className="text-accent" size={20} />}
+          icon={<BarChart3 className="text-accent-ink" size={20} />}
           id="overview"
           scope={product}
           title="Обзор"
@@ -875,7 +875,7 @@ export function AdminDashboard() {
                 </p>
                 <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.users}</p>
               </div>
-              <Users className="shrink-0 text-accent" size={22} />
+              <Users className="shrink-0 text-accent-ink" size={22} />
             </div>
           </Card>
 
@@ -887,7 +887,7 @@ export function AdminDashboard() {
                     <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Историй</p>
                     <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{storyOverview?.stories ?? 0}</p>
                   </div>
-                  <BookOpen className="shrink-0 text-accent" size={22} />
+                  <BookOpen className="shrink-0 text-accent-ink" size={22} />
                 </div>
               </Card>
               <Card className="min-w-0" padding="md">
@@ -896,7 +896,7 @@ export function AdminDashboard() {
                     <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Персонажей</p>
                     <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{storyOverview?.characters ?? 0}</p>
                   </div>
-                  <Users className="shrink-0 text-accent" size={22} />
+                  <Users className="shrink-0 text-accent-ink" size={22} />
                 </div>
               </Card>
               <Card className="min-w-0" padding="md">
@@ -905,7 +905,7 @@ export function AdminDashboard() {
                     <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Видео-серий</p>
                     <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{storyOverview?.storyVideos ?? 0}</p>
                   </div>
-                  <Clapperboard className="shrink-0 text-accent" size={22} />
+                  <Clapperboard className="shrink-0 text-accent-ink" size={22} />
                 </div>
               </Card>
             </>
@@ -917,7 +917,7 @@ export function AdminDashboard() {
                     <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Объявлений в БД</p>
                     <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{kvartovidOverview?.listings ?? 0}</p>
                   </div>
-                  <Building2 className="shrink-0 text-accent" size={22} />
+                  <Building2 className="shrink-0 text-accent-ink" size={22} />
                 </div>
               </Card>
               <Card className="min-w-0" padding="md">
@@ -927,7 +927,7 @@ export function AdminDashboard() {
                     <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{kvartovidOverview?.usersWithOneListing ?? 0}</p>
                     <p className="mt-1 text-xs text-muted">пользователей</p>
                   </div>
-                  <Users className="shrink-0 text-accent" size={22} />
+                  <Users className="shrink-0 text-accent-ink" size={22} />
                 </div>
               </Card>
               <Card className="min-w-0" padding="md">
@@ -937,7 +937,7 @@ export function AdminDashboard() {
                     <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{kvartovidOverview?.usersWithMultipleListings ?? 0}</p>
                     <p className="mt-1 text-xs text-muted">пользователей</p>
                   </div>
-                  <Users className="shrink-0 text-accent" size={22} />
+                  <Users className="shrink-0 text-accent-ink" size={22} />
                 </div>
               </Card>
             </>
@@ -949,7 +949,7 @@ export function AdminDashboard() {
                     <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Карточек в БД</p>
                     <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.cards}</p>
                   </div>
-                  <BarChart3 className="shrink-0 text-accent" size={22} />
+                  <BarChart3 className="shrink-0 text-accent-ink" size={22} />
                 </div>
               </Card>
               <Card className="min-w-0" padding="md">
@@ -958,7 +958,7 @@ export function AdminDashboard() {
                     <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Демо гостей</p>
                     <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.demoGenerations}</p>
                   </div>
-                  <Eye className="shrink-0 text-accent" size={22} />
+                  <Eye className="shrink-0 text-accent-ink" size={22} />
                 </div>
               </Card>
               <Card className="min-w-0" padding="md">
@@ -967,7 +967,7 @@ export function AdminDashboard() {
                     <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Генераций всего</p>
                     <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.totalGenerations}</p>
                   </div>
-                  <MousePointerClick className="shrink-0 text-accent" size={22} />
+                  <MousePointerClick className="shrink-0 text-accent-ink" size={22} />
                 </div>
               </Card>
             </>
@@ -979,7 +979,7 @@ export function AdminDashboard() {
                 <p className="break-words text-[10px] font-black uppercase leading-tight tracking-[0.12em] text-muted sm:text-xs sm:tracking-[0.18em]">Событий за 7 дней</p>
                 <p className="mt-2 text-2xl font-black text-ink sm:text-3xl">{stats.overview.events7d}</p>
               </div>
-              <BarChart3 className="shrink-0 text-accent" size={22} />
+              <BarChart3 className="shrink-0 text-accent-ink" size={22} />
             </div>
           </Card>
           </div>
@@ -987,7 +987,7 @@ export function AdminDashboard() {
 
         <CollapsibleAdminSection
           description="Компенсационные коды: минимальный тариф без оплаты, одноразово и только для указанного пользователя"
-          icon={<Ticket className="text-accent" size={20} />}
+          icon={<Ticket className="text-accent-ink" size={20} />}
           id="promo-codes"
           scope="global"
           title="Промокоды"
@@ -1001,7 +1001,7 @@ export function AdminDashboard() {
 
         <CollapsibleAdminSection
           description="С какого проекта человек зарегистрировался: MarketCard AI, Story Studio или Kvartovid. Сверху — сводка по проектам."
-          icon={<Users className="text-accent" size={20} />}
+          icon={<Users className="text-accent-ink" size={20} />}
           id="users-admin"
           scope="global"
           title="Регистрации по проектам"
@@ -1013,7 +1013,7 @@ export function AdminDashboard() {
 
         <CollapsibleAdminSection
           badge={
-            <span className="rounded-button bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+            <span className="rounded-button bg-accent/10 px-3 py-1 text-xs font-black text-accent-ink">
               {stats.recentUsers.length}
             </span>
           }
@@ -1024,7 +1024,7 @@ export function AdminDashboard() {
                 ? `Активность по ${productConfig.label} — последние пользователи из общей статистики.`
                 : `Активность по ${productConfig.label} — последние пользователи из общей статистики.`
           }
-          icon={<Users className="text-accent" size={20} />}
+          icon={<Users className="text-accent-ink" size={20} />}
           id="recent-users"
           scope={product}
           title="Активность пользователей"
@@ -1041,7 +1041,7 @@ export function AdminDashboard() {
                     </p>
                     <p className="mt-1 text-xs font-semibold text-muted">Вход: {user.authMethods}</p>
                   </div>
-                  <span className="shrink-0 rounded-button bg-accent/10 px-3 py-1 text-sm font-black text-accent">
+                  <span className="shrink-0 rounded-button bg-accent/10 px-3 py-1 text-sm font-black text-accent-ink">
                     {isStoryStudio
                       ? `${user.projectStoriesCount ?? 0} истор.`
                       : isKvartovid
@@ -1117,12 +1117,12 @@ export function AdminDashboard() {
 
         <CollapsibleAdminSection
           badge={
-            <span className="rounded-button bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+            <span className="rounded-button bg-accent/10 px-3 py-1 text-xs font-black text-accent-ink">
               {stats.returningVisitors.length}
             </span>
           }
           description={`Зарегистрированные и гостевые пользователи с 2+ визитами (сессии или дни) в ${productConfig.label}`}
-          icon={<RotateCcw className="text-accent" size={20} />}
+          icon={<RotateCcw className="text-accent-ink" size={20} />}
           id="returning-visitors"
           scope={product}
           title="Повторные визиты"
@@ -1236,7 +1236,7 @@ export function AdminDashboard() {
 
         <CollapsibleAdminSection
           description="Динамика за последние дни"
-          icon={<BarChart3 className="text-accent" size={20} />}
+          icon={<BarChart3 className="text-accent-ink" size={20} />}
           id="charts-daily"
           scope={product}
           title="Графики по дням"
@@ -1250,12 +1250,12 @@ export function AdminDashboard() {
         {isStoryStudio ? (
           <CollapsibleAdminSection
             badge={
-              <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+              <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent-ink">
                 {stats.storyStudio?.recentStories.length ?? 0} последних
               </span>
             }
             description="Нажмите на историю, чтобы увидеть ввод пользователя, персонажей с фото, главы и связи"
-            icon={<BookOpen className="text-accent" size={20} />}
+            icon={<BookOpen className="text-accent-ink" size={20} />}
             id="recent-stories"
             scope={product}
             title="Последние истории"
@@ -1294,12 +1294,12 @@ export function AdminDashboard() {
           <>
             <CollapsibleAdminSection
               badge={
-                <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+                <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent-ink">
                   {kvartovidOverview?.usersWithOneListing ?? 0} / {kvartovidOverview?.usersWithMultipleListings ?? 0}
                 </span>
               }
               description="Сегментация по числу объектов в кабинете: частники с одной квартирой и риэлторы с портфелем"
-              icon={<Users className="text-accent" size={20} />}
+              icon={<Users className="text-accent-ink" size={20} />}
               id="kvartovid-user-segments"
               scope={product}
               title="Пользователи: 1 объект vs несколько"
@@ -1320,12 +1320,12 @@ export function AdminDashboard() {
 
             <CollapsibleAdminSection
               badge={
-                <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+                <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent-ink">
                   {stats.kvartovid?.recentListings.length ?? 0}
                 </span>
               }
               description="Нажмите на объявление, чтобы открыть тексты, обложку, планировку и параметры объекта"
-              icon={<Building2 className="text-accent" size={20} />}
+              icon={<Building2 className="text-accent-ink" size={20} />}
               id="recent-listings"
               scope={product}
               title="Все объявления"
@@ -1372,12 +1372,12 @@ export function AdminDashboard() {
           <>
         <CollapsibleAdminSection
           badge={
-            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent-ink">
               {stats.recentDemos.length} последних
             </span>
           }
           description="Фото, ввод пользователя и оценка даже без регистрации"
-          icon={<Eye className="text-accent" size={20} />}
+          icon={<Eye className="text-accent-ink" size={20} />}
           id="recent-demos"
           scope={product}
           title="Демо-генерации гостей"
@@ -1412,12 +1412,12 @@ export function AdminDashboard() {
 
         <CollapsibleAdminSection
           badge={
-            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent-ink">
               {stats.recentCards.length} последних
             </span>
           }
           description="Нажмите на карточку, чтобы сравнить загрузку пользователя и результат генерации"
-          icon={<Film className="text-accent" size={20} />}
+          icon={<Film className="text-accent-ink" size={20} />}
           id="recent-cards"
           scope={product}
           title="Последние карточки пользователей"

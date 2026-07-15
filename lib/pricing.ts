@@ -193,7 +193,11 @@ export function slidesBuyCta(count: number, totalRub: number) {
     return catalogBuyCta();
   }
 
-  return `Купить ${count} слайдов за ${formatRub(totalRub)}`;
+  const n = Math.abs(count) % 100;
+  const n1 = n % 10;
+  const word = n > 10 && n < 20 ? "слайдов" : n1 === 1 ? "слайд" : n1 >= 2 && n1 <= 4 ? "слайда" : "слайдов";
+
+  return `Купить ${count} ${word} за ${formatRub(totalRub)}`;
 }
 
 export const VIDEO_MARKETING_DURATIONS: VideoDuration[] = ["4", "6", "8"];

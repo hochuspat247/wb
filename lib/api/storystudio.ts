@@ -1,4 +1,4 @@
-import type { StoryProject, StoryEpisode, CreateStoryVideoInput } from "@/types/storystudio";
+import type { StoryProject, StoryEpisode, CreateStoryVideoInput, StoryLanguage } from "@/types/storystudio";
 
 export async function fetchStoryProjects() {
   const response = await fetch("/api/storystudio/stories", { cache: "no-store" });
@@ -46,7 +46,7 @@ export async function generateStoryFoundation(input: {
   premise: string;
   charactersHint?: string;
   genres: string[];
-  language: "ru" | "en";
+  language: StoryLanguage;
   targetWordCount: number;
   premiumMode?: boolean;
 }) {
@@ -71,7 +71,7 @@ export async function generateStoryDemo(
     premise: string;
     charactersHint?: string;
     genres: string[];
-    language: "ru" | "en";
+    language: StoryLanguage;
     targetWordCount: number;
     premiumMode?: boolean;
   } & { guestId: string }
@@ -188,4 +188,51 @@ export async function createStoryPayment(count: number, customerEmail?: string) 
     throw new Error(data?.error || "FAILED_TO_CREATE_PAYMENT");
   }
   return response.json() as Promise<{ id: string; confirmationUrl: string }>;
+}
+
+export async function analyzeStory(storyId: string, focus?: string) {
+  const response = await fetch("/api/storystudio/analysis", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ storyId, focus: focus?.trim() || undefined })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "ANALYSIS_FAILED");
+  return data as { story: StoryProject; quota: unknown };
+}
+
+export async function generateStoryMedia(input: {
+  storyId: string;
+  kind: "character" | "world" | "chapter" | "fact";
+  title?: string;
+  prompt?: string;
+  entityId?: string;
+  showInReader?: boolean;
+}) {
+  const response = await fetch("/api/storystudio/media", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "MEDIA_GENERATION_FAILED");
+  return data as { story: StoryProject; asset: unknown; quota: unknown };
+}
+
+export async function setStoryShare(storyId: string, isPublic: boolean) {
+  const response = await fetch(`/api/storystudio/stories/${storyId}/share`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ isPublic })
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "SHARE_FAILED");
+  return data as { story: StoryProject; shareUrl: string };
+}
+
+export async function fetchSharedStory(shareId: string) {
+  const response = await fetch(`/api/storystudio/share/${shareId}`, { cache: "no-store" });
+  if (!response.ok) throw new Error("FAILED_TO_LOAD_SHARED_STORY");
+  const data = (await response.json()) as { story: StoryProject };
+  return data.story;
 }

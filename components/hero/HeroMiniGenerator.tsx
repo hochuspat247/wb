@@ -22,7 +22,7 @@ import { AntiBotFields } from "@/components/security/AntiBotFields";
 import { buildAntiBotPayload } from "@/lib/security/formGuard";
 
 const GENERATE_BUTTON_CLASS =
-  "relative overflow-hidden bg-[linear-gradient(135deg,#7cff6b_0%,#9bff8d_48%,#52f66a_100%)] text-ink ring-2 ring-accent/35 shadow-[0_0_0_5px_rgba(124,255,107,0.16),0_18px_46px_rgba(124,255,107,0.34)] hover:bg-[linear-gradient(135deg,#9bff8d_0%,#7cff6b_52%,#b9ff7a_100%)] hover:ring-accent/65 hover:shadow-[0_0_0_7px_rgba(124,255,107,0.22),0_22px_58px_rgba(124,255,107,0.44)] disabled:ring-accent/15 disabled:shadow-none";
+  "relative overflow-hidden bg-[linear-gradient(135deg,#BFF93F_0%,#D4FF6B_48%,#ADFC00_100%)] text-on-accent ring-2 ring-accent/40 shadow-[0_0_0_5px_rgba(191,249,63,0.22),0_18px_46px_rgba(191,249,63,0.28)] hover:bg-[linear-gradient(135deg,#D4FF6B_0%,#BFF93F_52%,#E8FF8A_100%)] hover:ring-accent/70 hover:shadow-[0_0_0_7px_rgba(191,249,63,0.28),0_22px_58px_rgba(191,249,63,0.36)] disabled:ring-accent/15 disabled:shadow-none";
 
 export function HeroMiniGenerator() {
   const router = useRouter();
@@ -227,7 +227,7 @@ export function HeroMiniGenerator() {
     return (
       <div className="anchor-section scroll-mt-[96px] rounded-[20px] border border-clay bg-card p-4 shadow-soft md:p-5" id="hero-mini-generator">
         <div className="py-6 text-center md:py-10">
-          <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-full bg-accent/15 text-accent">
+          <div className="mx-auto mb-5 grid h-14 w-14 place-items-center rounded-full bg-accent/15 text-accent-ink">
             <Loader2 className="animate-spin" size={28} />
           </div>
           <h2 className="text-2xl font-black text-ink md:text-3xl">Создаём вашу демо-карточку</h2>
@@ -237,7 +237,7 @@ export function HeroMiniGenerator() {
           </div>
           <div className="mt-3 flex items-center justify-between text-xs font-bold md:text-sm">
             <span className="text-muted">{HERO_DEMO_LOADING_STATUSES[demoStatusIndex]}</span>
-            <span className="text-accent">{demoProgress}%</span>
+            <span className="text-accent-ink">{demoProgress}%</span>
           </div>
           {error ? (
             <div className="mt-5">
@@ -262,7 +262,7 @@ export function HeroMiniGenerator() {
           </p>
           <p className="mt-2 rounded-[14px] border border-accent/20 bg-accent/10 px-3 py-2 text-xs font-bold leading-relaxed text-ink md:text-sm">
             Нужна серия инфографики для одного товара? Обложка + 4 инфографических слайда —{" "}
-            <a className="text-accent underline-offset-4 hover:underline" href="/#pricing">
+            <a className="text-accent-ink underline-offset-4 hover:underline" href="/#pricing">
               Смотреть комплект
             </a>
             .
@@ -283,7 +283,7 @@ export function HeroMiniGenerator() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt="Загруженное фото товара" className="aspect-[4/5] max-h-44 w-full object-cover" src={imageUrl} />
               <button
-                className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border border-clay bg-card/95 text-ink transition hover:text-accent"
+                className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full border border-clay bg-card/95 text-ink transition hover:text-accent-ink"
                 onClick={clearImage}
                 type="button"
               >
@@ -319,7 +319,7 @@ export function HeroMiniGenerator() {
               }}
               type="button"
             >
-              <span className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-accent/15 text-accent ring-1 ring-accent/20">
+              <span className="mx-auto grid h-11 w-11 place-items-center rounded-xl bg-accent/15 text-accent-ink ring-1 ring-accent/20">
                 <ImageUp size={20} />
               </span>
               <span className="text-base font-black text-ink">Загрузите фото товара</span>

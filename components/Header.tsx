@@ -11,18 +11,17 @@ import { focusHeroMiniGenerator } from "@/lib/hero/focusMiniGenerator";
 import type { MetrikaGoal } from "@/lib/metrika";
 
 const links = [
+  ["Как работает", "/#how-it-works"],
   ["Примеры", "/#examples"],
   ["Сравнение", "/#compare"],
-  ["Wildberries", "/#wildberries"],
-  ["Генератор", "/cabinet#create"],
   ["Тарифы", "/#pricing"],
   ["FAQ", "/#faq"]
 ] as const;
 
 const NAV_LINK_GOALS: Record<string, MetrikaGoal> = {
+  "/#how-it-works": "compare_view",
   "/#examples": "examples_click",
   "/#compare": "compare_view",
-  "/#wildberries": "compare_view",
   "/#pricing": "pricing_click",
   "/#faq": "faq_view"
 };
@@ -70,8 +69,10 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled ? "border-b border-clay bg-paper/88 backdrop-blur-xl" : "bg-paper/72 backdrop-blur-sm"
+      className={`sticky top-0 z-50 transition-all duration-500 ${
+        scrolled
+          ? "border-b border-clay bg-card/92 shadow-[0_10px_30px_rgba(28,28,28,0.04)] backdrop-blur-xl"
+          : "bg-transparent"
       }`}
     >
       <div className="section-shell flex min-h-[72px] items-center justify-between gap-4">
@@ -80,15 +81,10 @@ export function Header() {
         <nav className="hidden items-center gap-1 lg:flex">
           {links.map(([label, href]) => (
             <Link
-              className="relative px-3 py-2 text-sm font-semibold text-muted transition after:absolute after:bottom-1 after:left-3 after:h-px after:w-0 after:bg-accent after:transition-all hover:text-ink hover:after:w-[calc(100%-1.5rem)]"
-              href={!isAuthed && href === "/cabinet#create" ? "/#hero-mini-generator" : href}
+              className="wow-link px-3 py-2 text-sm font-semibold text-muted hover:text-ink"
+              href={href}
               key={href}
-              onClick={() => {
-                trackNavClick(href, "header");
-                if (href === "/cabinet#create") {
-                  trackCreateCardClick("header");
-                }
-              }}
+              onClick={() => trackNavClick(href, "header")}
             >
               {label}
             </Link>
@@ -136,13 +132,10 @@ export function Header() {
             {links.map(([label, href]) => (
               <Link
                 className="rounded-xl px-4 py-3 text-sm font-medium text-ink"
-                href={!isAuthed && href === "/cabinet#create" ? "/#hero-mini-generator" : href}
+                href={href}
                 key={href}
                 onClick={() => {
                   trackNavClick(href, "mobile");
-                  if (href === "/cabinet#create") {
-                    trackCreateCardClick("mobile");
-                  }
                   setMenuOpen(false);
                 }}
               >

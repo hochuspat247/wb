@@ -78,12 +78,12 @@ export function LiveVisitorsPanel({ product = "marketcard" }: { product?: string
     <CollapsibleAdminSection
       scope={product}
       badge={
-        <span className="rounded-full bg-mint/15 px-2.5 py-1 text-xs font-black text-mint">
+        <span className="rounded-full bg-mint/15 px-2.5 py-1 text-xs font-black text-accent-ink">
           {data?.activeCount ?? 0}
         </span>
       }
       description={`Активны за последние ${data?.activeWindowSec ?? 90} секунд. Обновление каждые 10 секунд.`}
-      icon={<Activity className="text-mint" size={20} />}
+      icon={<Activity className="text-accent-ink" size={20} />}
       id="live-visitors"
       title="Сейчас на сайте"
     >
@@ -106,7 +106,7 @@ export function LiveVisitorsPanel({ product = "marketcard" }: { product?: string
         </div>
       ) : null}
 
-      {error ? <p className="mb-4 text-sm font-semibold text-accent">{error}</p> : null}
+      {error ? <p className="mb-4 text-sm font-semibold text-accent-ink">{error}</p> : null}
 
       <div className="overflow-x-auto rounded-[18px] border border-clay">
         <table className="min-w-full text-left text-sm">
@@ -154,7 +154,7 @@ export function LiveVisitorsPanel({ product = "marketcard" }: { product?: string
                 <td className="px-4 py-3">
                   <span
                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${
-                      visitor.isVisible ? "bg-mint/15 text-mint" : "bg-paper text-muted"
+                      visitor.isVisible ? "bg-mint/15 text-accent-ink" : "bg-paper text-muted"
                     }`}
                   >
                     {visitor.isVisible ? <Eye size={13} /> : <EyeOff size={13} />}

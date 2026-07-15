@@ -35,8 +35,11 @@ export function isTransientNetworkError(message?: string | null, source?: string
     return true;
   }
 
-  // Yandex Metrika / third-party tracker stack with a fetch failure.
-  if (/gettrackerid|mc\.yandex|metrika/i.test(haystack) && /failed to fetch|networkerror|load failed/i.test(haystack)) {
+  // VK ID / Metrika SDK stack markers with a transient network failure.
+  if (
+    /gettrackerid|mc\.yandex|metrika|stat_events_vkid_sdk|vkid_sdk_get_config|id\.vk\.(ru|com)/i.test(haystack) &&
+    /failed to fetch|networkerror|load failed/i.test(haystack)
+  ) {
     return true;
   }
 

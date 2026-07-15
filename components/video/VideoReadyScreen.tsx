@@ -27,7 +27,7 @@ export function VideoReadyScreen({
           : "min-w-0 overflow-hidden rounded-[24px] border border-clay bg-card p-4 sm:p-6 md:p-8"
       }
     >
-      <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Готово</p>
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-accent-ink">Готово</p>
       <h3 className={`mt-2 font-black text-ink ${compact ? "text-xl" : "mt-3 text-2xl"}`}>Видео готово 🎬</h3>
       <p className="mt-2 text-sm font-medium text-muted">
         Скачайте ролик и используйте его в рекламе, соцсетях или карточке товара.

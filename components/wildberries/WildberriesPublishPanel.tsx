@@ -532,7 +532,7 @@ export function WildberriesPublishPanel({
               )}
             </Button>
             {wbPublishResult ? (
-              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-mint">
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-accent-ink">
                 <CheckCircle2 size={15} />
                 Артикул {wbPublishResult.vendorCode}
                 {wbPublishResult.mediaUploaded ? ` · ${wbPublishResult.mediaUploaded} фото` : ""}
@@ -541,7 +541,7 @@ export function WildberriesPublishPanel({
           </div>
 
           {wbPublishMessage ? (
-            <p className={`text-xs font-semibold leading-relaxed ${wbPublishResult ? "text-mint" : "text-muted"}`}>
+            <p className={`text-xs font-semibold leading-relaxed ${wbPublishResult ? "text-accent-ink" : "text-muted"}`}>
               {wbPublishMessage}
             </p>
           ) : null}

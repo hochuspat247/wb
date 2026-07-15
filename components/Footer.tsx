@@ -19,50 +19,50 @@ const footerLinks = [
 
 export function Footer() {
   return (
-    <footer className="border-t border-clay bg-paper py-14 text-white">
+    <footer className="border-t border-clay bg-paper-alt py-14 text-ink">
       <div className="section-shell">
         <div className="grid gap-10 md:grid-cols-[1.2fr_1fr_1fr]">
           <div>
-            <Logo light />
-            <p className="mt-4 max-w-xs text-sm font-medium leading-relaxed text-white/55">
+            <Logo />
+            <p className="mt-4 max-w-xs text-sm font-medium leading-relaxed text-muted">
               ИИ-генератор карточек для Wildberries, Ozon и Авито: тексты, СЕО, обложки 4:5 из одного фото, публикация на ВБ через API и видео из карточки.
             </p>
           </div>
           <div>
-            <p className="text-sm font-black text-white">Навигация</p>
-            <ul className="mt-4 space-y-2.5 text-sm font-semibold text-white/55">
+            <p className="font-display text-sm font-semibold text-ink">Навигация</p>
+            <ul className="mt-4 space-y-2.5 text-sm font-semibold text-muted">
               {footerLinks.map((link) => (
                 <li key={link.href}>
-                  <MetrikaGoalLink className="transition hover:text-white" goal={link.goal} href={link.href}>
+                  <MetrikaGoalLink className="transition hover:text-ink" goal={link.goal} href={link.href}>
                     {link.label}
                   </MetrikaGoalLink>
                 </li>
               ))}
               <li>
-                <MetrikaGoalLink className="transition hover:text-white" goal="click_create_card" href="/cabinet">
+                <MetrikaGoalLink className="transition hover:text-ink" goal="click_create_card" href="/cabinet">
                   Кабинет
                 </MetrikaGoalLink>
               </li>
             </ul>
           </div>
           <div>
-            <p className="text-sm font-black text-white">Контакты</p>
-            <ul className="mt-4 space-y-2.5 text-sm font-semibold text-white/55">
+            <p className="font-display text-sm font-semibold text-ink">Контакты</p>
+            <ul className="mt-4 space-y-2.5 text-sm font-semibold text-muted">
               <li>
-                <a className="transition hover:text-white" href="mailto:avenir.team.corp@gmail.com">
+                <a className="transition hover:text-ink" href="mailto:avenir.team.corp@gmail.com">
                   avenir.team.corp@gmail.com
                 </a>
               </li>
               <li>
-                <Link className="transition hover:text-white" href="/#pricing-calculator">
+                <Link className="transition hover:text-ink" href="/#pricing-calculator">
                   Калькулятор тарифов
                 </Link>
               </li>
             </ul>
           </div>
         </div>
-        <div className="mt-12 space-y-3 border-t border-white/10 pt-6 text-xs font-semibold text-white/40">
-          <LegalFooterLinks linkClassName="transition hover:text-white/80" />
+        <div className="mt-12 space-y-3 border-t border-clay pt-6 text-xs font-semibold text-muted">
+          <LegalFooterLinks linkClassName="transition hover:text-ink" />
           <p>© {new Date().getFullYear()} {BRAND.marketCard} · ИП Головачев И.С. · ИНН 030403024370 · ОГРНИП 325237500009533</p>
         </div>
       </div>

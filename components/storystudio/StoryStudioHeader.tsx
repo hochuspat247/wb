@@ -3,17 +3,15 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, MoonStar } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { BRAND } from "@/lib/branding";
 
 const links = [
-  ["Видео-серии", "/storystudio#video-series"],
+  ["Видео-сцены", "/storystudio#video-series"],
   ["Карта связей", "/storystudio#relations"],
-  ["Возможности", "/storystudio#features"],
-  ["Примеры", "/storystudio#examples"],
+  ["Пример", "/storystudio#sample"],
   ["Тарифы", "/storystudio#pricing"],
-  ["FAQ", "/storystudio#faq"],
   ["Создать", "/storystudio/create"],
   ["Кабинет", "/storystudio/cabinet"]
 ] as const;
@@ -42,26 +40,28 @@ export function StoryStudioHeader() {
 
   return (
     <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
-        scrolled ? "border-b border-white/10 bg-[#0a0812]/90 backdrop-blur-xl" : "bg-transparent"
+      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+        scrolled
+          ? "border-b border-[rgba(212,180,131,0.18)] bg-[rgba(7,11,20,0.72)] backdrop-blur-xl"
+          : "bg-transparent"
       }`}
     >
       <div className="mx-auto flex h-14 max-w-content items-center justify-between px-4 sm:h-16 sm:px-6">
-        <Link href="/storystudio" className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet/20 text-violet">
-            <Sparkles className="h-4 w-4" />
+        <Link href="/storystudio" className="group flex items-center gap-2.5">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full border border-[rgba(212,180,131,0.35)] bg-[rgba(212,180,131,0.12)] text-gold shadow-[0_0_24px_rgba(212,180,131,0.25)] transition group-hover:scale-105">
+            <MoonStar className="h-4 w-4" />
           </span>
-          <span className="text-base font-bold tracking-tight text-ink sm:text-lg">
-            Стори<span className="text-violet">Студио</span>
+          <span className="font-fairy text-xl font-semibold tracking-tight text-moon sm:text-2xl">
+            {BRAND.storyStudio}
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-0.5 lg:flex">
           {links.map(([label, href]) => (
             <Link
               key={href}
               href={href}
-              className="rounded-full px-3.5 py-2 text-sm text-muted transition hover:bg-white/5 hover:text-ink"
+              className="rounded-full px-3 py-2 text-sm text-muted transition hover:bg-white/5 hover:text-moon"
             >
               {label}
             </Link>
@@ -88,8 +88,11 @@ export function StoryStudioHeader() {
                 </Button>
               </Link>
               <Link href="/storystudio/create">
-                <Button size="sm" className="!bg-violet !text-white !border-violet hover:!bg-[#9d8bff]">
-                  Создать историю
+                <Button
+                  size="sm"
+                  className="!border-gold !bg-gold !text-[#1a140f] hover:!bg-[#e0c796]"
+                >
+                  Попробовать бесплатно
                 </Button>
               </Link>
             </>
@@ -107,13 +110,13 @@ export function StoryStudioHeader() {
       </div>
 
       {menuOpen && (
-        <div className="max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-t border-white/10 bg-[#0a0812] px-4 py-4 sm:max-h-[calc(100dvh-4rem)] md:hidden">
+        <div className="max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-t border-[rgba(212,180,131,0.15)] bg-[rgba(7,11,20,0.96)] px-4 py-4 backdrop-blur-xl sm:max-h-[calc(100dvh-4rem)] md:hidden">
           <nav className="flex flex-col gap-1">
             {links.map(([label, href]) => (
               <Link
                 key={href}
                 href={href}
-                className="rounded-lg px-3 py-2.5 text-sm text-muted hover:bg-white/5 hover:text-ink"
+                className="rounded-lg px-3 py-2.5 text-sm text-muted hover:bg-white/5 hover:text-moon"
                 onClick={() => setMenuOpen(false)}
               >
                 {label}
@@ -146,7 +149,7 @@ export function StoryStudioHeader() {
                     </Button>
                   </Link>
                   <Link href="/storystudio/create" onClick={() => setMenuOpen(false)}>
-                    <Button className="w-full !border-violet !bg-violet !text-white">Создать историю</Button>
+                    <Button className="w-full !border-gold !bg-gold !text-[#1a140f]">Попробовать бесплатно</Button>
                   </Link>
                 </>
               )}

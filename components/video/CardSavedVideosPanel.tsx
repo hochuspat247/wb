@@ -21,7 +21,7 @@ export function CardSavedVideosPanel({ card, compact }: CardSavedVideosPanelProp
   return (
     <div className={compact ? "space-y-3" : "space-y-4 rounded-[18px] border border-clay bg-paper/40 p-4"}>
       <div>
-        <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-accent">
+        <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-accent-ink">
           <Film size={14} />
           Сохранённые видео
         </p>

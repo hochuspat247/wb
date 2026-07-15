@@ -18,7 +18,7 @@ const styles = {
   },
   error: {
     wrap: "border-accent/30 bg-accent/5 text-ink",
-    icon: <AlertCircle className="shrink-0 text-accent" size={18} />
+    icon: <AlertCircle className="shrink-0 text-accent-ink" size={18} />
   }
 };
 

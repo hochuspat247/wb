@@ -62,10 +62,10 @@ export function TestimonialsSection() {
             <Reveal delay={(i + 1) as 1 | 2 | 3} key={item.name}>
               <Card className="flex h-full flex-col" hover padding="lg">
                 <div className="flex items-start justify-between gap-4">
-                  <Quote className="shrink-0 text-accent/80" size={28} />
+                  <Quote className="shrink-0 text-accent-ink/80" size={28} />
                   <div aria-label={`Оценка ${item.rating} из 5`} className="flex gap-0.5">
                     {Array.from({ length: item.rating }).map((_, index) => (
-                      <Star className="fill-accent text-accent" key={index} size={14} />
+                      <Star className="fill-accent text-accent-ink" key={index} size={14} />
                     ))}
                   </div>
                 </div>

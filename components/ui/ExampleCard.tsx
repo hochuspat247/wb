@@ -65,7 +65,7 @@ export function ExampleCard({
     <div className="group h-full overflow-hidden rounded-[22px] border border-ink/10 bg-card transition duration-300 hover:-translate-y-1 hover:border-ink/25">
       <div className={`relative aspect-[4/5] ${theme.bg}`}>
         {theme.label ? (
-          <span className="absolute left-4 top-4 rounded-full bg-white/92 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-paper">
+          <span className="absolute left-4 top-4 rounded-full bg-white/92 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-ink">
             {theme.label}
           </span>
         ) : null}
@@ -86,7 +86,7 @@ export function ExampleCard({
           <div className="absolute bottom-4 right-4 space-y-1.5">
             {badges.map((badge) => (
               <div
-                className="rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black text-paper shadow-sm"
+                className="rounded-full bg-white/95 px-3 py-1.5 text-[10px] font-black text-ink shadow-sm"
                 key={badge}
               >
                 {badge}

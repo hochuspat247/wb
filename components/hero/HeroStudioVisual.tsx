@@ -18,7 +18,7 @@ export function HeroStudioVisual({ className = "" }: { className?: string }) {
         <div className="relative h-[280px] sm:h-[300px] lg:h-[340px]">
           <svg
             aria-hidden
-            className="pointer-events-none absolute left-[20%] top-[30%] z-10 h-[40%] w-[56%] text-accent/70"
+            className="pointer-events-none absolute left-[20%] top-[30%] z-10 h-[40%] w-[56%] text-accent-ink/70"
             fill="none"
             viewBox="0 0 220 120"
           >
@@ -54,7 +54,7 @@ export function HeroStudioVisual({ className = "" }: { className?: string }) {
                   sizes="(max-width: 1024px) 200px, 260px"
                   src={afterImage}
                 />
-                <span className="absolute left-2 top-2 rounded-full bg-mint px-2 py-0.5 text-[9px] font-black text-paper sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-[10px]">
+                <span className="absolute left-2 top-2 rounded-full bg-mint px-2 py-0.5 text-[9px] font-black text-on-accent sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-[10px]">
                   4:5
                 </span>
                 <span className="absolute bottom-2 right-2 rounded-full bg-card/95 px-2 py-0.5 text-[9px] font-black text-ink sm:bottom-3 sm:right-3 sm:px-2.5 sm:py-1 sm:text-[10px]">
@@ -63,7 +63,7 @@ export function HeroStudioVisual({ className = "" }: { className?: string }) {
               </div>
             </div>
 
-            <p className="mt-2 text-right text-[10px] font-bold uppercase tracking-[0.14em] text-accent sm:mt-2.5 sm:text-xs">
+            <p className="mt-2 text-right text-[10px] font-bold uppercase tracking-[0.14em] text-accent-ink sm:mt-2.5 sm:text-xs">
               Готовая карточка
             </p>
           </div>
@@ -86,7 +86,7 @@ export function HeroStudioVisual({ className = "" }: { className?: string }) {
                   />
                 </div>
                 <div className="hero-checker h-full flex-1" />
-                <span className="absolute left-2 top-2 rounded-full bg-white/95 px-1.5 py-0.5 text-[9px] font-bold text-paper shadow-sm sm:left-2.5 sm:top-2.5 sm:px-2 sm:text-[10px]">
+                <span className="absolute left-2 top-2 rounded-full bg-white/95 px-1.5 py-0.5 text-[9px] font-bold text-ink shadow-sm sm:left-2.5 sm:top-2.5 sm:px-2 sm:text-[10px]">
                   До
                 </span>
               </div>

@@ -41,7 +41,7 @@ function tierBadgeClass(tier: UserPlanTier) {
     case "premium":
       return "bg-violet/15 text-violet";
     case "pro":
-      return "bg-mint/15 text-mint";
+      return "bg-mint/15 text-accent-ink";
     case "unlimited":
       return "bg-amber-500/15 text-amber-700";
     default:
@@ -56,7 +56,7 @@ function productBadgeClass(product: AdminUserListItem["registrationProduct"]) {
     case "kvartovid":
       return "bg-cyan/10 text-cyan-700";
     case "marketcard":
-      return "bg-accent/10 text-accent";
+      return "bg-accent/10 text-accent-ink";
     default:
       return "bg-clay/30 text-muted";
   }

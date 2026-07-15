@@ -520,14 +520,14 @@ export function CabinetApp() {
 
   return (
     <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className="sticky top-0 hidden h-screen flex-col border-r border-clay bg-paper p-5 text-white lg:flex">
-        <Logo light href="/cabinet" />
-        <div className="mt-8 rounded-[22px] border border-white/10 bg-white/[0.06] p-4">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-white/40">Баланс</p>
-          <p className="mt-3 text-3xl font-black text-white">
+      <aside className="sticky top-0 hidden h-screen flex-col border-r border-clay bg-card p-5 text-ink lg:flex">
+        <Logo href="/cabinet" />
+        <div className="mt-8 rounded-[22px] border border-clay bg-sand p-4">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Баланс</p>
+          <p className="mt-3 text-3xl font-black text-ink">
             {remainingGenerations >= 999_000 ? "Безлимит" : remainingGenerations}
           </p>
-          <p className="mt-1 text-xs font-semibold text-white/45">
+          <p className="mt-1 text-xs font-semibold text-muted">
             {isQuotaExhausted
               ? "пробные карточки использованы"
               : monthlyFreeRemaining !== null
@@ -582,11 +582,11 @@ export function CabinetApp() {
               {remainingGenerations >= 999_000 ? (
                 "∞"
               ) : isQuotaExhausted ? (
-                <Link className="text-accent" href="/#pricing">
+                <Link className="text-accent-ink" href="/#pricing">
                   Купить комплект
                 </Link>
               ) : (
-                <span className="text-mint">{remainingGenerations}</span>
+                <span className="text-accent-ink">{remainingGenerations}</span>
               )}
             </div>
             <div className="hidden items-center gap-3 sm:flex">
@@ -614,7 +614,7 @@ export function CabinetApp() {
               </div>
             </div>
           ) : verificationMessage ? (
-            <div className="mb-6 rounded-[18px] border border-mint/25 bg-mint/10 px-4 py-3 text-sm font-semibold text-mint">
+            <div className="mb-6 rounded-[18px] border border-mint/25 bg-mint/10 px-4 py-3 text-sm font-semibold text-accent-ink">
               {verificationMessage}
             </div>
           ) : null}
@@ -656,7 +656,7 @@ export function CabinetApp() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-mint/20 bg-mint/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-3">
-                  <p className="text-xs font-bold text-mint sm:text-sm">
+                  <p className="text-xs font-bold text-accent-ink sm:text-sm">
                     {formatCabinetQuotaBanner({
                       remaining: remainingGenerations,
                       unlimited: remainingGenerations >= 999_000,
@@ -802,7 +802,7 @@ export function CabinetApp() {
                   </div>
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-black ${
-                      wbStatus.connected ? "bg-mint/15 text-mint" : "bg-paper text-muted"
+                      wbStatus.connected ? "bg-mint/15 text-accent-ink" : "bg-paper text-muted"
                     }`}
                   >
                     {wbStatus.connected ? "Подключено" : "Не подключено"}
@@ -908,7 +908,7 @@ export function CabinetApp() {
               tab === item.id
                 ? item.accent === "wb"
                   ? "bg-[#CB11AB] text-white"
-                  : "bg-accent text-paper"
+                  : "bg-accent text-on-accent"
                 : "text-muted"
             }`}
             key={item.id}

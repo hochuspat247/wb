@@ -19,7 +19,7 @@ export function AdminProductSwitcher({ value, onChange }: Props) {
             type="button"
             onClick={() => onChange(product.id)}
             className={`rounded-button px-3 py-2 text-xs font-bold transition sm:px-4 sm:text-sm ${
-              active ? "bg-accent text-paper" : "text-muted hover:text-ink"
+              active ? "bg-accent text-on-accent" : "text-muted hover:text-ink"
             }`}
           >
             {product.shortLabel}

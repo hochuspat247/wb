@@ -228,7 +228,7 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
     return (
       <div className="grid min-h-screen place-items-center bg-paper px-5">
         <div className="text-center">
-          <Loader2 className="mx-auto animate-spin text-accent" size={34} />
+          <Loader2 className="mx-auto animate-spin text-accent-ink" size={34} />
           <p className="mt-4 text-sm font-bold text-muted">{migrating ? "Открываем доступ к оригиналу..." : "Загружаем результат..."}</p>
         </div>
       </div>
@@ -301,7 +301,7 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
               <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">
                 Сделайте серию из нескольких карточек: обложка, преимущества, характеристики и сценарии применения.
               </p>
-              <Link className="mt-3 inline-flex text-sm font-black text-accent underline-offset-4 hover:underline" href="/#pricing">
+              <Link className="mt-3 inline-flex text-sm font-black text-accent-ink underline-offset-4 hover:underline" href="/#pricing">
                 Посмотреть тарифы
               </Link>
             </div>
@@ -333,7 +333,7 @@ export function DemoResultClient({ generationId }: { generationId: string }) {
                       onClick={() => void updateDemoRating({ generationRating: rating })}
                       type="button"
                     >
-                      <Star className="fill-accent text-accent" size={21} />
+                      <Star className="fill-accent text-accent-ink" size={21} />
                     </button>
                   ))}
                 </div>

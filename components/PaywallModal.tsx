@@ -74,11 +74,11 @@ export function PaywallModal({
         </button>
 
         <div className="flex items-start gap-3">
-          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-accent/15 text-accent">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-accent/15 text-accent-ink">
             <Sparkles size={20} />
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent-ink">
               {variant === "quota_exhausted" ? "Пробный лимит" : "Комплект"}
             </p>
             <h3 className="mt-2 text-2xl font-black leading-snug text-ink">{title}</h3>

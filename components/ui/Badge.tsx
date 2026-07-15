@@ -7,9 +7,9 @@ type BadgeProps = {
 };
 
 const variants = {
-  default: "bg-white/5 text-ink border-clay",
-  accent: "bg-accent text-paper border-accent",
-  dark: "bg-ink text-paper border-ink",
+  default: "bg-sand text-ink border-clay",
+  accent: "bg-accent text-on-accent border-accent",
+  dark: "bg-ink text-white border-ink",
   outline: "bg-transparent text-muted border-clay"
 };
 

@@ -6,6 +6,10 @@ import { FAQSection } from "@/components/FAQSection";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
+import { StatsStrip } from "@/components/StatsStrip";
+import { BenefitsGrid } from "@/components/BenefitsGrid";
+import { HowItWorksSteps } from "@/components/HowItWorksSteps";
+import { FinalCtaBanner } from "@/components/FinalCtaBanner";
 import { PricingCalculatorSection } from "@/components/PricingCalculatorSection";
 import { PricingSection } from "@/components/PricingSection";
 import { SkuKitSection } from "@/components/SkuKitSection";
@@ -35,6 +39,9 @@ export default function Home() {
       <HomeJsonLd />
       <Header />
       <Hero />
+      <StatsStrip />
+      <BenefitsGrid />
+      <HowItWorksSteps />
       <ExamplesSection />
       <SkuKitSection />
       <PricingSection />
@@ -44,6 +51,7 @@ export default function Home() {
       <WildberriesLandingSection />
       <VideoExampleSection />
       <FAQSection />
+      <FinalCtaBanner />
       <Footer />
     </main>
   );

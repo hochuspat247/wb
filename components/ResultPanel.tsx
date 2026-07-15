@@ -488,7 +488,7 @@ export function ResultPanel({
                         {wbPublishing ? "Отправляем..." : "Отправить в WB"}
                       </Button>
                       {wbPublishResult ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-mint">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-accent-ink">
                           <CheckCircle2 size={15} />
                           Артикул {wbPublishResult.vendorCode}
                         </span>
@@ -496,7 +496,7 @@ export function ResultPanel({
                     </div>
 
                     {wbPublishMessage ? (
-                      <p className={`text-xs font-semibold leading-relaxed ${wbPublishResult ? "text-mint" : textClass}`}>
+                      <p className={`text-xs font-semibold leading-relaxed ${wbPublishResult ? "text-accent-ink" : textClass}`}>
                         {wbPublishMessage}
                       </p>
                     ) : null}

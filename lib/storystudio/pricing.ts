@@ -1,5 +1,6 @@
 import { BRAND } from "@/lib/branding";
 import { MONTHLY_FREE_RESET_DAYS, MONTHLY_FREE_RESET_MS } from "@/lib/pricing";
+import { formatVideoPriceRub, VIDEO_STANDARD_PRICE_4_SEC } from "@/config/video-pricing";
 
 /** Тарифы ${BRAND.storyStudio}. */
 
@@ -19,18 +20,24 @@ export type StoryPackage = {
   features: string[];
 };
 
+export const STORY_GENERATION_EXPLAINER =
+  "1 генерация = одна AI-операция: основа истории, персонаж, глава или анализ. Портреты и медиа считаются отдельно. Видео оплачивается отдельно.";
+
+export const STORY_PACK_10_EXPLAINER =
+  "10 генераций хватит примерно на основу истории, 3 персонажей и 5–6 продолжений глав.";
+
 export const STORY_PACKAGES: StoryPackage[] = [
   {
     id: "starter",
     count: 10,
     label: "Старт",
-    description: "10 генераций — история, персонажи, главы",
+    description: "Начать историю и написать первые главы",
     badge: "Популярный",
     features: [
-      "10 генераций любого типа",
-      "История, персонажи и главы",
-      "Портреты и дерево связей",
-      "Редактор глав и видео-серии"
+      "10 текстовых генераций",
+      STORY_PACK_10_EXPLAINER,
+      "Портреты и карта связей в кабинете",
+      `Видео-сцены — отдельно, от ${formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)}`
     ]
   },
   {
@@ -39,10 +46,10 @@ export const STORY_PACKAGES: StoryPackage[] = [
     label: "Автор",
     description: "Для активного написания и иллюстраций",
     features: [
-      "50 генераций любого типа",
-      "Портреты персонажей включены",
-      "Премиум 18+ режим",
-      "Приоритетная очередь"
+      "50 текстовых генераций",
+      "Портреты и медиа из той же квоты",
+      "Premium: глубже сюжет + режим 18+",
+      `Доступ к видео; ролики — от ${formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)}`
     ]
   },
   {
@@ -51,7 +58,7 @@ export const STORY_PACKAGES: StoryPackage[] = [
     label: "Студия",
     description: "Максимум творчества по лучшей цене",
     features: [
-      "100 генераций любого типа",
+      "100 текстовых генераций",
       "Лучшая цена за генерацию",
       `Все функции ${BRAND.storyStudio}`,
       "Максимальная скидка −41%"
@@ -96,7 +103,7 @@ export function formatStoryRub(value: number) {
 }
 
 export function describeStoryFreeQuotaMarketing() {
-  return `${STORY_DEMO_MONTHLY_LIMIT} демо-история в месяц + ${STORY_FREE_TRIAL} ИИ-генерации и ${STORY_FREE_PORTRAIT} портрет персонажа после регистрации`;
+  return `Бесплатно один раз: демо-основа истории и ${STORY_FREE_TRIAL} пробные генерации после регистрации`;
 }
 
 export const STORY_PRICING_PLANS = [
@@ -106,12 +113,12 @@ export const STORY_PRICING_PLANS = [
     price: "0 ₽",
     period: "",
     features: [
-      "1 демо-история с ИИ в месяц",
-      `${STORY_FREE_TRIAL} ИИ-генерации после регистрации`,
-      `${STORY_FREE_PORTRAIT} портрет персонажа в месяц`,
-      "Персонажи, дерево связей и редактор глав"
+      "1 демо-основа истории без регистрации",
+      `${STORY_FREE_TRIAL} пробные генерации после регистрации`,
+      "Синопсис, персонажи и план сюжета",
+      "Полноценные главы и портреты — после покупки"
     ],
-    cta: "Начать бесплатно",
+    cta: "Попробовать бесплатно",
     highlighted: false
   },
   {
@@ -120,10 +127,10 @@ export const STORY_PRICING_PLANS = [
     price: formatStoryRub(STORY_GENERATION_PRICE_RUB),
     period: "за генерацию",
     features: [
-      "История, персонаж, глава или портрет",
-      "Без подписки — платите только за результат",
-      "Видео-серии из портретов персонажей",
-      "Пакеты со скидкой до 41%"
+      "Основа истории, персонаж, глава или анализ",
+      "Без подписки — платите за нужный результат",
+      "Режим чтения, PDF и публичная ссылка",
+      `Видео — отдельно, от ${formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)}`
     ],
     cta: "Купить генерации",
     highlighted: true

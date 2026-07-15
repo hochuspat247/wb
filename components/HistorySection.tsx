@@ -126,7 +126,7 @@ export function HistorySection({
                     <div className="grid h-full place-items-center text-[10px] font-medium text-muted">4:5</div>
                   )}
                   {hasCardGeneratedVideo(card) ? (
-                    <span className="absolute bottom-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-accent text-paper">
+                    <span className="absolute bottom-1 right-1 grid h-5 w-5 place-items-center rounded-full bg-accent text-on-accent">
                       <Film size={11} />
                     </span>
                   ) : null}
@@ -141,7 +141,7 @@ export function HistorySection({
                   ) : null}
                   {presetLabel ? <p className="mt-0.5 text-xs text-muted">{presetLabel}</p> : null}
                   {videoCount > 0 ? (
-                    <p className="mt-1 text-xs font-semibold text-accent">
+                    <p className="mt-1 text-xs font-semibold text-accent-ink">
                       {videoCount === 1 ? "Есть сохранённое видео" : `${videoCount} сохранённых видео`}
                     </p>
                   ) : null}

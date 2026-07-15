@@ -53,11 +53,11 @@ export function PricingCard({
 }: PricingCardProps) {
   return (
     <Card
-      className={`relative flex h-full flex-col ${highlighted ? "border-accent/45 bg-gradient-to-b from-card to-paper text-ink shadow-[0_24px_80px_rgba(124,255,107,0.08)]" : "bg-card"}`}
+      className={`wow-card relative flex h-full flex-col ${highlighted ? "border-accent/60 bg-gradient-to-b from-card to-[#F4FBE3] text-ink shadow-[0_24px_60px_rgba(191,249,63,0.18)]" : "bg-card"}`}
       padding="lg"
     >
       {badge ? (
-        <Badge className={`absolute -top-3 left-1/2 -translate-x-1/2 ${highlighted ? "border-mint bg-mint text-paper" : ""}`} variant="accent">
+        <Badge className={`absolute -top-3 left-1/2 -translate-x-1/2 ${highlighted ? "border-accent bg-accent text-on-accent" : ""}`} variant="accent">
           {badge}
         </Badge>
       ) : null}
@@ -78,7 +78,7 @@ export function PricingCard({
       <ul className="mt-6 flex-1 space-y-3">
         {features.map((feature) => (
           <li className="flex items-start gap-3 text-sm" key={feature}>
-            <Check className={`mt-0.5 shrink-0 ${highlighted ? "text-mint" : "text-accent"}`} size={16} />
+            <Check className={`mt-0.5 shrink-0 ${highlighted ? "text-accent-ink" : "text-accent-ink"}`} size={16} />
             <span className="text-muted">{highlightWildberries(feature)}</span>
           </li>
         ))}

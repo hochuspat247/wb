@@ -4,6 +4,6 @@ export const BRAND = {
   marketCardShort: "МаркетКард",
   storyStudio: "СториСтудио",
   kvartovid: "КвартоВид",
-  googleVeo: "Гугл Вео",
-  veoVersion: "Вео 3.1"
+  googleVeo: "Google Veo",
+  veoVersion: "3.1"
 } as const;

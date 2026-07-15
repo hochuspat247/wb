@@ -7,7 +7,7 @@ const showcaseProducts = exampleProducts.slice(0, 4);
 
 export function ExamplesSection() {
   return (
-    <section className="studio-noise relative border-y border-clay bg-paper-alt py-20 md:py-28" id="examples">
+    <section className="relative border-y border-clay bg-paper-alt py-20 md:py-28" id="examples">
       <div className="section-shell">
         <SectionHeader
           description="Потяните ползунок на карточке — сравните исходное фото и готовую обложку для маркетплейса."
@@ -16,7 +16,8 @@ export function ExamplesSection() {
 
         <div className="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
           {showcaseProducts.map((product, i) => (
-            <Reveal delay={(i + 1) as 1 | 2 | 3 | 4} key={product.id}>
+            <Reveal delay={(i + 1) as 1 | 2 | 3 | 4} key={product.id} variant="scale">
+              <div className="wow-card h-full">
               <ExampleCard
                 badges={[...product.badges]}
                 compareLabel={product.compareLabel}
@@ -27,6 +28,7 @@ export function ExamplesSection() {
                 title={product.title}
                 variant="after"
               />
+              </div>
             </Reveal>
           ))}
         </div>

@@ -30,18 +30,19 @@ export default function StoryStudioCreatePage() {
   return (
     <>
       <StoryStudioJsonLd variant="create" />
-      <div className="min-h-screen bg-[#07050d]">
+      <div className="min-h-screen">
         <StoryStudioHeader />
         <div className="mx-auto max-w-2xl px-4 pb-20 pt-24 sm:px-6">
           <Link
             href="/storystudio"
-            className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-violet"
+            className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-gold"
           >
             <ArrowLeft className="h-4 w-4" />
             На главную {BRAND.storyStudio}
           </Link>
-          <h1 className="text-3xl font-bold">Создать историю с ИИ</h1>
-          <p className="mt-2 text-muted">{storyStudioCreateDescription}</p>
+          <p className="story-fairy-eyebrow mb-3">Новая глава</p>
+          <h1 className="story-fairy-title text-4xl text-moon sm:text-5xl">Напишите историю с ИИ</h1>
+          <p className="mt-3 text-muted">{storyStudioCreateDescription}</p>
           <div className="mt-8">
             <StoryCreateForm />
           </div>

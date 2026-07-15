@@ -138,7 +138,7 @@ export function WildberriesGenerateCarouselPanel({
           <div className="mt-2 flex flex-wrap gap-1.5">
             {[...existingTypes].map((type) => (
               <span
-                className="inline-flex items-center gap-1 rounded-full border border-mint/30 bg-mint/10 px-3 py-1 text-xs font-bold text-mint"
+                className="inline-flex items-center gap-1 rounded-full border border-mint/30 bg-mint/10 px-3 py-1 text-xs font-bold text-accent-ink"
                 key={type}
               >
                 <CheckCircle2 size={12} />
@@ -177,7 +177,7 @@ export function WildberriesGenerateCarouselPanel({
 
       {progress ? <p className="mt-4 text-sm font-semibold text-[#CB11AB]">{progress}</p> : null}
       {error ? <p className="mt-4 text-sm font-semibold text-red-500">{error}</p> : null}
-      {notice ? <p className="mt-4 text-sm font-semibold text-mint">{notice}</p> : null}
+      {notice ? <p className="mt-4 text-sm font-semibold text-accent-ink">{notice}</p> : null}
 
       <div className="mt-5 flex flex-wrap gap-2">
         <Button disabled={loading || !plannedCount || !hasProductPhoto} onClick={() => void handleGenerate()} size="sm">

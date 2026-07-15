@@ -9,7 +9,7 @@ import {
 } from "@/lib/marketing/videoUpsell";
 
 const PROMINENT_CTA_CLASS =
-  "bg-[linear-gradient(135deg,#7cff6b_0%,#9bff8d_48%,#52f66a_100%)] text-ink ring-2 ring-accent/35 shadow-[0_0_0_4px_rgba(124,255,107,0.14),0_14px_36px_rgba(124,255,107,0.28)] hover:bg-[linear-gradient(135deg,#9bff8d_0%,#7cff6b_52%,#b9ff7a_100%)] hover:ring-accent/55";
+  "bg-[linear-gradient(135deg,#BFF93F_0%,#D4FF6B_48%,#ADFC00_100%)] text-on-accent ring-2 ring-accent/40 shadow-[0_0_0_4px_rgba(191,249,63,0.18),0_14px_36px_rgba(191,249,63,0.24)] hover:bg-[linear-gradient(135deg,#D4FF6B_0%,#BFF93F_52%,#E8FF8A_100%)] hover:ring-accent/55";
 
 type CreateVideoFromCardBlockProps = {
   onCreateClick: () => void;
@@ -45,7 +45,7 @@ export function CreateVideoFromCardBlock({
         <div className="flex items-start gap-3">
           <div
             className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${
-              darkConsole ? "bg-accent/20 text-accent" : "bg-accent/15 text-accent"
+              darkConsole ? "bg-accent/20 text-accent-ink" : "bg-accent/15 text-accent-ink"
             }`}
           >
             <Sparkles size={18} />

@@ -15,7 +15,7 @@ export function Tabs({ tabs, active, onChange, className = "" }: TabsProps) {
       {tabs.map((tab) => (
         <button
           className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
-            active === tab.id ? "bg-accent text-paper" : "text-muted hover:text-ink"
+            active === tab.id ? "bg-accent text-on-accent" : "text-muted hover:text-ink"
           }`}
           key={tab.id}
           onClick={() => onChange(tab.id)}

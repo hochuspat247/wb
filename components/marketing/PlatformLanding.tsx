@@ -28,7 +28,7 @@ export function PlatformLanding({ page }: PlatformLandingProps) {
             <ChevronRight aria-hidden className="text-clay" size={14} />
             <span className="text-ink">{page.marketplaceLabel}</span>
           </nav>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">{page.marketplaceLabel}</p>
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-accent-ink">{page.marketplaceLabel}</p>
           <h1 className="mt-4 max-w-4xl text-balance text-4xl font-black leading-tight text-ink md:text-5xl">{page.h1}</h1>
           <p className="mt-6 max-w-3xl text-lg font-medium leading-relaxed text-muted">{page.lead}</p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -60,7 +60,7 @@ export function PlatformLanding({ page }: PlatformLandingProps) {
           <ul className="mt-8 grid gap-4 md:grid-cols-2">
             {page.benefits.map((benefit) => (
               <li className="flex items-start gap-3 rounded-[18px] border border-clay bg-paper/70 p-4" key={benefit}>
-                <CheckCircle2 className="mt-0.5 shrink-0 text-accent" size={18} />
+                <CheckCircle2 className="mt-0.5 shrink-0 text-accent-ink" size={18} />
                 <span className="text-sm font-semibold leading-relaxed text-ink">{benefit}</span>
               </li>
             ))}
@@ -97,7 +97,7 @@ export function PlatformLanding({ page }: PlatformLandingProps) {
                     <p className="text-base font-black text-ink">{platform.marketplaceLabel}</p>
                     <p className="mt-1 text-sm font-medium text-muted">{platform.h1}</p>
                   </div>
-                  <ArrowRight className="shrink-0 text-accent" size={18} />
+                  <ArrowRight className="shrink-0 text-accent-ink" size={18} />
                 </Link>
               </li>
             ))}
@@ -110,7 +110,7 @@ export function PlatformLanding({ page }: PlatformLandingProps) {
                   <p className="text-base font-black text-ink">Все площадки</p>
                   <p className="mt-1 text-sm font-medium text-muted">Главная с примерами, тарифами и демо-генератором</p>
                 </div>
-                <ArrowRight className="shrink-0 text-accent" size={18} />
+                <ArrowRight className="shrink-0 text-accent-ink" size={18} />
               </Link>
             </li>
           </ul>

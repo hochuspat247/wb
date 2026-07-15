@@ -131,12 +131,12 @@ export function StoryVideoSeries({
           <div>
             <div className="flex items-center gap-2 text-sm font-semibold text-violet">
               <Sparkles className="h-4 w-4" />
-              Только в {BRAND.storyStudio}
+              Видео-сцены
             </div>
-            <h3 className="mt-1 text-lg font-bold text-ink">Видео-серии из вашей истории</h3>
+            <h3 className="mt-1 text-lg font-bold text-ink">Видео из вашей истории</h3>
             <p className="mt-2 max-w-xl text-sm text-muted">
-              Превратите портреты персонажей в кинематографичные сцены через {BRAND.googleVeo} {BRAND.veoVersion} — собирайте серии как
-              эпизоды для Рилс, Шортс и ТикТок.
+              Превратите портреты персонажей в короткие видео-сцены через {BRAND.googleVeo} {BRAND.veoVersion}. Видео
+              оплачивается отдельно — сначала нужны история и портрет. Формат 9:16 для Рилс, Шортс и ТикТок.
             </p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-center">

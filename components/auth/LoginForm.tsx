@@ -172,12 +172,12 @@ export function LoginForm() {
               />
             </label>
             <div className="flex justify-end">
-              <Link className="text-sm font-semibold text-accent hover:text-ink" href="/forgot-password">
+              <Link className="text-sm font-semibold text-accent-ink hover:text-ink" href="/forgot-password">
                 Забыли пароль?
               </Link>
             </div>
 
-            {info ? <p className="text-sm font-semibold text-mint">{info}</p> : null}
+            {info ? <p className="text-sm font-semibold text-accent-ink">{info}</p> : null}
             {error ? <p className="text-sm font-semibold text-red-400">{error}</p> : null}
 
             {showResend ? (
@@ -211,7 +211,7 @@ export function LoginForm() {
 
           <p className="mt-6 text-center text-sm text-muted">
             Нет аккаунта?{" "}
-            <Link className="font-bold text-accent hover:text-ink" href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
+            <Link className="font-bold text-accent-ink hover:text-ink" href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
               Зарегистрироваться
             </Link>
           </p>

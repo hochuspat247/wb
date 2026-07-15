@@ -65,7 +65,7 @@ function ActiveHoursChart({ stats }: { stats: SessionDurationStats }) {
           <div className="flex flex-wrap gap-2">
             {topHours.map((bucket) => (
               <span
-                className="rounded-full bg-accent/10 px-2.5 py-1 text-[11px] font-black text-accent"
+                className="rounded-full bg-accent/10 px-2.5 py-1 text-[11px] font-black text-accent-ink"
                 key={bucket.label}
               >
                 {bucket.label} · {bucket.value}
@@ -110,7 +110,7 @@ export function SessionDurationPanel({ stats, product = "marketcard" }: Props) {
   return (
     <CollapsibleAdminSection
       description={`Сколько времени проводят посетители и в какие часы они активнее всего за последние ${stats.periodDays} дней`}
-      icon={<Clock3 className="text-accent" size={20} />}
+      icon={<Clock3 className="text-accent-ink" size={20} />}
       id="session-duration"
       scope={product}
       title="Время на сайте"
@@ -119,10 +119,10 @@ export function SessionDurationPanel({ stats, product = "marketcard" }: Props) {
         <span className="rounded-full border border-clay bg-paper px-3 py-1.5 text-xs font-black text-ink">
           Сессий: {stats.totalSessions}
         </span>
-        <span className="rounded-full bg-accent/10 px-3 py-1.5 text-xs font-black text-accent">
+        <span className="rounded-full bg-accent/10 px-3 py-1.5 text-xs font-black text-accent-ink">
           Среднее: {formatDurationLabel(stats.averageSeconds)}
         </span>
-        <span className="rounded-full bg-mint/10 px-3 py-1.5 text-xs font-black text-mint">
+        <span className="rounded-full bg-mint/10 px-3 py-1.5 text-xs font-black text-accent-ink">
           {stats.peakHourLabel ? `Пик: ${stats.peakHourLabel}` : `Медиана: ${formatDurationLabel(stats.medianSeconds)}`}
         </span>
       </div>

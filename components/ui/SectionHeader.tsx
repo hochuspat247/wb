@@ -32,15 +32,15 @@ export function SectionHeader({
           </span>
         ) : null}
         <h2
-          className={`mt-5 text-3xl font-black leading-[1.02] tracking-normal md:text-[3rem] ${
-            isDark ? "text-white" : "text-ink"
-          }`}
+          className={`font-display text-3xl font-semibold leading-[1.08] tracking-tight md:text-[2.75rem] ${
+            kicker ? "mt-5" : ""
+          } ${isDark ? "text-white" : "text-ink"}`}
         >
           {title}
         </h2>
         {description ? (
           <p
-            className={`mt-4 text-base leading-relaxed md:text-lg ${
+            className={`mt-4 text-base font-medium leading-relaxed md:text-lg ${
               isDark ? "text-white/60" : "text-muted"
             } ${isCenter ? "mx-auto max-w-2xl" : "max-w-xl"}`}
           >

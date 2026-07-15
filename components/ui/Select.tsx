@@ -109,18 +109,18 @@ export function Select({
 
   const triggerClass =
     variant === "dark"
-      ? "border-white/15 bg-white/5 text-white hover:border-white/25"
-      : "border-clay bg-paper/40 text-ink hover:border-accent/25";
+      ? "border-ink/15 bg-ink text-white hover:border-ink/30"
+      : "border-clay bg-card text-ink hover:border-ink/20";
 
   const panelClass =
-    variant === "dark" ? "border-white/12 bg-[#171C26] shadow-soft" : "border-clay bg-card shadow-soft";
+    variant === "dark" ? "border-ink/20 bg-ink shadow-soft" : "border-clay bg-card shadow-soft";
 
   function getItemClass(active: boolean) {
     if (variant === "dark") {
-      return active ? "bg-accent text-paper" : "text-white/85 hover:bg-white/8";
+      return active ? "bg-accent text-on-accent" : "text-white/85 hover:bg-white/10";
     }
 
-    return active ? "bg-accent/15 text-ink" : "text-muted hover:bg-white/5 hover:text-ink";
+    return active ? "bg-accent/25 text-ink" : "text-muted hover:bg-sand hover:text-ink";
   }
 
   return (
@@ -140,7 +140,7 @@ export function Select({
       >
         <span className="truncate">{selected?.label}</span>
         <ChevronDown
-          className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180 text-accent" : "text-muted"}`}
+          className={`shrink-0 transition-transform duration-200 ${open ? "rotate-180 text-accent-ink" : "text-muted"}`}
           size={16}
         />
       </button>

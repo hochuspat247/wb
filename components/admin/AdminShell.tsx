@@ -51,7 +51,7 @@ export function AdminShell({ product, onProductChange, onRefresh, children }: Pr
         <div className="mx-auto flex max-w-7xl flex-col gap-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0">
-              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-accent sm:text-xs sm:tracking-[0.18em]">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-accent-ink sm:text-xs sm:tracking-[0.18em]">
                 Admin · {product.shortLabel}
               </p>
               <h1 className="mt-1 text-xl font-black leading-tight text-ink sm:text-2xl">{product.title}</h1>

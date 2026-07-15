@@ -57,10 +57,10 @@ export function WorkflowSection() {
               <Reveal className="flex-1" delay={(Math.min(i, 3) + 1) as 1 | 2 | 3 | 4}>
                 <div className="group flex h-full flex-col rounded-[22px] border border-clay bg-gradient-to-b from-white/[0.05] to-transparent p-5 transition duration-300 hover:border-accent/25 hover:from-accent/[0.06]">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="grid h-10 w-10 place-items-center rounded-full border border-accent/30 bg-paper text-[11px] font-black text-accent">
+                    <span className="grid h-10 w-10 place-items-center rounded-full border border-accent/30 bg-paper text-[11px] font-black text-accent-ink">
                       {step.num}
                     </span>
-                    <span className="grid h-9 w-9 place-items-center rounded-xl border border-clay bg-card/80 text-muted transition group-hover:border-accent/20 group-hover:text-accent">
+                    <span className="grid h-9 w-9 place-items-center rounded-xl border border-clay bg-card/80 text-muted transition group-hover:border-accent/20 group-hover:text-accent-ink">
                       <step.icon size={16} />
                     </span>
                   </div>
@@ -75,7 +75,7 @@ export function WorkflowSection() {
                   aria-hidden
                   className="hidden shrink-0 items-center justify-center px-1 lg:flex lg:pt-8"
                 >
-                  <ChevronRight className="text-accent/45" size={18} />
+                  <ChevronRight className="text-accent-ink/45" size={18} />
                 </div>
               ) : null}
             </Fragment>

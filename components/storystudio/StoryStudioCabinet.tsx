@@ -9,10 +9,14 @@ import {
   Clapperboard,
   GitBranch,
   Grid3X3,
+  ImageIcon,
   Loader2,
   PenLine,
   Plus,
+  ScanSearch,
+  Share2,
   Sparkles,
+  Trash2,
   UserPlus,
   Wallet
 } from "lucide-react";
@@ -28,6 +32,9 @@ import { StoryOnboardingChecklist } from "@/components/storystudio/StoryOnboardi
 import { StoryPaymentButton } from "@/components/storystudio/StoryPaymentButton";
 import { StoryPremiumUpsellBanner } from "@/components/storystudio/StoryPremiumUpsellBanner";
 import { StoryPricingCard } from "@/components/storystudio/StoryPricingCard";
+import { StoryShareReadPanel } from "@/components/storystudio/StoryShareReadPanel";
+import { StoryAnalysisPanel } from "@/components/storystudio/StoryAnalysisPanel";
+import { StoryMediaPanel } from "@/components/storystudio/StoryMediaPanel";
 import { PromoCodeForm } from "@/components/promo/PromoCodeForm";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Textarea";
@@ -39,13 +46,14 @@ import {
   STORY_GENERATION_PRICE_RUB
 } from "@/lib/storystudio/pricing";
 import {
+  deleteStoryProject,
   fetchStoryProjects,
   generateCharacterPortrait,
   generateStoryChapter,
   generateStoryCharacter,
   migrateGuestStories,
   regenerateStoryFoundation,
-  updateStoryProject,
+  updateStoryProject
 } from "@/lib/api/storystudio";
 import { fetchUserQuota } from "@/lib/api/user";
 import {
@@ -56,9 +64,28 @@ import {
 import { isStoryFoundationEmpty } from "@/lib/storystudio/storyState";
 import type { CharacterRelation, StoryCharacter, StoryProject } from "@/types/storystudio";
 
-type Tab = "overview" | "characters" | "relations" | "editor" | "series" | "pricing";
+type Tab =
+  | "overview"
+  | "characters"
+  | "relations"
+  | "editor"
+  | "series"
+  | "read"
+  | "analysis"
+  | "media"
+  | "pricing";
 
-const VALID_TABS: Tab[] = ["overview", "characters", "relations", "editor", "series", "pricing"];
+const VALID_TABS: Tab[] = [
+  "overview",
+  "characters",
+  "relations",
+  "editor",
+  "series",
+  "read",
+  "analysis",
+  "media",
+  "pricing"
+];
 
 function parseTabParam(value: string | null): Tab | null {
   if (!value) return null;
@@ -85,8 +112,9 @@ export function StoryStudioCabinet() {
   const [charHint, setCharHint] = useState("");
   const [error, setError] = useState("");
   const [regenerateLoading, setRegenerateLoading] = useState(false);
+  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
   const [demoWelcomeStoryId, setDemoWelcomeStoryId] = useState<string | null>(searchParams.get("fromDemo"));
-  const [videoOrderId, setVideoOrderId] = useState<string | null>(searchParams.get("videoOrder"));
+  const [videoOrderId] = useState<string | null>(searchParams.get("videoOrder"));
   const [registerCallbackUrl, setRegisterCallbackUrl] = useState("/storystudio/cabinet");
 
   useEffect(() => {
@@ -128,7 +156,7 @@ export function StoryStudioCabinet() {
         ? storyList.find((s) => s.id === storyId) ?? (fromDemoId ? storyList[0] : undefined)
         : storyList[0];
       if (picked) {
-        setActiveStory({ ...picked, episodes: picked.episodes ?? [] });
+        setActiveStory({ ...picked, episodes: picked.episodes ?? [], media: picked.media ?? [] });
         setSelectedCharacterId(picked.characters[0]?.id ?? null);
         const tabFromUrl = parseTabParam(searchParams.get("tab"));
         if (tabFromUrl) {
@@ -201,12 +229,38 @@ export function StoryStudioCabinet() {
     }));
   }
 
+  async function handleDeleteStory(storyId: string) {
+    const target = stories.find((s) => s.id === storyId);
+    if (!target) return;
+    const confirmed = window.confirm(`Удалить историю «${target.title}»? Это действие нельзя отменить.`);
+    if (!confirmed) return;
+
+    setDeleteLoadingId(storyId);
+    setError("");
+    try {
+      await deleteStoryProject(storyId);
+      const nextStories = stories.filter((s) => s.id !== storyId);
+      setStories(nextStories);
+      if (activeStory?.id === storyId) {
+        const next = nextStories[0] ?? null;
+        setActiveStory(next);
+        setSelectedCharacterId(next?.characters[0]?.id ?? null);
+      }
+    } catch {
+      setError("Не удалось удалить историю.");
+    } finally {
+      setDeleteLoadingId(null);
+    }
+  }
+
   async function handleGenerateCharacter() {
     if (!activeStory) return;
     setCharacterLoading(true);
     setError("");
     try {
-      const { story, quota: q } = await generateStoryCharacter(activeStory.id, { hint: charHint.trim() || undefined });
+      const { story, quota: q } = await generateStoryCharacter(activeStory.id, {
+        hint: charHint.trim() || undefined
+      });
       handleStoryUpdate(story);
       applyStoryQuota(q);
       setSelectedCharacterId(story.characters[story.characters.length - 1]?.id ?? null);
@@ -279,17 +333,17 @@ export function StoryStudioCabinet() {
 
   if (status === "unauthenticated") {
     return (
-      <div className="min-h-screen bg-[#07050d]">
+      <div className="min-h-screen">
         <StoryStudioHeader />
         <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 pt-24 text-center">
-          <Sparkles className="mb-4 h-10 w-10 text-violet" />
-          <h1 className="text-2xl font-bold">Войдите в аккаунт</h1>
+          <Sparkles className="mb-4 h-10 w-10 text-gold" />
+          <h1 className="story-fairy-title text-3xl text-moon">Войдите в аккаунт</h1>
           <p className="mt-2 text-muted">Чтобы работать с историями и персонажами</p>
           <Link
             href={`/register?callbackUrl=${encodeURIComponent(registerCallbackUrl)}`}
             className="mt-6"
           >
-            <Button className="!bg-violet !text-white !border-violet">Создать аккаунт</Button>
+            <Button className="!border-gold !bg-gold !text-[#1a140f]">Создать аккаунт</Button>
           </Link>
         </div>
         <StoryStudioFooter />
@@ -303,17 +357,21 @@ export function StoryStudioCabinet() {
     { id: "characters", label: "Персонажи", icon: Grid3X3 },
     { id: "relations", label: "Связи", icon: GitBranch },
     { id: "editor", label: "Редактор", icon: PenLine },
+    { id: "read", label: "Читать", icon: Share2, highlight: true },
+    { id: "analysis", label: "Анализ", icon: ScanSearch, highlight: true },
+    { id: "media", label: "Медиа", icon: ImageIcon, highlight: true },
     { id: "pricing", label: "Тарифы", icon: Wallet }
   ];
 
   return (
-    <div className="min-h-screen bg-[#07050d]">
+    <div className="min-h-screen">
       <StoryStudioHeader />
 
-      <div className="mx-auto max-w-content px-4 pb-12 pt-20 sm:px-6 sm:pb-16 sm:pt-24">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="mx-auto max-w-content px-4 pb-12 pt-20 sm:px-6 sm:pb-16 sm:pt-24 print:pt-0">
+        <div className="mb-6 flex flex-col gap-4 print:hidden sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-xl font-bold sm:text-2xl">Мои истории</h1>
+            <p className="story-fairy-eyebrow mb-2">Кабинет автора</p>
+            <h1 className="story-fairy-title text-3xl text-moon sm:text-4xl">Мои истории</h1>
             {quota && (
               <p className="text-sm text-muted">
                 Осталось генераций: <span className="text-violet">{quota.remaining}</span> из {quota.credits}
@@ -335,10 +393,11 @@ export function StoryStudioCabinet() {
         </div>
 
         {demoWelcomeStoryId && activeStory?.id === demoWelcomeStoryId && (
-          <div className="mb-6 rounded-card border border-violet/30 bg-violet/10 p-5">
+          <div className="mb-6 rounded-card border border-violet/30 bg-violet/10 p-5 print:hidden">
             <p className="text-sm text-ink">
               <Sparkles className="mr-1.5 inline h-4 w-4 text-violet" />
-              Демо-история перенесена в ваш кабинет — можно продолжать редактирование, генерировать главы и персонажей.
+              Демо-история перенесена в ваш кабинет — можно продолжать редактирование, генерировать главы и
+              персонажей.
             </p>
             <button
               type="button"
@@ -365,32 +424,50 @@ export function StoryStudioCabinet() {
           </div>
         ) : (
           <div className="grid gap-4 lg:grid-cols-[260px_1fr] lg:gap-6">
-            <aside className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:block lg:space-y-2 lg:overflow-visible lg:px-0 lg:pb-0">
+            <aside className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 print:hidden lg:mx-0 lg:block lg:space-y-2 lg:overflow-visible lg:px-0 lg:pb-0">
               {stories.map((story) => (
-                <button
+                <div
                   key={story.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveStory(story);
-                    setSelectedCharacterId(story.characters[0]?.id ?? null);
-                  }}
-                  className={`w-[min(100%,240px)] shrink-0 rounded-xl border px-4 py-3 text-left transition lg:w-full ${
+                  className={`relative w-[min(100%,240px)] shrink-0 rounded-xl border transition lg:w-full ${
                     activeStory?.id === story.id
                       ? "border-violet bg-violet/15"
                       : "border-white/10 bg-card hover:border-violet/30"
                   }`}
                 >
-                  <div className="font-medium text-ink">{story.title}</div>
-                  <div className="mt-1 text-xs text-muted">
-                    {story.characters.length} перс. · {story.chapters.length} гл.
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveStory(story);
+                      setSelectedCharacterId(story.characters[0]?.id ?? null);
+                    }}
+                    className="w-full px-4 py-3 pr-10 text-left"
+                  >
+                    <div className="font-medium text-ink">{story.title}</div>
+                    <div className="mt-1 text-xs text-muted">
+                      {story.characters.length} перс. · {story.chapters.length} гл.
+                      {story.isPublic ? " · публичная" : ""}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    title="Удалить историю"
+                    disabled={deleteLoadingId === story.id}
+                    onClick={() => handleDeleteStory(story.id)}
+                    className="absolute right-2 top-2 rounded-lg p-1.5 text-muted hover:bg-rose-500/15 hover:text-rose-300"
+                  >
+                    {deleteLoadingId === story.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                </div>
               ))}
             </aside>
 
             {activeStory && (
               <div className="min-w-0">
-                <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto border-b border-white/10 px-4 pb-4 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
+                <div className="-mx-4 mb-4 flex gap-2 overflow-x-auto border-b border-white/10 px-4 pb-4 print:hidden lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
                   {tabs.map((t) => (
                     <button
                       key={t.id}
@@ -414,12 +491,14 @@ export function StoryStudioCabinet() {
                 </div>
 
                 {error && (
-                  <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300 print:hidden">
                     {error}
                   </div>
                 )}
 
-                <StoryOnboardingChecklist story={activeStory} onGoToTab={handleTabChange} />
+                <div className="print:hidden">
+                  <StoryOnboardingChecklist story={activeStory} onGoToTab={handleTabChange} />
+                </div>
 
                 {tab === "overview" && (
                   <div className="space-y-6">
@@ -427,7 +506,7 @@ export function StoryStudioCabinet() {
                       <StoryAiRefreshBanner loading={regenerateLoading} onRefresh={handleRegenerateFoundation} />
                     )}
 
-                    {activeStory && isStoryFoundationEmpty(activeStory) && (
+                    {isStoryFoundationEmpty(activeStory) && (
                       <div className="rounded-card border border-amber-500/30 bg-amber-500/10 p-5">
                         <p className="text-sm text-amber-100">
                           Контент истории не сгенерировался — ИИ не вернул данные. Нажмите кнопку ниже, чтобы
@@ -526,6 +605,32 @@ export function StoryStudioCabinet() {
                   />
                 )}
 
+                {tab === "read" && (
+                  <StoryShareReadPanel
+                    story={activeStory}
+                    onUpdate={handleStoryUpdate}
+                    onError={setError}
+                  />
+                )}
+
+                {tab === "analysis" && (
+                  <StoryAnalysisPanel
+                    story={activeStory}
+                    onUpdate={handleStoryUpdate}
+                    onError={setError}
+                    applyQuota={applyStoryQuota}
+                  />
+                )}
+
+                {tab === "media" && (
+                  <StoryMediaPanel
+                    story={activeStory}
+                    onUpdate={handleStoryUpdate}
+                    onError={setError}
+                    applyQuota={applyStoryQuota}
+                  />
+                )}
+
                 {tab === "pricing" && (
                   <div id="pricing" className="space-y-6">
                     {!quota?.storyPremiumUnlocked && (
@@ -533,7 +638,7 @@ export function StoryStudioCabinet() {
                     )}
                     <div className="rounded-card border border-violet/30 bg-violet/10 p-5">
                       <p className="text-sm">
-                        1 генерация = история, персонаж или глава · портрет — отдельная квота ·{" "}
+                        1 генерация = история, персонаж, глава или анализ · портрет/медиа — отдельная квота ·{" "}
                         <strong>{formatStoryRub(STORY_GENERATION_PRICE_RUB)}</strong>
                       </p>
                     </div>
@@ -559,7 +664,10 @@ export function StoryStudioCabinet() {
                             badge={pkg.badge}
                             highlighted={Boolean(pkg.badge)}
                             footer={
-                              <StoryPaymentButton count={pkg.count} className="w-full !border-violet !bg-violet !text-white">
+                              <StoryPaymentButton
+                                count={pkg.count}
+                                className="w-full !border-violet !bg-violet !text-white"
+                              >
                                 Купить {pkg.count}
                               </StoryPaymentButton>
                             }
@@ -574,7 +682,9 @@ export function StoryStudioCabinet() {
           </div>
         )}
       </div>
-      <StoryStudioFooter />
+      <div className="print:hidden">
+        <StoryStudioFooter />
+      </div>
     </div>
   );
 }

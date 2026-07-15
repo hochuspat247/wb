@@ -21,39 +21,50 @@ export function VkIdFloating({ callbackUrl = "/cabinet" }: VkIdFloatingProps) {
       return;
     }
 
-    const floatingOneTap = new VKID.FloatingOneTap();
-    widgetRef.current = floatingOneTap;
+    try {
+      const floatingOneTap = new VKID.FloatingOneTap();
+      widgetRef.current = floatingOneTap;
 
-    floatingOneTap
-      .render({
-        appName: getVkAppName(),
-        showAlternativeLogin: true,
-        oauthList: [VKID.OAuthName.MAIL]
-      })
-      .on(VKID.WidgetEvents.ERROR, (vkError: unknown) => {
-        console.error(vkError);
-        setError("Не удалось войти через VK ID.");
-      })
-      .on(VKID.FloatingOneTapInternalEvents.LOGIN_SUCCESS, async (payload: { code: string; device_id: string }) => {
-        try {
-          setError("");
-          await signInWithVk(payload);
-          floatingOneTap.close();
-        } catch (vkError) {
-          console.error(vkError);
-          setError("Ошибка входа через VK ID.");
-        }
-      });
+      floatingOneTap
+        .render({
+          appName: getVkAppName(),
+          showAlternativeLogin: true,
+          oauthList: [VKID.OAuthName.MAIL]
+        })
+        .on(VKID.WidgetEvents.ERROR, (vkError: unknown) => {
+          const message = vkError instanceof Error ? vkError.message : String(vkError ?? "");
+          if (/failed to fetch|networkerror|load failed/i.test(message)) {
+            return;
+          }
+          setError("Не удалось войти через VK ID.");
+        })
+        .on(VKID.FloatingOneTapInternalEvents.LOGIN_SUCCESS, async (payload: { code: string; device_id: string }) => {
+          try {
+            setError("");
+            await signInWithVk(payload);
+            floatingOneTap.close();
+          } catch (vkError) {
+            console.warn("[VK ID] floating sign-in failed", vkError);
+            setError("Ошибка входа через VK ID.");
+          }
+        });
 
-    return () => {
-      floatingOneTap.close();
-      widgetRef.current = null;
-    };
+      return () => {
+        floatingOneTap.close();
+        widgetRef.current = null;
+      };
+    } catch (vkError) {
+      const message = vkError instanceof Error ? vkError.message : String(vkError ?? "");
+      if (!/failed to fetch|networkerror|load failed/i.test(message)) {
+        console.warn("[VK ID] floating init failed", vkError);
+      }
+      return undefined;
+    }
   }, [callbackUrl, signInWithVk]);
 
   if (error) {
     return (
-      <div className="fixed bottom-24 right-4 z-[70] max-w-xs rounded-2xl border border-coral/20 bg-white px-4 py-3 text-sm font-semibold text-coral shadow-soft">
+      <div className="fixed bottom-24 right-4 z-[70] max-w-xs rounded-2xl border border-red-200 bg-white px-4 py-3 text-sm font-semibold text-red-600 shadow-soft">
         {error}
       </div>
     );

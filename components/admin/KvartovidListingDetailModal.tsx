@@ -93,7 +93,7 @@ export function KvartovidListingDetailModal({
       <Card className="max-h-[92vh] w-full max-w-6xl overflow-hidden p-0" padding="none">
         <div className="flex items-center justify-between gap-4 border-b border-clay px-5 py-4">
           <div className="min-w-0">
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-accent">Объявление пользователя</p>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-accent-ink">Объявление пользователя</p>
             <h3 className="mt-1 truncate text-lg font-black text-ink">{listing?.title || "Загрузка..."}</h3>
           </div>
           <button className="grid h-10 w-10 shrink-0 place-items-center rounded-full hover:bg-paper" onClick={onClose} type="button">
@@ -151,7 +151,7 @@ export function KvartovidListingDetailModal({
                 <h4 className="text-sm font-black uppercase tracking-[0.14em] text-muted">Тексты для площадок</h4>
                 {listing.platformTexts.map((platform) => (
                   <div className="rounded-[18px] border border-clay bg-paper/40 p-4" key={platform.platform}>
-                    <p className="text-xs font-black uppercase tracking-[0.14em] text-accent">{platform.label}</p>
+                    <p className="text-xs font-black uppercase tracking-[0.14em] text-accent-ink">{platform.label}</p>
                     <TextBlock label="Заголовок" value={platform.title} />
                     <TextBlock label="Описание" value={platform.description} />
                   </div>

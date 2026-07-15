@@ -56,8 +56,8 @@ export function CasesSection() {
 
         <div className="mt-14 grid gap-6 lg:grid-cols-3">
           {cases.map((item, index) => (
-            <Reveal delay={(index + 1) as 1 | 2 | 3} key={item.id}>
-              <article className="overflow-hidden rounded-[24px] border border-clay bg-card">
+            <Reveal delay={(index + 1) as 1 | 2 | 3} key={item.id} variant="scale">
+              <article className="wow-card overflow-hidden rounded-[24px] border border-clay bg-card">
                 <div className="grid grid-cols-2 gap-px bg-clay">
                   <div className="relative aspect-[4/5] bg-paper">
                     <Image
@@ -85,8 +85,8 @@ export function CasesSection() {
                   </div>
                 </div>
                 <div className="p-5">
-                  <p className="text-xs font-black uppercase tracking-[0.14em] text-accent">{item.category}</p>
-                  <h3 className="mt-2 text-lg font-black text-ink">{item.title}</h3>
+                  <p className="font-display text-xs font-semibold uppercase tracking-[0.14em] text-accent-ink">{item.category}</p>
+                  <h3 className="mt-2 font-display text-lg font-semibold text-ink">{item.title}</h3>
                   <p className="mt-2 text-sm font-medium text-muted">{item.note}</p>
                   <p className="mt-3 text-xs font-semibold text-muted">{GENERATION_TIME_COPY}.</p>
                 </div>

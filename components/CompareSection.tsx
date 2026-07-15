@@ -57,8 +57,8 @@ function CompareMobileCards({ embedded = false }: { embedded?: boolean }) {
                     className={`flex items-start justify-between gap-4 px-4 py-3 ${isOurs ? "bg-accent/10" : ""}`}
                     key={label}
                   >
-                    <dt className={`shrink-0 text-xs font-bold ${isOurs ? "text-accent" : "text-muted"}`}>{label}</dt>
-                    <dd className={`text-right text-sm font-semibold ${isOurs ? "text-mint" : "text-muted"}`}>
+                    <dt className={`shrink-0 text-xs font-bold ${isOurs ? "text-accent-ink" : "text-muted"}`}>{label}</dt>
+                    <dd className={`text-right text-sm font-semibold ${isOurs ? "text-ink" : "text-muted"}`}>
                       {values[index]}
                     </dd>
                   </div>
@@ -78,7 +78,7 @@ function CompareDesktopTable({ embedded = false }: { embedded?: boolean }) {
       <div className="min-w-[920px]">
         <div className="grid grid-cols-[1.1fr_0.9fr_0.9fr_0.9fr_1.05fr] border-b border-clay text-sm font-black text-ink">
           {columns.map((head, index) => (
-            <div className={`p-4 md:p-5 ${index === 4 ? "bg-accent text-paper" : ""}`} key={head || "metric"}>
+            <div className={`p-4 md:p-5 ${index === 4 ? "bg-accent text-on-accent" : ""}`} key={head || "metric"}>
               {head}
             </div>
           ))}
@@ -95,7 +95,7 @@ function CompareDesktopTable({ embedded = false }: { embedded?: boolean }) {
                 }`}
                 key={`${rowIndex}-${index}`}
               >
-                {index === 4 ? <span className="text-mint">{cell}</span> : cell}
+                {index === 4 ? <span className="font-bold text-ink">{cell}</span> : cell}
               </div>
             ))}
           </div>

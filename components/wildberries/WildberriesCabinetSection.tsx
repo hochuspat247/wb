@@ -60,7 +60,7 @@ export function WildberriesCabinetSection({
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black ${
-                wbConnected ? "bg-mint/15 text-mint" : "bg-paper text-muted"
+                wbConnected ? "bg-mint/15 text-accent-ink" : "bg-paper text-muted"
               }`}
             >
               {wbConnected ? <CheckCircle2 size={14} /> : null}

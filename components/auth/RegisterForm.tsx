@@ -122,7 +122,7 @@ export function RegisterForm() {
         <div className="w-full max-w-md">
           <div className="mb-8 text-center">
             <Logo />
-            <div className="mx-auto mt-6 grid h-14 w-14 place-items-center rounded-full bg-mint/15 text-mint">
+            <div className="mx-auto mt-6 grid h-14 w-14 place-items-center rounded-full bg-mint/15 text-accent-ink">
               <MailCheck size={28} />
             </div>
             <h1 className="mt-6 text-3xl font-black text-ink">Подтвердите email</h1>
@@ -200,15 +200,15 @@ export function RegisterForm() {
 
             <p className="text-xs font-medium leading-relaxed text-muted">
               Нажимая «Создать аккаунт», вы принимаете{" "}
-              <Link className="text-accent hover:underline" href="/legal/terms">
+              <Link className="text-accent-ink hover:underline" href="/legal/terms">
                 пользовательское соглашение
               </Link>
               ,{" "}
-              <Link className="text-accent hover:underline" href="/legal/offer">
+              <Link className="text-accent-ink hover:underline" href="/legal/offer">
                 публичную оферту
               </Link>{" "}
               и даёте согласие на обработку персональных данных согласно{" "}
-              <Link className="text-accent hover:underline" href="/legal/personal-data">
+              <Link className="text-accent-ink hover:underline" href="/legal/personal-data">
                 политике
               </Link>
               .
@@ -246,7 +246,7 @@ export function RegisterForm() {
 
           <p className="mt-6 text-center text-sm text-muted">
             Уже есть аккаунт?{" "}
-            <Link className="font-bold text-accent hover:text-ink" href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
+            <Link className="font-bold text-accent-ink hover:text-ink" href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`}>
               Войти
             </Link>
           </p>

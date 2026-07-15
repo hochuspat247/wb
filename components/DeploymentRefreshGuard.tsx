@@ -41,6 +41,8 @@ export function DeploymentRefreshGuard({ initialBuildId }: Props) {
     function handleError(event: ErrorEvent) {
       // Analytics / third-party scripts must never block registration or browsing.
       if (isTransientNetworkError(event.message, event.filename)) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
         return;
       }
 
@@ -56,6 +58,7 @@ export function DeploymentRefreshGuard({ initialBuildId }: Props) {
 
       if (isTransientNetworkError(message, stack)) {
         event.preventDefault();
+        event.stopImmediatePropagation();
         return;
       }
 
@@ -70,8 +73,8 @@ export function DeploymentRefreshGuard({ initialBuildId }: Props) {
       }
     }
 
-    window.addEventListener("error", handleError);
-    window.addEventListener("unhandledrejection", handleRejection);
+    window.addEventListener("error", handleError, true);
+    window.addEventListener("unhandledrejection", handleRejection, true);
     document.addEventListener("visibilitychange", handleVisible);
 
     const intervalId = window.setInterval(() => {
@@ -79,8 +82,8 @@ export function DeploymentRefreshGuard({ initialBuildId }: Props) {
     }, BUILD_CHECK_INTERVAL_MS);
 
     return () => {
-      window.removeEventListener("error", handleError);
-      window.removeEventListener("unhandledrejection", handleRejection);
+      window.removeEventListener("error", handleError, true);
+      window.removeEventListener("unhandledrejection", handleRejection, true);
       document.removeEventListener("visibilitychange", handleVisible);
       window.clearInterval(intervalId);
     };

@@ -4,6 +4,40 @@ import { BRAND } from "@/lib/branding";
 const CALLBACK_STORAGE_KEY = "mc_vk_callback";
 
 let initialized = false;
+let initFailed = false;
+let consoleFilterInstalled = false;
+
+function isBenignVkNetworkError(error: unknown) {
+  if (!error) return false;
+
+  const message =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message?: unknown }).message ?? "")
+          : String(error);
+
+  return /failed to fetch|networkerror|load failed|network request failed/i.test(message);
+}
+
+/** VK SDK пишет в console.error падения трекера (CORS/localhost) — Next Dev Overlay показывает это как TypeError. */
+function installVkConsoleFilter() {
+  if (typeof window === "undefined" || consoleFilterInstalled) {
+    return;
+  }
+
+  consoleFilterInstalled = true;
+  const originalError = console.error.bind(console);
+
+  console.error = (...args: unknown[]) => {
+    if (args.some((arg) => isBenignVkNetworkError(arg))) {
+      return;
+    }
+    originalError(...args);
+  };
+}
 
 export function storeVkCallbackUrl(callbackUrl: string) {
   if (typeof window === "undefined") {
@@ -25,7 +59,9 @@ export function getVkIdRedirectUrl() {
   if (typeof window !== "undefined") {
     const { origin, hostname } = window.location;
     if (hostname === "localhost" || hostname === "127.0.0.1") {
-      return `${origin}/`;
+      // Prefer registered production redirect for local widget boot when provided.
+      // Actual callback still works via Code flow if localhost is also trusted in VK app.
+      return process.env.NEXT_PUBLIC_VK_REDIRECT_URL || `${origin}/`;
     }
   }
 
@@ -55,9 +91,11 @@ export function getVkIdScope() {
 export function initVkIdConfig() {
   const appId = getVkAppId();
 
-  if (!appId) {
+  if (!appId || initFailed) {
     return false;
   }
+
+  installVkConsoleFilter();
 
   const redirectUrl = getVkIdRedirectUrl();
 
@@ -72,7 +110,10 @@ export function initVkIdConfig() {
       });
       initialized = true;
     } catch (error) {
-      console.error("VK ID config init failed:", error);
+      if (!isBenignVkNetworkError(error)) {
+        console.warn("VK ID config init failed:", error);
+      }
+      initFailed = true;
       return false;
     }
   }
@@ -103,7 +144,9 @@ export function clearVkAuthParamsFromUrl() {
 }
 
 export async function completeVkIdLogin(payload: { code: string; device_id: string }) {
-  initVkIdConfig();
+  if (!initVkIdConfig()) {
+    throw new Error("VK ID не инициализирован");
+  }
   const tokenData = await VKID.Auth.exchangeCode(payload.code, payload.device_id);
   return tokenData.access_token;
 }

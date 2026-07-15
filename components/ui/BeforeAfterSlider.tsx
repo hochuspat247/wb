@@ -82,10 +82,10 @@ export function BeforeAfterSlider({
           />
         </div>
 
-        <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-paper shadow-sm">
+        <span className="pointer-events-none absolute left-3 top-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-ink shadow-sm">
           До
         </span>
-        <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-paper shadow-sm">
+        <span className="pointer-events-none absolute bottom-3 right-3 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-bold text-ink shadow-sm">
           После
         </span>
 
@@ -96,7 +96,7 @@ export function BeforeAfterSlider({
 
         <button
           aria-label="Сравнить до и после"
-          className="absolute top-1/2 z-20 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/70 bg-white text-paper shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition hover:scale-105 active:scale-95"
+          className="absolute top-1/2 z-20 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/70 bg-white text-ink shadow-[0_8px_24px_rgba(0,0,0,0.28)] transition hover:scale-105 active:scale-95"
           data-handle
           onPointerDown={(event) => {
             event.stopPropagation();

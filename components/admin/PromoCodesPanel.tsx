@@ -168,7 +168,7 @@ export function PromoCodesPanel() {
 
       {lastCreatedCode ? (
         <div className="flex flex-wrap items-center gap-3 rounded-card border border-accent/30 bg-accent/10 px-4 py-3">
-          <Ticket className="h-5 w-5 text-accent" />
+          <Ticket className="h-5 w-5 text-accent-ink" />
           <code className="text-lg font-bold tracking-wider text-ink">{lastCreatedCode}</code>
           <Button onClick={() => void handleCopy(lastCreatedCode)} size="sm" type="button" variant="secondary">
             <Copy className="h-4 w-4" />

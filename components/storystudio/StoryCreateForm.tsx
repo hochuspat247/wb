@@ -13,7 +13,7 @@ import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent"
 import { generateStoryDemo, generateStoryFoundation } from "@/lib/api/storystudio";
 import { fetchUserQuota } from "@/lib/api/user";
 import { getOrCreateStoryGuestId } from "@/lib/guest";
-import { STORY_GENRES, WORD_COUNT_PRESETS } from "@/lib/storystudio/constants";
+import { STORY_GENRES, STORY_LANGUAGES, WORD_COUNT_PRESETS } from "@/lib/storystudio/constants";
 import type { StoryGenre, StoryLanguage } from "@/types/storystudio";
 
 export function StoryCreateForm() {
@@ -128,39 +128,11 @@ export function StoryCreateForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card backdrop-blur-sm">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink">Режим истории</h2>
-          <label
-            className={`flex items-center gap-2 text-sm ${premiumUnlocked ? "cursor-pointer text-muted" : "cursor-not-allowed text-muted/60"}`}
-          >
-            <input
-              type="checkbox"
-              checked={premiumMode}
-              disabled={!premiumUnlocked}
-              onChange={(e) => handlePremiumToggle(e.target.checked)}
-              className="h-4 w-4 rounded border-clay accent-violet disabled:opacity-50"
-            />
-            <span>
-              Премиум 18+ <span className="text-violet">✦</span>
-            </span>
-          </label>
-        </div>
-
-        {!isAuthenticated && (
-          <StoryPremiumUpsellBanner variant="inline" />
-        )}
-
-        {isAuthenticated && !premiumUnlocked && (
-          <div className="mb-4">
-            <StoryPremiumUpsellBanner variant="inline" />
-          </div>
-        )}
-
-        {showPremiumUpsell && premiumUnlocked && premiumMode && (
-          <p className="mb-4 rounded-xl bg-violet/10 px-4 py-3 text-sm text-muted">
-            Может включать откровенные сцены, грубую лексику и взрослые темы.
-          </p>
-        )}
+        <h2 className="mb-5 text-lg font-semibold text-ink">Основа истории</h2>
+        <p className="mb-5 text-sm text-muted">
+          Начните с названия и идеи — синопсис, персонажи и план соберутся сами. Режим 18+ доступен позже в
+          дополнительных настройках.
+        </p>
 
         <div className="space-y-4">
           <div>
@@ -168,7 +140,7 @@ export function StoryCreateForm() {
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Наследник исчез за день до коронации"
+              placeholder="Письма из запретного архива"
               maxLength={120}
             />
           </div>
@@ -178,7 +150,7 @@ export function StoryCreateForm() {
             <Textarea
               value={premise}
               onChange={(e) => setPremise(e.target.value)}
-              placeholder="Пустой трон опаснее мятежа, особенно когда исчезновение наследника слишком удобно для всех фракций двора..."
+              placeholder="В архиве академии прячут письма из будущего. Элиара открывает одно — и понимает, что её судьба уже переписана..."
               rows={4}
             />
           </div>
@@ -188,7 +160,7 @@ export function StoryCreateForm() {
             <Textarea
               value={charactersHint}
               onChange={(e) => setCharactersHint(e.target.value)}
-              placeholder="Принцесса-интриганка, телохранитель с прошлым, старый советник..."
+              placeholder="Архивариус, бывший курсант, строгая наставница..."
               rows={2}
             />
           </div>
@@ -238,26 +210,58 @@ export function StoryCreateForm() {
 
       <div className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card">
         <label className="mb-3 block text-sm font-medium text-ink">Язык произведения</label>
-        <div className="flex gap-2">
-          {(["ru", "en"] as const).map((lang) => (
+        <div className="flex flex-wrap gap-2">
+          {STORY_LANGUAGES.map((lang) => (
             <button
-              key={lang}
+              key={lang.id}
               type="button"
-              onClick={() => setLanguage(lang)}
-              className={`rounded-full border px-4 py-2 text-sm ${
-                language === lang ? "border-violet bg-violet/20 text-ink" : "border-white/10 text-muted"
+              onClick={() => setLanguage(lang.id)}
+              className={`rounded-full border px-3 py-2 text-sm ${
+                language === lang.id ? "border-violet bg-violet/20 text-ink" : "border-white/10 text-muted"
               }`}
             >
-              {lang === "ru" ? "Русский" : "Английский"}
+              <span className="mr-1.5 text-[10px] font-bold text-violet">{lang.flag}</span>
+              {lang.label}
             </button>
           ))}
         </div>
       </div>
 
+      {isAuthenticated && (
+        <details className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card">
+          <summary className="cursor-pointer text-sm font-medium text-ink">Дополнительные настройки</summary>
+          <div className="mt-4 space-y-4">
+            <label
+              className={`flex items-center gap-2 text-sm ${premiumUnlocked ? "cursor-pointer text-muted" : "cursor-not-allowed text-muted/60"}`}
+            >
+              <input
+                type="checkbox"
+                checked={premiumMode}
+                disabled={!premiumUnlocked}
+                onChange={(e) => handlePremiumToggle(e.target.checked)}
+                className="h-4 w-4 rounded border-clay accent-violet disabled:opacity-50"
+              />
+              <span>
+                Premium / 18+ — сильнее держит сюжет; допускает взрослые темы
+              </span>
+            </label>
+
+            {!premiumUnlocked && <StoryPremiumUpsellBanner variant="inline" />}
+
+            {showPremiumUpsell && premiumUnlocked && premiumMode && (
+              <p className="rounded-xl bg-violet/10 px-4 py-3 text-sm text-muted">
+                Premium глубже прорабатывает мир и героев; может включать откровенные сцены и грубую лексику, если это
+                органично для жанра.
+              </p>
+            )}
+          </div>
+        </details>
+      )}
+
       {!isAuthenticated && (
         <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-muted">
-          Бесплатное демо без регистрации. После генерации вы увидите превью — чтобы редактировать историю и
-          продолжать работу, нужен аккаунт (защита от спам-ботов).
+          Бесплатно один раз: демо-основа истории без регистрации. После превью зарегистрируйтесь, чтобы сохранить
+          проект и продолжить главы.
         </p>
       )}
 
@@ -286,7 +290,7 @@ export function StoryCreateForm() {
         type="submit"
         disabled={loading}
         size="lg"
-        className="w-full !bg-violet !text-white !border-violet hover:!bg-[#9d8bff]"
+        className="w-full !border-gold !bg-gold !text-[#1a140f] hover:!bg-[#e0c796]"
       >
         {loading ? (
           <>

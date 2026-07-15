@@ -7,9 +7,16 @@ type RevealProps = {
   className?: string;
   delay?: 1 | 2 | 3 | 4;
   immediate?: boolean;
+  variant?: "up" | "left" | "right" | "scale";
 };
 
-export function Reveal({ children, className = "", delay, immediate = false }: RevealProps) {
+export function Reveal({
+  children,
+  className = "",
+  delay,
+  immediate = false,
+  variant = "up"
+}: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,7 +37,7 @@ export function Reveal({ children, className = "", delay, immediate = false }: R
           observer.unobserve(node);
         }
       },
-      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
+      { threshold: 0.12, rootMargin: "0px 0px -48px 0px" }
     );
 
     observer.observe(node);
@@ -38,9 +45,17 @@ export function Reveal({ children, className = "", delay, immediate = false }: R
   }, [immediate]);
 
   const delayClass = delay ? `reveal-delay-${delay}` : "";
+  const variantClass =
+    variant === "left"
+      ? "reveal-fade-left"
+      : variant === "right"
+        ? "reveal-fade-right"
+        : variant === "scale"
+          ? "reveal-scale"
+          : "";
 
   return (
-    <div className={`reveal ${delayClass} ${className}`} ref={ref}>
+    <div className={`reveal ${variantClass} ${delayClass} ${className}`.trim()} ref={ref}>
       {children}
     </div>
   );

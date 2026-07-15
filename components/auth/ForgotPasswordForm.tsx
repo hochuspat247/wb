@@ -52,7 +52,7 @@ export function ForgotPasswordForm() {
           </label>
 
           {error ? <p className="mt-4 text-sm font-semibold text-red-400">{error}</p> : null}
-          {message ? <p className="mt-4 text-sm font-semibold text-accent">{message}</p> : null}
+          {message ? <p className="mt-4 text-sm font-semibold text-accent-ink">{message}</p> : null}
 
           <Button className="mt-6 w-full" disabled={loading} type="submit">
             {loading ? <Loader2 className="animate-spin" size={18} /> : null}

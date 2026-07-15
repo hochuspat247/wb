@@ -5,7 +5,16 @@ import { Check, Circle, ImageIcon, PenLine, Sparkles, X } from "lucide-react";
 import { isStoryFoundationEmpty } from "@/lib/storystudio/storyState";
 import type { StoryProject } from "@/types/storystudio";
 
-type Tab = "overview" | "characters" | "relations" | "editor" | "series" | "pricing";
+type Tab =
+  | "overview"
+  | "characters"
+  | "relations"
+  | "editor"
+  | "series"
+  | "read"
+  | "analysis"
+  | "media"
+  | "pricing";
 
 type StoryOnboardingChecklistProps = {
   story: StoryProject;

@@ -19,8 +19,8 @@ export function Logo({ light = false, href = "/", className = "" }: LogoProps) {
         src="/logo.png"
         width={36}
       />
-      <span className={`text-[15px] font-bold tracking-tight ${light ? "text-white" : "text-ink"}`}>
-        {BRAND.marketCardShort} <span className={light ? "text-mint" : "text-accent"}>ИИ</span>
+      <span className={`font-display text-[15px] font-bold tracking-tight ${light ? "text-white" : "text-ink"}`}>
+        {BRAND.marketCardShort} <span className={light ? "text-accent" : "text-accent-ink"}>ИИ</span>
       </span>
     </Link>
   );

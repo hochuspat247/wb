@@ -10,7 +10,42 @@ export type StoryGenre =
   | "enemies-to-lovers"
   | "found-family";
 
-export type StoryLanguage = "ru" | "en";
+export type StoryLanguage = "ru" | "en" | "de" | "fr" | "es";
+
+export type StoryMediaKind = "character" | "world" | "chapter" | "fact";
+
+export type StoryMediaAsset = {
+  id: string;
+  kind: StoryMediaKind;
+  title: string;
+  prompt: string;
+  /** characterId / chapterId / custom fact key */
+  entityId?: string;
+  imageUrl?: string | null;
+  imageBase64?: string | null;
+  imageMimeType?: string | null;
+  showInReader?: boolean;
+  createdAt: string;
+};
+
+export type StoryAnalysisSeverity = "critical" | "attention" | "good";
+
+export type StoryAnalysisRemark = {
+  id: string;
+  severity: StoryAnalysisSeverity;
+  title: string;
+  detail: string;
+  suggestion?: string;
+  status: "pending" | "applied" | "dismissed";
+};
+
+export type StoryAnalysis = {
+  id: string;
+  focus?: string;
+  summary: string;
+  remarks: StoryAnalysisRemark[];
+  createdAt: string;
+};
 
 export type CharacterRelationType =
   | "ally"
@@ -54,6 +89,8 @@ export type StoryChapter = {
   summary: string;
   content: string;
   wordCount: number;
+  /** Optional media asset id shown in reader */
+  mediaAssetId?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -99,6 +136,11 @@ export type StoryProject = {
   chapters: StoryChapter[];
   episodes: StoryEpisode[];
   outline: string[];
+  /** Public share slug — when set and isPublic, story is readable at /storystudio/s/[shareId] */
+  shareId?: string | null;
+  isPublic?: boolean;
+  media?: StoryMediaAsset[];
+  analysis?: StoryAnalysis | null;
   status: "draft" | "in_progress" | "completed";
   createdAt: string;
   updatedAt: string;

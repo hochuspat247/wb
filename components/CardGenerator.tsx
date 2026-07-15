@@ -130,7 +130,7 @@ const DEMO_LOADING_STATUSES = [
 ];
 
 const GENERATE_BUTTON_CLASS =
-  "relative overflow-hidden bg-[linear-gradient(135deg,#7cff6b_0%,#9bff8d_48%,#52f66a_100%)] text-ink ring-2 ring-accent/35 shadow-[0_0_0_5px_rgba(124,255,107,0.16),0_18px_46px_rgba(124,255,107,0.34)] hover:bg-[linear-gradient(135deg,#9bff8d_0%,#7cff6b_52%,#b9ff7a_100%)] hover:ring-accent/65 hover:shadow-[0_0_0_7px_rgba(124,255,107,0.22),0_22px_58px_rgba(124,255,107,0.44)] disabled:ring-accent/15 disabled:shadow-none";
+  "relative overflow-hidden bg-[linear-gradient(135deg,#BFF93F_0%,#D4FF6B_48%,#ADFC00_100%)] text-on-accent ring-2 ring-accent/40 shadow-[0_0_0_5px_rgba(191,249,63,0.22),0_18px_46px_rgba(191,249,63,0.28)] hover:bg-[linear-gradient(135deg,#D4FF6B_0%,#BFF93F_52%,#E8FF8A_100%)] hover:ring-accent/70 hover:shadow-[0_0_0_7px_rgba(191,249,63,0.28),0_22px_58px_rgba(191,249,63,0.36)] disabled:ring-accent/15 disabled:shadow-none";
 
 function GenerationRatingPrompt({
   darkConsole,
@@ -180,7 +180,7 @@ function GenerationRatingPrompt({
             onClick={() => onRate(rating)}
             type="button"
           >
-            <Star className="fill-accent text-accent" size={21} />
+            <Star className="fill-accent text-accent-ink" size={21} />
           </button>
         ))}
       </div>
@@ -1507,7 +1507,7 @@ export function CardGenerator({
         <div className={shellClass}>
           <div className={formClass}>
             <div className="mx-auto max-w-2xl py-8 text-center md:py-16">
-              <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-full bg-accent/15 text-accent">
+              <div className="mx-auto mb-6 grid h-16 w-16 place-items-center rounded-full bg-accent/15 text-accent-ink">
                 <Loader2 className="animate-spin" size={30} />
               </div>
               <h2 className={`text-3xl font-black md:text-5xl ${darkConsole ? "text-white" : "text-ink"}`}>
@@ -1524,7 +1524,7 @@ export function CardGenerator({
               </div>
               <div className="mt-4 flex items-center justify-between text-sm font-bold">
                 <span className={darkConsole ? "text-white/70" : "text-muted"}>{DEMO_LOADING_STATUSES[demoStatusIndex]}</span>
-                <span className={darkConsole ? "text-mint" : "text-accent"}>{demoProgress}%</span>
+                <span className={darkConsole ? "text-accent-ink" : "text-accent-ink"}>{demoProgress}%</span>
               </div>
               {error ? (
                 <div className="mt-6">
@@ -1694,7 +1694,7 @@ export function CardGenerator({
                   <p className={`mt-2 text-xs font-semibold leading-relaxed ${darkConsole ? "text-white/45" : "text-muted"}`}>
                     {describeFreeQuotaMarketing()}. {KIT_SERIES_DESCRIPTION} — доступно в комплекте —{" "}
                     <button
-                      className="text-accent underline-offset-2 hover:underline"
+                      className="text-accent-ink underline-offset-2 hover:underline"
                       onClick={() => openPaywall("series")}
                       type="button"
                     >
@@ -1723,7 +1723,7 @@ export function CardGenerator({
                   <div className="mt-4 grid gap-3">
                     <p className={`text-sm ${darkConsole ? "text-white/50" : "text-muted"}`}>
                       {KIT_SERIES_DESCRIPTION}. Выбрано{" "}
-                      <span className="font-semibold text-accent">{plannedGenerationCount}</span> карточек в серии.
+                      <span className="font-semibold text-accent-ink">{plannedGenerationCount}</span> карточек в серии.
                     </p>
                     <SeriesTypePicker
                       category={effectiveCategory}
@@ -1881,14 +1881,14 @@ export function CardGenerator({
               {error ? <Alert variant="error">{error}</Alert> : null}
               {notice ? <Alert variant="success">{notice}</Alert> : null}
               {seriesProgress ? (
-                <p className={`text-sm font-semibold ${darkConsole ? "text-mint" : "text-accent"}`}>
+                <p className={`text-sm font-semibold ${darkConsole ? "text-accent-ink" : "text-accent-ink"}`}>
                   {seriesProgress}
                 </p>
               ) : null}
               {persistToServer && remainingGenerations !== null && !isLoading ? (
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-muted">
-                    Осталось пробных карточек: <span className="text-accent">{remainingGenerations}</span>
+                    Осталось пробных карточек: <span className="text-accent-ink">{remainingGenerations}</span>
                   </p>
                   <p className="text-xs font-semibold text-muted">{formatMonthlyFreeResetHint(monthlyFreeResetsAt)}</p>
                 </div>
@@ -1927,7 +1927,7 @@ export function CardGenerator({
                     <p className="text-sm font-semibold leading-relaxed text-ink">
                       1 демо с водяным знаком без входа. Серия инфографики для одного товара — в платном комплекте.
                     </p>
-                    <a className="mt-1 inline-flex text-sm font-black text-accent underline-offset-4 hover:underline" href="/#pricing">
+                    <a className="mt-1 inline-flex text-sm font-black text-accent-ink underline-offset-4 hover:underline" href="/#pricing">
                       Перейти к тарифам и собрать серию
                     </a>
                   </div>
@@ -2120,7 +2120,7 @@ export function CardGenerator({
                               </div>
                             )}
                           </div>
-                          <p className={`mt-3 text-xs font-black uppercase tracking-[0.16em] ${darkConsole ? "text-mint" : "text-accent"}`}>
+                          <p className={`mt-3 text-xs font-black uppercase tracking-[0.16em] ${darkConsole ? "text-accent-ink" : "text-accent-ink"}`}>
                             {String(seriesCard.seriesIndex ?? index + 1).padStart(2, "0")} · {seriesCard.seriesPlanItem?.title || "Карточка"}
                           </p>
                           <p className={`mt-1 line-clamp-2 text-sm font-semibold ${darkConsole ? "text-white" : "text-ink"}`}>
@@ -2517,7 +2517,7 @@ function ImageGenerationRetryCallout({
     ? "border-amber-300/45 bg-amber-300/12 text-white"
     : "border-amber-300 bg-amber-50 text-ink";
   const hintClass = darkConsole ? "text-white/80" : "text-ink/75";
-  const reassuranceClass = darkConsole ? "text-mint" : "text-accent";
+  const reassuranceClass = darkConsole ? "text-accent-ink" : "text-accent-ink";
 
   return (
     <div

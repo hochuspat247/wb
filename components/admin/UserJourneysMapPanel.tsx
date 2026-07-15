@@ -125,7 +125,7 @@ function JourneyDetail({ journey, onClose }: { journey: UserJourney; onClose: ()
     <div className="rounded-card border border-accent/30 bg-card p-4 shadow-soft">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-[0.14em] text-accent">Сессия пользователя</p>
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-accent-ink">Сессия пользователя</p>
           <h3 className="mt-1 truncate text-lg font-black text-ink">{getJourneyLabel(journey)}</h3>
           <p className="mt-1 text-xs font-semibold text-muted">
             {new Date(journey.firstSeenAt).toLocaleString("ru-RU")} → {new Date(journey.lastSeenAt).toLocaleString("ru-RU")}
@@ -177,7 +177,7 @@ function JourneyDetail({ journey, onClose }: { journey: UserJourney; onClose: ()
             className="grid gap-1 rounded-[12px] border border-clay/70 bg-paper/50 px-3 py-2 text-xs sm:grid-cols-[130px_1fr_auto]"
             key={`${journey.sessionId}-${event.createdAt}-${event.eventName}`}
           >
-            <span className="font-black text-accent">{event.eventName}</span>
+            <span className="font-black text-accent-ink">{event.eventName}</span>
             <span className="min-w-0 break-words text-muted">{event.label || event.path}</span>
             <span className="text-muted">{new Date(event.createdAt).toLocaleTimeString("ru-RU")}</span>
           </div>
@@ -230,10 +230,10 @@ export function UserJourneysMapPanel({
   return (
     <CollapsibleAdminSection
       badge={
-        <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-black text-accent">{journeys.length}</span>
+        <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-black text-accent-ink">{journeys.length}</span>
       }
       description="Карта кликов и перемещений по сайту. Нажмите на пользователя, чтобы открыть его сессию."
-      icon={<Route className="text-accent" size={20} />}
+      icon={<Route className="text-accent-ink" size={20} />}
       id="user-journeys"
       scope={scope}
       title="Пути пользователей"
@@ -268,7 +268,7 @@ export function UserJourneysMapPanel({
               {topClicks.slice(0, 6).map((item) => (
                 <div className="flex items-start justify-between gap-3 rounded-[14px] border border-clay bg-paper/40 px-3 py-2 text-sm" key={`${item.label}-${item.count}`}>
                   <span className="min-w-0 break-words font-medium text-ink">{item.label}</span>
-                  <span className="shrink-0 font-black text-accent">{item.count}</span>
+                  <span className="shrink-0 font-black text-accent-ink">{item.count}</span>
                 </div>
               ))}
               {!topClicks.length ? <p className="text-sm text-muted">Клики ещё не собраны</p> : null}
@@ -281,9 +281,9 @@ export function UserJourneysMapPanel({
               {transitions.map((transition) => (
                 <div className="flex items-center gap-2 rounded-[14px] border border-clay bg-paper/40 px-3 py-2 text-xs font-semibold text-ink" key={`${transition.from}-${transition.to}`}>
                   <span>{getPathLabel(transition.from)}</span>
-                  <ArrowRight className="shrink-0 text-accent" size={14} />
+                  <ArrowRight className="shrink-0 text-accent-ink" size={14} />
                   <span>{getPathLabel(transition.to)}</span>
-                  <span className="ml-auto rounded-full bg-accent/10 px-2 py-0.5 font-black text-accent">{transition.count}</span>
+                  <span className="ml-auto rounded-full bg-accent/10 px-2 py-0.5 font-black text-accent-ink">{transition.count}</span>
                 </div>
               ))}
               {!transitions.length ? <p className="text-sm text-muted">Переходов пока нет</p> : null}
@@ -309,7 +309,7 @@ export function UserJourneysMapPanel({
               <div className="rounded-card border border-clay bg-paper/40 p-3" key={zone.id}>
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <span className="inline-flex items-center gap-1.5 text-sm font-black text-ink">
-                    <MapPin size={14} className="text-accent" />
+                    <MapPin size={14} className="text-accent-ink" />
                     {zone.label}
                   </span>
                   <span className="rounded-full bg-card px-2 py-0.5 text-xs font-black text-muted">{zoneJourneys.length}</span>

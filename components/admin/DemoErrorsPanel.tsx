@@ -28,12 +28,12 @@ export function DemoErrorsPanel({ errors, product = "marketcard" }: { errors: De
   return (
     <CollapsibleAdminSection
       badge={
-        <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent">
+        <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-black text-accent-ink">
           {errors.length}
         </span>
       }
       description="Последние сбои демо-генерации с текстом ошибки"
-      icon={<AlertTriangle className="text-accent" size={20} />}
+      icon={<AlertTriangle className="text-accent-ink" size={20} />}
       id="demo-errors"
       scope={product}
       title="Ошибки демо"

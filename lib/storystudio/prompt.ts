@@ -1,5 +1,5 @@
-import type { CreateStoryInput, StoryCharacter, StoryProject } from "@/types/storystudio";
-import { STORY_GENRES } from "@/lib/storystudio/constants";
+import type { CreateStoryInput, StoryCharacter, StoryLanguage, StoryProject } from "@/types/storystudio";
+import { STORY_GENRES, STORY_LANGUAGES } from "@/lib/storystudio/constants";
 import { formatCharactersForPrompt, formatRelationsForPrompt } from "@/lib/storystudio/relations";
 
 function genreLabels(genres: string[]) {
@@ -8,21 +8,34 @@ function genreLabels(genres: string[]) {
     .join(", ");
 }
 
+function languageLabel(language: StoryLanguage) {
+  return STORY_LANGUAGES.find((item) => item.id === language)?.label ?? language;
+}
+
+function storyLanguageInstruction(language: StoryLanguage) {
+  const label = languageLabel(language);
+  return `Язык произведения: ${label}. Все тексты (синопсис, хук, мир, персонажи, главы) пиши на ${label}.`;
+}
+
 function premiumModeLine(premiumMode: boolean) {
   return premiumMode
-    ? "Режим Премиум 18+: допускаются взрослые темы, откровенные сцены и грубая лексика, если это органично для жанра."
-    : "Режим без ограничений по жанру, но без откровенного 18+ контента.";
+    ? [
+        "Режим Premium: сильнее держи сюжетную связность, глубже прорабатывай мир и героев,",
+        "пиши более длинные и цельные сцены; допускаются взрослые темы 18+, откровенные сцены и грубая лексика,",
+        "если это органично для жанра."
+      ].join(" ")
+    : "Обычный режим: без откровенного 18+ контента. Можно быстро собрать идею, персонажей, мир и первые главы.";
 }
 
 export function buildStoryFoundationPrompt(input: CreateStoryInput) {
   const premium = premiumModeLine(Boolean(input.premiumMode));
 
-  return `Ты — литературный редактор и сценарист мирового уровня. Создай основу художественного произведения на русском языке (если не указано иное).
+  return `Ты — литературный редактор и сценарист мирового уровня. Создай основу художественного произведения.
 
 Заголовок: ${input.title}
 Основная идея: ${input.premise}
 Жанры: ${genreLabels(input.genres)}
-Язык: ${input.language === "en" ? "английский" : "русский"}
+${storyLanguageInstruction(input.language)}
 Целевой объём: ~${input.targetWordCount.toLocaleString("ru-RU")} слов
 Персонажи (подсказка автора): ${input.charactersHint?.trim() || "на твоё усмотрение, 3–5 ключевых"}
 ${premium}
@@ -141,8 +154,99 @@ ${relationsBlock}
 {
   "title": "название главы",
   "summary": "краткое содержание 2-3 предложения",
-  "content": "полный текст главы 700-1100 слов, художественная проза на ${story.language === "en" ? "английском" : "русском"}"
+  "content": "полный текст главы ${story.premiumMode ? "900-1400" : "700-1100"} слов, художественная проза на языке: ${languageLabel(story.language)}"
 }`;
+}
+
+export function buildStoryAnalysisPrompt(story: StoryProject, focus?: string) {
+  const chaptersText = story.chapters
+    .slice(0, 8)
+    .map((c) => `### Глава ${c.number}. ${c.title}\n${c.summary}\n${c.content.slice(0, 1800)}`)
+    .join("\n\n");
+  const focusLine = focus?.trim()
+    ? `Автор просит особенно проверить: ${focus.trim()}`
+    : "Автор оставил фокус пустым — сам найди важные моменты: темп, мотивацию героев, логику событий, связность глав, атмосферу.";
+
+  return `Ты — литературный редактор. Проанализируй произведение и дай конструктивный фидбек.
+
+${storyLanguageInstruction(story.language)}
+${focusLine}
+
+Название: ${story.title}
+Хук: ${story.hook}
+Синопсис: ${story.synopsis}
+Темы: ${story.themes.join(", ")}
+Мир: ${story.world.setting}; тон: ${story.world.tone}
+Персонажи:
+${formatCharactersForPrompt(story)}
+Связи:
+${formatRelationsForPrompt(story)}
+План: ${story.outline.join(" → ")}
+
+Главы:
+${chaptersText || "Глав ещё нет — оцени основу и план."}
+
+Верни JSON:
+{
+  "summary": "краткий обзор сильных и слабых сторон в 2-4 предложениях",
+  "remarks": [
+    {
+      "severity": "critical|attention|good",
+      "title": "короткий заголовок",
+      "detail": "что именно замечено",
+      "suggestion": "конкретная правка или пустая строка для good"
+    }
+  ]
+}
+
+Нужно 4–10 замечаний. Обязательно смешай severity: critical (мешает цельности), attention (перечитать/доработать), good (уже работает удачно).`;
+}
+
+export function buildStoryMediaPrompt(input: {
+  kind: "character" | "world" | "chapter" | "fact";
+  title: string;
+  prompt: string;
+  story: StoryProject;
+  character?: StoryCharacter;
+}) {
+  const { kind, title, prompt, story, character } = input;
+  const base = [
+    "Cinematic story illustration, high quality digital art, rich atmosphere, no text, no watermark.",
+    `Story: ${story.title}.`,
+    `World: ${story.world.setting}, tone ${story.world.tone}, era ${story.world.era}.`,
+    `User request: ${prompt.trim() || title}.`
+  ];
+
+  if (kind === "character" && character) {
+    return [
+      ...base,
+      `Character portrait / scene of ${character.name}, role: ${character.role}.`,
+      `Appearance: ${character.appearance}.`,
+      "Composition: vertical 3:4, character focused."
+    ].join(" ");
+  }
+
+  if (kind === "chapter") {
+    return [
+      ...base,
+      `Chapter mood illustration titled "${title}".`,
+      "Composition: cinematic wide scene, atmospheric lighting, storybook quality."
+    ].join(" ");
+  }
+
+  if (kind === "fact") {
+    return [
+      ...base,
+      `Visual for world fact / object / rule titled "${title}".`,
+      "Composition: iconic symbolic illustration of this story detail."
+    ].join(" ");
+  }
+
+  return [
+    ...base,
+    `World / location illustration titled "${title}".`,
+    "Composition: establishing shot of place or atmosphere from the setting."
+  ].join(" ");
 }
 
 export function buildCharacterPortraitPrompt(character: StoryCharacter, story: StoryProject) {

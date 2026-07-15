@@ -102,7 +102,7 @@ export function PricingSection() {
 
         <div className="mt-14 grid gap-5 lg:grid-cols-3">
           {plans.map((plan, i) => (
-            <Reveal delay={(i + 1) as 1 | 2 | 3} key={plan.name}>
+            <Reveal delay={(i + 1) as 1 | 2 | 3} key={plan.name} variant="scale">
               <PricingCard {...plan} />
             </Reveal>
           ))}
@@ -110,7 +110,7 @@ export function PricingSection() {
 
         <Reveal delay={2}>
           <div className="mt-10 rounded-[24px] border border-clay bg-card p-6 md:p-8" id="video-pricing">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent-ink">
               {BRAND.googleVeo} {BRAND.veoVersion} Фаст
             </p>
             <h3 className="mt-3 text-2xl font-black text-ink">Видео из готовой карточки</h3>
@@ -131,7 +131,7 @@ export function PricingSection() {
             <p className="mt-5 text-sm font-semibold text-muted">
               Pro-режим (4K): от {formatVideoPriceRub(videoProPrices[0].priceRub)} за 4 сек и далее по{" "}
               {formatRub(getVideoRateRubPerSecond("pro"))}/сек. Минимальная длительность — 4 секунды.{" "}
-              <a className="text-accent underline-offset-2 hover:underline" href="/#video-example">
+              <a className="text-accent-ink underline-offset-2 hover:underline" href="/#video-example">
                 Посмотреть пример ролика
               </a>
               .

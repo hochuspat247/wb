@@ -137,7 +137,7 @@ export const GeneratedCardPreview = forwardRef<HTMLDivElement, GeneratedCardPrev
         </div>
 
         <div className="absolute bottom-[4%] left-[5%] right-[5%] z-30 flex items-center justify-between gap-3">
-          <span className={`rounded-full px-4 py-2 text-[13px] font-black ${imageUrl ? "bg-mint text-paper" : theme.panel}`}>
+          <span className={`rounded-full px-4 py-2 text-[13px] font-black ${imageUrl ? "bg-mint text-on-accent" : theme.panel}`}>
             {imageUrl ? "С вашим фото" : "Нужно фото"}
           </span>
           <span className={`rounded-full px-4 py-2 text-[13px] font-black ${theme.badge}`}>Готово к публикации</span>

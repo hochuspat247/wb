@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Store } from "lucide-react";
 import { PaymentButton } from "@/components/PaymentButton";
 import { Card } from "@/components/ui/Card";
-import { WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
+import { PLAN_SKU_KIT_NAME, WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
 
 type WildberriesSubscriptionOverlayProps = {
   unlocked: boolean;
@@ -41,11 +41,11 @@ export function WildberriesSubscriptionOverlay({
               <p className="text-xs font-black uppercase tracking-[0.16em] text-[#CB11AB]">Wildberries</p>
               <h2 className="mt-1 text-xl font-black text-ink">Карточки на Wildberries</h2>
               <p className="mt-2 text-sm font-semibold leading-relaxed text-muted">
-                Просмотр, редактирование и публикация карточек на WB доступны с тарифа «Рост» — от{" "}
-                {WB_INTEGRATION_MIN_PACKAGE} генераций ({formatRub(starterPack.total)}).
+                Просмотр, редактирование и публикация карточек на WB доступны с тарифа «{PLAN_SKU_KIT_NAME}» — от{" "}
+                {formatRub(starterPack.total)}.
               </p>
               <p className="mt-2 text-xs font-semibold text-muted">
-                Оформите подписку, чтобы активировать кнопки и работать с вашим кабинетом WB.
+                Купите комплект, чтобы активировать кнопки и работать с кабинетом WB.
               </p>
               <PaymentButton
                 className="mt-4 w-full sm:w-auto"

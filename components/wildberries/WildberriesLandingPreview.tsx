@@ -7,7 +7,7 @@ import { CheckCircle2, Plus, Sparkles, UploadCloud, Wand2, X } from "lucide-reac
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { PaymentButton } from "@/components/PaymentButton";
 import { Button } from "@/components/ui/Button";
-import { WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
+import { PLAN_SKU_KIT_NAME, WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
 import fanAfter from "@/publick/70a7dada-44df-4fe2-84bb-22290fbc0aa7.png";
 import steamerAfter from "@/publick/b96119e8-f03b-43dc-8f66-c52a0b4ed245.png";
 import waterTesterAfter from "@/publick/bdc93c3d-6c98-45de-bd5f-58f0e4618213.png";
@@ -58,19 +58,31 @@ function WildberriesSubscribeModal({ open, onClose }: WildberriesSubscribeModalP
           </div>
           <div>
             <p className="text-xs font-black uppercase tracking-[0.16em] text-[#CB11AB]">Wildberries · Beta</p>
-            <h3 className="mt-2 text-2xl font-black leading-snug text-ink">Оформите подписку и сгенерируйте фото</h3>
+            <h3 className="mt-2 text-2xl font-black leading-snug text-ink">Купите комплект и опубликуйте на WB</h3>
             <p className="mt-2 text-sm font-medium leading-relaxed text-muted">
-              Публикация на WB доступна с тарифа «Рост». Сначала сгенерируйте титульник и слайды карусели, затем
-              отправьте всё в Wildberries одной кнопкой.
+              Публикация на WB доступна с тарифа «{PLAN_SKU_KIT_NAME}». Сначала соберите комплект слайдов для SKU,
+              затем отправьте всё в Wildberries одной кнопкой.
             </p>
           </div>
         </div>
 
         <div className="mt-6 space-y-3">
           {[
-            { icon: Sparkles, title: "1. Тариф «Рост»", text: `${WB_INTEGRATION_MIN_PACKAGE} генераций — ${formatRub(starterPack.total)}` },
-            { icon: Wand2, title: "2. Сгенерируйте фото", text: "Титульник + преимущества, характеристики и инфографика пакетом" },
-            { icon: UploadCloud, title: "3. Опубликуйте на WB", text: "Фото и тексты уйдут в карточку Wildberries из кабинета" }
+            {
+              icon: Sparkles,
+              title: `1. ${PLAN_SKU_KIT_NAME}`,
+              text: `${WB_INTEGRATION_MIN_PACKAGE} слайдов — ${formatRub(starterPack.total)}`
+            },
+            {
+              icon: Wand2,
+              title: "2. Соберите комплект",
+              text: "Обложка + преимущества, характеристики и сценарий использования"
+            },
+            {
+              icon: UploadCloud,
+              title: "3. Опубликуйте на WB",
+              text: "Фото и тексты уйдут в карточку Wildberries из кабинета"
+            }
           ].map((step) => (
             <div className="flex gap-3 rounded-[16px] border border-clay bg-paper/50 p-3" key={step.title}>
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#CB11AB]/10 text-[#CB11AB]">
@@ -86,17 +98,17 @@ function WildberriesSubscribeModal({ open, onClose }: WildberriesSubscribeModalP
 
         <div className="mt-6 rounded-[18px] border border-[#CB11AB]/20 bg-[#CB11AB]/8 p-4">
           <p className="text-sm font-black text-ink">
-            Тариф «Рост» — {formatRub(starterPack.total)}
+            {PLAN_SKU_KIT_NAME} — {formatRub(starterPack.total)}
           </p>
           <p className="mt-1 text-xs font-semibold text-muted">
-            {formatRub(starterPack.pricePerUnit)} за карточку · публикация на WB · карусель слайдов
+            {formatRub(starterPack.pricePerUnit)} за слайд · публикация на WB · карусель для одного SKU
           </p>
           <PaymentButton
             className="mt-4 w-full"
             count={WB_INTEGRATION_MIN_PACKAGE}
             metrikaPlan="wb_landing_pack5"
           >
-            Оформить подписку
+            Купить комплект
           </PaymentButton>
         </div>
 

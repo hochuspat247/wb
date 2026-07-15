@@ -19,21 +19,31 @@ export {
 export const VIDEO_STANDARD_PRICE_3_SEC = VIDEO_STANDARD_PRICE_4_SEC;
 
 export const FREE_DEMO_CARDS = 1;
-export const FREE_TRIAL_CARDS = 3;
+/** One free full-card download after registration (does not renew monthly). */
+export const FREE_TRIAL_CARDS = 1;
+/** @deprecated Free quota no longer resets monthly — kept for legacy imports. */
 export const MONTHLY_FREE_RESET_DAYS = 30;
+/** @deprecated Free quota no longer resets monthly. */
 export const MONTHLY_FREE_RESET_MS = MONTHLY_FREE_RESET_DAYS * 24 * 60 * 60 * 1000;
 export const FREE_TOTAL_MARKETING_CARDS = FREE_DEMO_CARDS + FREE_TRIAL_CARDS;
 
+export const SKU_KIT_SLIDE_COUNT = 5;
+export const PLAN_FREE_NAME = "Бесплатно";
+export const PLAN_SKU_KIT_NAME = "Комплект для одного товара";
+export const PLAN_CATALOG_NAME = "Каталог";
+
+export const GENERATION_TIME_COPY = "Обычно 1–2 минуты в зависимости от загрузки сервиса";
+
 export function describeMonthlyFreeQuotaShort() {
-  return `${FREE_TRIAL_CARDS} карточки каждый месяц`;
+  return `${FREE_TRIAL_CARDS} скачивание без водяного знака после регистрации`;
 }
 
 export function describeFreeQuotaMarketing() {
-  return `1 демо без входа + ${FREE_TRIAL_CARDS} карточки каждый месяц`;
+  return `1 демо с защитной меткой без регистрации + ${FREE_TRIAL_CARDS} скачивание без водяного знака после регистрации`;
 }
 
 export function describeMonthlyFreeReset() {
-  return `Бесплатные ${FREE_TRIAL_CARDS} карточки обновляются каждые ${MONTHLY_FREE_RESET_DAYS} дней`;
+  return "Бесплатный лимит не обновляется каждый месяц";
 }
 
 export function formatMonthlyFreeResetDate(value: Date | string | number | null | undefined) {
@@ -50,9 +60,8 @@ export function formatMonthlyFreeResetDate(value: Date | string | number | null 
   return date.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
 }
 
-export function formatMonthlyFreeResetHint(resetsAt?: string | null) {
-  const label = formatMonthlyFreeResetDate(resetsAt);
-  return label ? `Следующее обновление бесплатных карточек — ${label}.` : describeMonthlyFreeReset();
+export function formatMonthlyFreeResetHint(_resetsAt?: string | null) {
+  return `${describeMonthlyFreeReset()}.`;
 }
 
 export function formatCabinetQuotaBanner(input: {
@@ -63,22 +72,25 @@ export function formatCabinetQuotaBanner(input: {
   monthlyFreeResetsAt?: string | null;
 }) {
   if (input.unlimited || input.remaining >= 999_000) {
-    return "Безлимитные генерации для вашего аккаунта.";
+    return "Безлимитные комплекты для вашего аккаунта.";
   }
 
   const allowance = input.monthlyFreeAllowance ?? FREE_TRIAL_CARDS;
   const monthlyRemaining = input.monthlyFreeRemaining ?? Math.min(input.remaining, allowance);
-  const resetHint = formatMonthlyFreeResetHint(input.monthlyFreeResetsAt);
+  const oneTimeHint = formatMonthlyFreeResetHint();
 
   if (input.remaining === 0) {
-    return `Бесплатные ${allowance} карточки в этом месяце использованы. ${resetHint} Или купите пакет — генерации не сгорают.`;
+    return `Бесплатное скачивание использовано. ${oneTimeHint} Купите комплект для одного товара — слайды не сгорают.`;
   }
 
-  return `${describeFreeQuotaMarketing()}. Сейчас доступно: ${input.remaining} (${monthlyRemaining} из ${allowance} бесплатных в этом месяце). ${resetHint}`;
+  return `${describeFreeQuotaMarketing()}. Сейчас доступно: ${input.remaining} (бесплатных осталось ${monthlyRemaining} из ${allowance}). ${oneTimeHint}`;
 }
 
-export const CARD_GENERATION_PRICE_RUB = 55;
-export const WB_INTEGRATION_MIN_PACKAGE = 5;
+/** Поштучная цена одного слайда. Комплект из 5 дешевле за счёт упаковки SKU. */
+export const CARD_GENERATION_PRICE_RUB = 98;
+export const WB_INTEGRATION_MIN_PACKAGE = SKU_KIT_SLIDE_COUNT;
+export const SKU_KIT_PRICE_RUB = 275;
+export const CATALOG_PACK_PRICE_RUB = 990;
 
 /** Минимальная цена видео (4 сек, standard). */
 export const VIDEO_GENERATION_START_PRICE_RUB = VIDEO_STANDARD_PRICE_4_SEC;
@@ -97,28 +109,32 @@ export const GENERATION_PACKAGES: GenerationPackage[] = [
   {
     id: "single",
     count: 1,
-    label: "1 фото",
-    description: "Разовая генерация обложки"
+    label: "1 слайд",
+    description: "Разовый слайд для доработки комплекта"
   },
   {
     id: "pack10",
     count: 10,
-    label: "10 фото",
-    description: "Для теста гипотез и новых SKU"
+    label: "2 комплекта",
+    description: "10 слайдов — до двух SKU по 5"
   },
   {
     id: "pack100",
     count: 100,
-    label: "100 фото",
+    label: "100 слайдов",
     description: "Для активного каталога"
   }
 ];
 
 const BASE_PRICE_PER_UNIT = CARD_GENERATION_PRICE_RUB;
+/**
+ * Комплект для одного SKU: 5 связанных слайдов за 275 ₽ (~44% дешевле поштучной цены).
+ * Каталог: 20 слайдов за 990 ₽.
+ */
 const PACKAGE_TOTAL_OVERRIDES: Record<number, number> = {
-  5: CARD_GENERATION_PRICE_RUB * 5,
+  5: SKU_KIT_PRICE_RUB,
   10: 495,
-  20: 990,
+  20: CATALOG_PACK_PRICE_RUB,
   100: 2860
 };
 

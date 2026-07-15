@@ -1487,7 +1487,7 @@ export function CardGenerator({
                 Создаём вашу карточку
               </h2>
               <p className={`mt-4 text-base font-semibold ${darkConsole ? "text-white/55" : "text-muted"}`}>
-                Обычно это занимает около минуты
+                Обычно 1–2 минуты в зависимости от загрузки сервиса
               </p>
               <div className={`mt-8 overflow-hidden rounded-full ${darkConsole ? "bg-white/10" : "bg-ink/10"}`}>
                 <div

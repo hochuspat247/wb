@@ -28,7 +28,7 @@ export const exampleProducts = [
       after: waterTesterAfter
     },
     compareLabel: "Новая обложка",
-    duration: "32 сек",
+    duration: "1–2 мин",
     badges: ["Контроль солей", "Термометр", "Проводимость"]
   },
   {
@@ -46,7 +46,7 @@ export const exampleProducts = [
       after: faceCreamAfter
     },
     compareLabel: "Замена окружения",
-    duration: "29 сек",
+    duration: "1–2 мин",
     badges: ["SPF 30", "Гиалурон", "Без парабенов"]
   },
   {
@@ -64,7 +64,7 @@ export const exampleProducts = [
       after: steamerAfter
     },
     compareLabel: "Замена ракурса",
-    duration: "31 сек",
+    duration: "1–2 мин",
     badges: ["180°C", "2 л", "5 насадок"]
   },
   {
@@ -82,7 +82,7 @@ export const exampleProducts = [
       after: fanAfter
     },
     compareLabel: "Премиум-инфографика",
-    duration: "28 сек",
+    duration: "1–2 мин",
     badges: ["3 скорости", "Пульт", "35 дБ"]
   },
   {
@@ -100,7 +100,7 @@ export const exampleProducts = [
       after: awardAfter
     },
     compareLabel: "Каталожный стиль",
-    duration: "34 сек",
+    duration: "1–2 мин",
     badges: ["Гравировка", "Подарок", "Премиум"]
   },
   {
@@ -118,7 +118,7 @@ export const exampleProducts = [
       after: organizerAfter
     },
     compareLabel: "Чистый фон",
-    duration: "27 сек",
+    duration: "1–2 мин",
     badges: ["6 отделений", "Акрил", "Стекло"]
   }
 ] as const;

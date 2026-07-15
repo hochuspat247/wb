@@ -5,7 +5,8 @@ import { PRODUCT_CARD_VIDEO_DEMO } from "@/lib/marketing/videoExample";
 import {
   CARD_GENERATION_PRICE_RUB,
   FREE_TRIAL_CARDS,
-  MONTHLY_FREE_RESET_DAYS,
+  PLAN_CATALOG_NAME,
+  PLAN_SKU_KIT_NAME,
   VIDEO_GENERATION_START_PRICE_RUB,
   calculatePackagePrice,
   describeFreeQuotaMarketing,
@@ -26,51 +27,51 @@ function buildOfferCatalog() {
     itemListElement: [
       {
         "@type": "Offer",
-        name: `${FREE_TRIAL_CARDS} бесплатные карточки каждый месяц`,
+        name: `${FREE_TRIAL_CARDS} бесплатное скачивание после регистрации`,
         price: "0",
         priceCurrency: "RUB",
         description: `${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}`,
         url: absoluteUrl("/register"),
         itemOffered: {
           "@type": "Service",
-          name: "Генерация карточки товара",
-          description: "ИИ-обложка 4:5, тексты и СЕО для маркетплейсов"
+          name: "Комплект карточек товара",
+          description: "ИИ-обложка 4:5, слайды, тексты и СЕО для маркетплейсов"
         }
       },
       {
         "@type": "Offer",
-        name: "1 фото",
+        name: "1 слайд",
         price: String(CARD_GENERATION_PRICE_RUB),
         priceCurrency: "RUB",
-        description: "Разовая генерация обложки",
+        description: "Разовый слайд для доработки комплекта",
         url: absoluteUrl("/#pricing"),
         itemOffered: {
           "@type": "Service",
-          name: "Генерация карточки товара"
+          name: "Слайд карточки товара"
         }
       },
       {
         "@type": "Offer",
-        name: "Пакет 5 фото",
+        name: PLAN_SKU_KIT_NAME,
         price: String(growthPack.total),
         priceCurrency: "RUB",
-        description: `${formatRub(growthPack.pricePerUnit)} за карточку`,
+        description: `${formatRub(growthPack.pricePerUnit)} за слайд · 5 связанных слайдов для одного SKU`,
         url: absoluteUrl("/#pricing"),
         itemOffered: {
           "@type": "Service",
-          name: "Пакет генераций карточек"
+          name: PLAN_SKU_KIT_NAME
         }
       },
       {
         "@type": "Offer",
-        name: "Пакет 20 фото",
+        name: PLAN_CATALOG_NAME,
         price: String(scalePack.total),
         priceCurrency: "RUB",
-        description: `${formatRub(scalePack.pricePerUnit)} за карточку`,
+        description: `${formatRub(scalePack.pricePerUnit)} за слайд · до 4 комплектов SKU`,
         url: absoluteUrl("/#pricing"),
         itemOffered: {
           "@type": "Service",
-          name: "Пакет генераций карточек"
+          name: PLAN_CATALOG_NAME
         }
       },
       ...videoPrices.map((item) => ({
@@ -151,7 +152,7 @@ export function buildHomeJsonLd() {
           highPrice: String(CARD_GENERATION_PRICE_RUB),
           priceCurrency: "RUB",
           offerCount: String(3 + getVideoMarketingPrices("standard").length),
-          description: `${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()} Далее от ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото, видео от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}`
+          description: `${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()} Далее от ${formatRub(CARD_GENERATION_PRICE_RUB)} за слайд, видео от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}`
         },
         featureList: [
           "Генерация карточки товара по фото",

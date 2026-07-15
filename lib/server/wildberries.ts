@@ -500,7 +500,7 @@ export async function publishWildberriesCard(
   input: WildberriesPublishInput
 ): Promise<WildberriesPublishResult> {
   if (!(await hasWildberriesAccess(userId))) {
-    throw new Error("Публикация на Wildberries доступна с тарифа «Рост» — от 5 генераций.");
+    throw new Error("Публикация на Wildberries доступна с тарифа «Комплект для одного товара».");
   }
 
   const row = await getIntegration(userId);
@@ -719,7 +719,7 @@ export async function listWildberriesCards(
   query: WildberriesCardsListQuery = {}
 ): Promise<WildberriesCardsListResult> {
   if (!(await hasWildberriesAccess(userId))) {
-    throw new Error("Просмотр карточек WB доступен с тарифа «Рост» — от 5 генераций.");
+    throw new Error("Просмотр карточек WB доступен с тарифа «Комплект для одного товара».");
   }
 
   const row = await getIntegration(userId);
@@ -730,7 +730,7 @@ export async function listWildberriesCards(
 
 export async function getWildberriesCatalogCard(userId: string, nmId: number) {
   if (!(await hasWildberriesAccess(userId))) {
-    throw new Error("Просмотр карточек WB доступен с тарифа «Рост» — от 5 генераций.");
+    throw new Error("Просмотр карточек WB доступен с тарифа «Комплект для одного товара».");
   }
 
   const row = await getIntegration(userId);
@@ -766,7 +766,7 @@ export async function updateWildberriesCatalogCard(
   input: WildberriesUpdateInput
 ): Promise<WildberriesUpdateResult> {
   if (!(await hasWildberriesAccess(userId))) {
-    throw new Error("Редактирование карточек WB доступно с тарифа «Рост» — от 5 генераций.");
+    throw new Error("Редактирование карточек WB доступно с тарифа «Комплект для одного товара».");
   }
 
   const row = await getIntegration(userId);

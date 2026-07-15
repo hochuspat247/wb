@@ -7,7 +7,7 @@ import { signIn } from "next-auth/react";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { VkIdAuthPanel } from "@/components/auth/VkIdAuthPanel";
 import { YandexIdButton } from "@/components/auth/YandexIdButton";
-import { trackConversion } from "@/components/analytics/AnalyticsTracker";
+import { trackAuthError, trackConversion } from "@/components/analytics/AnalyticsTracker";
 import {
   readSignupCallbackUrl,
   recordSignupContext,
@@ -99,30 +99,41 @@ export function LoginForm() {
     setError("");
     setInfo("");
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-      callbackUrl
-    });
+    try {
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl
+      });
 
-    setLoading(false);
+      if (result?.error) {
+        if (result.error === "EmailNotVerified" || result.code === "email_not_verified") {
+          setError("Сначала подтвердите email по ссылке из письма.");
+          setInfo("Не пришло письмо? Отправьте его повторно ниже.");
+          trackAuthError("login_error", { reason: "email_not_verified", method: "email" });
+          return;
+        }
 
-    if (result?.error) {
-      if (result.error === "EmailNotVerified" || result.code === "email_not_verified") {
-        setError("Сначала подтвердите email по ссылке из письма.");
-        setInfo("Не пришло письмо? Отправьте его повторно ниже.");
+        setError("Неверный email или пароль.");
+        trackAuthError("login_error", { reason: "invalid_credentials", method: "email" });
         return;
       }
 
-      setError("Неверный email или пароль.");
-      return;
+      trackConversion("login_complete");
+      await recordSignupContext({ callbackUrl, source: "email" });
+      router.push(callbackUrl);
+      router.refresh();
+    } catch (caught) {
+      const message =
+        caught instanceof TypeError && /failed to fetch/i.test(String(caught.message))
+          ? "Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз."
+          : "Не удалось войти. Попробуйте ещё раз.";
+      setError(message);
+      trackAuthError("login_error", { reason: message, method: "email", network: true });
+    } finally {
+      setLoading(false);
     }
-
-    trackConversion("login_complete");
-    await recordSignupContext({ callbackUrl, source: "email" });
-    router.push(callbackUrl);
-    router.refresh();
   }
 
   const showResend = Boolean(info) || error.includes("подтвердите email");

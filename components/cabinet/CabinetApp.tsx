@@ -63,7 +63,6 @@ import {
   FREE_TRIAL_CARDS,
   calculatePackagePrice,
   formatCabinetQuotaBanner,
-  formatMonthlyFreeResetDate,
   formatMonthlyFreeResetHint,
   formatRub
 } from "@/lib/pricing";
@@ -525,12 +524,10 @@ export function CabinetApp() {
           </p>
           <p className="mt-1 text-xs font-semibold text-white/45">
             {isQuotaExhausted
-              ? formatMonthlyFreeResetDate(monthlyFreeResetsAt)
-                ? `обновятся ${formatMonthlyFreeResetDate(monthlyFreeResetsAt)}`
-                : "лимит исчерпан — нужен тариф"
+              ? "бесплатный лимит использован"
               : monthlyFreeRemaining !== null
-                ? `${monthlyFreeRemaining} из ${FREE_TRIAL_CARDS} бесплатных в месяце`
-                : "генераций доступно"}
+                ? `${monthlyFreeRemaining} из ${FREE_TRIAL_CARDS} бесплатных`
+                : "слайдов доступно"}
           </p>
           {isQuotaExhausted ? (
             <PaymentButton className="mt-4" count={10} metrikaPlan="cabinet_sidebar_pack10" size="sm">
@@ -634,11 +631,11 @@ export function CabinetApp() {
               {isQuotaExhausted ? (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-black text-ink">Бесплатные генерации в этом месяце закончились</p>
+                    <p className="text-sm font-black text-ink">Бесплатное скачивание использовано</p>
                     <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
-                      {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} Купите тариф, чтобы продолжить создавать карточки
-                      для Wildberries и Ozon без ожидания. Пакет из 10 карточек — {formatRub(starterPack.total)} (
-                      {formatRub(starterPack.pricePerUnit)} за штуку). Все созданные карточки можно скачать в истории.
+                      {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} Купите комплект для одного товара, чтобы продолжить.
+                      Пакет из 10 слайдов — {formatRub(starterPack.total)} ({formatRub(starterPack.pricePerUnit)} за
+                      слайд). Созданные карточки можно скачать в истории.
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col gap-2 sm:items-end">
@@ -682,9 +679,9 @@ export function CabinetApp() {
               {isQuotaExhausted ? (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-black text-ink">Бесплатные генерации в этом месяце закончились</p>
+                    <p className="text-sm font-black text-ink">Бесплатное скачивание использовано</p>
                     <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
-                      {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} Купите тариф, чтобы снова создавать карточки.
+                      {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} Купите комплект, чтобы снова создавать карточки.
                       Скачать уже созданные можно в любой момент.
                     </p>
                   </div>
@@ -786,7 +783,7 @@ export function CabinetApp() {
                   <div>
                     <h2 className="text-lg font-bold text-ink">Wildberries API</h2>
                     <p className="mt-1 text-sm text-muted">
-                      Подключите токен с категорией Content. Публикация карточек из истории доступна с тарифа «Рост».
+                      Подключите токен с категорией Content. Публикация карточек из истории доступна с тарифа «Комплект для одного товара».
                     </p>
                   </div>
                   <span
@@ -1040,9 +1037,8 @@ function EmptyState({
       <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
         {isQuotaExhausted ? (
           <>
-            Бесплатные {FREE_TRIAL_CARDS} карточки в этом месяце уже использованы. {formatMonthlyFreeResetHint(monthlyFreeResetsAt)}{" "}
-            Купите тариф за {formatRub(starterPackTotal)}, чтобы продолжить создавать карточки — новые результаты сразу
-            появятся здесь.
+            Бесплатное скачивание уже использовано. {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} Купите комплект за{" "}
+            {formatRub(starterPackTotal)}, чтобы продолжить — новые результаты сразу появятся здесь.
           </>
         ) : lostGeneration ? (
           <>

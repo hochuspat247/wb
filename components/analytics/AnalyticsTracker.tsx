@@ -9,7 +9,11 @@ import { getOrCreateGuestId, getOrCreateStoryGuestId } from "@/lib/guest";
 import { recordPresenceAction } from "@/lib/presence/client-state";
 
 function getSessionId() {
-  return getAnalyticsSessionId();
+  try {
+    return getAnalyticsSessionId();
+  } catch {
+    return "anonymous";
+  }
 }
 
 type TrackPayload = {
@@ -24,30 +28,34 @@ type TrackPayload = {
 async function sendEvents(events: TrackPayload[]) {
   if (!events.length || typeof window === "undefined") return;
 
-  const guestId = getOrCreateGuestId();
-  const storyGuestId =
-    window.location.pathname.startsWith("/storystudio") ? getOrCreateStoryGuestId() : undefined;
+  try {
+    const guestId = getOrCreateGuestId();
+    const storyGuestId =
+      window.location.pathname.startsWith("/storystudio") ? getOrCreateStoryGuestId() : undefined;
 
-  await fetch("/api/analytics", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    keepalive: true,
-    body: JSON.stringify({
-      events: events.map((event) => ({
-        ...event,
-        metadata: {
-          ...(event.metadata || {}),
-          guestId,
-          ...(storyGuestId ? { storyGuestId } : {})
-        },
-        path: window.location.pathname + window.location.hash,
-        referrer: document.referrer || undefined,
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
-        sessionId: getSessionId()
-      }))
-    })
-  }).catch(() => undefined);
+    await fetch("/api/analytics", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({
+        events: events.map((event) => ({
+          ...event,
+          metadata: {
+            ...(event.metadata || {}),
+            guestId,
+            ...(storyGuestId ? { storyGuestId } : {})
+          },
+          path: window.location.pathname + window.location.hash,
+          referrer: document.referrer || undefined,
+          viewportWidth: window.innerWidth,
+          viewportHeight: window.innerHeight,
+          sessionId: getSessionId()
+        }))
+      })
+    });
+  } catch {
+    // Analytics must never break registration, auth, or browsing.
+  }
 }
 
 export function trackConversion(eventName: string, metadata?: Record<string, string | number | boolean>) {
@@ -58,22 +66,33 @@ export function trackClick(eventName: string, label?: string) {
   void sendEvents([{ eventType: "click", eventName, label }]);
 }
 
+export function trackAuthError(
+  eventName: "register_error" | "login_error" | "oauth_error",
+  metadata?: Record<string, string | number | boolean>
+) {
+  void sendEvents([{ eventType: "conversion", eventName, metadata }]);
+}
+
 export function AnalyticsTracker() {
   const pathname = usePathname();
   const { data: session } = useSession();
 
   useEffect(() => {
-    storeLastVisitedProduct(pathname);
-    void sendEvents([
-      {
-        eventType: "page_view",
-        eventName: "page_view",
-        metadata: {
-          authed: Boolean(session?.user?.id),
-          hash: typeof window !== "undefined" ? window.location.hash : ""
+    try {
+      storeLastVisitedProduct(pathname);
+      void sendEvents([
+        {
+          eventType: "page_view",
+          eventName: "page_view",
+          metadata: {
+            authed: Boolean(session?.user?.id),
+            hash: typeof window !== "undefined" ? window.location.hash : ""
+          }
         }
-      }
-    ]);
+      ]);
+    } catch {
+      // ignore
+    }
   }, [pathname, session?.user?.id]);
 
   useEffect(() => {
@@ -95,33 +114,37 @@ export function AnalyticsTracker() {
   }, []);
 
   const handleClick = useCallback((event: MouseEvent) => {
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
+    try {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
 
-    const clickable = target.closest("a,button,[data-analytics]");
-    if (!clickable) return;
+      const clickable = target.closest("a,button,[data-analytics]");
+      if (!clickable) return;
 
-    const label =
-      clickable.getAttribute("data-analytics") ||
-      clickable.getAttribute("aria-label") ||
-      clickable.textContent?.trim().slice(0, 80) ||
-      clickable.tagName.toLowerCase();
+      const label =
+        clickable.getAttribute("data-analytics") ||
+        clickable.getAttribute("aria-label") ||
+        clickable.textContent?.trim().slice(0, 80) ||
+        clickable.tagName.toLowerCase();
 
-    const eventName = clickable.tagName === "A" ? "link_click" : "ui_click";
-    recordPresenceAction(eventName, label);
+      const eventName = clickable.tagName === "A" ? "link_click" : "ui_click";
+      recordPresenceAction(eventName, label);
 
-    const xPercent = Math.round((event.clientX / window.innerWidth) * 100);
-    const yPercent = Math.round((event.clientY / document.documentElement.scrollHeight) * 100);
+      const xPercent = Math.round((event.clientX / window.innerWidth) * 100);
+      const yPercent = Math.round((event.clientY / document.documentElement.scrollHeight) * 100);
 
-    void sendEvents([
-      {
-        eventType: "click",
-        eventName: clickable.tagName === "A" ? "link_click" : "ui_click",
-        label,
-        xPercent,
-        yPercent
-      }
-    ]);
+      void sendEvents([
+        {
+          eventType: "click",
+          eventName: clickable.tagName === "A" ? "link_click" : "ui_click",
+          label,
+          xPercent,
+          yPercent
+        }
+      ]);
+    } catch {
+      // ignore
+    }
   }, []);
 
   useEffect(() => {

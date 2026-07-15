@@ -41,6 +41,7 @@ export function HeroMiniGenerator() {
   const [demoProgress, setDemoProgress] = useState(0);
   const [demoStatusIndex, setDemoStatusIndex] = useState(0);
   const [selectedExampleId, setSelectedExampleId] = useState<string | null>(null);
+  const [isLoadingExample, setIsLoadingExample] = useState(false);
   const [honeypot, setHoneypot] = useState("");
 
   useEffect(() => {
@@ -108,6 +109,7 @@ export function HeroMiniGenerator() {
 
     try {
       setError("");
+      setIsLoadingExample(true);
       setSelectedExampleId(exampleId);
       setDescription(example.description);
       setImageFileName(`${example.label}.jpg`);
@@ -120,6 +122,8 @@ export function HeroMiniGenerator() {
       }
     } catch {
       setError("Не удалось подставить пример. Попробуйте загрузить своё фото.");
+    } finally {
+      setIsLoadingExample(false);
     }
   }
 
@@ -157,13 +161,12 @@ export function HeroMiniGenerator() {
       return;
     }
 
-    if (!description.trim()) {
-      setError("Опишите товар — хотя бы в двух словах.");
-      return;
-    }
+    const productDescription =
+      description.trim() || "Товар на фото — определите категорию и ключевые свойства по изображению.";
 
     trackMarketingEvent("hero_demo_generate_click", {
-      hasExample: Boolean(selectedExampleId)
+      hasExample: Boolean(selectedExampleId),
+      hasDescription: Boolean(description.trim())
     });
     trackMarketingEvent("demo_generation_started", {
       source: "hero",
@@ -177,11 +180,11 @@ export function HeroMiniGenerator() {
     setDemoStatusIndex(0);
 
     try {
-      const category = detectCategory(description);
+      const category = detectCategory(productDescription);
       const { generationId, guestId } = await submitHeroDemo({
         imageUrl,
         payload: {
-          productDescription: description,
+          productDescription,
           category,
           marketplace: "Wildberries",
           style: "Премиальный",
@@ -213,11 +216,11 @@ export function HeroMiniGenerator() {
     }
   }
 
-  const canGenerate = Boolean(imageUrl && description.trim());
+  const canGenerate = Boolean(imageUrl) && !isLoadingExample;
   const submitLabel = !imageUrl
     ? "Загрузите фото, чтобы продолжить"
-    : !description.trim()
-      ? "Добавьте описание товара"
+    : isLoadingExample
+      ? "Загружаем пример…"
       : "Сгенерировать демо";
 
   if (isGenerating) {
@@ -228,7 +231,7 @@ export function HeroMiniGenerator() {
             <Loader2 className="animate-spin" size={28} />
           </div>
           <h2 className="text-2xl font-black text-ink md:text-3xl">Создаём вашу демо-карточку</h2>
-          <p className="mt-3 text-sm font-semibold text-muted">Обычно это занимает около минуты</p>
+          <p className="mt-3 text-sm font-semibold text-muted">Обычно 1–2 минуты в зависимости от загрузки сервиса</p>
           <div className="mt-7 overflow-hidden rounded-full bg-ink/10">
             <div className="h-2.5 rounded-full bg-accent transition-all duration-500" style={{ width: `${demoProgress}%` }} />
           </div>
@@ -258,11 +261,11 @@ export function HeroMiniGenerator() {
             1 демо без входа. Оригинал и дополнительные карточки — после авторизации.
           </p>
           <p className="mt-2 rounded-[14px] border border-accent/20 bg-accent/10 px-3 py-2 text-xs font-bold leading-relaxed text-ink md:text-sm">
-            Нужна карусель из нескольких фото и карточек товара?{" "}
+            Нужен готовый комплект для одного товара (обложка + 4 слайда)?{" "}
             <a className="text-accent underline-offset-4 hover:underline" href="/#pricing">
-              Выберите пакет
-            </a>{" "}
-            и соберите серию для WB/Ozon в кабинете.
+              Смотреть тарифы
+            </a>
+            .
           </p>
         </div>
 
@@ -329,11 +332,11 @@ export function HeroMiniGenerator() {
         </div>
 
         <label className="grid gap-1.5 text-sm font-bold text-ink">
-          Описание товара
+          Описание товара — необязательно
           <Textarea
             className="min-h-[72px] py-2.5 text-sm"
             onChange={(event) => handleDescriptionChange(event.target.value)}
-            placeholder="Например: беспроводные наушники, чёрные, с кейсом"
+            placeholder="Если ничего не написать, ИИ попробует определить товар самостоятельно"
             rows={2}
             value={description}
           />
@@ -349,11 +352,12 @@ export function HeroMiniGenerator() {
                     ? "border-accent bg-accent/15 text-ink"
                     : "border-clay bg-card text-muted hover:border-accent/50 hover:text-ink"
                 }`}
+                disabled={isLoadingExample}
                 key={example.id}
                 onClick={() => handleExampleSelect(example.id)}
                 type="button"
               >
-                {example.label}
+                {isLoadingExample && selectedExampleId === example.id ? "Загружаем пример…" : example.label}
               </button>
             ))}
           </div>

@@ -158,7 +158,7 @@ export async function POST(request: Request) {
     if (message === "IMAGE_QUOTA_EXCEEDED") {
       return NextResponse.json(
         {
-          error: "Бесплатные генерации использованы. Пополните баланс, чтобы продолжить.",
+          error: "Бесплатный лимит использован. Купите комплект, чтобы продолжить.",
           code: "QUOTA_EXCEEDED",
           quota: userId ? await getUserQuota(userId) : undefined
         },

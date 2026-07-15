@@ -1,8 +1,15 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { WB_INTEGRATION_MIN_PACKAGE } from "@/lib/pricing";
+import {
+  PLAN_SKU_KIT_NAME,
+  WB_INTEGRATION_MIN_PACKAGE,
+  calculatePackagePrice,
+  formatRub
+} from "@/lib/pricing";
 import { hasUnlimitedGenerations } from "@/lib/server/unlimitedGenerations";
+
+const kit = calculatePackagePrice(WB_INTEGRATION_MIN_PACKAGE);
 
 export async function hasWildberriesAccess(userId: string) {
   const user = await db.query.users.findFirst({
@@ -26,5 +33,5 @@ export async function hasWildberriesAccess(userId: string) {
 }
 
 export function getWildberriesAccessError() {
-  return `Публикация на Wildberries доступна с тарифа «Рост» — от ${WB_INTEGRATION_MIN_PACKAGE} генераций.`;
+  return `Публикация на Wildberries доступна с тарифа «${PLAN_SKU_KIT_NAME}» — от ${formatRub(kit.total)}.`;
 }

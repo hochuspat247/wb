@@ -24,14 +24,14 @@ export function Hero() {
             <Reveal delay={1} immediate>
               <h1 className="hero-title mt-7 max-w-[18ch] text-balance text-[2.15rem] font-black leading-[1.08] text-ink sm:mt-8 sm:max-w-[20ch] sm:text-[2.7rem] sm:leading-[1.06] md:text-[3.35rem] lg:text-[3.55rem] lg:leading-[1.04]">
                 Генератор карточек товара для ВБ, Озон и Авито{" "}
-                <span className="hero-title-accent">за 1 минуту</span>
+                <span className="hero-title-accent">за 1–2 минуты</span>
               </h1>
             </Reveal>
 
             <Reveal delay={2} immediate>
               <p className="hero-lead mt-7 max-w-[34rem] text-[1.05rem] font-medium leading-[1.8] text-muted/90 sm:mt-8 sm:text-lg sm:leading-[1.85] md:mt-9 md:text-[1.15rem]">
-                Загрузите фото — {BRAND.marketCard} создаст обложку 4:5, описание, СЕО-ключи и тексты для ВБ, Озон, Авито и
-                Яндекс Маркета. После карточки можно оживить её в короткое видео без звука прямо из кабинета.
+                Загрузите фото — {BRAND.marketCard} соберёт готовый комплект карточек для одного товара: обложку 4:5,
+                дополнительные слайды, описание и СЕО-ключи для ВБ, Озон, Авито и Яндекс Маркета.
               </p>
             </Reveal>
 

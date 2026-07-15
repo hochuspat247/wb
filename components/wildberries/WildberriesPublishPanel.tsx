@@ -201,7 +201,7 @@ export function WildberriesPublishPanel({
 
   async function handlePublishWildberries() {
     if (!wbUnlocked) {
-      setWbPublishMessage("Публикация на WB доступна с тарифа «Рост».");
+      setWbPublishMessage("Публикация на WB доступна с тарифа «Комплект для одного товара».");
       return;
     }
 

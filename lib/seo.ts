@@ -44,7 +44,7 @@ export const siteConfig = {
   name: BRAND.marketCard,
   shortName: BRAND.marketCardShort,
   title: `${BRAND.marketCard} — ИИ-генератор карточек товара для Wildberries, Ozon и Авито`,
-  description: `Нейросеть для карточек товара: загрузите фото — получите ИИ-обложку 4:5, название, описание, СЕО-ключи и инфографику для Вайлдберриз, Ozon, Авито и Яндекс Маркета. Публикация на WB через API, карусель слайдов и редактирование каталога. ${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}. Далее ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото.`,
+  description: `Нейросеть для карточек товара: загрузите фото — получите готовый комплект для одного SKU (обложка 4:5 + слайды), название, описание и СЕО для Вайлдберриз, Ozon, Авито и Яндекс Маркета. ${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}. Далее комплект от ${formatRub(CARD_GENERATION_PRICE_RUB)}/слайд.`,
   keywords: [...baseKeywords],
   locale: "ru_RU",
   url: process.env.AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || defaultSiteUrl

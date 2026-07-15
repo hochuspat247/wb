@@ -1,9 +1,9 @@
-import { FREE_TRIAL_CARDS, MONTHLY_FREE_RESET_DAYS, describeFreeQuotaMarketing } from "@/lib/pricing";
+import { GENERATION_TIME_COPY, describeFreeQuotaMarketing } from "@/lib/pricing";
 
 const stats = [
   ["1 демо без входа", ""],
-  ["~60 сек до результата", ""],
-  [`${FREE_TRIAL_CARDS} карточки каждый месяц`, `обновление каждые ${MONTHLY_FREE_RESET_DAYS} дней`],
+  [GENERATION_TIME_COPY, ""],
+  ["1 скачивание без водяного знака", "без ежемесячного обновления"],
   ["WB / Ozon / Avito / Яндекс Маркет", describeFreeQuotaMarketing()]
 ];
 

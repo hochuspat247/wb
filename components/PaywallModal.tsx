@@ -6,7 +6,13 @@ import { Film, Sparkles, X } from "lucide-react";
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { PaymentButton } from "@/components/PaymentButton";
 import { Button } from "@/components/ui/Button";
-import { FREE_TRIAL_CARDS, calculatePackagePrice, formatMonthlyFreeResetHint, formatRub } from "@/lib/pricing";
+import {
+  PLAN_SKU_KIT_NAME,
+  SKU_KIT_SLIDE_COUNT,
+  calculatePackagePrice,
+  formatMonthlyFreeResetHint,
+  formatRub
+} from "@/lib/pricing";
 import {
   VIDEO_RESULT_UPSELL_DURATION_LABEL,
   VIDEO_RESULT_UPSELL_PRICE_LABEL
@@ -20,7 +26,8 @@ type PaywallModalProps = {
 };
 
 export function PaywallModal({ open, onClose, onCreateVideo, monthlyFreeResetsAt }: PaywallModalProps) {
-  const pack10 = calculatePackagePrice(10);
+  const skuKit = calculatePackagePrice(SKU_KIT_SLIDE_COUNT);
+  const catalogPack = calculatePackagePrice(20);
 
   useEffect(() => {
     if (open) {
@@ -53,23 +60,35 @@ export function PaywallModal({ open, onClose, onCreateVideo, monthlyFreeResetsAt
           <div>
             <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Лимит использован</p>
             <h3 className="mt-2 text-2xl font-black leading-snug text-ink">
-              Вы использовали {FREE_TRIAL_CARDS} бесплатные карточки в этом месяце 🎉
+              Бесплатное скачивание уже использовано
             </h3>
             <p className="mt-2 text-sm font-medium leading-relaxed text-muted">
-              {resetHint} Если результат понравился — докупите пакет карточек. Все ранее созданные карточки можно
-              скачать без водяного знака. Или оживите готовую обложку в короткое видео для рекламы и соцсетей.
+              {resetHint} Дальше берите готовый комплект для одного товара — обложка + 4 слайда. Или оживите готовую
+              обложку в короткое видео.
             </p>
           </div>
         </div>
 
         <div className="mt-6 grid gap-3">
           <div className="rounded-[18px] border border-accent/25 bg-accent/10 p-4">
-            <p className="text-sm font-black text-ink">10 карточек — {formatRub(pack10.total)}</p>
-            <p className="mt-1 text-xs font-semibold text-muted">
-              {formatRub(pack10.pricePerUnit)} за карточку · серии, варианты и история
+            <p className="text-sm font-black text-ink">
+              {PLAN_SKU_KIT_NAME} — {formatRub(skuKit.total)}
             </p>
-            <PaymentButton className="mt-4" count={10} metrikaPlan="paywall_pack10">
-              Купить 10 карточек
+            <p className="mt-1 text-xs font-semibold text-muted">
+              {SKU_KIT_SLIDE_COUNT} связанных слайдов · −{skuKit.savingsPercent}% к поштучной цене · без подписки
+            </p>
+            <PaymentButton className="mt-4" count={SKU_KIT_SLIDE_COUNT} metrikaPlan="paywall_sku_kit">
+              Купить комплект
+            </PaymentButton>
+          </div>
+
+          <div className="rounded-[18px] border border-clay bg-paper/50 p-4">
+            <p className="text-sm font-black text-ink">Каталог — {formatRub(catalogPack.total)}</p>
+            <p className="mt-1 text-xs font-semibold text-muted">
+              20 слайдов · до 4 комплектов SKU · приоритетная очередь
+            </p>
+            <PaymentButton className="mt-4" count={20} metrikaPlan="paywall_catalog" variant="secondary">
+              Купить каталог
             </PaymentButton>
           </div>
 
@@ -80,7 +99,7 @@ export function PaywallModal({ open, onClose, onCreateVideo, monthlyFreeResetsAt
                 Видео из карточки — от {VIDEO_RESULT_UPSELL_PRICE_LABEL}
               </p>
               <p className="mt-1 text-xs font-semibold text-muted">
-                Короткий ролик {VIDEO_RESULT_UPSELL_DURATION_LABEL} для рекламы, соцсетей и карточки товара
+                Короткий ролик {VIDEO_RESULT_UPSELL_DURATION_LABEL} после готового изображения
               </p>
               <Button className="mt-4 w-full" onClick={onCreateVideo} type="button" variant="secondary">
                 Создать видео из этой карточки
@@ -90,7 +109,7 @@ export function PaywallModal({ open, onClose, onCreateVideo, monthlyFreeResetsAt
         </div>
 
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          <Link className="flex-1" href="/#pricing-calculator" onClick={onClose}>
+          <Link className="flex-1" href="/#pricing" onClick={onClose}>
             <Button className="w-full" variant="ghost">
               Все тарифы
             </Button>

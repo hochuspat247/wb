@@ -4,10 +4,15 @@ import { PricingCard } from "@/components/ui/PricingCard";
 import { getVideoRateRubPerSecond } from "@/config/video-pricing";
 import {
   CARD_GENERATION_PRICE_RUB,
+  FREE_DEMO_CARDS,
   FREE_TRIAL_CARDS,
-  MONTHLY_FREE_RESET_DAYS,
+  PLAN_CATALOG_NAME,
+  PLAN_FREE_NAME,
+  PLAN_SKU_KIT_NAME,
+  SKU_KIT_SLIDE_COUNT,
   VIDEO_GENERATION_START_PRICE_RUB,
   calculatePackagePrice,
+  describeFreeQuotaMarketing,
   describeMonthlyFreeReset,
   formatRub,
   formatVideoPriceRub,
@@ -15,69 +20,74 @@ import {
 } from "@/lib/pricing";
 import { BRAND } from "@/lib/branding";
 
-const growthPack = calculatePackagePrice(5);
-const scalePack = calculatePackagePrice(20);
+const skuKit = calculatePackagePrice(SKU_KIT_SLIDE_COUNT);
+const catalogPack = calculatePackagePrice(20);
 const videoPrices = getVideoMarketingPrices("standard");
 const videoProPrices = getVideoMarketingPrices("pro");
 
 const plans = [
   {
-    name: "Старт",
+    name: PLAN_FREE_NAME,
     subtitle: "Попробовать сервис",
     price: "0 ₽",
-    unit: `${FREE_TRIAL_CARDS} в месяц`,
+    unit: "один раз",
     features: [
-      "1 демо без входа",
-      `${FREE_TRIAL_CARDS} карточки каждый месяц после регистрации`,
-      `Обновление бесплатных карточек каждые ${MONTHLY_FREE_RESET_DAYS} дней`,
-      "Скачивание без водяного знака",
+      `${FREE_DEMO_CARDS} демо с защитной меткой без регистрации`,
+      `${FREE_TRIAL_CARDS} скачивание без водяного знака после регистрации`,
+      describeMonthlyFreeReset(),
       "Тексты и СЕО",
       "ИИ-обложка 4:5",
       "PNG и JSON экспорт",
-      `Далее — ${formatRub(CARD_GENERATION_PRICE_RUB)} за 1 фото`
+      `Далее — комплект для одного товара или ${formatRub(CARD_GENERATION_PRICE_RUB)} за слайд`
     ],
     cta: "Попробовать",
     href: "/register",
     metrikaPlan: "start"
   },
   {
-    name: "Рост",
-    price: formatRub(growthPack.total),
-    unit: "5 шт",
-    billingNote: `${formatRub(growthPack.pricePerUnit)} за карточку`,
+    name: PLAN_SKU_KIT_NAME,
+    subtitle: "Готовый набор для одного SKU",
+    price: formatRub(skuKit.total),
+    unit: `${SKU_KIT_SLIDE_COUNT} слайдов`,
+    billingNote:
+      skuKit.savingsPercent > 0
+        ? `${formatRub(skuKit.pricePerUnit)} за слайд · −${skuKit.savingsPercent}% к поштучной цене`
+        : `${formatRub(skuKit.pricePerUnit)} за слайд`,
     features: [
-      "5 генераций карточек",
+      "Обложка + 4 дополнительных слайда для одного товара",
+      "Титульная карточка",
+      "Преимущества",
+      "Характеристики",
+      "Сценарий использования",
+      "Дополнительный рекламный вариант",
+      "Тексты и СЕО",
+      "Без подписки",
       "Публикация на Wildberries из истории",
-      "Карусель фото: титульник + слайды",
-      "Доступ к редактору шаблонов",
-      "Название, описание и СЕО-ключи",
-      "ИИ-обложка 4:5 для маркетплейса",
-      "Экспорт PNG и JSON",
-      "История всех генераций",
-      "Пресеты для ВБ, Озон и Авито",
       `Видео из карточки — отдельно, от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}`
     ],
-    cta: "Подключить",
+    cta: "Купить комплект",
     href: "/register",
     metrikaPlan: "seller",
-    packageCount: 5,
+    packageCount: SKU_KIT_SLIDE_COUNT,
     highlighted: true,
-    badge: "Самый популярный"
+    badge: "Для одного товара"
   },
   {
-    name: "Масштаб",
-    subtitle: "Для активных селлеров",
-    price: formatRub(scalePack.total),
-    unit: "20 шт",
-    billingNote: `${formatRub(scalePack.pricePerUnit)} за карточку`,
+    name: PLAN_CATALOG_NAME,
+    subtitle: "До четырёх комплектов SKU",
+    price: formatRub(catalogPack.total),
+    unit: "20 слайдов",
+    billingNote:
+      catalogPack.savingsPercent > 0
+        ? `${formatRub(catalogPack.pricePerUnit)} за слайд · −${catalogPack.savingsPercent}% к поштучной`
+        : `${formatRub(catalogPack.pricePerUnit)} за слайд`,
     features: [
-      "20 генераций карточек",
+      "20 слайдов — до 4 комплектов по 5",
       "Публикация на Wildberries из истории",
-      "Всё из тарифа «Рост»",
-      "Все дизайн-пресеты без ограничений",
-      "Приоритетная очередь генерации",
-      "Несколько вариантов обложки на SKU",
-      "Расширенная история и быстрый повтор",
+      `Всё из тарифа «${PLAN_SKU_KIT_NAME}»`,
+      "История и повторная генерация",
+      "Приоритетная очередь",
+      "Все дизайн-пресеты",
       "Ранний доступ к новым интеграциям",
       "Персональная поддержка в Telegram"
     ],
@@ -93,8 +103,8 @@ export function PricingSection() {
     <section className="border-t border-clay bg-paper-alt py-20 md:py-28" id="pricing">
       <div className="section-shell">
         <SectionHeader
-          description={`${describeMonthlyFreeReset()}. Карточка — ${formatRub(CARD_GENERATION_PRICE_RUB)} за фото. Видео из готовой карточки — отдельная опция после генерации обложки.`}
-          title="Начните бесплатно, масштабируйте после проверки"
+          description={`${describeFreeQuotaMarketing()}. Основная покупка — готовый комплект карточек для одного товара (обложка + 4 слайда), а не «генерации». Видео — отдельная опция после готового изображения.`}
+          title="Тарифы: комплект для SKU, а не кредиты"
         />
 
         <div className="mt-14 grid gap-5 lg:grid-cols-3">
@@ -107,11 +117,13 @@ export function PricingSection() {
 
         <Reveal delay={2}>
           <div className="mt-10 rounded-[24px] border border-clay bg-card p-6 md:p-8" id="video-pricing">
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">{BRAND.googleVeo} {BRAND.veoVersion} Фаст</p>
-            <h3 className="mt-3 text-2xl font-black text-ink">Видео из карточки товара</h3>
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">
+              {BRAND.googleVeo} {BRAND.veoVersion} Фаст
+            </p>
+            <h3 className="mt-3 text-2xl font-black text-ink">Видео из готовой карточки</h3>
             <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-muted">
-              После создания карточки в кабинете можно оживить её в короткий ролик: плавный зум, параллакс и мягкое
-              движение без искажения текста и товара. Видео всегда без звука, оплачивается отдельно.
+              После создания комплекта в кабинете можно оживить обложку в короткий ролик. Видео оплачивается отдельно и не
+              входит в комплект для SKU.
             </p>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -125,8 +137,7 @@ export function PricingSection() {
 
             <p className="mt-5 text-sm font-semibold text-muted">
               Pro-режим (4K): от {formatVideoPriceRub(videoProPrices[0].priceRub)} за 4 сек и далее по{" "}
-              {formatRub(getVideoRateRubPerSecond("pro"))}/сек. Минимальная длительность — 4 секунды (ограничение Veo
-              3.1).{" "}
+              {formatRub(getVideoRateRubPerSecond("pro"))}/сек. Минимальная длительность — 4 секунды.{" "}
               <a className="text-accent underline-offset-2 hover:underline" href="/#video-example">
                 Посмотреть пример ролика
               </a>

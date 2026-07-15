@@ -6,18 +6,48 @@ const STALE_CLIENT_PATTERNS = [
   /importing a module script failed/i,
   /error loading dynamically imported module/i,
   /failed to load.*\/_next\/static\//i,
-  /\/_next\/static\/chunks\//i,
   /is not a valid javascript mime type/i
+];
+
+/** Transient network errors that must never block the UI (e.g. analytics). */
+const TRANSIENT_NETWORK_PATTERNS = [
+  /^failed to fetch$/i,
+  /^typeerror:\s*failed to fetch$/i,
+  /^networkerror/i,
+  /^load failed$/i,
+  /network request failed/i,
+  /the internet connection appears to be offline/i
 ];
 
 export const STALE_CLIENT_TITLE = "Обновите страницу";
 export const STALE_CLIENT_DESCRIPTION =
   "Похоже, у вас проблемы с интернетом — или сайт только что обновился. Нажмите «Обновить», ваши данные сохранены.";
 
+export function isTransientNetworkError(message?: string | null, source?: string | null) {
+  const haystack = `${message ?? ""} ${source ?? ""}`.trim();
+  if (!haystack) return false;
+
+  const messageOnly = (message ?? "").trim();
+  if (TRANSIENT_NETWORK_PATTERNS.some((pattern) => pattern.test(messageOnly))) {
+    return true;
+  }
+
+  // Bare "Failed to fetch" buried in a Next.js stack must not count as a stale client.
+  if (/failed to fetch/i.test(messageOnly) && !/dynamically imported module/i.test(haystack)) {
+    return true;
+  }
+
+  return false;
+}
+
 export function isStaleClientError(message?: string | null, source?: string | null) {
   const haystack = `${message ?? ""} ${source ?? ""}`.trim();
 
   if (!haystack) {
+    return false;
+  }
+
+  if (isTransientNetworkError(message, source)) {
     return false;
   }
 

@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
-import { FREE_TRIAL_CARDS, MONTHLY_FREE_RESET_MS } from "@/lib/pricing";
+import { FREE_TRIAL_CARDS } from "@/lib/pricing";
 
 type MonthlyFreeUser = {
   id: string;
@@ -15,6 +15,7 @@ export type MonthlyFreeQuotaState = {
   used: number;
   remaining: number;
   periodStart: Date;
+  /** Kept for API compatibility — free quota no longer renews. */
   resetsAt: Date;
 };
 
@@ -22,18 +23,16 @@ function resolvePeriodStart(user: MonthlyFreeUser) {
   return user.monthlyFreePeriodStart ?? user.createdAt ?? new Date();
 }
 
+/**
+ * One-time free download after registration.
+ * Does not roll over monthly — used credits stay consumed forever.
+ */
 export function buildMonthlyFreeQuotaState(
   user: MonthlyFreeUser,
-  now = new Date()
+  _now = new Date()
 ): MonthlyFreeQuotaState {
-  let periodStart = resolvePeriodStart(user);
-  let used = user.monthlyFreeUsed ?? 0;
-
-  while (now.getTime() >= periodStart.getTime() + MONTHLY_FREE_RESET_MS) {
-    used = 0;
-    periodStart = new Date(periodStart.getTime() + MONTHLY_FREE_RESET_MS);
-  }
-
+  const periodStart = resolvePeriodStart(user);
+  const used = user.monthlyFreeUsed ?? 0;
   const remaining = Math.max(0, FREE_TRIAL_CARDS - used);
 
   return {
@@ -41,7 +40,8 @@ export function buildMonthlyFreeQuotaState(
     used,
     remaining,
     periodStart,
-    resetsAt: new Date(periodStart.getTime() + MONTHLY_FREE_RESET_MS)
+    // Sentinel: same as period start so clients that still read resetsAt do not promise a refill.
+    resetsAt: periodStart
   };
 }
 
@@ -62,13 +62,11 @@ export async function ensureMonthlyFreeQuotaFresh(userId: string, now = new Date
 
   const current = buildMonthlyFreeQuotaState(user, now);
   const storedPeriodStart = resolvePeriodStart(user).getTime();
-  const storedUsed = user.monthlyFreeUsed ?? 0;
 
-  if (storedPeriodStart !== current.periodStart.getTime() || storedUsed !== current.used) {
+  if (storedPeriodStart !== current.periodStart.getTime() || user.monthlyFreePeriodStart == null) {
     await db
       .update(users)
       .set({
-        monthlyFreeUsed: current.used,
         monthlyFreePeriodStart: current.periodStart
       })
       .where(eq(users.id, userId));

@@ -1,12 +1,16 @@
+import { ImageUp, Store, UploadCloud } from "lucide-react";
+import Link from "next/link";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { WildberriesBetaNotice } from "@/components/wildberries/WildberriesBetaNotice";
-import { WildberriesConnectGuide } from "@/components/wildberries/WildberriesConnectGuide";
 import { WildberriesLandingPreview } from "@/components/wildberries/WildberriesLandingPreview";
 import { BRAND } from "@/lib/branding";
-import { WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
-import { ImageUp, Store, UploadCloud, Wand2 } from "lucide-react";
-import Link from "next/link";
+import {
+  PLAN_SKU_KIT_NAME,
+  WB_INTEGRATION_MIN_PACKAGE,
+  calculatePackagePrice,
+  formatRub
+} from "@/lib/pricing";
 
 const starterPack = calculatePackagePrice(WB_INTEGRATION_MIN_PACKAGE);
 
@@ -16,8 +20,8 @@ export function WildberriesLandingSection() {
       <div className="section-shell">
         <SectionHeader
           kicker="Beta"
-          description={`Доступно с тарифа «Рост» — от ${WB_INTEGRATION_MIN_PACKAGE} генераций (${formatRub(starterPack.total)}). Подключите WB API и публикуйте карточки из истории ${BRAND.marketCard} без ручного копирования.`}
-          title="Прямая публикация на Wildberries"
+          description={`Доступно с комплекта «${PLAN_SKU_KIT_NAME}» — от ${formatRub(starterPack.total)}. Публикуйте карточки из ${BRAND.marketCard} на Wildberries без ручного копирования.`}
+          title="Публикация на Wildberries"
         />
 
         <WildberriesBetaNotice className="mt-6" />
@@ -33,18 +37,13 @@ export function WildberriesLandingSection() {
                 },
                 {
                   icon: ImageUp,
-                  title: "Карусель слайдов для карточки",
-                  text: "Титульник уже готов. Добавьте слайды из истории, загрузите фото или сгенерируйте пакет инфографики."
+                  title: "Карусель для одного SKU",
+                  text: "Титульник и слайды комплекта собираются в карусель карточки."
                 },
                 {
                   icon: Store,
-                  title: "Просмотр и редактирование карточек WB",
-                  text: "Подтягиваем активные карточки и карточки из корзины WB — можно открыть, поправить тексты и сохранить обратно."
-                },
-                {
-                  icon: Wand2,
-                  title: "Пакетная генерация после титульника",
-                  text: "Когда главное фото уже есть, добиваете серию слайдов пакетом — без повторного ввода данных товара."
+                  title: "Правки каталога WB",
+                  text: "Подтягиваем карточки из WB — можно поправить тексты и сохранить обратно."
                 }
               ].map((item) => (
                 <div className="flex gap-4 rounded-[20px] border border-clay bg-card p-4" key={item.title}>
@@ -61,15 +60,15 @@ export function WildberriesLandingSection() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   className="inline-flex min-h-11 items-center justify-center rounded-button border border-[#CB11AB] bg-[#CB11AB] px-5 text-sm font-semibold text-white transition hover:-translate-y-px"
-                  href="/register"
+                  href="/#pricing"
                 >
-                  Попробовать с тарифом «Рост»
+                  Смотреть тарифы
                 </Link>
                 <Link
                   className="inline-flex min-h-11 items-center justify-center rounded-button border border-clay bg-card px-5 text-sm font-semibold text-ink transition hover:border-[#CB11AB]/35"
-                  href="/cabinet#settings"
+                  href="/wildberries"
                 >
-                  Подключить WB API
+                  Инструкция по API-токену
                 </Link>
               </div>
             </div>
@@ -79,10 +78,6 @@ export function WildberriesLandingSection() {
             <WildberriesLandingPreview />
           </Reveal>
         </div>
-
-        <Reveal delay={3}>
-          <WildberriesConnectGuide className="mt-12" />
-        </Reveal>
       </div>
     </section>
   );

@@ -109,7 +109,7 @@ export async function POST(request: Request) {
       if (!quota.canGenerate) {
         return NextResponse.json(
           {
-            error: "Бесплатные генерации использованы. Пополните баланс, чтобы продолжить.",
+            error: "Бесплатный лимит использован. Купите комплект, чтобы продолжить.",
             code: "QUOTA_EXCEEDED",
             quota
           },

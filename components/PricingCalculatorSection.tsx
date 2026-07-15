@@ -6,17 +6,14 @@ import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import {
   CARD_GENERATION_PRICE_RUB,
-  GENERATION_PACKAGES,
   VIDEO_GENERATION_START_PRICE_RUB,
   calculatePackagePrice,
   formatRub,
   formatVideoPriceRub
 } from "@/lib/pricing";
 
-const presetCounts = GENERATION_PACKAGES.map((pack) => pack.count);
-
 export function PricingCalculatorSection() {
-  const [count, setCount] = useState(10);
+  const [count, setCount] = useState(5);
 
   const price = useMemo(() => calculatePackagePrice(count), [count]);
 
@@ -24,14 +21,14 @@ export function PricingCalculatorSection() {
     <section className="border-t border-clay bg-card py-20 md:py-28" id="pricing-calculator">
       <div className="section-shell">
         <SectionHeader
-          description={`Базовая цена — ${formatRub(CARD_GENERATION_PRICE_RUB)} за 1 фото. Видео из готовой карточки оплачивается отдельно, от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}.`}
-          title="Калькулятор пакета генераций"
+          description={`Поштучно — ${formatRub(CARD_GENERATION_PRICE_RUB)} за слайд. Выгоднее брать комплект для одного товара (5 слайдов) или каталог (20). Видео — отдельно, от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}.`}
+          title="Калькулятор слайдов"
         />
 
         <Reveal delay={1}>
           <div className="mx-auto mt-10 max-w-2xl rounded-[24px] border border-clay bg-paper/40 p-4 sm:mt-12 sm:rounded-[28px] sm:p-6 md:p-8">
-            <div className="grid grid-cols-3 gap-2">
-              {presetCounts.map((preset) => (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {[5, 10, 20, 100].map((preset) => (
                 <button
                   className={`rounded-full border px-3 py-2.5 text-sm font-bold transition sm:px-4 ${
                     count === preset
@@ -42,13 +39,13 @@ export function PricingCalculatorSection() {
                   onClick={() => setCount(preset)}
                   type="button"
                 >
-                  {preset} фото
+                  {preset === 5 ? "Комплект 5" : preset === 20 ? "Каталог 20" : `${preset} слайдов`}
                 </button>
               ))}
             </div>
 
             <label className="mt-5 grid gap-3 sm:mt-6">
-              <span className="text-sm font-semibold text-muted">Или укажите своё количество: {count}</span>
+              <span className="text-sm font-semibold text-muted">Или укажите число слайдов: {count}</span>
               <input
                 className="h-2 w-full cursor-pointer accent-accent"
                 max={500}
@@ -66,12 +63,12 @@ export function PricingCalculatorSection() {
             <div className="mt-6 rounded-[20px] border border-clay bg-card p-4 sm:mt-8 sm:rounded-[22px] sm:p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
                 <div>
-                  <p className="text-sm font-semibold text-muted">Итого за {count} генераций</p>
+                  <p className="text-sm font-semibold text-muted">Итого за {count} слайдов</p>
                   <p className="mt-1 text-3xl font-black text-ink sm:mt-2 sm:text-4xl">{formatRub(price.total)}</p>
                 </div>
 
                 <div className="flex items-center justify-between gap-4 border-t border-clay pt-4 sm:block sm:border-t-0 sm:pt-0 sm:text-right">
-                  <p className="text-sm font-semibold text-muted">Цена за 1 фото</p>
+                  <p className="text-sm font-semibold text-muted">Цена за 1 слайд</p>
                   <div className="text-right">
                     <p className="text-lg font-black text-accent sm:mt-2 sm:text-xl">{formatRub(price.pricePerUnit)}</p>
                     {price.savingsPercent > 0 ? (

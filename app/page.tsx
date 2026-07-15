@@ -1,27 +1,27 @@
 import { CompareSection } from "@/components/CompareSection";
+import { CasesSection } from "@/components/CasesSection";
 import { ExamplesSection } from "@/components/ExamplesSection";
 import { VideoExampleSection } from "@/components/VideoExampleSection";
 import { FAQSection } from "@/components/FAQSection";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
-import { PainSection } from "@/components/PainSection";
 import { PricingCalculatorSection } from "@/components/PricingCalculatorSection";
 import { PricingSection } from "@/components/PricingSection";
+import { SkuKitSection } from "@/components/SkuKitSection";
 import { HomeJsonLd } from "@/components/seo/HomeJsonLd";
-import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { WildberriesLandingSection } from "@/components/wildberries/WildberriesLandingSection";
 import { createPageMetadata } from "@/lib/seo";
+import { describeFreeQuotaMarketing, GENERATION_TIME_COPY } from "@/lib/pricing";
 
 export const metadata = createPageMetadata({
   path: "/",
   title: "ИИ-генератор карточек товара для Wildberries, Ozon и Авито",
-  description:
-    "Загрузите фото — получите обложку 4:5, название, описание и СЕО-ключи для ВБ, Озон и Авито за минуту. Публикация на Wildberries через API, карусель слайдов, видео из карточки. 1 демо без входа + 3 карточки каждый месяц бесплатно.",
+  description: `Загрузите фото — получите готовый комплект карточек для одного SKU: обложка 4:5, слайды, название, описание и СЕО-ключи. ${GENERATION_TIME_COPY}. ${describeFreeQuotaMarketing()}.`,
   keywords: [
     "генератор карточек товара бесплатно",
     "нейросеть карточка товара wildberries",
-    "создать карточку товара за минуту",
+    "комплект карточек для одного товара",
     "ии инфографика маркетплейс"
   ]
 });
@@ -33,14 +33,13 @@ export default function Home() {
       <Header />
       <Hero />
       <ExamplesSection />
-      <VideoExampleSection />
-
-      <PainSection />
-      <CompareSection />
-      <WildberriesLandingSection />
+      <SkuKitSection />
       <PricingSection />
       <PricingCalculatorSection />
-      <TestimonialsSection />
+      <CompareSection />
+      <CasesSection />
+      <WildberriesLandingSection />
+      <VideoExampleSection />
       <FAQSection />
       <Footer />
     </main>

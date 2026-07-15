@@ -27,11 +27,11 @@ export default function OpenGraphImage() {
         <div>
           <div style={{ fontSize: 72, fontWeight: 800, lineHeight: 1.05 }}>{siteConfig.name}</div>
           <div style={{ marginTop: 24, fontSize: 34, maxWidth: 900, lineHeight: 1.3 }}>
-            Карточки, СЕО и публикация на ВБ за 1 минуту
+            Карточки и СЕО для ВБ за 1–2 минуты
           </div>
         </div>
         <div style={{ fontSize: 24, opacity: 0.85 }}>
-          {describeFreeQuotaMarketing()} · Обложка 4:5 · WB API · от {formatRub(CARD_GENERATION_PRICE_RUB)}/фото
+          {describeFreeQuotaMarketing()} · Комплект для SKU · WB API · от {formatRub(CARD_GENERATION_PRICE_RUB)}/слайд
         </div>
       </div>
     ),

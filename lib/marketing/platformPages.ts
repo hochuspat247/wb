@@ -1,4 +1,11 @@
-import { FREE_TRIAL_CARDS, MONTHLY_FREE_RESET_DAYS, describeFreeQuotaMarketing } from "@/lib/pricing";
+import {
+  FREE_TRIAL_CARDS,
+  PLAN_SKU_KIT_NAME,
+  SKU_KIT_PRICE_RUB,
+  describeFreeQuotaMarketing,
+  describeMonthlyFreeReset,
+  formatRub
+} from "@/lib/pricing";
 import { WB_API_INTEGRATIONS_URL, WB_SELLER_CABINET_URL } from "@/lib/wildberries/connectGuide";
 
 export type PlatformHowTo = {
@@ -28,7 +35,7 @@ export const platformPages: PlatformPageConfig[] = [
     marketplaceLabel: "Wildberries",
     title: "Генератор карточек для Wildberries — ИИ, СЕО и публикация на ВБ",
     description:
-      "Создайте карточку товара для Вайлдберриз за минуту: ИИ-обложка 4:5, название, описание, СЕО-ключи и инфографика из одного фото. Публикация на WB через API, карусель слайдов и редактирование каталога. 3 карточки каждый месяц бесплатно.",
+      "Создайте карточку товара для Вайлдберриз: ИИ-обложка 4:5, название, описание, СЕО-ключи и комплект слайдов из одного фото. Публикация на WB через API. 1 демо + 1 скачивание без водяного знака после регистрации.",
     keywords: [
       "генератор карточек wildberries",
       "карточка товара вайлдберриз",
@@ -59,7 +66,7 @@ export const platformPages: PlatformPageConfig[] = [
       {
         question: "Можно ли опубликовать карточку на Wildberries без ручной загрузки?",
         answer:
-          "Да, с тарифа «Рост» (от 5 генераций). Подключите API-токен с категорией «Контент», соберите карусель фото в кабинете и отправьте тексты и изображения в WB."
+          `Да, с тарифа «${PLAN_SKU_KIT_NAME}» (от ${formatRub(SKU_KIT_PRICE_RUB)}). Подключите API-токен с категорией «Контент», соберите карусель фото в кабинете и отправьте тексты и изображения в WB.`
       },
       {
         question: "Как подключить Wildberries API?",
@@ -68,7 +75,7 @@ export const platformPages: PlatformPageConfig[] = [
       },
       {
         question: "Можно ли попробовать бесплатно?",
-        answer: `Да: ${describeFreeQuotaMarketing()}. ${FREE_TRIAL_CARDS} бесплатные карточки обновляются каждые ${MONTHLY_FREE_RESET_DAYS} дней. Все карточки в кабинете можно скачать без водяного знака.`
+        answer: `Да: ${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}. Все карточки в кабинете после регистрации можно скачать без водяного знака в рамках бесплатного лимита.`
       },
       {
         question: "Нужен ли дизайнер для карточки на ВБ?",
@@ -107,7 +114,7 @@ export const platformPages: PlatformPageConfig[] = [
     marketplaceLabel: "Ozon",
     title: "Генератор карточек для Ozon — ИИ-обложка и СЕО",
     description:
-      "Генератор карточек для Озон: ИИ-обложка 4:5, описание, характеристики и СЕО-ключи из фото товара. Серия слайдов для карусели, быстрый запуск листинга для селлеров Ozon. 3 карточки каждый месяц бесплатно.",
+      "Генератор карточек для Озон: ИИ-обложка 4:5, описание, характеристики и СЕО-ключи из фото товара. Комплект слайдов для карусели. 1 демо + 1 скачивание без водяного знака после регистрации.",
     keywords: [
       "генератор карточек ozon",
       "карточка товара озон",
@@ -129,7 +136,7 @@ export const platformPages: PlatformPageConfig[] = [
     faq: [
       {
         question: "Можно ли сделать карточку для Ozon бесплатно?",
-        answer: `Да, доступен демо-режим и ${FREE_TRIAL_CARDS} бесплатные карточки каждый месяц после регистрации. Обновление — каждые ${MONTHLY_FREE_RESET_DAYS} дней. Все карточки в кабинете скачиваются без водяного знака.`
+        answer: `Да, доступен демо-режим и ${FREE_TRIAL_CARDS} скачивание без водяного знака после регистрации. ${describeMonthlyFreeReset()}.`
       },
       {
         question: "Что нужно для генерации?",
@@ -151,7 +158,7 @@ export const platformPages: PlatformPageConfig[] = [
     marketplaceLabel: "Avito",
     title: "Генератор карточек для Авито — обложки и тексты",
     description:
-      "Создайте продающую карточку и обложку для Авито: заголовок, описание, СЕО и визуал 4:5 из фото товара. Быстрый запуск объявлений и витрин для продавцов на Авито. 3 карточки каждый месяц бесплатно.",
+      "Создайте продающую карточку и обложку для Авито: заголовок, описание, СЕО и визуал 4:5 из фото товара. 1 демо + 1 скачивание без водяного знака после регистрации.",
     keywords: [
       "генератор обложек авито",
       "карточка товара авито",
@@ -177,7 +184,7 @@ export const platformPages: PlatformPageConfig[] = [
       },
       {
         question: "Сколько карточек можно сделать бесплатно?",
-        answer: `${describeFreeQuotaMarketing()}. Бесплатные карточки обновляются каждые ${MONTHLY_FREE_RESET_DAYS} дней. Дальше — по пакетам или разовой оплате.`
+        answer: `${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}. Дальше — комплект для одного товара или поштучные слайды.`
       },
       {
         question: "Можно ли использовать для услуг?",

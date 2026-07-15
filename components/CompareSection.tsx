@@ -3,8 +3,9 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { BRAND } from "@/lib/branding";
 import {
   CARD_GENERATION_PRICE_RUB,
-  FREE_TRIAL_CARDS,
-  MONTHLY_FREE_RESET_DAYS,
+  GENERATION_TIME_COPY,
+  PLAN_SKU_KIT_NAME,
+  SKU_KIT_PRICE_RUB,
   VIDEO_GENERATION_START_PRICE_RUB,
   describeFreeQuotaMarketing,
   formatRub,
@@ -12,13 +13,13 @@ import {
 } from "@/lib/pricing";
 
 const rows = [
-  ["Время на 1 карточку", "2–6 часов", "1–3 дня", "15–30 мин", "~2 минуты"],
+  ["Время на 1 карточку", "2–6 часов", "1–3 дня", "15–30 мин", GENERATION_TIME_COPY],
   [
-    "Стоимость карточки",
+    "Стоимость",
     "внутренний ресурс",
     "от 1 500 ₽",
     "от 990 ₽ за пакет",
-    `${describeFreeQuotaMarketing()}, ${FREE_TRIAL_CARDS} обновляются каждые ${MONTHLY_FREE_RESET_DAYS} дн., далее ${formatRub(CARD_GENERATION_PRICE_RUB)}/фото`
+    `${describeFreeQuotaMarketing()}, далее «${PLAN_SKU_KIT_NAME}» от ${formatRub(SKU_KIT_PRICE_RUB)} или ${formatRub(CARD_GENERATION_PRICE_RUB)}/слайд`
   ],
   [
     "Видео из карточки",
@@ -29,7 +30,7 @@ const rows = [
   ],
   ["СЕО и тексты", "вручную", "частично", "шаблоны", "автоматически"],
   ["Обложка 4:5", "дизайнер/Канва", "дизайнер", "шаблоны", "ИИ + пресеты ВБ/Озон"],
-  ["Масштаб SKU", "сложно", "дорого", "ограничено", "пакеты до 100+"],
+  ["Масштаб SKU", "сложно", "дорого", "ограничено", "комплекты по 5 слайдов"],
   ["Экспорт", "собирать отдельно", "по договорённости", "PNG", "PNG + JSON"],
   ["Правки и версии", "каждый раз вручную", "оплата за версию", "ограничено", "новая версия сразу"],
   ["Поддержка маркетплейсов", "универсально", "зависит от исполнителя", "универсально", "ВБ, Озон, Авито"]

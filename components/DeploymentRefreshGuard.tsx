@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { StaleClientOverlay } from "@/components/StaleClientOverlay";
-import { isStaleClientError, reloadPageForFreshClient } from "@/lib/client/staleClientErrors";
+import {
+  isStaleClientError,
+  isTransientNetworkError,
+  reloadPageForFreshClient
+} from "@/lib/client/staleClientErrors";
 
 const BUILD_CHECK_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -35,6 +39,11 @@ export function DeploymentRefreshGuard({ initialBuildId }: Props) {
 
   useEffect(() => {
     function handleError(event: ErrorEvent) {
+      // Analytics / third-party scripts must never block registration or browsing.
+      if (isTransientNetworkError(event.message, event.filename)) {
+        return;
+      }
+
       if (isStaleClientError(event.message, event.filename)) {
         showRefreshNotice();
       }
@@ -44,6 +53,10 @@ export function DeploymentRefreshGuard({ initialBuildId }: Props) {
       const reason = event.reason;
       const message = reason instanceof Error ? reason.message : String(reason ?? "");
       const stack = reason instanceof Error ? reason.stack : undefined;
+
+      if (isTransientNetworkError(message, stack)) {
+        return;
+      }
 
       if (isStaleClientError(message, stack)) {
         showRefreshNotice();

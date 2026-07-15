@@ -7,7 +7,7 @@ import { signIn } from "next-auth/react";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { VkIdAuthPanel } from "@/components/auth/VkIdAuthPanel";
 import { YandexIdButton } from "@/components/auth/YandexIdButton";
-import { trackConversion } from "@/components/analytics/AnalyticsTracker";
+import { trackAuthError, trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { readLastVisitedProduct, storeSignupCallbackUrl } from "@/lib/auth/signup-context-client";
 import { Logo } from "@/components/Logo";
 import { getEmailFormatError } from "@/lib/auth/email-format";
@@ -73,33 +73,46 @@ export function RegisterForm() {
       return;
     }
 
-    const registerResponse = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        email,
-        password,
-        callbackUrl,
-        referrer: typeof document !== "undefined" ? document.referrer : undefined,
-        fromDemo: callbackUrl.includes("fromDemo"),
-        product: readLastVisitedProduct(),
-        ...buildAntiBotPayload({ honeypot })
-      })
-    });
+    try {
+      const registerResponse = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+          callbackUrl,
+          referrer: typeof document !== "undefined" ? document.referrer : undefined,
+          fromDemo: callbackUrl.includes("fromDemo"),
+          product: readLastVisitedProduct(),
+          ...buildAntiBotPayload({ honeypot })
+        })
+      });
 
-    const registerData = (await registerResponse.json()) as { error?: string; email?: string; message?: string };
+      const registerData = (await registerResponse.json()) as { error?: string; email?: string; message?: string };
 
-    setLoading(false);
+      if (!registerResponse.ok) {
+        const message = registerData.error || "Не удалось зарегистрироваться.";
+        setError(message);
+        trackAuthError("register_error", { reason: message, method: "email" });
+        return;
+      }
 
-    if (!registerResponse.ok) {
-      setError(registerData.error || "Не удалось зарегистрироваться.");
-      return;
+      trackConversion("register_complete");
+      setRegisteredEmail(registerData.email || email);
+      setResendMessage(registerData.message || "Проверьте почту и подтвердите email.");
+    } catch (caught) {
+      const message =
+        caught instanceof TypeError && /failed to fetch/i.test(caught.message)
+          ? "Не удалось связаться с сервером. Проверьте интернет и попробуйте ещё раз — страница обновлять не нужно."
+          : caught instanceof Error
+            ? caught.message
+            : "Не удалось зарегистрироваться.";
+      setError(message);
+      trackAuthError("register_error", { reason: message, method: "email", network: true });
+    } finally {
+      setLoading(false);
     }
-
-    trackConversion("register_complete");
-    setRegisteredEmail(registerData.email || email);
-    setResendMessage(registerData.message || "Проверьте почту и подтвердите email.");
   }
 
   if (registeredEmail) {
@@ -214,7 +227,17 @@ export function RegisterForm() {
           </div>
 
           <div className="grid gap-3">
-            <YandexIdButton onClick={() => signIn("yandex", { callbackUrl })}>
+            <YandexIdButton
+              onClick={() => {
+                try {
+                  void signIn("yandex", { callbackUrl });
+                } catch (caught) {
+                  const message = caught instanceof Error ? caught.message : "oauth_failed";
+                  trackAuthError("oauth_error", { provider: "yandex", reason: message });
+                  setError("Не удалось начать вход через Яндекс ID. Попробуйте email или обновите страницу.");
+                }
+              }}
+            >
               Продолжить с Яндекс ID
             </YandexIdButton>
             <VkIdAuthPanel callbackUrl={callbackUrl} />

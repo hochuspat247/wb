@@ -785,13 +785,14 @@ section[id],
 
 @media print {
   @page {
-    margin: 14mm 12mm;
+    margin: 20mm 18mm;
     size: A4;
+    background-color: #f7f0e4;
   }
 
   html,
   body {
-    background: #f4ebe0 !important;
+    background: #f7f0e4 !important;
     color: #2a2118 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -801,18 +802,50 @@ section[id],
     visibility: hidden !important;
   }
 
+  .story-print-root,
+  .story-print-root *,
+  .story-print-screen-wrap,
+  .story-print-screen-wrap *,
   .story-print-sheet,
   .story-print-sheet * {
     visibility: visible !important;
   }
 
-  .story-print-sheet {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
+  .story-print-root,
+  .story-print-screen-wrap {
+    position: static !important;
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
     margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    overflow: visible !important;
+  }
+
+  .story-print-sheet {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    float: none !important;
     box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  .storystudio-theme,
+  .storystudio-theme > .relative,
+  main {
+    position: static !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    overflow: visible !important;
   }
 
   .storystudio-theme > .relative > header,
@@ -820,6 +853,7 @@ section[id],
   .print\:hidden,
   .story-fairy-atmosphere {
     display: none !important;
+    visibility: hidden !important;
   }
 }
 
@@ -1526,9 +1560,8 @@ section[id],
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    background:
-      radial-gradient(ellipse at top, rgba(212, 180, 131, 0.16), transparent 45%),
-      linear-gradient(180deg, #f8f1e6 0%, #f1e5d4 100%) !important;
+    background-color: #f7f0e4 !important;
+    background-image: none !important;
     padding: 0 !important;
     color: #2a2118 !important;
     -webkit-print-color-adjust: exact !important;
@@ -1536,26 +1569,83 @@ section[id],
   }
 
   .storystudio-theme .story-print-sheet::before {
-    inset: 0;
-    border-radius: 0;
+    display: none !important;
+  }
+
+  .storystudio-theme .story-print-sheet::after {
+    opacity: 0.06 !important;
+  }
+
+  .storystudio-theme .story-print-ornament--top {
+    display: none !important;
+  }
+
+  .storystudio-theme .story-print-letterhead {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    margin-bottom: 10mm;
+    padding-bottom: 4mm;
+    border-bottom: 0.5pt solid rgba(184, 146, 95, 0.45);
+  }
+
+  .storystudio-theme .story-print-meta {
+    flex: 1 1 100%;
+    max-width: none;
+    text-align: left;
+    margin-top: 3mm;
+    letter-spacing: 0.1em;
+    font-size: 9pt;
+    word-break: break-word;
+  }
+
+  .storystudio-theme .story-print-title-block {
+    margin-top: 8mm;
+    margin-bottom: 6mm;
+    page-break-after: avoid;
+    break-after: avoid-page;
+  }
+
+  .storystudio-theme .story-print-sheet h1,
+  .storystudio-theme .story-print-sheet h2 {
+    color: #1f1812 !important;
   }
 
   .storystudio-theme .story-print-title {
-    font-size: 28pt !important;
+    font-size: 20pt !important;
+    line-height: 1.15 !important;
+    margin: 0 !important;
+  }
+
+  .storystudio-theme .story-print-hook {
+    margin-top: 4mm;
+    font-size: 11pt !important;
+  }
+
+  .storystudio-theme .story-print-ornament:not(.story-print-ornament--top) {
+    margin: 5mm 0 6mm;
   }
 
   .storystudio-theme .story-print-body,
   .storystudio-theme .story-print-text {
-    font-size: 11.5pt !important;
-    line-height: 1.85 !important;
+    font-size: 11pt !important;
+    line-height: 1.7 !important;
   }
 
   .storystudio-theme .story-print-chapter {
     page-break-inside: avoid;
+    break-inside: avoid-page;
+    margin-bottom: 8mm;
   }
 
   .storystudio-theme .story-print-chapter-title {
     page-break-after: avoid;
+    break-after: avoid-page;
+    font-size: 14pt !important;
+  }
+
+  .storystudio-theme .story-print-colophon {
+    margin-top: 12mm;
+    page-break-before: auto;
   }
 }
 

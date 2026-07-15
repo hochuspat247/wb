@@ -8,6 +8,7 @@ import { StoryStudioFooter } from "@/components/storystudio/StoryStudioFooter";
 import { StoryReaderView } from "@/components/storystudio/StoryReaderView";
 import { Button } from "@/components/ui/Button";
 import { fetchSharedStory } from "@/lib/api/storystudio";
+import { printStorySheet } from "@/lib/storystudio/printStory";
 import type { StoryProject } from "@/types/storystudio";
 
 type Props = {
@@ -60,13 +61,18 @@ export function StoryShareClient({ shareId }: Props) {
         ) : (
           <>
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-              <p className="text-sm text-muted">Публичная история · режим чтения</p>
-              <Button type="button" variant="secondary" onClick={() => window.print()}>
+              <div>
+                <p className="text-sm text-muted">Публичная история · режим чтения</p>
+                <p className="mt-1 text-xs text-muted">
+                  Для PDF: поля «По умолчанию», включите «Фоновые цвета», отключите колонтитулы.
+                </p>
+              </div>
+              <Button type="button" variant="secondary" onClick={() => printStorySheet()}>
                 <Printer className="h-4 w-4" />
                 Печать / PDF
               </Button>
             </div>
-            <div className="story-print-screen-wrap print:p-0">
+            <div className="story-print-root story-print-screen-wrap print:p-0">
               <StoryReaderView story={story} />
             </div>
             <div className="mt-8 text-center print:hidden">

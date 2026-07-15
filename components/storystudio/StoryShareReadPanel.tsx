@@ -5,6 +5,7 @@ import { BookOpen, Check, Copy, Link2, Loader2, Printer, Share2 } from "lucide-r
 import { Button } from "@/components/ui/Button";
 import { StoryReaderView } from "@/components/storystudio/StoryReaderView";
 import { setStoryShare } from "@/lib/api/storystudio";
+import { printStorySheet } from "@/lib/storystudio/printStory";
 import type { StoryProject } from "@/types/storystudio";
 
 type Props = {
@@ -48,7 +49,7 @@ export function StoryShareReadPanel({ story, onUpdate, onError }: Props) {
 
   function handlePrint() {
     setShowReader(true);
-    window.setTimeout(() => window.print(), 50);
+    window.setTimeout(() => printStorySheet(), 80);
   }
 
   return (
@@ -79,6 +80,9 @@ export function StoryShareReadPanel({ story, onUpdate, onError }: Props) {
             </Button>
           </div>
         </div>
+        <p className="mt-3 text-xs text-muted print:hidden">
+          Для PDF: поля «По умолчанию», включите «Фоновые цвета», отключите колонтитулы браузера.
+        </p>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Button
@@ -107,7 +111,7 @@ export function StoryShareReadPanel({ story, onUpdate, onError }: Props) {
       </div>
 
       {showReader && (
-        <div className="story-print-screen-wrap rounded-card border border-[rgba(212,180,131,0.22)] p-4 sm:p-6 print:border-0 print:bg-transparent print:p-0">
+        <div className="story-print-root story-print-screen-wrap rounded-card border border-[rgba(212,180,131,0.22)] p-4 sm:p-6 print:border-0 print:bg-transparent print:p-0">
           <StoryReaderView story={story} />
         </div>
       )}

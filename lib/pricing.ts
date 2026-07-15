@@ -94,11 +94,22 @@ export function formatCabinetQuotaBanner(input: {
   return `Осталось ${input.remaining} из ${allowance} пробных карточек с водяным знаком. ${KIT_SERIES_DESCRIPTION} — в платном комплекте. ${oneTimeHint}`;
 }
 
-/** Поштучная цена одного слайда. Комплект из 5 дешевле за счёт упаковки SKU. */
-export const CARD_GENERATION_PRICE_RUB = 98;
+/** Базовая поштучная цена одного слайда (калькулятор). */
+export const CARD_GENERATION_PRICE_RUB = 45;
+/** База для фиксированных тарифных пакетов до скидки пакета. */
+export const TARIFF_BASE_PRICE_PER_UNIT = 40;
+/** Скидка на фиксированные тарифные пакеты (5 / 10 / 20 слайдов). */
+export const TARIFF_PACKAGE_DISCOUNT_PERCENT = 10;
 export const WB_INTEGRATION_MIN_PACKAGE = SKU_KIT_SLIDE_COUNT;
-export const SKU_KIT_PRICE_RUB = 275;
-export const CATALOG_PACK_PRICE_RUB = 990;
+
+const TARIFF_PACKAGE_COUNTS = new Set([SKU_KIT_SLIDE_COUNT, 10, 20]);
+
+export function calculateTariffPackageTotal(count: number) {
+  return Math.round(count * TARIFF_BASE_PRICE_PER_UNIT * (1 - TARIFF_PACKAGE_DISCOUNT_PERCENT / 100));
+}
+
+export const SKU_KIT_PRICE_RUB = calculateTariffPackageTotal(SKU_KIT_SLIDE_COUNT);
+export const CATALOG_PACK_PRICE_RUB = calculateTariffPackageTotal(20);
 
 /** Минимальная цена видео (4 сек, standard). */
 export const VIDEO_GENERATION_START_PRICE_RUB = VIDEO_STANDARD_PRICE_4_SEC;
@@ -134,41 +145,41 @@ export const GENERATION_PACKAGES: GenerationPackage[] = [
   }
 ];
 
-const BASE_PRICE_PER_UNIT = CARD_GENERATION_PRICE_RUB;
-/**
- * Комплект для одного SKU: 5 связанных слайдов за 275 ₽ (~44% дешевле поштучной цены).
- * Каталог: 20 слайдов за 990 ₽.
- */
-const PACKAGE_TOTAL_OVERRIDES: Record<number, number> = {
-  5: SKU_KIT_PRICE_RUB,
-  10: 495,
-  20: CATALOG_PACK_PRICE_RUB,
-  100: 2860
-};
+function getVolumeDiscountPercent(count: number) {
+  if (count >= 60) return 30;
+  if (count >= 50) return 25;
+  if (count >= 40) return 20;
+  if (count >= 30) return 15;
+  if (count >= 20) return 10;
+  if (count >= 10) return 5;
+  return 0;
+}
 
-export function calculatePackagePrice(count: number) {
-  const fixedTotal = PACKAGE_TOTAL_OVERRIDES[count];
-  if (fixedTotal) {
-    const pricePerUnit = fixedTotal / count;
-
-    return {
-      count,
-      pricePerUnit,
-      total: fixedTotal,
-      savingsPercent: Math.round((1 - pricePerUnit / BASE_PRICE_PER_UNIT) * 100)
-    };
-  }
-
-  const discount = count >= 100 ? 0.52 : count >= 10 ? 0.68 : count >= 5 ? 0.78 : 1;
-  const pricePerUnit = Math.max(1, Math.round(BASE_PRICE_PER_UNIT * discount));
-  const total = pricePerUnit * count;
-
+function buildPackagePrice(count: number, total: number, savingsPercent: number) {
   return {
     count,
-    pricePerUnit,
+    pricePerUnit: Math.round(total / count),
     total,
-    savingsPercent: Math.round((1 - discount) * 100)
+    savingsPercent
   };
+}
+
+export function calculatePackagePrice(count: number) {
+  if (TARIFF_PACKAGE_COUNTS.has(count)) {
+    const total = calculateTariffPackageTotal(count);
+    const pricePerUnit = total / count;
+
+    return buildPackagePrice(
+      count,
+      total,
+      Math.round((1 - pricePerUnit / CARD_GENERATION_PRICE_RUB) * 100)
+    );
+  }
+
+  const discountPercent = getVolumeDiscountPercent(count);
+  const total = Math.round(count * CARD_GENERATION_PRICE_RUB * (1 - discountPercent / 100));
+
+  return buildPackagePrice(count, total, discountPercent);
 }
 
 export function formatRub(value: number) {

@@ -1,7 +1,14 @@
 import { ImageIcon, Layers, ListChecks, Sparkles, Target } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { PLAN_SKU_KIT_NAME, SKU_KIT_SLIDE_COUNT, calculatePackagePrice, formatRub } from "@/lib/pricing";
+import {
+  KIT_SERIES_DESCRIPTION,
+  PLAN_SKU_KIT_NAME,
+  SKU_KIT_SLIDE_COUNT,
+  calculatePackagePrice,
+  describeFreeQuotaMarketing,
+  formatRub
+} from "@/lib/pricing";
 
 const kit = calculatePackagePrice(SKU_KIT_SLIDE_COUNT);
 
@@ -38,7 +45,7 @@ export function SkuKitSection() {
     <section className="border-t border-clay bg-paper py-20 md:py-28" id="sku-kit">
       <div className="section-shell">
         <SectionHeader
-          description={`Покупаете не «генерации», а готовый комплект карточек для одного товара: обложка + ${SKU_KIT_SLIDE_COUNT - 1} дополнительных слайда.`}
+          description={`${describeFreeQuotaMarketing()}. Чтобы собрать серию инфографики для одного товара, нужен комплект: ${KIT_SERIES_DESCRIPTION.toLowerCase()} без метки.`}
           title={`Что входит в «${PLAN_SKU_KIT_NAME}»`}
         />
 
@@ -59,8 +66,7 @@ export function SkuKitSection() {
 
         <Reveal delay={2}>
           <p className="mt-10 max-w-3xl text-sm font-semibold leading-relaxed text-muted md:text-base">
-            Цена комплекта — {formatRub(kit.total)} без подписки. Внутри также тексты и СЕО. Сервис не добавляет
-            выдуманные свойства товара: опирается на фото и ваше описание.
+            Цена комплекта — {formatRub(kit.total)}, разовая оплата без подписки. Внутри тексты, СЕО и скачивание без водяного знака.
           </p>
         </Reveal>
       </div>

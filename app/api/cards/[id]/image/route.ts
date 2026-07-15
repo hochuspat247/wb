@@ -60,7 +60,7 @@ export async function GET(request: Request, context: RouteContext) {
   if ((variant === "original" || downloadIntent) && !payload.downloadUnlocked) {
     return NextResponse.json(
       {
-        error: "Скачать можно только первую карточку. Остальные — после покупки пакета.",
+        error: "Скачать без водяного знака можно после покупки комплекта. На бесплатном тарифе доступен только вариант с меткой.",
         code: "DOWNLOAD_LOCKED"
       },
       { status: 402 }

@@ -3,8 +3,8 @@ import { GENERATION_TIME_COPY, describeFreeQuotaMarketing } from "@/lib/pricing"
 const stats = [
   ["1 демо без входа", ""],
   [GENERATION_TIME_COPY, ""],
-  ["1 скачивание без водяного знака", "без ежемесячного обновления"],
-  ["WB / Ozon / Avito / Яндекс Маркет", describeFreeQuotaMarketing()]
+  [describeFreeQuotaMarketing(), ""],
+  ["Серия для 1 товара", "в платном комплекте"]
 ];
 
 export function TrustBar() {

@@ -41,7 +41,7 @@ export function CardEditPanel({
           <div className="min-w-0">
             <h3 className="truncate text-base font-bold">{card.seriesPlanItem?.title || card.title}</h3>
             <p className={`mt-0.5 text-sm ${darkConsole ? "text-white/50" : "text-muted"}`}>
-              Напишите правки — спишется 1 генерация
+              Напишите правки — спишется 1 пробная карточка
             </p>
           </div>
           <button

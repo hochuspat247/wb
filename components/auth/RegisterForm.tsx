@@ -155,7 +155,7 @@ export function RegisterForm() {
         <div className="mb-8 text-center">
           <Logo />
           <h1 className="mt-6 text-3xl font-black text-ink">Регистрация</h1>
-          <p className="mt-2 text-muted">Сначала подтвердите email — без этого вход и генерации недоступны</p>
+          <p className="mt-2 text-muted">Сначала подтвердите email — без этого вход и создание карточек недоступны</p>
         </div>
 
         <div className="rounded-card border border-clay bg-card p-8">

@@ -19,8 +19,8 @@ export {
 export const VIDEO_STANDARD_PRICE_3_SEC = VIDEO_STANDARD_PRICE_4_SEC;
 
 export const FREE_DEMO_CARDS = 1;
-/** One free full-card download after registration (does not renew monthly). */
-export const FREE_TRIAL_CARDS = 1;
+/** Free generations after registration — always with watermark, no monthly reset. */
+export const FREE_TRIAL_CARDS = 2;
 /** @deprecated Free quota no longer resets monthly — kept for legacy imports. */
 export const MONTHLY_FREE_RESET_DAYS = 30;
 /** @deprecated Free quota no longer resets monthly. */
@@ -34,16 +34,25 @@ export const PLAN_CATALOG_NAME = "Каталог";
 
 export const GENERATION_TIME_COPY = "Обычно 1–2 минуты в зависимости от загрузки сервиса";
 
+/** Маркетинговое описание серии в платном комплекте. */
+export const KIT_SERIES_DESCRIPTION = "Обложка + 4 инфографических слайда для одного товара";
+
+export const KIT_UNLOCK_CTA = "Скачать без водяного знака — купить комплект";
+
 export function describeMonthlyFreeQuotaShort() {
-  return `${FREE_TRIAL_CARDS} скачивание без водяного знака после регистрации`;
+  return `${FREE_TRIAL_CARDS} пробные карточки один раз после регистрации`;
 }
 
 export function describeFreeQuotaMarketing() {
-  return `1 демо с защитной меткой без регистрации + ${FREE_TRIAL_CARDS} скачивание без водяного знака после регистрации`;
+  return `${FREE_TRIAL_CARDS} пробные карточки один раз после регистрации (с водяным знаком)`;
 }
 
 export function describeMonthlyFreeReset() {
-  return "Бесплатный лимит не обновляется каждый месяц";
+  return `${FREE_TRIAL_CARDS} пробные карточки не обновляются каждый месяц`;
+}
+
+export function describeSeriesRequiresPurchase() {
+  return `${KIT_SERIES_DESCRIPTION} — доступно в комплекте «${PLAN_SKU_KIT_NAME}»`;
 }
 
 export function formatMonthlyFreeResetDate(value: Date | string | number | null | undefined) {
@@ -76,14 +85,13 @@ export function formatCabinetQuotaBanner(input: {
   }
 
   const allowance = input.monthlyFreeAllowance ?? FREE_TRIAL_CARDS;
-  const monthlyRemaining = input.monthlyFreeRemaining ?? Math.min(input.remaining, allowance);
   const oneTimeHint = formatMonthlyFreeResetHint();
 
   if (input.remaining === 0) {
-    return `Бесплатное скачивание использовано. ${oneTimeHint} Купите комплект для одного товара — слайды не сгорают.`;
+    return `Пробные карточки использованы. ${oneTimeHint} Купите «${PLAN_SKU_KIT_NAME}» — ${KIT_SERIES_DESCRIPTION.toLowerCase()} без метки.`;
   }
 
-  return `${describeFreeQuotaMarketing()}. Сейчас доступно: ${input.remaining} (бесплатных осталось ${monthlyRemaining} из ${allowance}). ${oneTimeHint}`;
+  return `Осталось ${input.remaining} из ${allowance} пробных карточек с водяным знаком. ${KIT_SERIES_DESCRIPTION} — в платном комплекте. ${oneTimeHint}`;
 }
 
 /** Поштучная цена одного слайда. Комплект из 5 дешевле за счёт упаковки SKU. */

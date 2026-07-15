@@ -10,21 +10,24 @@ export function canDownloadCardImage(
   _policy: DownloadPolicy | null,
   _persistToServer: boolean
 ) {
+  // Watermarked preview download is always allowed; clean original needs purchase.
   return true;
 }
 
 export function applyDownloadPolicyToCard(
   card: ProductCardResult,
-  _policy: DownloadPolicy | null,
+  policy: DownloadPolicy | null,
   persistToServer: boolean
 ): ProductCardResult {
   if (!persistToServer) {
     return card;
   }
 
+  const unlocked = Boolean(policy?.downloadsFullyUnlocked);
+
   return {
     ...card,
-    downloadUnlocked: true,
-    watermarkLocked: false
+    downloadUnlocked: unlocked,
+    watermarkLocked: !unlocked
   };
 }

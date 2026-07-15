@@ -70,7 +70,7 @@ export function HistorySection({
     <Card padding="md">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-bold text-ink">История генераций</h3>
+          <h3 className="text-lg font-bold text-ink">История карточек</h3>
           <p className="mt-1 text-sm text-muted">{filtered.length} из {history.length} карточек</p>
         </div>
         <Button onClick={onClear} size="sm" variant="ghost">

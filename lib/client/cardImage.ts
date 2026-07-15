@@ -10,11 +10,8 @@ export async function downloadCardImageAsset(
   card: ProductCardResult,
   fileName: string
 ): Promise<DownloadCardImageResult> {
-  if (card.watermarkLocked && !card.downloadUnlocked) {
-    return { clean: false, blocked: true };
-  }
-
-  if (card.imageDownloadUrl) {
+  // Paid / unlocked: prefer clean original.
+  if (card.downloadUnlocked && card.imageDownloadUrl) {
     const response = await fetch(card.imageDownloadUrl, { cache: "no-store" });
 
     if (response.ok) {
@@ -23,13 +20,19 @@ export async function downloadCardImageAsset(
     }
   }
 
-  if (card.previewImageUrl && card.downloadUnlocked) {
+  // Free tier: watermarked preview download is allowed.
+  if (card.previewImageUrl) {
     const response = await fetch(card.previewImageUrl, { cache: "no-store" });
 
     if (response.ok) {
       await downloadResponseBlob(response, fileName);
-      return { clean: true };
+      return { clean: false };
     }
+  }
+
+  if (card.watermarkLocked && !card.downloadUnlocked) {
+    // No preview URL available — cannot serve a watermarked file client-side from clean base64.
+    return { clean: false, blocked: true };
   }
 
   if (card.generatedImageUrl) {

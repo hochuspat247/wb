@@ -27,15 +27,15 @@ function buildOfferCatalog() {
     itemListElement: [
       {
         "@type": "Offer",
-        name: `${FREE_TRIAL_CARDS} бесплатное скачивание после регистрации`,
+        name: `${FREE_TRIAL_CARDS} пробные карточки с водяным знаком`,
         price: "0",
         priceCurrency: "RUB",
         description: `${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}`,
         url: absoluteUrl("/register"),
         itemOffered: {
           "@type": "Service",
-          name: "Комплект карточек товара",
-          description: "ИИ-обложка 4:5, слайды, тексты и СЕО для маркетплейсов"
+          name: "Пробные карточки товара",
+          description: "ИИ-обложка 4:5 с водяным знаком; серия инфографики — в платном комплекте"
         }
       },
       {

@@ -2,7 +2,6 @@ import { Reveal } from "@/components/ui/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { BRAND } from "@/lib/branding";
 import {
-  CARD_GENERATION_PRICE_RUB,
   GENERATION_TIME_COPY,
   PLAN_SKU_KIT_NAME,
   SKU_KIT_PRICE_RUB,
@@ -19,7 +18,7 @@ const rows = [
     "внутренний ресурс",
     "от 1 500 ₽",
     "от 990 ₽ за пакет",
-    `${describeFreeQuotaMarketing()}, далее «${PLAN_SKU_KIT_NAME}» от ${formatRub(SKU_KIT_PRICE_RUB)} или ${formatRub(CARD_GENERATION_PRICE_RUB)}/слайд`
+    `${describeFreeQuotaMarketing()}; серия инфографики — в комплекте от ${formatRub(SKU_KIT_PRICE_RUB)}`
   ],
   [
     "Видео из карточки",

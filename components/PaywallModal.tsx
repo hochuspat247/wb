@@ -7,10 +7,13 @@ import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { PaymentButton } from "@/components/PaymentButton";
 import { Button } from "@/components/ui/Button";
 import {
+  KIT_SERIES_DESCRIPTION,
   PLAN_SKU_KIT_NAME,
+  SKU_KIT_PRICE_RUB,
   SKU_KIT_SLIDE_COUNT,
   calculatePackagePrice,
-  formatMonthlyFreeResetHint,
+  describeFreeQuotaMarketing,
+  describeMonthlyFreeReset,
   formatRub
 } from "@/lib/pricing";
 import {
@@ -23,21 +26,36 @@ type PaywallModalProps = {
   onClose: () => void;
   onCreateVideo?: () => void;
   monthlyFreeResetsAt?: string | null;
+  variant?: "series" | "quota_exhausted";
 };
 
-export function PaywallModal({ open, onClose, onCreateVideo, monthlyFreeResetsAt }: PaywallModalProps) {
+export function PaywallModal({
+  open,
+  onClose,
+  onCreateVideo,
+  monthlyFreeResetsAt: _monthlyFreeResetsAt,
+  variant = "series"
+}: PaywallModalProps) {
   const skuKit = calculatePackagePrice(SKU_KIT_SLIDE_COUNT);
   const catalogPack = calculatePackagePrice(20);
 
   useEffect(() => {
     if (open) {
-      trackConversion("paywall_view");
+      trackConversion("paywall_view", { variant });
     }
-  }, [open]);
+  }, [open, variant]);
 
   if (!open) return null;
 
-  const resetHint = formatMonthlyFreeResetHint(monthlyFreeResetsAt);
+  const title =
+    variant === "quota_exhausted"
+      ? "Пробные карточки использованы — соберите комплект"
+      : `${PLAN_SKU_KIT_NAME} — ${formatRub(SKU_KIT_PRICE_RUB)}`;
+
+  const lead =
+    variant === "quota_exhausted"
+      ? `Вы использовали ${describeFreeQuotaMarketing().toLowerCase()}. ${describeMonthlyFreeReset()}. Карточка сохранена с водяным знаком — купите комплект, чтобы скачать без метки и собрать серию.`
+      : `Бесплатно — только одиночные карточки с водяным знаком. ${KIT_SERIES_DESCRIPTION} — в комплекте.`;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -58,14 +76,11 @@ export function PaywallModal({ open, onClose, onCreateVideo, monthlyFreeResetsAt
             <Sparkles size={20} />
           </div>
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">Лимит использован</p>
-            <h3 className="mt-2 text-2xl font-black leading-snug text-ink">
-              Бесплатное скачивание уже использовано
-            </h3>
-            <p className="mt-2 text-sm font-medium leading-relaxed text-muted">
-              {resetHint} Дальше берите готовый комплект для одного товара — обложка + 4 слайда. Или оживите готовую
-              обложку в короткое видео.
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-accent">
+              {variant === "quota_exhausted" ? "Пробный лимит" : "Комплект"}
             </p>
+            <h3 className="mt-2 text-2xl font-black leading-snug text-ink">{title}</h3>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-muted">{lead}</p>
           </div>
         </div>
 
@@ -74,9 +89,11 @@ export function PaywallModal({ open, onClose, onCreateVideo, monthlyFreeResetsAt
             <p className="text-sm font-black text-ink">
               {PLAN_SKU_KIT_NAME} — {formatRub(skuKit.total)}
             </p>
-            <p className="mt-1 text-xs font-semibold text-muted">
-              {SKU_KIT_SLIDE_COUNT} связанных слайдов · −{skuKit.savingsPercent}% к поштучной цене · без подписки
-            </p>
+            <ul className="mt-2 space-y-1 text-xs font-semibold text-muted">
+              <li>{KIT_SERIES_DESCRIPTION}</li>
+              <li>Скачивание без водяного знака</li>
+              <li>Разовая оплата, без подписки</li>
+            </ul>
             <PaymentButton className="mt-4" count={SKU_KIT_SLIDE_COUNT} metrikaPlan="paywall_sku_kit">
               Купить комплект
             </PaymentButton>

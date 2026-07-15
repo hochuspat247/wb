@@ -7,12 +7,9 @@ export type UserDownloadAccess = {
   downloadsFullyUnlocked: boolean;
 };
 
-export function isGenerationDownloadUnlocked(access: UserDownloadAccess, generationId: string) {
-  if (access.downloadsFullyUnlocked) {
-    return true;
-  }
-
-  return access.freeCleanDownloadGenerationId === generationId;
+export function isGenerationDownloadUnlocked(access: UserDownloadAccess, _generationId: string) {
+  // Free tier is watermark-only. Clean downloads unlock only after a paid purchase.
+  return access.downloadsFullyUnlocked;
 }
 
 export async function getUserDownloadAccess(userId: string): Promise<UserDownloadAccess> {

@@ -3,12 +3,13 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PricingCard } from "@/components/ui/PricingCard";
 import { getVideoRateRubPerSecond } from "@/config/video-pricing";
 import {
-  CARD_GENERATION_PRICE_RUB,
   FREE_DEMO_CARDS,
   FREE_TRIAL_CARDS,
+  KIT_SERIES_DESCRIPTION,
   PLAN_CATALOG_NAME,
   PLAN_FREE_NAME,
   PLAN_SKU_KIT_NAME,
+  SKU_KIT_PRICE_RUB,
   SKU_KIT_SLIDE_COUNT,
   VIDEO_GENERATION_START_PRICE_RUB,
   calculatePackagePrice,
@@ -20,7 +21,6 @@ import {
 } from "@/lib/pricing";
 import { BRAND } from "@/lib/branding";
 
-const skuKit = calculatePackagePrice(SKU_KIT_SLIDE_COUNT);
 const catalogPack = calculatePackagePrice(20);
 const videoPrices = getVideoMarketingPrices("standard");
 const videoProPrices = getVideoMarketingPrices("pro");
@@ -32,13 +32,13 @@ const plans = [
     price: "0 ₽",
     unit: "один раз",
     features: [
-      `${FREE_DEMO_CARDS} демо с защитной меткой без регистрации`,
-      `${FREE_TRIAL_CARDS} скачивание без водяного знака после регистрации`,
+      `${FREE_DEMO_CARDS} демо с водяным знаком без регистрации`,
+      describeFreeQuotaMarketing(),
       describeMonthlyFreeReset(),
+      "Только одиночные карточки — без серии",
+      `${KIT_SERIES_DESCRIPTION} — в платном комплекте`,
       "Тексты и СЕО",
-      "ИИ-обложка 4:5",
-      "PNG и JSON экспорт",
-      `Далее — комплект для одного товара или ${formatRub(CARD_GENERATION_PRICE_RUB)} за слайд`
+      "ИИ-обложка 4:5"
     ],
     cta: "Попробовать",
     href: "/register",
@@ -46,22 +46,15 @@ const plans = [
   },
   {
     name: PLAN_SKU_KIT_NAME,
-    subtitle: "Готовый набор для одного SKU",
-    price: formatRub(skuKit.total),
-    unit: `${SKU_KIT_SLIDE_COUNT} слайдов`,
-    billingNote:
-      skuKit.savingsPercent > 0
-        ? `${formatRub(skuKit.pricePerUnit)} за слайд · −${skuKit.savingsPercent}% к поштучной цене`
-        : `${formatRub(skuKit.pricePerUnit)} за слайд`,
+    subtitle: formatRub(SKU_KIT_PRICE_RUB),
+    price: formatRub(SKU_KIT_PRICE_RUB),
+    unit: "разовая оплата",
+    billingNote: "Без подписки",
     features: [
-      "Обложка + 4 дополнительных слайда для одного товара",
-      "Титульная карточка",
-      "Преимущества",
-      "Характеристики",
-      "Сценарий использования",
-      "Дополнительный рекламный вариант",
-      "Тексты и СЕО",
-      "Без подписки",
+      KIT_SERIES_DESCRIPTION,
+      "Скачивание без водяного знака",
+      "Разовая оплата, без подписки",
+      "Тексты и СЕО для маркетплейса",
       "Публикация на Wildberries из истории",
       `Видео из карточки — отдельно, от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}`
     ],
@@ -74,7 +67,7 @@ const plans = [
   },
   {
     name: PLAN_CATALOG_NAME,
-    subtitle: "До четырёх комплектов SKU",
+    subtitle: "До четырёх серий SKU",
     price: formatRub(catalogPack.total),
     unit: "20 слайдов",
     billingNote:
@@ -83,12 +76,11 @@ const plans = [
         : `${formatRub(catalogPack.pricePerUnit)} за слайд`,
     features: [
       "20 слайдов — до 4 комплектов по 5",
+      "Скачивание без водяного знака",
       "Публикация на Wildberries из истории",
       `Всё из тарифа «${PLAN_SKU_KIT_NAME}»`,
-      "История и повторная генерация",
+      "История и повторное создание карточек",
       "Приоритетная очередь",
-      "Все дизайн-пресеты",
-      "Ранний доступ к новым интеграциям",
       "Персональная поддержка в Telegram"
     ],
     cta: "Подключить",
@@ -103,8 +95,8 @@ export function PricingSection() {
     <section className="border-t border-clay bg-paper-alt py-20 md:py-28" id="pricing">
       <div className="section-shell">
         <SectionHeader
-          description={`${describeFreeQuotaMarketing()}. Основная покупка — готовый комплект карточек для одного товара (обложка + 4 слайда), а не «генерации». Видео — отдельная опция после готового изображения.`}
-          title="Тарифы: комплект для SKU, а не кредиты"
+          description={`${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}. ${KIT_SERIES_DESCRIPTION} — в комплекте за ${formatRub(SKU_KIT_PRICE_RUB)} без водяного знака.`}
+          title="Тарифы: комплект для одного товара"
         />
 
         <div className="mt-14 grid gap-5 lg:grid-cols-3">

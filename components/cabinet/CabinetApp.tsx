@@ -61,6 +61,10 @@ import { reachGoal } from "@/lib/metrika";
 import { getSeriesSiblingCards } from "@/lib/series/plan";
 import {
   FREE_TRIAL_CARDS,
+  KIT_SERIES_DESCRIPTION,
+  KIT_UNLOCK_CTA,
+  PLAN_SKU_KIT_NAME,
+  SKU_KIT_SLIDE_COUNT,
   calculatePackagePrice,
   formatCabinetQuotaBanner,
   formatMonthlyFreeResetHint,
@@ -486,7 +490,7 @@ export function CabinetApp() {
 
   const tabTitles: Record<Tab, string> = {
     create: "Создать карточку",
-    history: "История генераций",
+    history: "История карточек",
     wildberries: "Wildberries",
     examples: "Примеры карточек",
     compare: "Сравнение с альтернативами",
@@ -511,7 +515,7 @@ export function CabinetApp() {
     { id: "settings" as const, label: "Настройки", shortLabel: "Ещё", icon: Settings }
   ];
   const isQuotaExhausted = remainingGenerations < 999_000 && remainingGenerations === 0;
-  const starterPack = calculatePackagePrice(10);
+  const skuKit = calculatePackagePrice(SKU_KIT_SLIDE_COUNT);
 
   return (
     <div className="min-h-screen bg-paper lg:grid lg:grid-cols-[260px_1fr]">
@@ -524,14 +528,14 @@ export function CabinetApp() {
           </p>
           <p className="mt-1 text-xs font-semibold text-white/45">
             {isQuotaExhausted
-              ? "бесплатный лимит использован"
+              ? "пробные карточки использованы"
               : monthlyFreeRemaining !== null
-                ? `${monthlyFreeRemaining} из ${FREE_TRIAL_CARDS} бесплатных`
-                : "слайдов доступно"}
+                ? `${monthlyFreeRemaining} из ${FREE_TRIAL_CARDS} пробных карточек с меткой`
+                : "пробных карточек доступно"}
           </p>
           {isQuotaExhausted ? (
-            <PaymentButton className="mt-4" count={10} metrikaPlan="cabinet_sidebar_pack10" size="sm">
-              Купить тариф
+            <PaymentButton className="mt-4" count={SKU_KIT_SLIDE_COUNT} metrikaPlan="cabinet_sidebar_sku_kit" size="sm">
+              Купить комплект
             </PaymentButton>
           ) : (
             <CabinetPricingLink className="mt-4 w-full" />
@@ -631,16 +635,20 @@ export function CabinetApp() {
               {isQuotaExhausted ? (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-black text-ink">Бесплатное скачивание использовано</p>
+                    <p className="text-sm font-black text-ink">Пробные карточки с водяным знаком использованы</p>
                     <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
-                      {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} Купите комплект для одного товара, чтобы продолжить.
-                      Пакет из 10 слайдов — {formatRub(starterPack.total)} ({formatRub(starterPack.pricePerUnit)} за
-                      слайд). Созданные карточки можно скачать в истории.
+                      {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} {KIT_SERIES_DESCRIPTION} — в комплекте «
+                      {PLAN_SKU_KIT_NAME}» за {formatRub(skuKit.total)}. Разовая оплата, без подписки.
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col gap-2 sm:items-end">
-                    <PaymentButton className="w-full sm:w-auto" count={10} metrikaPlan="cabinet_quota_banner_pack10" size="sm">
-                      Купить тариф
+                    <PaymentButton
+                      className="w-full sm:w-auto"
+                      count={SKU_KIT_SLIDE_COUNT}
+                      metrikaPlan="cabinet_quota_banner_sku_kit"
+                      size="sm"
+                    >
+                      {KIT_UNLOCK_CTA}
                     </PaymentButton>
                     <CabinetPricingLink className="self-start sm:self-auto" onLight />
                   </div>
@@ -679,14 +687,19 @@ export function CabinetApp() {
               {isQuotaExhausted ? (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
                   <div className="min-w-0">
-                    <p className="text-sm font-black text-ink">Бесплатное скачивание использовано</p>
+                    <p className="text-sm font-black text-ink">Пробные карточки с водяным знаком использованы</p>
                     <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
-                      {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} Купите комплект, чтобы снова создавать карточки.
-                      Скачать уже созданные можно в любой момент.
+                      {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} {KIT_SERIES_DESCRIPTION} — купите комплект, чтобы
+                      скачать без метки. Уже созданные карточки с водяным знаком остаются в истории.
                     </p>
                   </div>
-                  <PaymentButton className="w-full sm:w-auto" count={10} metrikaPlan="cabinet_history_pack10" size="sm">
-                    Купить тариф
+                  <PaymentButton
+                    className="w-full sm:w-auto"
+                    count={SKU_KIT_SLIDE_COUNT}
+                    metrikaPlan="cabinet_history_sku_kit"
+                    size="sm"
+                  >
+                    {KIT_UNLOCK_CTA}
                   </PaymentButton>
                 </div>
               ) : null}
@@ -718,7 +731,7 @@ export function CabinetApp() {
                   monthlyFreeResetsAt={monthlyFreeResetsAt}
                   onCreate={openCreateTab}
                   remainingGenerations={remainingGenerations}
-                  starterPackTotal={starterPack.total}
+                  skuKitTotal={skuKit.total}
                 />
               ) : (
                 <HistorySection
@@ -1010,14 +1023,14 @@ function EmptyState({
   generationsUsed,
   remainingGenerations,
   isQuotaExhausted,
-  starterPackTotal,
+  skuKitTotal,
   monthlyFreeResetsAt
 }: {
   onCreate: () => void;
   generationsUsed: number;
   remainingGenerations: number;
   isQuotaExhausted: boolean;
-  starterPackTotal: number;
+  skuKitTotal: number;
   monthlyFreeResetsAt?: string | null;
 }) {
   const lostGeneration = generationsUsed > 0 && !isQuotaExhausted;
@@ -1037,21 +1050,21 @@ function EmptyState({
       <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">
         {isQuotaExhausted ? (
           <>
-            Бесплатное скачивание уже использовано. {formatMonthlyFreeResetHint(monthlyFreeResetsAt)} Купите комплект за{" "}
-            {formatRub(starterPackTotal)}, чтобы продолжить — новые результаты сразу появятся здесь.
+            Пробные карточки с водяным знаком уже использованы. {formatMonthlyFreeResetHint(monthlyFreeResetsAt)}{" "}
+            Купите комплект за {formatRub(skuKitTotal)} — {KIT_SERIES_DESCRIPTION.toLowerCase()} без метки.
           </>
         ) : lostGeneration ? (
           <>
-            Похоже, одна из генераций уже списалась, но результат не сохранился. Создайте карточку ещё раз — у вас
-            осталось {remainingGenerations} из {generationsUsed + remainingGenerations}.
+            Похоже, одна из пробных карточек уже списалась, но результат не сохранился. Создайте карточку ещё раз — у вас
+            осталось {remainingGenerations} из {generationsUsed + remainingGenerations} пробных карточек.
           </>
         ) : (
           "Создайте первую карточку на вкладке «Создать» — после сохранения она появится в этой истории."
         )}
       </p>
       {isQuotaExhausted ? (
-        <PaymentButton className="mt-8" count={10} metrikaPlan="cabinet_history_empty_pack10">
-          Купить тариф
+        <PaymentButton className="mt-8" count={SKU_KIT_SLIDE_COUNT} metrikaPlan="cabinet_history_empty_sku_kit">
+          {KIT_UNLOCK_CTA}
         </PaymentButton>
       ) : (
         <Button className="mt-8" onClick={onCreate} type="button">

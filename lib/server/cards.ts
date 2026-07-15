@@ -2,7 +2,12 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { productCards } from "@/lib/db/schema";
 import { hydrateUserCardsWithVideos } from "@/lib/server/cardVideos";
-import { registerGenerationForCleanDownload } from "@/lib/server/downloadAccess";
+import {
+  getUserDownloadAccess,
+  isGenerationDownloadUnlocked,
+  registerGenerationForCleanDownload,
+  type UserDownloadAccess
+} from "@/lib/server/downloadAccess";
 import { downloadRemoteImageAsBase64 } from "@/lib/server/remoteImage";
 import type { ProductCardResult } from "@/types/product-card";
 
@@ -36,20 +41,22 @@ async function persistCardImagePayload(card: ProductCardResult) {
   };
 }
 
-function sanitizeCardForClient(card: ProductCardResult): ProductCardResult {
+function sanitizeCardForClient(card: ProductCardResult, access: UserDownloadAccess): ProductCardResult {
+  const unlocked = isGenerationDownloadUnlocked(access, card.id);
   const previewImageUrl = `/api/cards/${card.id}/image?variant=preview`;
   const imageDownloadUrl = `/api/cards/${card.id}/image?variant=original&download=1`;
 
   return {
     ...card,
-    downloadUnlocked: true,
-    watermarkLocked: false,
+    downloadUnlocked: unlocked,
+    watermarkLocked: !unlocked,
     previewImageUrl,
     imageDownloadUrl
   };
 }
 
 export async function getUserCards(userId: string): Promise<ProductCardResult[]> {
+  const access = await getUserDownloadAccess(userId);
   const rows = await db
     .select()
     .from(productCards)
@@ -83,7 +90,7 @@ export async function getUserCards(userId: string): Promise<ProductCardResult[]>
     ).filter((item): item is ProductCardResult => item !== null)
   );
 
-  return cards.map((card) => sanitizeCardForClient(card));
+  return cards.map((card) => sanitizeCardForClient(card, access));
 }
 
 export async function getUserCardImagePayload(userId: string, cardId: string) {
@@ -100,9 +107,11 @@ export async function getUserCardImagePayload(userId: string, cardId: string) {
     return null;
   }
 
+  const access = await getUserDownloadAccess(userId);
+
   return {
     card,
-    downloadUnlocked: true
+    downloadUnlocked: isGenerationDownloadUnlocked(access, card.id)
   };
 }
 

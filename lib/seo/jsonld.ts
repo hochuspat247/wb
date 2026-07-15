@@ -48,7 +48,7 @@ function buildPaidOffers() {
     },
     {
       "@type": "Offer",
-      name: `${FREE_TRIAL_CARDS} пробные карточки`,
+      name: FREE_TRIAL_CARDS === 1 ? "1 пробная карточка" : `${FREE_TRIAL_CARDS} пробные карточки`,
       price: "0",
       priceCurrency: "RUB",
       availability: "https://schema.org/InStock",

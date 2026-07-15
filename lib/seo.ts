@@ -49,7 +49,7 @@ export const siteConfig = {
   shortName: BRAND.marketCardShort,
   title: "ИИ-генератор карточек для маркетплейсов — МаркетКард",
   description:
-    "Создайте карточку товара для Wildberries, Ozon и Авито по фото за 1–2 минуты. Обложка, инфографика и SEO-текст. 2 пробные карточки.",
+    "Создайте карточку товара для Wildberries, Ozon и Авито по фото за 1–2 минуты. Обложка, инфографика и SEO-текст. 1 пробная карточка после регистрации.",
   keywords: [...baseKeywords],
   locale: "ru_RU",
   url: process.env.AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || defaultSiteUrl

@@ -531,7 +531,7 @@ export function CabinetApp() {
             {isQuotaExhausted
               ? "пробные карточки использованы"
               : monthlyFreeRemaining !== null
-                ? `${monthlyFreeRemaining} из ${FREE_TRIAL_CARDS} пробных карточек с меткой`
+                ? `${monthlyFreeRemaining} из ${FREE_TRIAL_CARDS} ${FREE_TRIAL_CARDS === 1 ? "пробной карточки" : "пробных карточек"} с меткой`
                 : "пробных карточек доступно"}
           </p>
           {isQuotaExhausted ? (

@@ -20,7 +20,7 @@ export const VIDEO_STANDARD_PRICE_3_SEC = VIDEO_STANDARD_PRICE_4_SEC;
 
 export const FREE_DEMO_CARDS = 1;
 /** Free generations after registration — always with watermark, no monthly reset. */
-export const FREE_TRIAL_CARDS = 2;
+export const FREE_TRIAL_CARDS = 1;
 /** @deprecated Free quota no longer resets monthly — kept for legacy imports. */
 export const MONTHLY_FREE_RESET_DAYS = 30;
 /** @deprecated Free quota no longer resets monthly. */
@@ -39,16 +39,24 @@ export const KIT_SERIES_DESCRIPTION = "Обложка + 4 инфографиче
 
 export const KIT_UNLOCK_CTA = "Скачать без водяного знака — купить комплект";
 
+function trialCardsPhrase(count: number) {
+  const n = Math.abs(count) % 100;
+  const n1 = n % 10;
+  const noun = n > 10 && n < 20 ? "карточек" : n1 === 1 ? "карточка" : n1 >= 2 && n1 <= 4 ? "карточки" : "карточек";
+  const adj = n > 10 && n < 20 ? "пробных" : n1 === 1 ? "пробная" : n1 >= 2 && n1 <= 4 ? "пробные" : "пробных";
+  return `${count} ${adj} ${noun}`;
+}
+
 export function describeMonthlyFreeQuotaShort() {
-  return `${FREE_TRIAL_CARDS} пробные карточки один раз после регистрации`;
+  return `${trialCardsPhrase(FREE_TRIAL_CARDS)} один раз после регистрации`;
 }
 
 export function describeFreeQuotaMarketing() {
-  return `${FREE_TRIAL_CARDS} пробные карточки один раз после регистрации (с водяным знаком)`;
+  return `${trialCardsPhrase(FREE_TRIAL_CARDS)} один раз после регистрации (с водяным знаком)`;
 }
 
 export function describeMonthlyFreeReset() {
-  return `${FREE_TRIAL_CARDS} пробные карточки не обновляются каждый месяц`;
+  return `${trialCardsPhrase(FREE_TRIAL_CARDS)} не обновляется каждый месяц`;
 }
 
 export function describeSeriesRequiresPurchase() {
@@ -88,10 +96,15 @@ export function formatCabinetQuotaBanner(input: {
   const oneTimeHint = formatMonthlyFreeResetHint();
 
   if (input.remaining === 0) {
-    return `Пробные карточки использованы. ${oneTimeHint} Купите «${PLAN_SKU_KIT_NAME}» — ${KIT_SERIES_DESCRIPTION.toLowerCase()} без метки.`;
+    return `Пробная карточка использована. ${oneTimeHint} Купите «${PLAN_SKU_KIT_NAME}» — ${KIT_SERIES_DESCRIPTION.toLowerCase()} без метки.`;
   }
 
-  return `Осталось ${input.remaining} из ${allowance} пробных карточек с водяным знаком. ${KIT_SERIES_DESCRIPTION} — в платном комплекте. ${oneTimeHint}`;
+  const cardsWord =
+    allowance === 1
+      ? "пробной карточки"
+      : "пробных карточек";
+
+  return `Осталось ${input.remaining} из ${allowance} ${cardsWord} с водяным знаком. ${KIT_SERIES_DESCRIPTION} — в платном комплекте. ${oneTimeHint}`;
 }
 
 /** Базовая поштучная цена одного слайда (калькулятор). */

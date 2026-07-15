@@ -258,7 +258,7 @@ export function HeroMiniGenerator() {
         <div>
           <p className="text-base font-black text-ink md:text-[17px]">Попробуйте на своём товаре</p>
           <p className="mt-0.5 text-xs font-semibold leading-snug text-muted md:text-sm">
-            1 демо без входа с водяным знаком. После регистрации — ещё 2 пробные карточки с меткой, один раз.
+            1 демо без входа с водяным знаком. После регистрации — ещё 1 пробная карточка с меткой, один раз.
           </p>
           <p className="mt-2 rounded-[14px] border border-accent/20 bg-accent/10 px-3 py-2 text-xs font-bold leading-relaxed text-ink md:text-sm">
             Нужна серия инфографики для одного товара? Обложка + 4 инфографических слайда —{" "}

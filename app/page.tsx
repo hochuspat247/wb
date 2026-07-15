@@ -6,6 +6,7 @@ import { FAQSection } from "@/components/FAQSection";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
+import { PriceTopStrip } from "@/components/PriceTopStrip";
 import { StatsStrip } from "@/components/StatsStrip";
 import { BenefitsGrid } from "@/components/BenefitsGrid";
 import { HowItWorksSteps } from "@/components/HowItWorksSteps";
@@ -21,7 +22,7 @@ export const metadata = createPageMetadata({
   path: "/",
   documentTitle: "ИИ-генератор карточек для маркетплейсов — МаркетКард",
   description:
-    "Создайте карточку товара для Wildberries, Ozon и Авито по фото за 1–2 минуты. Обложка, инфографика и SEO-текст. 2 пробные карточки.",
+    "Создайте карточку товара для Wildberries, Ozon и Авито по фото за 1–2 минуты. Обложка, инфографика и SEO-текст. 1 пробная карточка после регистрации.",
   keywords: [
     "генератор карточек товара бесплатно",
     "нейросеть карточка товара wildberries",
@@ -37,6 +38,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-paper">
       <HomeJsonLd />
+      <PriceTopStrip />
       <Header />
       <Hero />
       <StatsStrip />

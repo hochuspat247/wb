@@ -32,7 +32,7 @@ export default function OpenGraphImage() {
           </div>
         </div>
         <div style={{ fontSize: 24, opacity: 0.85 }}>
-          2 пробные карточки · комплект от {formatRub(SKU_KIT_PRICE_RUB)} · WB API
+          1 пробная карточка · комплект от {formatRub(SKU_KIT_PRICE_RUB)} · WB API
         </div>
       </div>
     ),

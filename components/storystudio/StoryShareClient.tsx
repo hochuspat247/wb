@@ -66,7 +66,7 @@ export function StoryShareClient({ shareId }: Props) {
                 Печать / PDF
               </Button>
             </div>
-            <div className="story-fairy-panel rounded-card p-5 sm:p-8 print:border-0 print:bg-white print:p-0">
+            <div className="story-print-screen-wrap print:p-0">
               <StoryReaderView story={story} />
             </div>
             <div className="mt-8 text-center print:hidden">

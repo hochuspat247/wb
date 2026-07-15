@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -14,12 +14,18 @@ import { generateStoryDemo, generateStoryFoundation } from "@/lib/api/storystudi
 import { fetchUserQuota } from "@/lib/api/user";
 import { getOrCreateStoryGuestId } from "@/lib/guest";
 import { STORY_GENRES, STORY_LANGUAGES, WORD_COUNT_PRESETS } from "@/lib/storystudio/constants";
+import { STORY_PREMIUM_FEATURES } from "@/lib/storystudio/pricing";
 import type { StoryGenre, StoryLanguage } from "@/types/storystudio";
+
+const MAX_GENRES = 3;
 
 export function StoryCreateForm() {
   const router = useRouter();
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
+  const titleId = useId();
+  const premiseId = useId();
+  const charactersId = useId();
   const [title, setTitle] = useState("");
   const [premise, setPremise] = useState("");
   const [charactersHint, setCharactersHint] = useState("");
@@ -44,7 +50,11 @@ export function StoryCreateForm() {
   }, [isAuthenticated]);
 
   function toggleGenre(id: StoryGenre) {
-    setGenres((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id].slice(0, 4)));
+    setGenres((prev) => {
+      if (prev.includes(id)) return prev.filter((g) => g !== id);
+      if (prev.length >= MAX_GENRES) return prev;
+      return [...prev, id];
+    });
   }
 
   function handlePremiumToggle(checked: boolean) {
@@ -58,7 +68,7 @@ export function StoryCreateForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || !premise.trim()) {
-      setError("Заполните название и основную идею.");
+      setError("Заполните название и основную идею — это обязательные поля.");
       return;
     }
     if (!genres.length) {
@@ -126,38 +136,50 @@ export function StoryCreateForm() {
   const showPremiumUpsell = premiumMode || (!premiumUnlocked && isAuthenticated);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6" aria-busy={loading}>
       <div className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card backdrop-blur-sm">
         <h2 className="mb-5 text-lg font-semibold text-ink">Основа истории</h2>
         <p className="mb-5 text-sm text-muted">
-          Начните с названия и идеи — синопсис, персонажи и план соберутся сами. Режим 18+ доступен позже в
-          дополнительных настройках.
+          Начните с названия и идеи — синопсис, персонажи и план соберутся сами. Поля со звёздочкой обязательны.
         </p>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-ink">Заголовок</label>
+            <label htmlFor={titleId} className="mb-1.5 block text-sm font-medium text-ink">
+              Заголовок <span className="text-gold">*</span>
+            </label>
             <Input
+              id={titleId}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Письма из запретного архива"
               maxLength={120}
+              required
+              aria-required="true"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-ink">Основная идея</label>
+            <label htmlFor={premiseId} className="mb-1.5 block text-sm font-medium text-ink">
+              Основная идея <span className="text-gold">*</span>
+            </label>
             <Textarea
+              id={premiseId}
               value={premise}
               onChange={(e) => setPremise(e.target.value)}
               placeholder="В архиве академии прячут письма из будущего. Элиара открывает одно — и понимает, что её судьба уже переписана..."
               rows={4}
+              required
+              aria-required="true"
             />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-ink">Персонажи (необязательно)</label>
+            <label htmlFor={charactersId} className="mb-1.5 block text-sm font-medium text-ink">
+              Персонажи (необязательно)
+            </label>
             <Textarea
+              id={charactersId}
               value={charactersHint}
               onChange={(e) => setCharactersHint(e.target.value)}
               placeholder="Архивариус, бывший курсант, строгая наставница..."
@@ -167,82 +189,100 @@ export function StoryCreateForm() {
         </div>
       </div>
 
-      <div className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card">
-        <label className="mb-3 block text-sm font-medium text-ink">Примерный объём произведения</label>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {WORD_COUNT_PRESETS.map((preset) => (
-            <button
-              key={preset.value}
-              type="button"
-              onClick={() => setTargetWordCount(preset.value)}
-              className={`rounded-xl border px-3 py-3 text-left transition ${
-                targetWordCount === preset.value
-                  ? "border-violet bg-violet/15 text-ink"
-                  : "border-white/10 text-muted hover:border-violet/30"
-              }`}
-            >
-              <div className="text-sm font-semibold">{preset.short}</div>
-              <div className="text-xs opacity-70">{preset.label}</div>
-            </button>
-          ))}
+      <fieldset className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card">
+        <legend className="mb-3 text-sm font-medium text-ink">Примерный объём произведения</legend>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label="Объём произведения">
+          {WORD_COUNT_PRESETS.map((preset) => {
+            const selected = targetWordCount === preset.value;
+            return (
+              <button
+                key={preset.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setTargetWordCount(preset.value)}
+                className={`rounded-xl border px-3 py-3 text-left transition ${
+                  selected
+                    ? "border-violet bg-violet/15 text-ink"
+                    : "border-white/10 text-muted hover:border-violet/30"
+                }`}
+              >
+                <div className="text-sm font-semibold">{preset.short}</div>
+                <div className="text-xs opacity-70">{preset.label}</div>
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </fieldset>
 
-      <div className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card">
-        <label className="mb-3 block text-sm font-medium text-ink">Жанры</label>
-        <div className="flex flex-wrap gap-2">
-          {STORY_GENRES.map((genre) => (
-            <button
-              key={genre.id}
-              type="button"
-              onClick={() => toggleGenre(genre.id)}
-              className={`rounded-full border px-3 py-1.5 text-sm transition ${
-                genres.includes(genre.id)
-                  ? "border-violet bg-violet/20 text-ink"
-                  : "border-white/10 text-muted hover:border-violet/30"
-              }`}
-            >
-              {genre.emoji} {genre.label}
-            </button>
-          ))}
+      <fieldset className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card">
+        <legend className="mb-1 text-sm font-medium text-ink">Жанры</legend>
+        <p className="mb-3 text-xs text-muted">Можно выбрать до {MAX_GENRES} жанров. Выбрано: {genres.length}</p>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Жанры произведения">
+          {STORY_GENRES.map((genre) => {
+            const selected = genres.includes(genre.id);
+            return (
+              <button
+                key={genre.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => toggleGenre(genre.id)}
+                className={`rounded-full border px-3 py-1.5 text-sm transition ${
+                  selected
+                    ? "border-violet bg-violet/20 text-ink ring-1 ring-violet/40"
+                    : "border-white/10 text-muted hover:border-violet/30"
+                }`}
+              >
+                {genre.emoji} {genre.label}
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </fieldset>
 
-      <div className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card">
-        <label className="mb-3 block text-sm font-medium text-ink">Язык произведения</label>
-        <div className="flex flex-wrap gap-2">
-          {STORY_LANGUAGES.map((lang) => (
-            <button
-              key={lang.id}
-              type="button"
-              onClick={() => setLanguage(lang.id)}
-              className={`rounded-full border px-3 py-2 text-sm ${
-                language === lang.id ? "border-violet bg-violet/20 text-ink" : "border-white/10 text-muted"
-              }`}
-            >
-              <span className="mr-1.5 text-[10px] font-bold text-violet">{lang.flag}</span>
-              {lang.label}
-            </button>
-          ))}
+      <fieldset className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card">
+        <legend className="mb-3 text-sm font-medium text-ink">Язык произведения</legend>
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Язык произведения">
+          {STORY_LANGUAGES.map((lang) => {
+            const selected = language === lang.id;
+            return (
+              <button
+                key={lang.id}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setLanguage(lang.id)}
+                className={`rounded-full border px-3 py-2 text-sm ${
+                  selected
+                    ? "border-violet bg-violet/20 text-ink ring-1 ring-violet/40"
+                    : "border-white/10 text-muted"
+                }`}
+              >
+                <span className="mr-1.5 text-[10px] font-bold text-violet">{lang.flag}</span>
+                {lang.label}
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </fieldset>
 
       {isAuthenticated && (
         <details className="rounded-card border border-white/10 bg-card/80 p-6 shadow-card">
           <summary className="cursor-pointer text-sm font-medium text-ink">Дополнительные настройки</summary>
           <div className="mt-4 space-y-4">
             <label
-              className={`flex items-center gap-2 text-sm ${premiumUnlocked ? "cursor-pointer text-muted" : "cursor-not-allowed text-muted/60"}`}
+              className={`flex items-start gap-2 text-sm ${premiumUnlocked ? "cursor-pointer text-muted" : "cursor-not-allowed text-muted/60"}`}
             >
               <input
                 type="checkbox"
                 checked={premiumMode}
                 disabled={!premiumUnlocked}
                 onChange={(e) => handlePremiumToggle(e.target.checked)}
-                className="h-4 w-4 rounded border-clay accent-violet disabled:opacity-50"
+                className="mt-0.5 h-4 w-4 rounded border-clay accent-violet disabled:opacity-50"
               />
               <span>
-                Premium / 18+ — сильнее держит сюжет; допускает взрослые темы
+                <span className="font-medium text-ink">Premium / 18+</span>
+                <span className="mt-1 block text-xs leading-relaxed">
+                  {STORY_PREMIUM_FEATURES.join(" · ")}
+                </span>
               </span>
             </label>
 
@@ -250,8 +290,8 @@ export function StoryCreateForm() {
 
             {showPremiumUpsell && premiumUnlocked && premiumMode && (
               <p className="rounded-xl bg-violet/10 px-4 py-3 text-sm text-muted">
-                Premium глубже прорабатывает мир и героев; может включать откровенные сцены и грубую лексику, если это
-                органично для жанра.
+                Premium включён: главы длиннее, связность сильнее; допускаются откровенные сцены, если это органично для
+                жанра.
               </p>
             )}
           </div>
@@ -266,11 +306,15 @@ export function StoryCreateForm() {
       )}
 
       {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+        >
           {error}
           {error.includes("закончились") && (
             <Link href="/storystudio/cabinet#pricing" className="ml-2 underline">
-              Купить генерации
+              Купить кредиты
             </Link>
           )}
           {(error.includes("премиум") || error.includes("18+")) && (

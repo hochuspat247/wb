@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { ImageIcon, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
 import { generateStoryMedia, updateStoryProject } from "@/lib/api/storystudio";
 import type { StoryMediaKind, StoryProject } from "@/types/storystudio";
@@ -133,17 +134,18 @@ export function StoryMediaPanel({ story, onUpdate, onError, applyQuota }: Props)
         {entityOptions.length > 0 && (
           <label className="mt-4 block text-sm">
             <span className="mb-1.5 block text-muted">Сущность</span>
-            <select
+            <Select
               value={entityId}
               onChange={(e) => setEntityId(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-[#0b0814] px-3 py-2 text-sm text-ink"
+              variant="dark"
+              className="story-media-entity-select"
             >
               {entityOptions.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         )}
 

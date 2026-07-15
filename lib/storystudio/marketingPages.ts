@@ -1,4 +1,5 @@
 import { BRAND } from "@/lib/branding";
+import { STORY_GENERATION_EXPLAINER, STORY_GENERATION_PRICE_RUB, formatStoryRub } from "@/lib/storystudio/pricing";
 
 export type StoryStudioMarketingPage = {
   slug: string;
@@ -94,7 +95,7 @@ export const storyStudioMarketingPages: StoryStudioMarketingPage[] = [
       },
       {
         question: "Сколько стоит генерация?",
-        answer: "От 39 ₽ за генерацию истории, персонажа, главы или портрета. Есть пакеты со скидкой."
+        answer: `От ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за кредит. ${STORY_GENERATION_EXPLAINER} Есть пакеты со скидкой.`
       }
     ],
     keywords: [

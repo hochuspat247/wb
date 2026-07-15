@@ -140,7 +140,7 @@ export function StoryStudioUseCaseLanding({ page }: StoryStudioUseCaseLandingPro
               Попробуйте {BRAND.storyStudio} бесплатно
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-muted sm:text-base">
-              Создайте основу сказки за пару минут — персонажи, карта связей и главы в одном кабинете.
+              Создайте основу произведения за пару минут — персонажи, карта связей и главы в одном кабинете.
             </p>
             <Link className="mt-6 inline-block" href="/storystudio/create">
               <Button className="!border-gold !bg-gold !text-[#1a140f]" size="lg">

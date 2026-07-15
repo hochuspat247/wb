@@ -42,6 +42,7 @@ import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent"
 import {
   calculateStoryPackagePrice,
   formatStoryRub,
+  STORY_GENERATION_EXPLAINER,
   STORY_PACKAGES,
   STORY_GENERATION_PRICE_RUB
 } from "@/lib/storystudio/pricing";
@@ -365,7 +366,9 @@ export function StoryStudioCabinet() {
 
   return (
     <div className="min-h-screen">
-      <StoryStudioHeader />
+      <div className="print:hidden">
+        <StoryStudioHeader />
+      </div>
 
       <div className="mx-auto max-w-content px-4 pb-12 pt-20 sm:px-6 sm:pb-16 sm:pt-24 print:pt-0">
         <div className="mb-6 flex flex-col gap-4 print:hidden sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
@@ -638,7 +641,7 @@ export function StoryStudioCabinet() {
                     )}
                     <div className="rounded-card border border-violet/30 bg-violet/10 p-5">
                       <p className="text-sm">
-                        1 генерация = история, персонаж, глава или анализ · портрет/медиа — отдельная квота ·{" "}
+                        {STORY_GENERATION_EXPLAINER} ·{" "}
                         <strong>{formatStoryRub(STORY_GENERATION_PRICE_RUB)}</strong>
                       </p>
                     </div>

@@ -1,5 +1,14 @@
 import { BRAND } from "@/lib/branding";
 import { formatVideoPriceRub, VIDEO_STANDARD_PRICE_4_SEC } from "@/config/video-pricing";
+import {
+  STORY_FREE_PORTRAIT,
+  STORY_FREE_TRIAL,
+  STORY_GENERATION_EXPLAINER,
+  STORY_GENERATION_PRICE_RUB,
+  STORY_PACK_10_EXPLAINER,
+  STORY_PREMIUM_SHORT,
+  formatStoryRub
+} from "@/lib/storystudio/pricing";
 
 export type StoryStudioFaqItem = {
   id: string;
@@ -26,20 +35,23 @@ export function getStoryStudioFaqItems(): StoryStudioFaqItem[] {
     },
     {
       id: "what-is-generation",
-      question: "Что такое «генерация»?",
-      answer:
-        "Одна генерация — одна AI-операция: основа истории, новый персонаж, глава или анализ. Портреты и медиа считаются отдельно. Видео-сцены оплачиваются отдельно."
+      question: "Что такое «кредит» / «генерация»?",
+      answer: STORY_GENERATION_EXPLAINER
     },
     {
       id: "pack-10",
-      question: "Насколько хватит пакета из 10 генераций?",
-      answer:
-        "Примерно на основу истории, 3 персонажей и 5–6 продолжений глав. Точный расход зависит от того, что вы создаёте."
+      question: "Насколько хватит пакета из 10 кредитов?",
+      answer: STORY_PACK_10_EXPLAINER
+    },
+    {
+      id: "premium",
+      question: "Что даёт Premium?",
+      answer: `${STORY_PREMIUM_SHORT}. Открывается с пакетом «Автор» (50 кредитов) или «Студия».`
     },
     {
       id: "video-pricing",
       question: "Видео входит в пакет генераций?",
-      answer: `Нет. В кабинете есть доступ к созданию видео-сцен, но само видео оплачивается отдельно — от ${formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)} за 4 сек через ${BRAND.googleVeo} ${BRAND.veoVersion}.`
+      answer: `Нет. Видео всегда оплачивается отдельно — от ${formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)} за 4 сек через ${BRAND.googleVeo} ${BRAND.veoVersion}.`
     },
     {
       id: "share-read-pdf",
@@ -51,7 +63,7 @@ export function getStoryStudioFaqItems(): StoryStudioFaqItem[] {
       id: "analysis",
       question: "Как работает Анализ?",
       answer:
-        "Откройте историю → «Анализ» → «Запустить анализ». Можно оставить фокус пустым или попросить проверить темп, мотивацию, логику или атмосферу. Замечания можно применить или отклонить."
+        "Откройте историю → «Анализ» → «Проанализировать историю». ИИ разберёт уже написанное и подскажет, что улучшить и что добавить."
     },
     {
       id: "relations-map",
@@ -62,8 +74,7 @@ export function getStoryStudioFaqItems(): StoryStudioFaqItem[] {
     {
       id: "free-tier",
       question: "Что доступно бесплатно?",
-      answer:
-        "Бесплатно один раз: демо-основа истории без регистрации и две пробные генерации после регистрации. Полноценные главы, портреты и продолжение романа — после покупки генераций."
+      answer: `Бесплатно: 1 демо-основа без регистрации, затем ${STORY_FREE_TRIAL} текстовые генерации и ${STORY_FREE_PORTRAIT} портрет после входа. Дальше — кредиты от ${formatStoryRub(STORY_GENERATION_PRICE_RUB)}.`
     },
     {
       id: "language",

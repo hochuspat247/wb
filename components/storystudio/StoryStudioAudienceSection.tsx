@@ -14,7 +14,7 @@ export function StoryStudioAudienceSection() {
         <p className="story-fairy-eyebrow">Круг читателей и авторов</p>
         <h2 className="story-fairy-title mt-3 text-3xl text-moon sm:text-4xl">Кому подходит СториСтудио</h2>
         <p className="mt-3 text-muted">
-          Для авторов, которым нужен не разовый ответ чата, а волшебная мастерская для длинной истории.
+          Для авторов, которым нужен не разовый ответ чата, а рабочая среда для длинной истории.
         </p>
       </div>
 

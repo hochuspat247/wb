@@ -16,27 +16,29 @@ type Props = {
 
 const severityMeta = {
   critical: {
-    label: "Критичные места",
+    label: "Что мешает",
     icon: TriangleAlert,
-    className: "border-rose-500/30 bg-rose-500/10 text-rose-200"
+    className: "border-rose-500/30 bg-rose-500/10 text-rose-100"
   },
   attention: {
-    label: "На что обратить внимание",
+    label: "Что улучшить и добавить",
     icon: Sparkles,
-    className: "border-amber-500/30 bg-amber-500/10 text-amber-100"
+    className: "border-amber-500/30 bg-amber-500/10 text-amber-50"
   },
   good: {
-    label: "Хорошие места",
+    label: "Что уже работает",
     icon: Heart,
-    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-100"
+    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-50"
   }
 } as const;
 
 export function StoryAnalysisPanel({ story, onUpdate, onError, applyQuota }: Props) {
   const [focus, setFocus] = useState("");
+  const [showFocus, setShowFocus] = useState(false);
   const [loading, setLoading] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
   const analysis = story.analysis;
+  const chapterCount = story.chapters.length;
 
   async function handleRun() {
     setLoading(true);
@@ -80,7 +82,7 @@ export function StoryAnalysisPanel({ story, onUpdate, onError, applyQuota }: Pro
     }
   }
 
-  const groups = (["critical", "attention", "good"] as const).map((severity) => ({
+  const groups = (["good", "attention", "critical"] as const).map((severity) => ({
     severity,
     ...severityMeta[severity],
     items: analysis?.remarks.filter((r) => r.severity === severity) ?? []
@@ -89,39 +91,52 @@ export function StoryAnalysisPanel({ story, onUpdate, onError, applyQuota }: Pro
   return (
     <div className="space-y-6">
       <div className="rounded-card border border-white/10 bg-card p-5">
-        <h2 className="text-lg font-semibold">Анализ произведения</h2>
+        <h2 className="text-lg font-semibold text-ink">Анализ произведения</h2>
         <p className="mt-1 text-sm text-muted">
-          Получите AI-фидбек: что работает, что стоит доработать. Можно оставить фокус пустым или подсказать,
-          что проверить.
+          ИИ читает вашу текущую историю
+          {chapterCount > 0 ? ` (${chapterCount} гл.)` : " (основу и персонажей)"} и подскажет: что
+          уже получается, что доработать и что можно добавить дальше.
         </p>
-        <Textarea
-          className="mt-4"
-          rows={3}
-          value={focus}
-          onChange={(e) => setFocus(e.target.value)}
-          placeholder="Например: темп, мотивация героя, логика событий, связность глав или атмосфера"
-        />
+
         <Button
           type="button"
-          className="mt-3 !border-violet !bg-violet !text-white"
+          className="mt-4 !border-violet !bg-violet !text-white"
           disabled={loading}
           onClick={handleRun}
         >
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          Запустить анализ
+          {analysis ? "Обновить анализ" : "Проанализировать историю"}
         </Button>
+
+        <button
+          type="button"
+          className="mt-3 block text-xs text-muted underline-offset-2 hover:text-ink hover:underline"
+          onClick={() => setShowFocus((v) => !v)}
+        >
+          {showFocus ? "Скрыть акцент" : "Уточнить акцент (необязательно)"}
+        </button>
+
+        {showFocus && (
+          <Textarea
+            className="mt-3"
+            rows={2}
+            value={focus}
+            onChange={(e) => setFocus(e.target.value)}
+            placeholder="Например: мотивация героя, темп сцены, чем закончить главу…"
+          />
+        )}
       </div>
 
       {!analysis ? (
         <div className="rounded-card border border-dashed border-white/15 p-8 text-center text-sm text-muted">
-          Анализ ещё не запускался для этой истории.
+          Нажмите «Проанализировать историю» — разберём то, что уже написано.
         </div>
       ) : (
         <>
           <div className="rounded-card border border-violet/25 bg-violet/10 p-5">
-            <p className="text-sm text-ink">{analysis.summary}</p>
+            <p className="text-sm leading-relaxed text-ink">{analysis.summary}</p>
             {analysis.focus && (
-              <p className="mt-2 text-xs text-muted">Фокус: {analysis.focus}</p>
+              <p className="mt-2 text-xs text-muted">Акцент: {analysis.focus}</p>
             )}
           </div>
 
@@ -136,15 +151,15 @@ export function StoryAnalysisPanel({ story, onUpdate, onError, applyQuota }: Pro
                   <div
                     key={remark.id}
                     className={`rounded-card border p-4 ${group.className} ${
-                      remark.status !== "pending" ? "opacity-70" : ""
+                      remark.status !== "pending" ? "opacity-80" : ""
                     }`}
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <h4 className="font-semibold">{remark.title}</h4>
-                        <p className="mt-1 text-sm opacity-90">{remark.detail}</p>
+                        <h4 className="font-semibold text-ink">{remark.title}</h4>
+                        <p className="mt-1 text-sm text-ink/90">{remark.detail}</p>
                         {remark.suggestion && (
-                          <p className="mt-2 text-sm opacity-80">👉 {remark.suggestion}</p>
+                          <p className="mt-2 text-sm text-ink/80">→ {remark.suggestion}</p>
                         )}
                       </div>
                       {remark.status === "pending" ? (
@@ -157,7 +172,7 @@ export function StoryAnalysisPanel({ story, onUpdate, onError, applyQuota }: Pro
                             onClick={() => setRemarkStatus(remark.id, "applied")}
                           >
                             <Check className="h-3.5 w-3.5" />
-                            Применить
+                            Учтено
                           </Button>
                           <Button
                             type="button"
@@ -167,12 +182,12 @@ export function StoryAnalysisPanel({ story, onUpdate, onError, applyQuota }: Pro
                             onClick={() => setRemarkStatus(remark.id, "dismissed")}
                           >
                             <X className="h-3.5 w-3.5" />
-                            Отклонить
+                            Скрыть
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-xs uppercase tracking-wide opacity-80">
-                          {remark.status === "applied" ? "Применено" : "Отклонено"}
+                        <span className="text-xs uppercase tracking-wide text-muted">
+                          {remark.status === "applied" ? "Учтено" : "Скрыто"}
                         </span>
                       )}
                     </div>

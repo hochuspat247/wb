@@ -11,13 +11,13 @@ export const RELATION_TYPE_OPTIONS: { value: CharacterRelationType; label: strin
 ];
 
 export const RELATION_COLORS: Record<CharacterRelationType, string> = {
-  ally: "#6EDCFF",
-  enemy: "#ff6b8a",
-  lover: "#ff8fd4",
-  family: "#7CFF6B",
-  mentor: "#ffd56e",
-  rival: "#ff9f43",
-  neutral: "#96A0B5"
+  ally: "#7EE7FF",
+  enemy: "#FF7A96",
+  lover: "#FF9ADB",
+  family: "#8CFF7A",
+  mentor: "#FFE083",
+  rival: "#FFB056",
+  neutral: "#C5CBD8"
 };
 
 export function getRelationTypeLabel(type: CharacterRelationType) {

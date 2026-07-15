@@ -1,15 +1,25 @@
 import { BRAND } from "@/lib/branding";
-import { absoluteUrl, siteConfig } from "@/lib/seo";
+import { LEGAL_OPERATOR } from "@/lib/legal/operator";
+import { absoluteUrl } from "@/lib/seo";
 import { storyStudioConfig } from "@/lib/seo/storystudio";
 import { getStoryStudioFaqItems } from "@/lib/storystudio/marketingFaq";
 import { STORYSTUDIO_VIDEO_DEMO } from "@/lib/storystudio/videoExample";
 import {
+  STORY_GENERATION_EXPLAINER,
   STORY_GENERATION_PRICE_RUB,
   STORY_PACKAGES,
+  STORY_PREMIUM_SHORT,
   calculateStoryPackagePrice,
   formatStoryRub
 } from "@/lib/storystudio/pricing";
 import { VIDEO_STANDARD_PRICE_4_SEC } from "@/config/video-pricing";
+
+const publisherOrg = {
+  "@type": "Organization" as const,
+  name: LEGAL_OPERATOR.name,
+  url: "https://avenir-team.ru/",
+  email: LEGAL_OPERATOR.email
+};
 
 function buildStoryOfferCatalog() {
   return {
@@ -21,34 +31,34 @@ function buildStoryOfferCatalog() {
         name: "Пробные генерации",
         price: "0",
         priceCurrency: "RUB",
-        description: "2 бесплатные генерации после регистрации",
+        description: "2 текстовые генерации и 1 портрет после регистрации",
         url: absoluteUrl("/storystudio/create"),
         itemOffered: {
           "@type": "Service",
           name: "ИИ-основа истории",
-          description: "Синопсис, персонажи, план сюжета и первая глава"
+          description: "Синопсис, персонажи и план сюжета"
         }
       },
       {
         "@type": "Offer",
-        name: "1 генерация",
+        name: "1 кредит",
         price: String(STORY_GENERATION_PRICE_RUB),
         priceCurrency: "RUB",
-        description: "История, персонаж, глава или портрет",
+        description: STORY_GENERATION_EXPLAINER,
         url: absoluteUrl("/storystudio#pricing"),
         itemOffered: {
           "@type": "Service",
-          name: `Генерация контента ${BRAND.storyStudio}`
+          name: `Кредит генерации ${BRAND.storyStudio}`
         }
       },
       ...STORY_PACKAGES.map((pack) => {
         const price = calculateStoryPackagePrice(pack.count);
         return {
           "@type": "Offer",
-          name: `Пакет ${pack.count} генераций`,
+          name: `Пакет ${pack.count} кредитов`,
           price: String(price.total),
           priceCurrency: "RUB",
-          description: `${formatStoryRub(price.pricePerUnit)} за генерацию`,
+          description: `${formatStoryRub(price.pricePerUnit)} за кредит · ${STORY_GENERATION_EXPLAINER}`,
           url: absoluteUrl("/storystudio#pricing"),
           itemOffered: {
             "@type": "Service",
@@ -72,13 +82,15 @@ function buildStorySoftwareApplication(url: string) {
     description: storyStudioConfig.description,
     url,
     inLanguage: ["ru-RU", "en"],
+    publisher: publisherOrg,
+    provider: publisherOrg,
     offers: {
       "@type": "AggregateOffer",
       lowPrice: "0",
       highPrice: String(pack100.total),
       priceCurrency: "RUB",
       offerCount: String(2 + STORY_PACKAGES.length),
-      description: `От ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за генерацию, пакеты со скидкой`
+      description: `От ${formatStoryRub(STORY_GENERATION_PRICE_RUB)} за кредит, пакеты со скидкой`
     },
     featureList: [
       "ИИ-генерация основы истории по одной идее",
@@ -86,7 +98,7 @@ function buildStorySoftwareApplication(url: string) {
       "Интерактивная карта связей между героями",
       "Редактор глав с учётом отношений на карте",
       `Видео-серии из портретов через ${BRAND.googleVeo} ${BRAND.veoVersion}`,
-      "Премиум 18+ режим для взрослых жанров",
+      STORY_PREMIUM_SHORT,
       "Оплата без подписки — только за результат"
     ],
     audience: {
@@ -131,12 +143,9 @@ export function buildStoryStudioHomeJsonLd() {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "Organization",
-        name: siteConfig.name,
-        url: absoluteUrl("/"),
+        ...publisherOrg,
         logo: absoluteUrl("/logo.png"),
-        email: "avenir.team.corp@gmail.com",
-        sameAs: [pageUrl]
+        sameAs: [pageUrl, "https://avenir-team.ru/"]
       },
       {
         "@type": "WebSite",
@@ -144,11 +153,7 @@ export function buildStoryStudioHomeJsonLd() {
         url: pageUrl,
         inLanguage: "ru-RU",
         description: storyStudioConfig.description,
-        publisher: {
-          "@type": "Organization",
-          name: siteConfig.name,
-          url: absoluteUrl("/")
-        }
+        publisher: publisherOrg
       },
       {
         "@type": "WebPage",
@@ -169,7 +174,8 @@ export function buildStoryStudioHomeJsonLd() {
         primaryImageOfPage: {
           "@type": "ImageObject",
           url: absoluteUrl(storyStudioConfig.ogImagePath)
-        }
+        },
+        publisher: publisherOrg
       },
       buildBreadcrumbs([
         { name: "Главная", path: "/" },
@@ -217,10 +223,7 @@ export function buildStoryStudioHomeJsonLd() {
         "@type": "Service",
         name: `Видео-серии из персонажей ${BRAND.storyStudio}`,
         description: `Кинематографичные сцены из ИИ-портретов героев через ${BRAND.googleVeo} ${BRAND.veoVersion}. От ${VIDEO_STANDARD_PRICE_4_SEC} сек, формат 9:16 для соцсетей.`,
-        provider: {
-          "@type": "Organization",
-          name: storyStudioConfig.name
-        },
+        provider: publisherOrg,
         areaServed: "RU",
         url: absoluteUrl("/storystudio#video-series")
       },
@@ -233,10 +236,7 @@ export function buildStoryStudioHomeJsonLd() {
         uploadDate: new Date().toISOString().slice(0, 10),
         inLanguage: "ru-RU",
         isFamilyFriendly: true,
-        publisher: {
-          "@type": "Organization",
-          name: storyStudioConfig.name
-        }
+        publisher: publisherOrg
       }
     ]
   };
@@ -259,7 +259,8 @@ export function buildStoryStudioCreateJsonLd() {
           "@type": "WebSite",
           url: absoluteUrl("/storystudio"),
           name: storyStudioConfig.name
-        }
+        },
+        publisher: publisherOrg
       },
       buildBreadcrumbs([
         { name: BRAND.storyStudio, path: "/storystudio" },

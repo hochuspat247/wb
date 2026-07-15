@@ -4,17 +4,14 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookMarked,
-  BookOpen,
   Clapperboard,
   Film,
   GitBranch,
   ImageIcon,
   Languages,
   PenLine,
-  Printer,
   ScanSearch,
   Share2,
-  Trash2,
   Users,
   Zap
 } from "lucide-react";
@@ -22,9 +19,7 @@ import { Button } from "@/components/ui/Button";
 import { StoryStudioHeader } from "@/components/storystudio/StoryStudioHeader";
 import { StoryStudioFooter } from "@/components/storystudio/StoryStudioFooter";
 import { StoryStudioFaqSection } from "@/components/storystudio/StoryStudioFaqSection";
-import { StoryStudioAudienceSection } from "@/components/storystudio/StoryStudioAudienceSection";
 import { StoryStudioSeoLinksSection } from "@/components/storystudio/StoryStudioSeoLinksSection";
-import { StoryStudioWorkflowSection } from "@/components/storystudio/StoryStudioWorkflowSection";
 import { StoryStudioVideoDemo } from "@/components/storystudio/StoryStudioVideoDemo";
 import { RelationsMapPreview } from "@/components/storystudio/RelationsMapPreview";
 import { StorySampleResult } from "@/components/storystudio/StorySampleResult";
@@ -32,35 +27,23 @@ import { StoryPaymentButton } from "@/components/storystudio/StoryPaymentButton"
 import { StoryPricingCard } from "@/components/storystudio/StoryPricingCard";
 import { BRAND } from "@/lib/branding";
 import {
-  EXAMPLE_STORIES,
   RELATION_ADVANTAGE_POINTS,
   STORY_CONTEXT_POINTS,
-  STORY_LANGUAGES,
   STORY_TRUST_POINTS,
-  STORY_WORKSPACE_FEATURES,
   VIDEO_ADVANTAGE_POINTS
 } from "@/lib/storystudio/constants";
 import {
+  STORY_FREE_QUOTA_EXPLAINER,
   STORY_GENERATION_EXPLAINER,
   STORY_GENERATION_PRICE_RUB,
   STORY_PACK_10_EXPLAINER,
   STORY_PACKAGES,
+  STORY_PREMIUM_FEATURES,
   STORY_PRICING_PLANS,
   calculateStoryPackagePrice,
   formatStoryRub
 } from "@/lib/storystudio/pricing";
 import { VIDEO_STANDARD_PRICE_4_SEC, formatVideoPriceRub } from "@/config/video-pricing";
-
-const workspaceIcons = {
-  share: Share2,
-  read: BookOpen,
-  pdf: Printer,
-  edit: PenLine,
-  cleanup: Trash2,
-  analysis: ScanSearch,
-  media: ImageIcon,
-  languages: Languages
-} as const;
 
 const features = [
   {
@@ -82,45 +65,45 @@ const features = [
     badge: null
   },
   {
-    icon: Zap,
-    title: "Быстрый старт",
-    description: "Соберите основу — синопсис, героев и план — за 1–2 минуты.",
+    icon: Share2,
+    title: "Поделиться и читать",
+    description: "Публичная ссылка, режим чтения, печать и фирменный PDF.",
     badge: null
   },
   {
     icon: ScanSearch,
     title: "AI-анализ",
-    description: "Фидбек по сюжету: критичные места, зоны внимания и удачные решения.",
+    description: "Разбор уже написанного: что работает, что улучшить и что можно добавить.",
     badge: null
   },
   {
     icon: ImageIcon,
     title: "Портреты и медиа",
-    description: "Визуалы для персонажей, мира и глав — после того, как собрана текстовая основа.",
-    badge: null
-  },
-  {
-    icon: Share2,
-    title: "Поделиться и читать",
-    description: "Публичная ссылка, чистый режим чтения, печать и PDF.",
+    description: "Визуалы для персонажей, мира и глав из той же квоты кредитов.",
     badge: null
   },
   {
     icon: Languages,
     title: "5 языков",
-    description: "Пишите на русском, английском, немецком, французском или испанском.",
+    description: "Русский, английский, немецкий, французский или испанский.",
+    badge: null
+  },
+  {
+    icon: BookMarked,
+    title: "Premium",
+    description: STORY_PREMIUM_FEATURES.join(" "),
     badge: null
   },
   {
     icon: Clapperboard,
     title: "Видео-сцены",
-    description: `Короткие сцены из портретов через ${BRAND.googleVeo} ${BRAND.veoVersion} — опция после готовой истории.`,
+    description: `Короткие сцены через ${BRAND.googleVeo} ${BRAND.veoVersion} — оплачиваются отдельно.`,
     badge: "Опция"
   },
   {
-    icon: BookMarked,
-    title: "Premium",
-    description: "Глубже держит сюжет и мир; открывает режим 18+ для взрослых тем.",
+    icon: Zap,
+    title: "Быстрый старт",
+    description: "Соберите основу — синопсис, героев и план — за 1–2 минуты.",
     badge: null
   }
 ];
@@ -145,8 +128,8 @@ export function StoryStudioLanding() {
               className="mx-auto mt-5 max-w-2xl animate-reveal-up text-lg text-muted sm:mt-7 sm:text-xl"
               style={{ animationDelay: "80ms" }}
             >
-              {BRAND.storyStudio} хранит персонажей, мир и отношения, помогает планировать сюжет и писать главы, не теряя
-              контекст произведения.
+              {BRAND.storyStudio} — рабочая среда для длинной истории: персонажи, мир, отношения и главы в одном
+              кабинете, без потери контекста.
             </p>
             <div
               className="mt-8 flex animate-reveal-up flex-col gap-3 sm:mt-10 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center"
@@ -172,18 +155,16 @@ export function StoryStudioLanding() {
               </Link>
             </div>
             <p className="mt-5 text-sm text-muted">
-              Бесплатное демо без регистрации · русский язык · результат за 1–2 минуты
+              Бесплатное демо без регистрации · романы, детективы, хоррор, фанфики · результат за 1–2 минуты
             </p>
           </div>
         </section>
-
-        <StoryStudioWorkflowSection />
 
         <StorySampleResult />
 
         <section id="context" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-14">
           <div className="story-fairy-panel rounded-container p-6 sm:p-10">
-            <p className="story-fairy-eyebrow">Контекст произведения</p>
+            <p className="story-fairy-eyebrow">Почему не обычный чат</p>
             <h2 className="story-fairy-title mt-3 max-w-3xl text-3xl text-moon sm:text-4xl">
               Обычный чат пишет куски текста. {BRAND.storyStudio} помнит целое произведение.
             </h2>
@@ -221,11 +202,11 @@ export function StoryStudioLanding() {
                   Карта связей
                 </p>
                 <h2 className="story-fairy-title mt-4 text-3xl text-moon sm:text-4xl">
-                  Свяжи героев — ИИ напишет с учётом интриг
+                  Карта отношений: ИИ пишет с учётом интриг
                 </h2>
                 <p className="mt-4 text-muted">
-                  Живая карта судеб: перетащите персонажей, проведите нить связи — и каждая глава будет помнить вашу
-                  драматургию.
+                  Перетащите персонажей, проведите связи — и каждая новая глава будет помнить союзы, конфликты и
+                  напряжение между героями.
                 </p>
                 <ul className="mt-6 space-y-3">
                   {RELATION_ADVANTAGE_POINTS.map((point) => (
@@ -268,75 +249,15 @@ export function StoryStudioLanding() {
           </div>
         </section>
 
-        <section id="workspace" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
-          <div className="mb-8 text-center sm:mb-10">
-            <p className="story-fairy-eyebrow">После генерации</p>
-            <h2 className="story-fairy-title mt-4 text-3xl text-moon sm:text-4xl">
-              Что можно делать с готовой историей
-            </h2>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {STORY_WORKSPACE_FEATURES.map((feature) => {
-              const Icon = workspaceIcons[feature.id];
-              return (
-                <div key={feature.id} className="story-fairy-panel rounded-card p-5 transition hover:border-gold/40">
-                  <Icon className="mb-3 h-5 w-5 text-gold" />
-                  <h3 className="font-fairy text-xl font-semibold text-moon">{feature.title}</h3>
-                  <p className="mt-2 text-sm text-muted">{feature.description}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section id="examples" className="mx-auto max-w-content px-4 py-12 sm:px-6 sm:py-16">
-          <h2 className="story-fairy-title mb-2 text-center text-3xl text-moon sm:text-4xl">
-            Идеи, с которых хочется начать
-          </h2>
-          <p className="mb-10 text-center text-muted">Оригинальные завязки — без чужих вселенных в рекламе</p>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {EXAMPLE_STORIES.map((story) => (
-              <Link
-                key={story.title}
-                href="/storystudio/create"
-                className="story-fairy-panel group rounded-card p-5 transition hover:border-gold/40"
-              >
-                <span className="text-xs font-medium uppercase tracking-[0.18em] text-gold">{story.type}</span>
-                <h3 className="mt-2 font-fairy text-xl font-semibold text-moon group-hover:text-gold">
-                  {story.title}
-                </h3>
-                <p className="mt-2 line-clamp-3 text-sm text-muted">{story.description}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section id="languages" className="mx-auto max-w-content px-4 py-6 sm:px-6 sm:py-10">
-          <div className="story-fairy-panel rounded-container p-6 text-center sm:p-10">
-            <Languages className="mx-auto h-8 w-8 text-mist" />
-            <h2 className="story-fairy-title mt-4 text-3xl text-moon sm:text-4xl">Пишите на разных языках</h2>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              {STORY_LANGUAGES.map((lang) => (
-                <span
-                  key={lang.id}
-                  className="rounded-full border border-[rgba(212,180,131,0.25)] bg-white/5 px-3 py-1.5 text-sm text-moon"
-                >
-                  <span className="mr-1.5 text-[10px] font-bold text-gold">{lang.flag}</span>
-                  {lang.label}
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
-
         <section id="pricing" className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-16">
           <h2 className="story-fairy-title mb-2 text-center text-3xl text-moon sm:text-4xl">Тарифы</h2>
           <p className="mx-auto mb-4 max-w-2xl text-center text-muted">
-            Бесплатно один раз попробуйте основу. Дальше — оплата за генерации, без подписки. От{" "}
-            {formatStoryRub(STORY_GENERATION_PRICE_RUB)}.
+            Без подписки. От {formatStoryRub(STORY_GENERATION_PRICE_RUB)} за кредит.
           </p>
           <p className="mx-auto mb-10 max-w-2xl rounded-xl border border-[rgba(212,180,131,0.2)] bg-white/[0.03] px-4 py-3 text-center text-sm text-muted">
             {STORY_GENERATION_EXPLAINER}
+            <br />
+            <span className="text-moon">{STORY_FREE_QUOTA_EXPLAINER}</span>
             <br />
             <span className="text-moon">{STORY_PACK_10_EXPLAINER}</span>
           </p>
@@ -366,7 +287,7 @@ export function StoryStudioLanding() {
             ))}
           </div>
 
-          <h3 className="mb-4 text-center story-fairy-eyebrow">Пакеты генераций</h3>
+          <h3 className="mb-4 text-center story-fairy-eyebrow">Пакеты кредитов</h3>
           <div className="grid gap-4 lg:grid-cols-3">
             {STORY_PACKAGES.map((pkg) => {
               const price = calculateStoryPackagePrice(pkg.count);
@@ -375,7 +296,7 @@ export function StoryStudioLanding() {
                   key={pkg.id}
                   name={pkg.label}
                   price={formatStoryRub(price.total)}
-                  period={`${formatStoryRub(price.pricePerUnit)}/ген · −${price.savingsPercent}%`}
+                  period={`${formatStoryRub(price.pricePerUnit)}/кредит · −${price.savingsPercent}%`}
                   features={pkg.features}
                   badge={pkg.badge}
                   highlighted={Boolean(pkg.badge)}
@@ -389,8 +310,7 @@ export function StoryStudioLanding() {
             })}
           </div>
           <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted">
-            Доступ к созданию видео есть в кабинете. Само видео оплачивается отдельно — от{" "}
-            {formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)}.
+            Видео всегда отдельно — от {formatVideoPriceRub(VIDEO_STANDARD_PRICE_4_SEC)}.
           </p>
         </section>
 
@@ -439,7 +359,6 @@ export function StoryStudioLanding() {
           </div>
         </section>
 
-        <StoryStudioAudienceSection />
         <StoryStudioSeoLinksSection />
         <StoryStudioFaqSection />
 
@@ -449,7 +368,7 @@ export function StoryStudioLanding() {
               Начните цельное произведение в {BRAND.storyStudio}
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-muted">
-              Соберите идею, персонажей и первую главу — а потом продолжайте историю, не теряя контекст.
+              Соберите идею, персонажей и главы — а потом продолжайте историю, не теряя контекст.
             </p>
             <Link href="/storystudio/create" className="mt-6 inline-block w-full sm:w-auto">
               <Button

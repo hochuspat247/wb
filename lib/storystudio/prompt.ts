@@ -160,46 +160,62 @@ ${relationsBlock}
 
 export function buildStoryAnalysisPrompt(story: StoryProject, focus?: string) {
   const chaptersText = story.chapters
-    .slice(0, 8)
-    .map((c) => `### Глава ${c.number}. ${c.title}\n${c.summary}\n${c.content.slice(0, 1800)}`)
+    .slice(0, 10)
+    .map((c) => {
+      const body = c.content?.trim() || c.summary || "";
+      return `### Глава ${c.number}. ${c.title}\nКратко: ${c.summary || "—"}\nТекст:\n${body.slice(0, 2200)}`;
+    })
     .join("\n\n");
+
   const focusLine = focus?.trim()
-    ? `Автор просит особенно проверить: ${focus.trim()}`
-    : "Автор оставил фокус пустым — сам найди важные моменты: темп, мотивацию героев, логику событий, связность глав, атмосферу.";
+    ? `Дополнительный акцент автора: ${focus.trim()}`
+    : "";
 
-  return `Ты — литературный редактор. Проанализируй произведение и дай конструктивный фидбек.
+  return `Ты — литературный редактор. Проанализируй УЖЕ НАПИСАННУЮ историю и скажи, что с ней делать дальше.
 
+Задача:
+1) коротко оцени то, что уже есть (основа, персонажи, главы);
+2) укажи слабые места и что стоит доработать;
+3) предложи, что можно ДОБАВИТЬ дальше (сцены, конфликты, персонажные линии, детали мира, следующие главы).
+
+Не проси автора заново описать историю. Не давай общих советов «пиши лучше» — опирайся на конкретные детали ниже.
 ${storyLanguageInstruction(story.language)}
 ${focusLine}
 
 Название: ${story.title}
-Хук: ${story.hook}
-Синопсис: ${story.synopsis}
-Темы: ${story.themes.join(", ")}
-Мир: ${story.world.setting}; тон: ${story.world.tone}
+Хук: ${story.hook || "—"}
+Синопсис: ${story.synopsis || "—"}
+Жанры: ${story.genres.join(", ") || "—"}
+Темы: ${story.themes.join(", ") || "—"}
+Мир: ${story.world.setting || "—"}; тон: ${story.world.tone || "—"}; эпоха: ${story.world.era || "—"}
 Персонажи:
 ${formatCharactersForPrompt(story)}
 Связи:
 ${formatRelationsForPrompt(story)}
-План: ${story.outline.join(" → ")}
+План: ${story.outline.length ? story.outline.join(" → ") : "плана нет"}
 
-Главы:
-${chaptersText || "Глав ещё нет — оцени основу и план."}
+Главы (${story.chapters.length}):
+${chaptersText || "Глав ещё нет — оцени основу, персонажей и план; предложи, с чего начать первую главу и что добавить."}
 
-Верни JSON:
+Верни ТОЛЬКО JSON такого вида:
 {
-  "summary": "краткий обзор сильных и слабых сторон в 2-4 предложениях",
+  "summary": "2–4 предложения: что уже получается и куда двигаться",
   "remarks": [
     {
       "severity": "critical|attention|good",
       "title": "короткий заголовок",
-      "detail": "что именно замечено",
-      "suggestion": "конкретная правка или пустая строка для good"
+      "detail": "конкретное наблюдение по этой истории",
+      "suggestion": "что доработать или добавить; для good можно пустую строку"
     }
   ]
 }
 
-Нужно 4–10 замечаний. Обязательно смешай severity: critical (мешает цельности), attention (перечитать/доработать), good (уже работает удачно).`;
+Обязательно 6–10 замечаний.
+Смешай severity:
+- good — что уже работает;
+- attention — что улучшить;
+- critical — что мешает цельности или дальшему развитию.
+Хотя бы 2 замечания severity=attention или critical должны быть про то, что можно ДОБАВИТЬ.`;
 }
 
 export function buildStoryMediaPrompt(input: {

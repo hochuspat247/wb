@@ -670,7 +670,6 @@ export function CabinetApp() {
               <CardGenerator
                 embedded
                 hideHistory
-                darkConsole
                 initialVideoOrderId={videoOrderId}
                 onQuotaChange={handleQuotaChange}
                 onSaved={refreshCards}

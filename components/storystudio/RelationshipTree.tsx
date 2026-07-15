@@ -275,13 +275,15 @@ export function RelationshipTree({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-card border border-white/10 bg-[#0d0a16] p-3 sm:p-4">
-        <p className="mb-3 text-xs text-muted sm:text-sm">
+      <div className="rounded-card border border-[rgba(212,180,131,0.28)] bg-[rgba(18,24,36,0.92)] p-3 sm:p-4">
+        <p className="mb-3 text-xs text-[#c9c0b4] sm:text-sm">
           <span className="sm:hidden">Потяните героя. Долгое нажатие + перетаскивание — связь. Клик по стрелке — редактирование.</span>
           <span className="hidden sm:inline">
             Перетащите персонажа, чтобы расставить на карте. Зажмите{" "}
-            <kbd className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-ink">Shift</kbd> и потяните стрелку к другому
-            герою, чтобы создать связь. Клик по стрелке — редактирование.
+            <kbd className="rounded border border-[rgba(212,180,131,0.35)] bg-[rgba(212,180,131,0.12)] px-1.5 py-0.5 text-xs text-[#f3ebe0]">
+              Shift
+            </kbd>{" "}
+            и потяните стрелку к другому герою, чтобы создать связь. Клик по стрелке — редактирование.
           </span>
         </p>
 
@@ -289,7 +291,7 @@ export function RelationshipTree({
         <svg
           ref={svgRef}
           viewBox={`0 0 ${VIEW_SIZE} ${VIEW_SIZE}`}
-          className="mx-auto h-[min(18rem,70vw)] w-full min-w-[280px] max-w-lg touch-none select-none sm:h-[22rem]"
+          className="mx-auto h-[min(18rem,70vw)] w-full min-w-[280px] max-w-lg touch-none select-none rounded-xl bg-[rgba(8,12,20,0.85)] sm:h-[22rem]"
           onPointerMove={handleSvgPointerMove}
           onPointerUp={handleSvgPointerUp}
           onPointerLeave={() => {
@@ -316,7 +318,7 @@ export function RelationshipTree({
               </marker>
             ))}
             <filter id="relation-glow">
-              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feGaussianBlur stdDeviation="2.5" result="blur" />
               <feMerge>
                 <feMergeNode in="blur" />
                 <feMergeNode in="SourceGraphic" />
@@ -334,6 +336,9 @@ export function RelationshipTree({
             const midX = (edge.x1 + edge.x2) / 2;
             const midY = (edge.y1 + edge.y2) / 2;
             const selected = editor?.mode === "edit" && editor.relationId === relation.id;
+            const typeLabel = getRelationTypeLabel(relation.type);
+            const detail = relation.label?.trim() ? relation.label.trim().slice(0, 28) : "";
+            const labelWidth = Math.max(52, Math.min(120, Math.max(typeLabel.length, detail.length) * 5.2));
 
             return (
               <g
@@ -347,17 +352,52 @@ export function RelationshipTree({
                   x2={edge.x2}
                   y2={edge.y2}
                   stroke={color}
-                  strokeWidth={selected ? Math.max(2.5, relation.intensity / 3) : Math.max(1.5, relation.intensity / 4)}
-                  strokeOpacity={selected ? 1 : 0.75}
+                  strokeWidth={selected ? Math.max(3, relation.intensity / 2.5) : Math.max(2.2, relation.intensity / 3.2)}
+                  strokeOpacity={1}
                   markerEnd={`url(#arrow-${relation.type})`}
-                  filter={selected ? "url(#relation-glow)" : undefined}
+                  filter="url(#relation-glow)"
                 />
-                <text x={midX} y={midY - 8} textAnchor="middle" className="fill-muted text-[9px]">
-                  {getRelationTypeLabel(relation.type)}
+                {/* Hit area */}
+                <line
+                  x1={edge.x1}
+                  y1={edge.y1}
+                  x2={edge.x2}
+                  y2={edge.y2}
+                  stroke="transparent"
+                  strokeWidth={14}
+                />
+                <rect
+                  x={midX - labelWidth / 2}
+                  y={midY - (detail ? 18 : 10)}
+                  width={labelWidth}
+                  height={detail ? 28 : 16}
+                  rx={6}
+                  fill="rgba(10, 14, 22, 0.92)"
+                  stroke={color}
+                  strokeOpacity={0.55}
+                  strokeWidth={1}
+                />
+                <text
+                  x={midX}
+                  y={detail ? midY - 4 : midY + 3}
+                  textAnchor="middle"
+                  fill="#F6ECD8"
+                  fontSize={10}
+                  fontWeight={600}
+                  style={{ paintOrder: "stroke", stroke: "rgba(0,0,0,0.55)", strokeWidth: 2 }}
+                >
+                  {typeLabel}
                 </text>
-                {relation.label && (
-                  <text x={midX} y={midY + 6} textAnchor="middle" className="fill-ink text-[8px] opacity-80">
-                    {relation.label.slice(0, 28)}
+                {detail && (
+                  <text
+                    x={midX}
+                    y={midY + 9}
+                    textAnchor="middle"
+                    fill="#D4B483"
+                    fontSize={9}
+                    style={{ paintOrder: "stroke", stroke: "rgba(0,0,0,0.5)", strokeWidth: 1.5 }}
+                  >
+                    {detail}
                   </text>
                 )}
               </g>
@@ -370,8 +410,8 @@ export function RelationshipTree({
               y1={linkFrom.position.y}
               x2={cursorPoint.x}
               y2={cursorPoint.y}
-              stroke="#8C7BFF"
-              strokeWidth={2}
+              stroke="#D4B483"
+              strokeWidth={2.5}
               strokeDasharray="6 4"
               pointerEvents="none"
             />
@@ -397,9 +437,9 @@ export function RelationshipTree({
                   cx={pos.x}
                   cy={pos.y}
                   r={selected || linking ? 34 : 28}
-                  fill={selected || linking ? "#8C7BFF33" : "#171C26"}
-                  stroke={selected || linking ? "#8C7BFF" : "#ffffff22"}
-                  strokeWidth={selected || linking ? 2.5 : 1.5}
+                  fill={selected || linking ? "rgba(212,180,131,0.25)" : "#243044"}
+                  stroke={selected || linking ? "#D4B483" : "rgba(243,235,224,0.55)"}
+                  strokeWidth={selected || linking ? 2.5 : 2}
                 />
                 {imageSrc ? (
                   <>
@@ -422,19 +462,34 @@ export function RelationshipTree({
                 ) : (
                   <text
                     x={pos.x}
-                    y={pos.y + 4}
+                    y={pos.y + 5}
                     textAnchor="middle"
-                    className="fill-ink text-[11px] font-semibold"
+                    fill="#F6ECD8"
+                    fontSize={14}
+                    fontWeight={700}
                     pointerEvents="none"
                   >
                     {character.name.slice(0, 1)}
                   </text>
                 )}
+                <rect
+                  x={pos.x - 36}
+                  y={pos.y + 32}
+                  width={72}
+                  height={16}
+                  rx={5}
+                  fill="rgba(10, 14, 22, 0.88)"
+                  stroke="rgba(212,180,131,0.25)"
+                  strokeWidth={1}
+                  pointerEvents="none"
+                />
                 <text
                   x={pos.x}
-                  y={pos.y + 44}
+                  y={pos.y + 43}
                   textAnchor="middle"
-                  className={`text-[10px] ${selected ? "fill-violet" : "fill-muted"}`}
+                  fill={selected ? "#D4B483" : "#F6ECD8"}
+                  fontSize={10}
+                  fontWeight={600}
                   pointerEvents="none"
                 >
                   {character.name.split(" ")[0]}
@@ -445,10 +500,13 @@ export function RelationshipTree({
         </svg>
         </div>
 
-        <div className="mt-3 flex flex-wrap justify-center gap-2 text-[11px] text-muted sm:gap-3 sm:text-xs">
+        <div className="mt-3 flex flex-wrap justify-center gap-2 text-[11px] text-[#d7cfc3] sm:gap-3 sm:text-xs">
           {RELATION_TYPE_OPTIONS.map((option) => (
             <span key={option.value} className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full" style={{ background: RELATION_COLORS[option.value] }} />
+              <span
+                className="h-2.5 w-2.5 rounded-full ring-1 ring-white/20"
+                style={{ background: RELATION_COLORS[option.value] }}
+              />
               {option.label}
             </span>
           ))}

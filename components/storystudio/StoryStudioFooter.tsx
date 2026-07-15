@@ -6,8 +6,9 @@ import { storyStudioMarketingPages } from "@/lib/storystudio/marketingPages";
 
 const footerLinks = [
   { label: "Пример результата", href: "/storystudio#sample" },
+  { label: "Почему не чат", href: "/storystudio#context" },
   { label: "Карта связей", href: "/storystudio#relations" },
-  { label: "Как работает", href: "/storystudio#workflow" },
+  { label: "Возможности", href: "/storystudio#features" },
   { label: "Тарифы", href: "/storystudio#pricing" },
   { label: "Видео-сцены", href: "/storystudio#video-series" },
   { label: "FAQ", href: "/storystudio#faq" },

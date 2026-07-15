@@ -47,12 +47,13 @@ export function StoryShareReadPanel({ story, onUpdate, onError }: Props) {
   }
 
   function handlePrint() {
-    window.print();
+    setShowReader(true);
+    window.setTimeout(() => window.print(), 50);
   }
 
   return (
     <div className="space-y-6">
-      <div className="rounded-card border border-white/10 bg-card p-5">
+      <div className="rounded-card border border-white/10 bg-card p-5 print:hidden">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -60,7 +61,7 @@ export function StoryShareReadPanel({ story, onUpdate, onError }: Props) {
               Поделиться и читать
             </h2>
             <p className="mt-1 text-sm text-muted">
-              Откройте доступ по ссылке, переключитесь в режим чтения или сохраните PDF через печать.
+              Откройте доступ по ссылке, читайте на экране или сохраните фирменный PDF через печать.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -106,7 +107,7 @@ export function StoryShareReadPanel({ story, onUpdate, onError }: Props) {
       </div>
 
       {showReader && (
-        <div className="rounded-card border border-white/10 bg-[#0b0814] p-5 sm:p-8 print:border-0 print:bg-white print:p-0">
+        <div className="story-print-screen-wrap rounded-card border border-[rgba(212,180,131,0.22)] p-4 sm:p-6 print:border-0 print:bg-transparent print:p-0">
           <StoryReaderView story={story} />
         </div>
       )}

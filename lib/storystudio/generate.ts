@@ -335,46 +335,94 @@ export async function generateStoryChapter(
 
 export async function generateStoryAnalysis(story: StoryProject, focus?: string): Promise<StoryAnalysis> {
   const rawText = await callGigaChatJson(buildStoryAnalysisPrompt(story, focus), {
-    maxTokens: 3500,
-    temperature: 0.4
+    maxTokens: 4500,
+    temperature: 0.35,
+    signalMs: 120_000
   });
   const data = parseJson<{
     summary?: string;
-    remarks?: Array<{
-      severity?: string;
-      title?: string;
-      detail?: string;
-      suggestion?: string;
-    }>;
+    remarks?: Array<Record<string, unknown>>;
+    замечания?: Array<Record<string, unknown>>;
+    items?: Array<Record<string, unknown>>;
+    feedback?: Array<Record<string, unknown>>;
+    анализ?: string;
+    overview?: string;
   }>(rawText);
 
-  const remarks: StoryAnalysisRemark[] = asArray(data.remarks)
+  const remarksRaw = asArray(
+    data.remarks ?? data.замечания ?? data.items ?? data.feedback
+  );
+
+  const remarks: StoryAnalysisRemark[] = remarksRaw
     .map((item): StoryAnalysisRemark | null => {
-      const severityRaw = String(item.severity ?? "attention");
-      const severity: StoryAnalysisRemark["severity"] =
-        severityRaw === "critical" || severityRaw === "good" ? severityRaw : "attention";
-      const detail = String(item.detail ?? "").trim();
-      if (!detail) return null;
+      if (!item || typeof item !== "object") return null;
+
+      const severityRaw = String(
+        item.severity ?? item.level ?? item.тип ?? item.type ?? "attention"
+      )
+        .trim()
+        .toLowerCase();
+
+      let severity: StoryAnalysisRemark["severity"] = "attention";
+      if (
+        severityRaw === "critical" ||
+        severityRaw === "критично" ||
+        severityRaw === "critical_issue" ||
+        severityRaw.includes("crit")
+      ) {
+        severity = "critical";
+      } else if (
+        severityRaw === "good" ||
+        severityRaw === "strong" ||
+        severityRaw === "хорошо" ||
+        severityRaw === "plus" ||
+        severityRaw.includes("good")
+      ) {
+        severity = "good";
+      }
+
+      const detail = String(
+        item.detail ?? item.description ?? item.text ?? item.текст ?? item.описание ?? ""
+      ).trim();
+      const title = String(item.title ?? item.заголовок ?? item.name ?? "").trim();
+      const suggestion = String(
+        item.suggestion ?? item.advice ?? item.совет ?? item.recommendation ?? ""
+      ).trim();
+
+      if (!detail && !title) return null;
 
       return {
         id: crypto.randomUUID(),
         severity,
-        title: String(item.title ?? "").trim() || "Замечание",
-        detail,
-        suggestion: String(item.suggestion ?? "").trim() || undefined,
+        title: title || "Замечание",
+        detail: detail || title,
+        suggestion: suggestion || undefined,
         status: "pending"
       };
     })
     .filter((item): item is StoryAnalysisRemark => Boolean(item));
 
-  if (!remarks.length) {
-    throw new Error("ИИ не вернул анализ.");
+  const summary = String(data.summary ?? data.анализ ?? data.overview ?? "").trim();
+
+  if (!remarks.length && !summary) {
+    throw new Error("ИИ не вернул анализ. Попробуйте ещё раз.");
+  }
+
+  if (!remarks.length && summary) {
+    remarks.push({
+      id: crypto.randomUUID(),
+      severity: "attention",
+      title: "Общий вывод",
+      detail: summary,
+      suggestion: "Запустите анализ ещё раз, если нужны отдельные пункты.",
+      status: "pending"
+    });
   }
 
   return {
     id: crypto.randomUUID(),
     focus: focus?.trim() || undefined,
-    summary: String(data.summary ?? "").trim() || "Анализ готов.",
+    summary: summary || "Анализ готов: ниже — что уже работает и что можно добавить.",
     remarks,
     createdAt: new Date().toISOString()
   };

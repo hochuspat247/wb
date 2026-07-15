@@ -6,8 +6,8 @@ export function StoryStudioSeoLinksSection() {
   return (
     <section className="mx-auto max-w-content px-4 py-10 sm:px-6 sm:py-14" id="use-cases">
       <div className="mx-auto max-w-3xl text-center">
-        <p className="story-fairy-eyebrow">Сценарии</p>
-        <h2 className="story-fairy-title mt-3 text-3xl text-moon sm:text-4xl">Сценарии для авторов</h2>
+        <p className="story-fairy-eyebrow">Направления</p>
+        <h2 className="story-fairy-title mt-3 text-3xl text-moon sm:text-4xl">Для разных форматов авторов</h2>
         <p className="mt-3 text-muted">
           Отдельные страницы под популярные запросы: фанфики, романы, сценарии и генерация персонажей.
         </p>

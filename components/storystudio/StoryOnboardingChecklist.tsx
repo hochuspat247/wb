@@ -113,7 +113,7 @@ export function StoryOnboardingChecklist({ story, onGoToTab }: StoryOnboardingCh
             onClick={() => onGoToTab(item.tab)}
             className={`flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition ${
               item.done
-                ? "border-white/10 bg-white/5 text-muted"
+                ? "border-emerald-500/25 bg-emerald-500/10 text-ink"
                 : "border-violet/40 bg-violet/15 text-ink hover:bg-violet/25"
             }`}
           >
@@ -123,7 +123,7 @@ export function StoryOnboardingChecklist({ story, onGoToTab }: StoryOnboardingCh
               <Circle className="h-4 w-4 shrink-0 text-violet" />
             )}
             <item.icon className="h-3.5 w-3.5 shrink-0 opacity-70" />
-            <span className={item.done ? "line-through opacity-70" : "font-medium"}>{item.label}</span>
+            <span className={item.done ? "text-ink/80" : "font-medium"}>{item.label}</span>
           </button>
         ))}
       </div>

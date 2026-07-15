@@ -68,7 +68,8 @@ import {
   calculatePackagePrice,
   formatCabinetQuotaBanner,
   formatMonthlyFreeResetHint,
-  formatRub
+  formatRub,
+  kitBuyCta
 } from "@/lib/pricing";
 import { clearHistory, getHistory } from "@/lib/storage";
 import {
@@ -535,7 +536,7 @@ export function CabinetApp() {
           </p>
           {isQuotaExhausted ? (
             <PaymentButton className="mt-4" count={SKU_KIT_SLIDE_COUNT} metrikaPlan="cabinet_sidebar_sku_kit" size="sm">
-              Купить комплект
+              {kitBuyCta()}
             </PaymentButton>
           ) : (
             <CabinetPricingLink className="mt-4 w-full" />
@@ -581,8 +582,8 @@ export function CabinetApp() {
               {remainingGenerations >= 999_000 ? (
                 "∞"
               ) : isQuotaExhausted ? (
-                <Link className="text-accent" href="/#pricing-calculator">
-                  Купить тариф
+                <Link className="text-accent" href="/#pricing">
+                  Купить комплект
                 </Link>
               ) : (
                 <span className="text-mint">{remainingGenerations}</span>

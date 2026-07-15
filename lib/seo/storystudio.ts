@@ -91,7 +91,7 @@ export function createStoryStudioMetadata({
         { url: storyStudioAbsoluteUrl("/storystudio/icon"), type: "image/png", sizes: "32x32" },
         ...siteIcons.icon
       ],
-      shortcut: absoluteUrl("/favicon.ico"),
+      shortcut: siteIcons.shortcut,
       apple: [
         { url: storyStudioAbsoluteUrl("/storystudio/apple-icon"), sizes: "180x180", type: "image/png" },
         ...siteIcons.apple

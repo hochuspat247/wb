@@ -16,7 +16,10 @@ const TRANSIENT_NETWORK_PATTERNS = [
   /^networkerror/i,
   /^load failed$/i,
   /network request failed/i,
-  /the internet connection appears to be offline/i
+  /the internet connection appears to be offline/i,
+  /gettrackerid/i,
+  /mc\.yandex\.(ru|com)/i,
+  /metrika\/tag\.js/i
 ];
 
 export const STALE_CLIENT_TITLE = "Обновите страницу";
@@ -29,6 +32,11 @@ export function isTransientNetworkError(message?: string | null, source?: string
 
   const messageOnly = (message ?? "").trim();
   if (TRANSIENT_NETWORK_PATTERNS.some((pattern) => pattern.test(messageOnly))) {
+    return true;
+  }
+
+  // Yandex Metrika / third-party tracker stack with a fetch failure.
+  if (/gettrackerid|mc\.yandex|metrika/i.test(haystack) && /failed to fetch|networkerror|load failed/i.test(haystack)) {
     return true;
   }
 

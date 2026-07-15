@@ -30,8 +30,8 @@ export function Hero() {
 
             <Reveal delay={2} immediate>
               <p className="hero-lead mt-7 max-w-[34rem] text-[1.05rem] font-medium leading-[1.8] text-muted/90 sm:mt-8 sm:text-lg sm:leading-[1.85] md:mt-9 md:text-[1.15rem]">
-                Загрузите фото — {BRAND.marketCard} соберёт готовый комплект карточек для одного товара: обложку 4:5,
-                дополнительные слайды, описание и СЕО-ключи для ВБ, Озон, Авито и Яндекс Маркета.
+                Загрузите фото — {BRAND.marketCard} создаст обложку 4:5, описание и СЕО-ключи. После проверки результата
+                можно заказать комплект: обложку и четыре дополнительных слайда.
               </p>
             </Reveal>
 

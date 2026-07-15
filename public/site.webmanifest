@@ -1,27 +1,39 @@
 {
   "name": "МаркетКард ИИ — генератор карточек товара",
   "short_name": "МаркетКард",
-  "description": "ИИ-генератор карточек товара для Wildberries, Ozon и Авито: обложка 4:5, тексты и СЕО из фото.",
+  "description": "Создайте карточку товара для Wildberries, Ozon и Авито по фото за 1–2 минуты. Обложка, инфографика и SEO-текст.",
   "lang": "ru",
   "start_url": "/",
   "icons": [
     {
-      "src": "/favicon-192x192.png",
-      "sizes": "192x192",
+      "src": "/favicon-32x32-v2.png",
+      "sizes": "32x32",
       "type": "image/png"
     },
     {
-      "src": "/favicon-192x192.png",
-      "sizes": "120x120",
-      "type": "image/png"
-    },
-    {
-      "src": "/favicon-48x48.png",
+      "src": "/favicon-48x48-v2.png",
       "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-192-v2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-touch-icon-v2.png",
+      "sizes": "180x180",
       "type": "image/png"
     }
   ],
-  "theme_color": "#0b1020",
-  "background_color": "#0b1020",
+  "theme_color": "#6D28D9",
+  "background_color": "#6D28D9",
   "display": "standalone"
 }

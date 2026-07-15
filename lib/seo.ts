@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { BRAND } from "@/lib/branding";
 import {
-  CARD_GENERATION_PRICE_RUB,
-  describeFreeQuotaMarketing,
-  describeMonthlyFreeReset,
+  SKU_KIT_PRICE_RUB,
   formatRub
 } from "@/lib/pricing";
 
 const defaultSiteUrl = "https://marketcard-ai.avenir-team.ru";
+
+/** Cache-busting icon version — bump when favicon assets change. */
+export const FAVICON_VERSION = "v2";
 
 export const baseKeywords = [
   "генератор карточек товара",
@@ -16,8 +17,11 @@ export const baseKeywords = [
   "карточка товара",
   "генератор карточек",
   "генератор карточек бесплатно",
+  "карточка товара по фото",
+  "инфографика для маркетплейсов",
   "инфографика wildberries",
   "инфографика для вб",
+  "нейросеть для карточек wildberries",
   "карточка товара wildberries",
   "карточка товара ozon",
   "карточка товара авито",
@@ -43,8 +47,9 @@ export const baseKeywords = [
 export const siteConfig = {
   name: BRAND.marketCard,
   shortName: BRAND.marketCardShort,
-  title: `${BRAND.marketCard} — ИИ-генератор карточек товара для Wildberries, Ozon и Авито`,
-  description: `Нейросеть для карточек товара: загрузите фото — получите готовый комплект для одного SKU (обложка 4:5 + слайды), название, описание и СЕО для Вайлдберриз, Ozon, Авито и Яндекс Маркета. ${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}. Далее комплект от ${formatRub(CARD_GENERATION_PRICE_RUB)}/слайд.`,
+  title: "ИИ-генератор карточек для маркетплейсов — МаркетКард",
+  description:
+    "Создайте карточку товара для Wildberries, Ozon и Авито по фото за 1–2 минуты. Обложка, инфографика и SEO-текст. 2 пробные карточки.",
   keywords: [...baseKeywords],
   locale: "ru_RU",
   url: process.env.AUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || defaultSiteUrl
@@ -76,29 +81,41 @@ type SiteIcons = {
 
 export const siteIcons: SiteIcons = {
   icon: [
-    { url: absoluteUrl("/favicon.ico"), type: "image/x-icon", sizes: "any" },
-    { url: absoluteUrl("/favicon-32x32.png"), type: "image/png", sizes: "32x32" },
-    { url: absoluteUrl("/favicon-48x48.png"), type: "image/png", sizes: "48x48" },
-    { url: absoluteUrl("/favicon-192x192.png"), type: "image/png", sizes: "192x192" }
+    { url: absoluteUrl(`/favicon-${FAVICON_VERSION}.ico`), type: "image/x-icon", sizes: "any" },
+    { url: absoluteUrl(`/favicon-${FAVICON_VERSION}.svg`), type: "image/svg+xml", sizes: "any" },
+    { url: absoluteUrl(`/favicon-32x32-${FAVICON_VERSION}.png`), type: "image/png", sizes: "32x32" },
+    { url: absoluteUrl(`/favicon-48x48-${FAVICON_VERSION}.png`), type: "image/png", sizes: "48x48" },
+    { url: absoluteUrl(`/icon-192-${FAVICON_VERSION}.png`), type: "image/png", sizes: "192x192" },
+    { url: absoluteUrl(`/icon-512-${FAVICON_VERSION}.png`), type: "image/png", sizes: "512x512" }
   ],
-  shortcut: absoluteUrl("/favicon.ico"),
-  apple: [{ url: absoluteUrl("/apple-touch-icon.png"), sizes: "180x180", type: "image/png" }]
+  shortcut: absoluteUrl(`/favicon-${FAVICON_VERSION}.ico`),
+  apple: [
+    {
+      url: absoluteUrl(`/apple-touch-icon-${FAVICON_VERSION}.png`),
+      sizes: "180x180",
+      type: "image/png"
+    }
+  ]
 };
 
 export function createPageMetadata({
   title,
+  documentTitle,
   description,
   path = "/",
   keywords,
   noIndex = false
 }: {
+  /** Short title — becomes `${title} | ${siteConfig.name}` unless documentTitle is set. */
   title?: string;
+  /** Full document title used as-is (preferred for search snippets). */
+  documentTitle?: string;
   description?: string;
   path?: string;
   keywords?: string[];
   noIndex?: boolean;
 }): Metadata {
-  const pageTitle = title ? `${title} | ${siteConfig.name}` : siteConfig.title;
+  const pageTitle = documentTitle ?? (title ? `${title} | ${siteConfig.name}` : siteConfig.title);
   const pageDescription = description || siteConfig.description;
   const pageKeywords = mergeKeywords(keywords);
 
@@ -153,7 +170,7 @@ export function createPageMetadata({
           follow: true,
           googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 }
         },
-    themeColor: "#0b1020",
+    themeColor: "#6D28D9",
     ...(process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
       ? {
           verification: {
@@ -170,3 +187,6 @@ export function createPageMetadata({
 }
 
 export const rootMetadata: Metadata = createPageMetadata({ path: "/" });
+
+/** Kept for OG/alt texts that mention starting kit price. */
+export const seoKitPriceHint = `комплект от ${formatRub(SKU_KIT_PRICE_RUB)}`;

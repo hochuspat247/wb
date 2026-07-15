@@ -20,12 +20,14 @@ export async function generateMetadata({ params }: PageProps) {
   }
 
   return createPageMetadata({
-    title: page.title,
+    documentTitle: page.title,
     description: page.description,
     keywords: page.keywords,
     path: page.path
   });
 }
+
+export const revalidate = 3600;
 
 export default async function PlatformPage({ params }: PageProps) {
   const { platform } = await params;

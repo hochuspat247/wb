@@ -12,19 +12,22 @@ import { SkuKitSection } from "@/components/SkuKitSection";
 import { HomeJsonLd } from "@/components/seo/HomeJsonLd";
 import { WildberriesLandingSection } from "@/components/wildberries/WildberriesLandingSection";
 import { createPageMetadata } from "@/lib/seo";
-import { describeFreeQuotaMarketing, GENERATION_TIME_COPY } from "@/lib/pricing";
 
 export const metadata = createPageMetadata({
   path: "/",
-  title: "ИИ-генератор карточек товара для Wildberries, Ozon и Авито",
-  description: `Загрузите фото — получите готовый комплект карточек для одного SKU: обложка 4:5, слайды, название, описание и СЕО-ключи. ${GENERATION_TIME_COPY}. ${describeFreeQuotaMarketing()}.`,
+  documentTitle: "ИИ-генератор карточек для маркетплейсов — МаркетКард",
+  description:
+    "Создайте карточку товара для Wildberries, Ozon и Авито по фото за 1–2 минуты. Обложка, инфографика и SEO-текст. 2 пробные карточки.",
   keywords: [
     "генератор карточек товара бесплатно",
     "нейросеть карточка товара wildberries",
-    "комплект карточек для одного товара",
-    "ии инфографика маркетплейс"
+    "карточка товара по фото",
+    "инфографика для маркетплейсов"
   ]
 });
+
+/** Homepage is mostly marketing UI — refresh at most hourly to keep TTFB stable. */
+export const revalidate = 3600;
 
 export default function Home() {
   return (

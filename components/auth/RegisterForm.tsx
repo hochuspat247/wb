@@ -7,7 +7,8 @@ import { signIn } from "next-auth/react";
 import { ArrowRight, Loader2, MailCheck } from "lucide-react";
 import { VkIdAuthPanel } from "@/components/auth/VkIdAuthPanel";
 import { YandexIdButton } from "@/components/auth/YandexIdButton";
-import { trackAuthError, trackConversion } from "@/components/analytics/AnalyticsTracker";
+import { trackAuthError } from "@/components/analytics/AnalyticsTracker";
+import { trackMarketingEvent } from "@/components/analytics/trackMarketingEvent";
 import { readLastVisitedProduct, storeSignupCallbackUrl } from "@/lib/auth/signup-context-client";
 import { Logo } from "@/components/Logo";
 import { getEmailFormatError } from "@/lib/auth/email-format";
@@ -98,7 +99,7 @@ export function RegisterForm() {
         return;
       }
 
-      trackConversion("register_complete");
+      trackMarketingEvent("register_complete", { method: "email" });
       setRegisteredEmail(registerData.email || email);
       setResendMessage(registerData.message || "Проверьте почту и подтвердите email.");
     } catch (caught) {

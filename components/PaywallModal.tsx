@@ -12,9 +12,11 @@ import {
   SKU_KIT_PRICE_RUB,
   SKU_KIT_SLIDE_COUNT,
   calculatePackagePrice,
+  catalogBuyCta,
   describeFreeQuotaMarketing,
   describeMonthlyFreeReset,
-  formatRub
+  formatRub,
+  kitBuyCta
 } from "@/lib/pricing";
 import {
   VIDEO_RESULT_UPSELL_DURATION_LABEL,
@@ -95,17 +97,17 @@ export function PaywallModal({
               <li>Разовая оплата, без подписки</li>
             </ul>
             <PaymentButton className="mt-4" count={SKU_KIT_SLIDE_COUNT} metrikaPlan="paywall_sku_kit">
-              Купить комплект
+              {kitBuyCta()}
             </PaymentButton>
           </div>
 
           <div className="rounded-[18px] border border-clay bg-paper/50 p-4">
             <p className="text-sm font-black text-ink">Каталог — {formatRub(catalogPack.total)}</p>
             <p className="mt-1 text-xs font-semibold text-muted">
-              20 слайдов · до 4 комплектов SKU · приоритетная очередь
+              20 слайдов · до 4 комплектов для разных товаров · приоритетная очередь
             </p>
             <PaymentButton className="mt-4" count={20} metrikaPlan="paywall_catalog" variant="secondary">
-              Купить каталог
+              {catalogBuyCta()}
             </PaymentButton>
           </div>
 

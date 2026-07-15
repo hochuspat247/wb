@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { getAnalyticsSessionId } from "@/lib/analytics/session";
 import { storeLastVisitedProduct } from "@/lib/auth/signup-context-client";
 import { getOrCreateGuestId, getOrCreateStoryGuestId } from "@/lib/guest";
+import { reachGoal } from "@/lib/metrika";
 import { recordPresenceAction } from "@/lib/presence/client-state";
 
 function getSessionId() {
@@ -29,9 +30,21 @@ async function sendEvents(events: TrackPayload[]) {
   if (!events.length || typeof window === "undefined") return;
 
   try {
-    const guestId = getOrCreateGuestId();
-    const storyGuestId =
-      window.location.pathname.startsWith("/storystudio") ? getOrCreateStoryGuestId() : undefined;
+    let guestId = "anonymous";
+    try {
+      guestId = getOrCreateGuestId();
+    } catch {
+      // localStorage may be unavailable
+    }
+
+    let storyGuestId: string | undefined;
+    try {
+      storyGuestId = window.location.pathname.startsWith("/storystudio")
+        ? getOrCreateStoryGuestId()
+        : undefined;
+    } catch {
+      storyGuestId = undefined;
+    }
 
     await fetch("/api/analytics", {
       method: "POST",
@@ -59,18 +72,36 @@ async function sendEvents(events: TrackPayload[]) {
 }
 
 export function trackConversion(eventName: string, metadata?: Record<string, string | number | boolean>) {
-  void sendEvents([{ eventType: "conversion", eventName, metadata }]);
+  try {
+    void sendEvents([{ eventType: "conversion", eventName, metadata }]);
+  } catch {
+    // ignore
+  }
 }
 
 export function trackClick(eventName: string, label?: string) {
-  void sendEvents([{ eventType: "click", eventName, label }]);
+  try {
+    void sendEvents([{ eventType: "click", eventName, label }]);
+  } catch {
+    // ignore
+  }
 }
 
 export function trackAuthError(
   eventName: "register_error" | "login_error" | "oauth_error",
   metadata?: Record<string, string | number | boolean>
 ) {
-  void sendEvents([{ eventType: "conversion", eventName, metadata }]);
+  try {
+    void sendEvents([{ eventType: "conversion", eventName, metadata }]);
+  } catch {
+    // ignore
+  }
+
+  try {
+    reachGoal(eventName, metadata);
+  } catch {
+    // ignore
+  }
 }
 
 export function AnalyticsTracker() {

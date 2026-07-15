@@ -4,7 +4,6 @@ import { PricingCard } from "@/components/ui/PricingCard";
 import { getVideoRateRubPerSecond } from "@/config/video-pricing";
 import {
   FREE_DEMO_CARDS,
-  FREE_TRIAL_CARDS,
   KIT_SERIES_DESCRIPTION,
   PLAN_CATALOG_NAME,
   PLAN_FREE_NAME,
@@ -13,11 +12,13 @@ import {
   SKU_KIT_SLIDE_COUNT,
   VIDEO_GENERATION_START_PRICE_RUB,
   calculatePackagePrice,
+  catalogBuyCta,
   describeFreeQuotaMarketing,
   describeMonthlyFreeReset,
   formatRub,
   formatVideoPriceRub,
-  getVideoMarketingPrices
+  getVideoMarketingPrices,
+  kitBuyCta
 } from "@/lib/pricing";
 import { BRAND } from "@/lib/branding";
 
@@ -58,7 +59,7 @@ const plans = [
       "Публикация на Wildberries из истории",
       `Видео из карточки — отдельно, от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}`
     ],
-    cta: "Купить комплект",
+    cta: kitBuyCta(),
     href: "/register",
     metrikaPlan: "seller",
     packageCount: SKU_KIT_SLIDE_COUNT,
@@ -67,7 +68,7 @@ const plans = [
   },
   {
     name: PLAN_CATALOG_NAME,
-    subtitle: "До четырёх серий SKU",
+    subtitle: "До 4 комплектов для разных товаров",
     price: formatRub(catalogPack.total),
     unit: "20 слайдов",
     billingNote:
@@ -75,7 +76,7 @@ const plans = [
         ? `${formatRub(catalogPack.pricePerUnit)} за слайд · −${catalogPack.savingsPercent}% к поштучной`
         : `${formatRub(catalogPack.pricePerUnit)} за слайд`,
     features: [
-      "20 слайдов — до 4 комплектов по 5",
+      "20 слайдов — до 4 комплектов по 5 для разных товаров",
       "Скачивание без водяного знака",
       "Публикация на Wildberries из истории",
       `Всё из тарифа «${PLAN_SKU_KIT_NAME}»`,
@@ -83,7 +84,7 @@ const plans = [
       "Приоритетная очередь",
       "Персональная поддержка в Telegram"
     ],
-    cta: "Подключить",
+    cta: catalogBuyCta(),
     href: "/register",
     metrikaPlan: "pro",
     packageCount: 20

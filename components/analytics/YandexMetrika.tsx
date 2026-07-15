@@ -11,16 +11,20 @@ function YandexMetrikaPageView() {
   const previousUrlRef = useRef<string | null>(typeof window === "undefined" ? null : window.location.href);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    try {
+      if (typeof window === "undefined") return;
 
-    const nextUrl = window.location.href;
-    const previousUrl = previousUrlRef.current;
+      const nextUrl = window.location.href;
+      const previousUrl = previousUrlRef.current;
 
-    previousUrlRef.current = nextUrl;
+      previousUrlRef.current = nextUrl;
 
-    if (!previousUrl || previousUrl === nextUrl) return;
+      if (!previousUrl || previousUrl === nextUrl) return;
 
-    trackPageView(nextUrl);
+      trackPageView(nextUrl);
+    } catch {
+      // Metrika failures must not affect navigation.
+    }
   }, [pathname, searchParams]);
 
   return null;
@@ -45,16 +49,18 @@ export function YandexMetrika() {
               k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
             })(window, document, "script", "https://mc.yandex.ru/metrika/tag.js?id=${YANDEX_METRIKA_ID}", "ym");
 
-            ym(${YANDEX_METRIKA_ID}, "init", {
-              ssr: true,
-              webvisor: true,
-              clickmap: true,
-              ecommerce: "dataLayer",
-              referrer: document.referrer,
-              url: location.href,
-              accurateTrackBounce: true,
-              trackLinks: true
-            });
+            try {
+              ym(${YANDEX_METRIKA_ID}, "init", {
+                ssr: true,
+                webvisor: true,
+                clickmap: true,
+                ecommerce: "dataLayer",
+                referrer: document.referrer,
+                url: location.href,
+                accurateTrackBounce: true,
+                trackLinks: true
+              });
+            } catch (e) {}
           `
         }}
       />

@@ -24,8 +24,26 @@ function buildPresenceLabel(goal: MetrikaGoal, metadata?: Record<string, string 
   return base;
 }
 
+/**
+ * Fire-and-forget marketing funnel event.
+ * Must never throw — Metrika / network failures must not block registration or payment.
+ */
 export function trackMarketingEvent(goal: MetrikaGoal, metadata?: Record<string, string | number | boolean>) {
-  recordPresenceAction(goal, buildPresenceLabel(goal, metadata));
-  trackConversion(goal, metadata);
-  reachGoal(goal, metadata);
+  try {
+    recordPresenceAction(goal, buildPresenceLabel(goal, metadata));
+  } catch {
+    // ignore
+  }
+
+  try {
+    trackConversion(goal, metadata);
+  } catch {
+    // ignore
+  }
+
+  try {
+    reachGoal(goal, metadata);
+  } catch {
+    // ignore
+  }
 }

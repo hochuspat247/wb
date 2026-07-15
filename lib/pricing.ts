@@ -175,6 +175,27 @@ export function formatRub(value: number) {
   return `${value.toLocaleString("ru-RU")} ₽`;
 }
 
+/** Кнопки покупки — с ценой и результатом, сильнее абстрактного «Подключить». */
+export function kitBuyCta() {
+  return `Купить комплект за ${formatRub(SKU_KIT_PRICE_RUB)}`;
+}
+
+export function catalogBuyCta() {
+  return `Купить 20 слайдов за ${formatRub(CATALOG_PACK_PRICE_RUB)}`;
+}
+
+export function slidesBuyCta(count: number, totalRub: number) {
+  if (count === SKU_KIT_SLIDE_COUNT) {
+    return kitBuyCta();
+  }
+
+  if (count === 20) {
+    return catalogBuyCta();
+  }
+
+  return `Купить ${count} слайдов за ${formatRub(totalRub)}`;
+}
+
 export const VIDEO_MARKETING_DURATIONS: VideoDuration[] = ["4", "6", "8"];
 
 export function getVideoMarketingPrices(quality: "standard" | "pro" = "standard") {

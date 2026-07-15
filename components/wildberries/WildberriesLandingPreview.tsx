@@ -7,7 +7,7 @@ import { CheckCircle2, Plus, Sparkles, UploadCloud, Wand2, X } from "lucide-reac
 import { trackConversion } from "@/components/analytics/AnalyticsTracker";
 import { PaymentButton } from "@/components/PaymentButton";
 import { Button } from "@/components/ui/Button";
-import { PLAN_SKU_KIT_NAME, WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub } from "@/lib/pricing";
+import { PLAN_SKU_KIT_NAME, WB_INTEGRATION_MIN_PACKAGE, calculatePackagePrice, formatRub, kitBuyCta } from "@/lib/pricing";
 import fanAfter from "@/publick/70a7dada-44df-4fe2-84bb-22290fbc0aa7.png";
 import steamerAfter from "@/publick/b96119e8-f03b-43dc-8f66-c52a0b4ed245.png";
 import waterTesterAfter from "@/publick/bdc93c3d-6c98-45de-bd5f-58f0e4618213.png";
@@ -108,7 +108,7 @@ function WildberriesSubscribeModal({ open, onClose }: WildberriesSubscribeModalP
             count={WB_INTEGRATION_MIN_PACKAGE}
             metrikaPlan="wb_landing_pack5"
           >
-            Купить комплект
+            {kitBuyCta()}
           </PaymentButton>
         </div>
 

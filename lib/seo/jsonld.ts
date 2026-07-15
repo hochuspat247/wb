@@ -3,120 +3,102 @@ import { BRAND } from "@/lib/branding";
 import { getMarketingFaqItems } from "@/lib/marketing/faq";
 import { PRODUCT_CARD_VIDEO_DEMO } from "@/lib/marketing/videoExample";
 import {
-  CARD_GENERATION_PRICE_RUB,
+  CATALOG_PACK_PRICE_RUB,
   FREE_TRIAL_CARDS,
+  KIT_SERIES_DESCRIPTION,
   PLAN_CATALOG_NAME,
   PLAN_SKU_KIT_NAME,
+  SKU_KIT_PRICE_RUB,
+  SKU_KIT_SLIDE_COUNT,
   VIDEO_GENERATION_START_PRICE_RUB,
-  calculatePackagePrice,
   describeFreeQuotaMarketing,
   describeMonthlyFreeReset,
-  formatRub,
   formatVideoPriceRub,
   getVideoMarketingPrices
 } from "@/lib/pricing";
 
-function buildOfferCatalog() {
-  const growthPack = calculatePackagePrice(5);
-  const scalePack = calculatePackagePrice(20);
-  const videoPrices = getVideoMarketingPrices("standard");
-
-  return {
-    "@type": "OfferCatalog",
-    name: `Тарифы ${BRAND.marketCard}`,
-    itemListElement: [
-      {
-        "@type": "Offer",
-        name: `${FREE_TRIAL_CARDS} пробные карточки с водяным знаком`,
-        price: "0",
-        priceCurrency: "RUB",
-        description: `${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}`,
-        url: absoluteUrl("/register"),
-        itemOffered: {
-          "@type": "Service",
-          name: "Пробные карточки товара",
-          description: "ИИ-обложка 4:5 с водяным знаком; серия инфографики — в платном комплекте"
-        }
-      },
-      {
-        "@type": "Offer",
-        name: "1 слайд",
-        price: String(CARD_GENERATION_PRICE_RUB),
-        priceCurrency: "RUB",
-        description: "Разовый слайд для доработки комплекта",
-        url: absoluteUrl("/#pricing"),
-        itemOffered: {
-          "@type": "Service",
-          name: "Слайд карточки товара"
-        }
-      },
-      {
-        "@type": "Offer",
+function buildPaidOffers() {
+  return [
+    {
+      "@type": "Offer",
+      name: PLAN_SKU_KIT_NAME,
+      price: String(SKU_KIT_PRICE_RUB),
+      priceCurrency: "RUB",
+      availability: "https://schema.org/InStock",
+      url: absoluteUrl("/#pricing"),
+      description: `${KIT_SERIES_DESCRIPTION}. Скачивание без водяного знака. Разовая оплата, без подписки.`,
+      itemOffered: {
+        "@type": "Service",
         name: PLAN_SKU_KIT_NAME,
-        price: String(growthPack.total),
-        priceCurrency: "RUB",
-        description: `${formatRub(growthPack.pricePerUnit)} за слайд · 5 связанных слайдов для одного SKU`,
-        url: absoluteUrl("/#pricing"),
-        itemOffered: {
-          "@type": "Service",
-          name: PLAN_SKU_KIT_NAME
-        }
-      },
-      {
-        "@type": "Offer",
-        name: PLAN_CATALOG_NAME,
-        price: String(scalePack.total),
-        priceCurrency: "RUB",
-        description: `${formatRub(scalePack.pricePerUnit)} за слайд · до 4 комплектов SKU`,
-        url: absoluteUrl("/#pricing"),
-        itemOffered: {
-          "@type": "Service",
-          name: PLAN_CATALOG_NAME
-        }
-      },
-      ...videoPrices.map((item) => ({
-        "@type": "Offer",
-        name: `Видео из карточки ${item.duration} сек`,
-        price: String(item.priceRub),
-        priceCurrency: "RUB",
-        description: `${BRAND.googleVeo} ${BRAND.veoVersion} Фаст, без звука, из готовой карточки`,
-        url: absoluteUrl("/#video-pricing"),
-        itemOffered: {
-          "@type": "Service",
-          name: "Видео из карточки товара"
-        }
-      }))
-    ]
-  };
+        description: KIT_SERIES_DESCRIPTION
+      }
+    },
+    {
+      "@type": "Offer",
+      name: PLAN_CATALOG_NAME,
+      price: String(CATALOG_PACK_PRICE_RUB),
+      priceCurrency: "RUB",
+      availability: "https://schema.org/InStock",
+      url: absoluteUrl("/#pricing"),
+      description: `20 слайдов — до 4 комплектов для разных товаров. Скачивание без водяного знака.`,
+      itemOffered: {
+        "@type": "Service",
+        name: PLAN_CATALOG_NAME
+      }
+    },
+    {
+      "@type": "Offer",
+      name: `${FREE_TRIAL_CARDS} пробные карточки`,
+      price: "0",
+      priceCurrency: "RUB",
+      availability: "https://schema.org/InStock",
+      url: absoluteUrl("/register"),
+      description: `${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()}`,
+      itemOffered: {
+        "@type": "Service",
+        name: "Пробные карточки товара",
+        description: "Одиночные карточки с водяным знаком после регистрации"
+      }
+    },
+    ...getVideoMarketingPrices("standard").map((item) => ({
+      "@type": "Offer",
+      name: `Видео из карточки ${item.duration} сек`,
+      price: String(item.priceRub),
+      priceCurrency: "RUB",
+      availability: "https://schema.org/InStock",
+      url: absoluteUrl("/#video-pricing"),
+      description: `${BRAND.googleVeo} ${BRAND.veoVersion} Фаст, без звука, из готовой карточки`,
+      itemOffered: {
+        "@type": "Service",
+        name: "Видео из карточки товара"
+      }
+    }))
+  ];
 }
 
 export function buildHomeJsonLd() {
   const faq = getMarketingFaqItems();
+  const offers = buildPaidOffers();
 
   return {
     "@context": "https://schema.org",
     "@graph": [
       {
         "@type": "Organization",
+        "@id": `${absoluteUrl("/")}#organization`,
         name: siteConfig.name,
         url: absoluteUrl("/"),
-        logo: absoluteUrl("/logo.png"),
+        logo: absoluteUrl(`/icon-512-v2.png`),
         email: "avenir.team.corp@gmail.com"
       },
       {
         "@type": "WebSite",
+        "@id": `${absoluteUrl("/")}#website`,
         name: siteConfig.name,
         url: absoluteUrl("/"),
         inLanguage: "ru-RU",
         description: siteConfig.description,
-        potentialAction: {
-          "@type": "SearchAction",
-          target: {
-            "@type": "EntryPoint",
-            urlTemplate: `${absoluteUrl("/")}#faq`
-          },
-          "query-input": "required name=search_term_string"
-        }
+        publisher: { "@id": `${absoluteUrl("/")}#organization` }
       },
       {
         "@type": "BreadcrumbList",
@@ -131,70 +113,86 @@ export function buildHomeJsonLd() {
       },
       {
         "@type": "WebPage",
+        "@id": `${absoluteUrl("/")}#webpage`,
         name: siteConfig.title,
         url: absoluteUrl("/"),
         description: siteConfig.description,
         inLanguage: "ru-RU",
-        isPartOf: {
-          "@type": "WebSite",
-          url: absoluteUrl("/")
-        }
+        isPartOf: { "@id": `${absoluteUrl("/")}#website` },
+        about: { "@id": `${absoluteUrl("/")}#software` }
       },
       {
         "@type": "SoftwareApplication",
+        "@id": `${absoluteUrl("/")}#software`,
         name: siteConfig.name,
         applicationCategory: "BusinessApplication",
         operatingSystem: "Web",
         description: siteConfig.description,
-        offers: {
-          "@type": "AggregateOffer",
-          lowPrice: "0",
-          highPrice: String(CARD_GENERATION_PRICE_RUB),
-          priceCurrency: "RUB",
-          offerCount: String(3 + getVideoMarketingPrices("standard").length),
-          description: `${describeFreeQuotaMarketing()}. ${describeMonthlyFreeReset()} Далее от ${formatRub(CARD_GENERATION_PRICE_RUB)} за слайд, видео от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}`
-        },
+        url: absoluteUrl("/"),
+        offers,
         featureList: [
           "Генерация карточки товара по фото",
-          "Тексты и СЕО для ВБ, Озон, Авито и Яндекс Маркета",
+          "Тексты и СЕО для ВБ, Озон и Авито",
           "ИИ-обложка 4:5",
-          "Карусель слайдов для карточки товара",
+          `${PLAN_SKU_KIT_NAME}: ${SKU_KIT_SLIDE_COUNT} слайдов`,
           "Публикация на Wildberries через API",
-          "Редактирование карточек WB в каталоге",
-          "Видео из готовой карточки без звука"
-        ],
-        url: absoluteUrl("/")
+          `Видео из готовой карточки от ${formatVideoPriceRub(VIDEO_GENERATION_START_PRICE_RUB)}`
+        ]
       },
       {
         "@type": "Service",
         name: "Генерация карточек товара для маркетплейсов",
         description: siteConfig.description,
-        provider: {
-          "@type": "Organization",
-          name: siteConfig.name,
-          url: absoluteUrl("/")
-        },
+        provider: { "@id": `${absoluteUrl("/")}#organization` },
         areaServed: {
           "@type": "Country",
           name: "Россия"
         },
         serviceType: "ИИ-генерация карточек товара",
-        url: absoluteUrl("/")
+        url: absoluteUrl("/"),
+        offers
       },
       {
         "@type": "HowTo",
         name: "Как сделать карточку товара для маркетплейса",
-        description: "Пошаговый процесс генерации карточки товара в МаркетКард ИИ",
+        description: "Пошаговый процесс создания карточки товара в МаркетКард",
         step: [
-          { "@type": "HowToStep", name: "Загрузите фото товара", text: "Добавьте исходное фото товара в генератор на главной странице или в кабинете." },
-          { "@type": "HowToStep", name: "Опишите товар", text: "Укажите категорию, преимущества и площадку: Wildberries, Ozon, Авито или Яндекс Маркет." },
-          { "@type": "HowToStep", name: "Получите тексты и СЕО", text: "Нейросеть подготовит название, описание и ключевые слова для поиска на маркетплейсе." },
-          { "@type": "HowToStep", name: "Сгенерируйте обложку 4:5", text: "ИИ создаст визуал карточки с инфографикой под требования площадки." },
-          { "@type": "HowToStep", name: "Соберите карусель слайдов", text: "Добавьте слайды преимуществ, характеристик и сценариев использования в кабинете." },
-          { "@type": "HowToStep", name: "Опубликуйте или скачайте", text: "Скачайте PNG или отправьте карточку на Wildberries через API из кабинета." }
+          {
+            "@type": "HowToStep",
+            name: "Загрузите фото товара",
+            text: "Добавьте исходное фото товара в генератор на главной странице или в кабинете."
+          },
+          {
+            "@type": "HowToStep",
+            name: "Получите обложку 4:5, описание и СЕО",
+            text: "Сервис подготовит визуал, название, описание и ключевые слова для маркетплейса."
+          },
+          {
+            "@type": "HowToStep",
+            name: "Проверьте пробную карточку",
+            text: "На бесплатном тарифе доступны демо и пробные карточки с водяным знаком."
+          },
+          {
+            "@type": "HowToStep",
+            name: "Закажите комплект для одного товара",
+            text: `${KIT_SERIES_DESCRIPTION} без водяного знака — разовая оплата ${SKU_KIT_PRICE_RUB} ₽.`
+          },
+          {
+            "@type": "HowToStep",
+            name: "Скачайте или опубликуйте на Wildberries",
+            text: "Скачайте PNG или отправьте карусель на Wildberries через API из кабинета."
+          }
         ]
       },
-      buildOfferCatalog(),
+      {
+        "@type": "OfferCatalog",
+        name: `Тарифы ${BRAND.marketCard}`,
+        itemListElement: offers.map((offer, index) => ({
+          "@type": "ListItem",
+          position: index + 1,
+          item: offer
+        }))
+      },
       {
         "@type": "VideoObject",
         name: PRODUCT_CARD_VIDEO_DEMO.title,

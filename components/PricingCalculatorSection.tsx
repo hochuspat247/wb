@@ -9,7 +9,8 @@ import {
   VIDEO_GENERATION_START_PRICE_RUB,
   calculatePackagePrice,
   formatRub,
-  formatVideoPriceRub
+  formatVideoPriceRub,
+  slidesBuyCta
 } from "@/lib/pricing";
 
 export function PricingCalculatorSection() {
@@ -80,7 +81,7 @@ export function PricingCalculatorSection() {
             </div>
 
             <PaymentButton className="mt-5 sm:mt-6" count={count} size="lg">
-              Купить пакет
+              {slidesBuyCta(count, price.total)}
             </PaymentButton>
           </div>
         </Reveal>

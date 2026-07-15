@@ -55,6 +55,7 @@ export function DeploymentRefreshGuard({ initialBuildId }: Props) {
       const stack = reason instanceof Error ? reason.stack : undefined;
 
       if (isTransientNetworkError(message, stack)) {
+        event.preventDefault();
         return;
       }
 

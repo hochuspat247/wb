@@ -28,6 +28,10 @@ export type MetrikaGoal =
   | "download_original_click"
   | "auth_started_from_result"
   | "auth_completed_from_result"
+  | "register_complete"
+  | "register_error"
+  | "login_error"
+  | "oauth_error"
   | "open_cabinet"
   | "upload_photo"
   | "generate_card"
@@ -64,18 +68,26 @@ export type MetrikaGoal =
   | "story_chapter_generated"
   | "story_cabinet_tab_view";
 
-export function reachGoal(goal: MetrikaGoal, params?: Record<string, unknown>) {
-  if (typeof window === "undefined") return;
-  if (!YANDEX_METRIKA_ID) return;
-  if (typeof window.ym !== "function") return;
+function callYmSafe(
+  counterId: number,
+  methodName: "init" | "hit" | "reachGoal",
+  target?: string | Record<string, unknown>,
+  params?: Record<string, unknown>
+) {
+  try {
+    if (typeof window === "undefined") return;
+    if (!YANDEX_METRIKA_ID) return;
+    if (typeof window.ym !== "function") return;
+    window.ym(counterId, methodName, target, params);
+  } catch {
+    // Metrika / getTrackerId / Failed to fetch must never break auth or payment.
+  }
+}
 
-  window.ym(YANDEX_METRIKA_ID, "reachGoal", goal, params || {});
+export function reachGoal(goal: MetrikaGoal, params?: Record<string, unknown>) {
+  callYmSafe(YANDEX_METRIKA_ID, "reachGoal", goal, params || {});
 }
 
 export function trackPageView(url: string) {
-  if (typeof window === "undefined") return;
-  if (!YANDEX_METRIKA_ID) return;
-  if (typeof window.ym !== "function") return;
-
-  window.ym(YANDEX_METRIKA_ID, "hit", url);
+  callYmSafe(YANDEX_METRIKA_ID, "hit", url);
 }

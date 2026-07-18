@@ -136,6 +136,7 @@ export function CabinetApp() {
   const [wildberriesUnlocked, setWildberriesUnlocked] = useState(false);
   const [monthlyFreeResetsAt, setMonthlyFreeResetsAt] = useState<string | null>(null);
   const [monthlyFreeRemaining, setMonthlyFreeRemaining] = useState<number | null>(null);
+  const [similarFromCard, setSimilarFromCard] = useState<ProductCardResult | null>(null);
 
   const applyQuotaState = useCallback(
     (quota: {
@@ -353,6 +354,14 @@ export function CabinetApp() {
     window.history.replaceState(null, "", "/cabinet#create");
   }
 
+  function openCreateSimilar(card: ProductCardResult) {
+    reachGoal("click_create_similar");
+    setSimilarFromCard(card);
+    setSelected(null);
+    setTab("create");
+    window.history.replaceState(null, "", "/cabinet#create");
+  }
+
   function openSettingsTab() {
     setSelected(null);
     setTab("settings");
@@ -530,9 +539,20 @@ export function CabinetApp() {
           <p className="mt-1 text-xs font-semibold text-muted">
             {isQuotaExhausted
               ? "пробные карточки использованы"
-              : monthlyFreeRemaining !== null
-                ? `${monthlyFreeRemaining} из ${FREE_TRIAL_CARDS} ${FREE_TRIAL_CARDS === 1 ? "пробной карточки" : "пробных карточек"} с меткой`
-                : "пробных карточек доступно"}
+              : (() => {
+                  const freeLeft = monthlyFreeRemaining ?? 0;
+                  const paidLeft = Math.max(0, remainingGenerations - freeLeft);
+                  if (paidLeft > 0 && freeLeft > 0) {
+                    return `${freeLeft} пробных + ${paidLeft} оплаченных`;
+                  }
+                  if (paidLeft > 0) {
+                    return `${paidLeft} оплаченных генераций`;
+                  }
+                  if (monthlyFreeRemaining !== null) {
+                    return `${monthlyFreeRemaining} из ${FREE_TRIAL_CARDS} ${FREE_TRIAL_CARDS === 1 ? "пробной карточки" : "пробных карточек"} с меткой`;
+                  }
+                  return "пробных карточек доступно";
+                })()}
           </p>
           {isQuotaExhausted ? (
             <PaymentButton className="mt-4" count={SKU_KIT_SLIDE_COUNT} metrikaPlan="cabinet_sidebar_sku_kit" size="sm">
@@ -661,7 +681,12 @@ export function CabinetApp() {
                       remaining: remainingGenerations,
                       unlimited: remainingGenerations >= 999_000,
                       monthlyFreeRemaining: monthlyFreeRemaining ?? undefined,
-                      monthlyFreeResetsAt
+                      monthlyFreeAllowance: FREE_TRIAL_CARDS,
+                      monthlyFreeResetsAt,
+                      paidCreditsRemaining: Math.max(
+                        0,
+                        remainingGenerations - (monthlyFreeRemaining ?? 0)
+                      )
                     })}
                   </p>
                   <CabinetPricingLink className="self-start sm:self-auto" onLight />
@@ -673,11 +698,13 @@ export function CabinetApp() {
                 initialVideoOrderId={videoOrderId}
                 onQuotaChange={handleQuotaChange}
                 onSaved={refreshCards}
+                onSimilarSeedApplied={() => setSimilarFromCard(null)}
                 onVideoFlowReset={() => {
                   setVideoOrderId(null);
                   window.history.replaceState(null, "", "/cabinet#create");
                 }}
                 persistToServer
+                similarFromCard={similarFromCard}
               />
             </div>
           ) : null}
@@ -983,7 +1010,7 @@ export function CabinetApp() {
                           <Download size={16} />
                           Скачать PNG
                         </Button>
-                        <Button className="w-full" onClick={openCreateTab} size="sm" variant="secondary">
+                        <Button className="w-full" onClick={() => openCreateSimilar(selected)} size="sm" variant="secondary">
                           <ExternalLink size={16} />
                           Создать похожую
                         </Button>

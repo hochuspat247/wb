@@ -25,6 +25,12 @@ import { Textarea } from "@/components/ui/Textarea";
 import { WatermarkOverlay } from "@/components/ui/WatermarkOverlay";
 import { getImageSettings } from "@/lib/imageSettings";
 import {
+  getSimilarCardTitle,
+  resolveSimilarCardDescription,
+  resolveSimilarCardPhoto,
+  SIMILAR_CARD_LAYOUT_INSTRUCTIONS
+} from "@/lib/client/similarCardSeed";
+import {
   KIT_SERIES_DESCRIPTION,
   KIT_UNLOCK_CTA,
   describeFreeQuotaMarketing,
@@ -197,7 +203,9 @@ export function CardGenerator({
   darkConsole = false,
   compactDemoEntry = false,
   initialVideoOrderId = null,
-  onVideoFlowReset
+  onVideoFlowReset,
+  similarFromCard = null,
+  onSimilarSeedApplied
 }: {
   hideHistory?: boolean;
   onSaved?: () => void;
@@ -208,6 +216,8 @@ export function CardGenerator({
   compactDemoEntry?: boolean;
   initialVideoOrderId?: string | null;
   onVideoFlowReset?: () => void;
+  similarFromCard?: ProductCardResult | null;
+  onSimilarSeedApplied?: () => void;
 }) {
   const router = useRouter();
   const [description, setDescription] = useState("");
@@ -261,13 +271,96 @@ export function CardGenerator({
   const [demoStatusIndex, setDemoStatusIndex] = useState(0);
   const [demoProgress, setDemoProgress] = useState(0);
   const [isDemoGenerating, setIsDemoGenerating] = useState(false);
+  const [layoutTemplateCard, setLayoutTemplateCard] = useState<ProductCardResult | null>(null);
+  const [extraDetailsOpen, setExtraDetailsOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const videoUpsellRef = useRef<HTMLDivElement>(null);
+  const formTopRef = useRef<HTMLDivElement>(null);
 
   function openPaywall(variant: "series" | "quota_exhausted" = "series") {
     setPaywallVariant(variant);
     setShowPaywall(true);
   }
+
+  function clearLayoutTemplate() {
+    setLayoutTemplateCard(null);
+  }
+
+  function applySimilarCardSeed(sourceCard: ProductCardResult) {
+    const source = sourceCard.sourceInput;
+    const photo = resolveSimilarCardPhoto(sourceCard);
+    const nextDescription = resolveSimilarCardDescription(sourceCard);
+    const hasExtraFields = Boolean(
+      source?.brand ||
+        source?.color ||
+        source?.size ||
+        source?.material ||
+        source?.packageContents ||
+        source?.sellerSku ||
+        source?.dimensions ||
+        source?.weight ||
+        source?.targetAudience ||
+        source?.useCase ||
+        source?.oldPrice ||
+        source?.discount ||
+        sourceCard.price ||
+        sourceCard.ctaText ||
+        sourceCard.headline
+    );
+
+    setLayoutTemplateCard(sourceCard);
+    setCard(null);
+    setSeriesCards([]);
+    setEditingCard(null);
+    setError("");
+    setDescription(nextDescription);
+    setCategory(source?.category || sourceCard.category || "");
+    setMarketplace(normalizeMarketplaceLabel(source?.marketplace || sourceCard.marketplace));
+    setTextMode(normalizeTextMode(source?.textMode || sourceCard.textMode));
+    setStyle(normalizeCardStyle(source?.style || sourceCard.style));
+    setBrand(source?.brand || "");
+    setSellerSku(source?.sellerSku || "");
+    setColor(source?.color || "");
+    setSize(source?.size || "");
+    setMaterial(source?.material || "");
+    setDimensions(source?.dimensions || "");
+    setWeight(source?.weight || "");
+    setPackageContents(source?.packageContents || "");
+    setTargetAudience(source?.targetAudience || "");
+    setUseCase(source?.useCase || "");
+    setOldPrice(source?.oldPrice || "");
+    setDiscount(source?.discount || "");
+    setHeadline(source?.headline || sourceCard.headline || "");
+    setPrice(source?.price || sourceCard.price || "");
+    setCtaText(source?.ctaText || sourceCard.ctaText || "");
+    setDesignPreset(normalizeDesignPreset(source?.designPreset || sourceCard.designPreset));
+    setRemoveBackground(Boolean(source?.removeBackground));
+    setCardsCount(1);
+    setSelectedSeriesTypes(["hero"]);
+    setExtraDetailsOpen(hasExtraFields);
+    setImageUrl(photo?.imageUrl || "");
+    setImageFileName(photo?.imageFileName || "");
+    setNotice(
+      photo
+        ? `Шаблон из «${getSimilarCardTitle(sourceCard)}»: описание и стиль подставлены. Замените фото, если товар другой.`
+        : `Шаблон из «${getSimilarCardTitle(sourceCard)}»: описание и стиль подставлены. Добавьте фото нового товара.`
+    );
+
+    window.requestAnimationFrame(() => {
+      formTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  useEffect(() => {
+    if (!similarFromCard) {
+      return;
+    }
+
+    applySimilarCardSeed(similarFromCard);
+    onSimilarSeedApplied?.();
+    // Seed once per incoming card reference from the cabinet.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [similarFromCard]);
 
   const pendingImageGenerationTicketRef = useRef<string | null>(null);
   const descriptionTrackedRef = useRef(false);
@@ -494,10 +587,12 @@ export function CardGenerator({
       seriesCount?: number;
       editInstructions?: string;
       preserveCard?: ProductCardResult;
+      layoutTemplate?: ProductCardResult;
     } = {}
   ) {
     const seriesCount = options.seriesCount ?? plannedGenerationCount;
-    const previousCard = options.preserveCard ? buildPreviousCardSnapshot(options.preserveCard) : undefined;
+    const snapshotSource = options.preserveCard || options.layoutTemplate;
+    const previousCard = snapshotSource ? buildPreviousCardSnapshot(snapshotSource) : undefined;
     const requestPayload = options.planItem
       ? {
           ...payload,
@@ -570,7 +665,10 @@ export function CardGenerator({
       seriesIndex: planItem?.index ?? preserveCard?.seriesIndex,
       seriesCount: (options.seriesCount ?? preserveCard?.seriesCount ?? plannedGenerationCount) as CardSeriesCount,
       seriesPlanItem: planItem ?? preserveCard?.seriesPlanItem,
-      seriesStyleGuide: options.seriesId || preserveCard?.seriesId ? buildSeriesStyleGuide(style, marketplace) : preserveCard?.seriesStyleGuide,
+      seriesStyleGuide:
+        options.seriesId || preserveCard?.seriesId
+          ? buildSeriesStyleGuide(style, marketplace)
+          : preserveCard?.seriesStyleGuide || options.layoutTemplate?.seriesStyleGuide,
       sourceInput: {
         ...sourceInputPayload,
         headline: planItem?.mainHeadline || headline.trim() || undefined,
@@ -664,11 +762,20 @@ export function CardGenerator({
     }
 
     try {
+      const similarLayoutInstructions = layoutTemplateCard ? SIMILAR_CARD_LAYOUT_INSTRUCTIONS : undefined;
+
       if (cardsCount === 1) {
-        const { card: generatedCard, quota, imageGenerationTicket } = await createGeneratedProductCard(payload);
+        const { card: generatedCard, quota, imageGenerationTicket } = await createGeneratedProductCard(payload, {
+          layoutTemplate: layoutTemplateCard || undefined,
+          editInstructions: similarLayoutInstructions
+        });
         setCard(generatedCard);
         setNotice("Создаём обложку…");
-        const finalCard = await generateAiMarketplaceImage(generatedCard, undefined, imageGenerationTicket);
+        const finalCard = await generateAiMarketplaceImage(
+          generatedCard,
+          similarLayoutInstructions,
+          imageGenerationTicket
+        );
         if (finalCard && hasGeneratedAiCover(finalCard)) {
           await persistGeneratedCard(finalCard);
         }
@@ -678,7 +785,8 @@ export function CardGenerator({
           marketplace,
           designPreset,
           cardsCount,
-          hasImage: hasGeneratedImage(finalCard ?? generatedCard)
+          hasImage: hasGeneratedImage(finalCard ?? generatedCard),
+          similarFrom: Boolean(layoutTemplateCard)
         });
 
         if (quota?.remaining === 0) {
@@ -698,10 +806,16 @@ export function CardGenerator({
           const { card: generatedCard, imageGenerationTicket } = await createGeneratedProductCard(payload, {
             planItem,
             seriesId,
-            seriesCount: seriesTotal
+            seriesCount: seriesTotal,
+            layoutTemplate: layoutTemplateCard || undefined,
+            editInstructions: similarLayoutInstructions
           });
           setCard(generatedCard);
-          const finalCard = await generateAiMarketplaceImage(generatedCard, undefined, imageGenerationTicket);
+          const finalCard = await generateAiMarketplaceImage(
+            generatedCard,
+            similarLayoutInstructions,
+            imageGenerationTicket
+          );
           const readyCard = finalCard ?? generatedCard;
           completedCards.push(readyCard);
           setSeriesCards([...completedCards]);
@@ -1564,17 +1678,50 @@ export function CardGenerator({
       <div className={shellClass}>
         <div className={embeddedLayoutClass}>
           <form className={`${formClass} min-w-0`} onSubmit={handleSubmit}>
-            <div className="grid gap-4 sm:gap-5">
+            <div className="grid gap-4 sm:gap-5" ref={formTopRef}>
               <div>
                 <p className={`text-sm font-semibold ${labelClass}`}>
                   {compactDemoEntry ? "Попробуйте на своём товаре" : "Товар"}
                 </p>
                 <p className={`mt-1 text-sm ${darkConsole ? "text-white/45" : "text-muted"}`}>
-                  {compactDemoEntry ? "Загрузите фото и добавьте короткое описание — демо запустится без входа." : "Фото и описание"}
+                  {compactDemoEntry
+                    ? "Загрузите фото и добавьте короткое описание — демо запустится без входа."
+                    : persistToServer
+                      ? "Сначала фото и описание — остальное можно не трогать"
+                      : "Фото и описание"}
                 </p>
               </div>
+              {layoutTemplateCard ? (
+                <div
+                  className={`flex flex-col gap-2 rounded-[16px] border px-3 py-3 sm:flex-row sm:items-center sm:justify-between ${
+                    darkConsole ? "border-mint/25 bg-mint/10" : "border-mint/30 bg-mint/10"
+                  }`}
+                >
+                  <p className={`text-xs font-semibold leading-relaxed sm:text-sm ${labelClass}`}>
+                    Режим «похожая»: стиль и блоки как у «{getSimilarCardTitle(layoutTemplateCard)}». Поменяйте
+                    описание и фото — макет постараемся сохранить.
+                  </p>
+                  <Button
+                    className="shrink-0 self-start sm:self-auto"
+                    onClick={clearLayoutTemplate}
+                    size="sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <X size={14} />
+                    Сбросить шаблон
+                  </Button>
+                </div>
+              ) : null}
               <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                <span>Фото товара</span>
+                <span className="grid gap-0.5">
+                  <span>1. Фото товара</span>
+                  {persistToServer ? (
+                    <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                      Главное фото товара — как на витрине. Можно заменить на другое в любой момент.
+                    </span>
+                  ) : null}
+                </span>
                 <div className={`rounded-[18px] border border-dashed p-4 ${darkConsole ? "border-white/20 bg-white/5" : "border-clay bg-paper"}`}>
                   <Input
                     accept="image/*"
@@ -1582,9 +1729,21 @@ export function CardGenerator({
                     onChange={(event) => handleImage(event.target.files?.[0])}
                     type="file"
                   />
-                  <div className="mt-3 flex items-center gap-2 text-xs text-muted">
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted">
                     <ImageUp size={15} />
                     {imageFileName || "JPG или PNG, до 10 МБ"}
+                    {imageUrl ? (
+                      <button
+                        className="font-semibold text-accent-ink underline-offset-2 hover:underline"
+                        onClick={() => {
+                          setImageUrl("");
+                          setImageFileName("");
+                        }}
+                        type="button"
+                      >
+                        Убрать фото
+                      </button>
+                    ) : null}
                   </div>
                   {imageUrl ? (
                     <div className="mt-4 overflow-hidden rounded-[14px] border border-clay">
@@ -1599,11 +1758,22 @@ export function CardGenerator({
                 </div>
               </label>
               <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                Описание товара
+                <span className="grid gap-0.5">
+                  <span>2. Описание товара</span>
+                  {persistToServer ? (
+                    <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                      Своими словами: что это, цвет, материал, для кого, чем отличается. Не нужно писать «продающий» текст.
+                    </span>
+                  ) : null}
+                </span>
                 <Textarea
                   onChange={(event) => handleDescriptionChange(event.target.value)}
-                  placeholder="Например: беспроводные наушники с шумоподавлением, чёрные, с кейсом"
-                  rows={3}
+                  placeholder={
+                    persistToServer
+                      ? "Например: букет из 11 белых роз, высота 50 см, в крафт-бумаге, для подарка"
+                      : "Например: беспроводные наушники с шумоподавлением, чёрные, с кейсом"
+                  }
+                  rows={4}
                   value={description}
                 />
               </label>
@@ -1611,12 +1781,22 @@ export function CardGenerator({
               <>
               {persistToServer ? (
               <div className={`border-t pt-5 ${darkConsole ? "border-white/10" : "border-clay"}`}>
-                <p className={`text-sm font-semibold ${labelClass}`}>Площадка и стиль</p>
+                <p className={`text-sm font-semibold ${labelClass}`}>3. Площадка и стиль</p>
+                <p className={`mt-1 text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                  Куда выкладываете и какой вайб карточки. Если не уверены — оставьте как есть.
+                </p>
               </div>
               ) : null}
               <div className="grid gap-4 md:grid-cols-2">
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                  Категория
+                  <span className="grid gap-0.5">
+                    Категория
+                    {persistToServer ? (
+                      <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                        Можно коротко: «цветы», «наушники», «платье»
+                      </span>
+                    ) : null}
+                  </span>
                   <Input
                     onChange={(event) => setCategory(event.target.value)}
                     placeholder={effectiveCategory || "Электроника"}
@@ -1644,7 +1824,14 @@ export function CardGenerator({
               </div>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                  Стиль
+                  <span className="grid gap-0.5">
+                    Стиль
+                    {persistToServer ? (
+                      <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                        Настроение дизайна, не цвет товара
+                      </span>
+                    ) : null}
+                  </span>
                   <Select onChange={(event) => setStyle(event.target.value)} value={style} variant={selectVariant}>
                     {CARD_STYLES.map((item) => (
                       <option key={item} value={item}>
@@ -1750,12 +1937,19 @@ export function CardGenerator({
               </div>
               <details
                 className={`group rounded-[14px] border ${darkConsole ? "border-white/10 bg-white/[0.03]" : "border-clay bg-paper"}`}
+                onToggle={(event) => setExtraDetailsOpen((event.target as HTMLDetailsElement).open)}
+                open={extraDetailsOpen}
               >
                 <summary
                   className={`cursor-pointer list-none px-4 py-3 text-sm font-semibold marker:content-none ${labelClass}`}
                 >
                   <span className="flex items-center justify-between gap-2">
-                    Дополнительно для текста
+                    <span className="grid gap-0.5">
+                      <span>Характеристики товара</span>
+                      <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                        цвет, размер, состав — если есть под рукой
+                      </span>
+                    </span>
                     <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
                       необязательно
                     </span>
@@ -1850,7 +2044,14 @@ export function CardGenerator({
               </details>
               <div className={`grid gap-4 md:grid-cols-2 ${darkConsole ? "" : ""}`}>
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                  Заголовок на обложке
+                  <span className="grid gap-0.5">
+                    Заголовок на обложке
+                    {persistToServer ? (
+                      <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                        Можно пустым — ИИ напишет сам
+                      </span>
+                    ) : null}
+                  </span>
                   <Input
                     onChange={(event) => setHeadline(event.target.value)}
                     placeholder="ПРЕМИУМ-ТОВАР"
@@ -1858,7 +2059,14 @@ export function CardGenerator({
                   />
                 </label>
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
-                  Пресет дизайна
+                  <span className="grid gap-0.5">
+                    Вид карточки
+                    {persistToServer ? (
+                      <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                        Сколько плашек и текста на картинке
+                      </span>
+                    ) : null}
+                  </span>
                   <Select
                     onChange={(event) => {
                       const nextDesignPreset = event.target.value as ImageDesignPreset;
@@ -1888,7 +2096,7 @@ export function CardGenerator({
               {persistToServer && remainingGenerations !== null && !isLoading ? (
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-muted">
-                    Осталось пробных карточек: <span className="text-accent-ink">{remainingGenerations}</span>
+                    Осталось генераций: <span className="text-accent-ink">{remainingGenerations}</span>
                   </p>
                   <p className="text-xs font-semibold text-muted">{formatMonthlyFreeResetHint(monthlyFreeResetsAt)}</p>
                 </div>

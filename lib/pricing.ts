@@ -81,30 +81,55 @@ export function formatMonthlyFreeResetHint(_resetsAt?: string | null) {
   return `${describeMonthlyFreeReset()}.`;
 }
 
+function generationsPhrase(count: number) {
+  const n = Math.abs(count) % 100;
+  const n1 = n % 10;
+  const noun = n > 10 && n < 20 ? "генераций" : n1 === 1 ? "генерация" : n1 >= 2 && n1 <= 4 ? "генерации" : "генераций";
+  return `${count} ${noun}`;
+}
+
 export function formatCabinetQuotaBanner(input: {
   remaining: number;
   unlimited?: boolean;
   monthlyFreeRemaining?: number;
   monthlyFreeAllowance?: number;
   monthlyFreeResetsAt?: string | null;
+  paidCreditsRemaining?: number;
 }) {
   if (input.unlimited || input.remaining >= 999_000) {
     return "Безлимитные комплекты для вашего аккаунта.";
   }
 
   const allowance = input.monthlyFreeAllowance ?? FREE_TRIAL_CARDS;
+  const freeRemaining = Math.max(
+    0,
+    typeof input.monthlyFreeRemaining === "number"
+      ? input.monthlyFreeRemaining
+      : Math.min(input.remaining, allowance)
+  );
+  const paidRemaining = Math.max(
+    0,
+    typeof input.paidCreditsRemaining === "number"
+      ? input.paidCreditsRemaining
+      : input.remaining - freeRemaining
+  );
   const oneTimeHint = formatMonthlyFreeResetHint();
 
   if (input.remaining === 0) {
     return `Пробная карточка использована. ${oneTimeHint} Купите «${PLAN_SKU_KIT_NAME}» — ${KIT_SERIES_DESCRIPTION.toLowerCase()} без метки.`;
   }
 
-  const cardsWord =
-    allowance === 1
-      ? "пробной карточки"
-      : "пробных карточек";
+  const trialWord = allowance === 1 ? "пробной карточки" : "пробных карточек";
 
-  return `Осталось ${input.remaining} из ${allowance} ${cardsWord} с водяным знаком. ${KIT_SERIES_DESCRIPTION} — в платном комплекте. ${oneTimeHint}`;
+  if (paidRemaining > 0 && freeRemaining === 0) {
+    return `Осталось ${generationsPhrase(paidRemaining)} без водяного знака. Можно собрать серию: ${KIT_SERIES_DESCRIPTION.toLowerCase()}.`;
+  }
+
+  if (freeRemaining > 0 && paidRemaining > 0) {
+    return `Осталось ${freeRemaining} из ${allowance} ${trialWord} с водяным знаком и ${generationsPhrase(paidRemaining)} без метки. ${oneTimeHint}`;
+  }
+
+  return `Осталось ${freeRemaining} из ${allowance} ${trialWord} с водяным знаком. ${KIT_SERIES_DESCRIPTION} — в платном комплекте. ${oneTimeHint}`;
 }
 
 /** Базовая поштучная цена одного слайда (калькулятор). */

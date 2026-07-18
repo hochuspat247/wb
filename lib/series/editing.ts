@@ -22,7 +22,7 @@ export function buildEditInstructionsBlock(editInstructions?: string, previous?:
   let block = `\n\nПравки от пользователя (обязательно учти):\n${editInstructions.trim()}`;
 
   if (previous) {
-    block += `\n\nТекущая версия карточки (улучши с учётом правок):
+    block += `\n\nОбразец карточки (сохрани структуру блоков и стиль, обнови под новый товар):
 Заголовок: ${previous.title}
 Короткое описание: ${previous.shortDescription}
 Полное описание: ${previous.fullDescription.slice(0, 500)}
@@ -41,5 +41,5 @@ export function buildImageEditInstructionsBlock(editInstructions?: string) {
 
   return `\n\nUSER EDIT REQUEST (must apply to the new image):
 ${editInstructions.trim()}
-Keep the same product photo as the main subject. Update layout, text, badges and visual accents according to the edit request.`;
+Use the uploaded product photo as the main subject — do not invent a different product. Keep the same overall layout, block structure and badge placement when the request asks to preserve the sample design. Update text and accents for the new product.`;
 }

@@ -22,9 +22,9 @@ export const CARD_TEXT_MODES: Array<{ label: string; value: MarketplaceTextMode 
 ];
 
 export const CARD_DESIGN_PRESETS: Array<{ label: string; value: ImageDesignPreset }> = [
-  { label: "Premium Marketplace", value: "premium-marketplace" },
-  { label: "Luxury Catalog", value: "luxury-catalog" },
-  { label: "Standard", value: "standard" }
+  { label: "Маркетплейс · яркие плашки", value: "premium-marketplace" },
+  { label: "Каталог · спокойный премиум", value: "luxury-catalog" },
+  { label: "Простой · меньше текста", value: "standard" }
 ];
 
 export const CARD_SERIES_COUNTS: CardSeriesCount[] = [1, 3, 5, 7, 10];

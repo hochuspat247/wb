@@ -2,6 +2,7 @@ export const YANDEX_METRIKA_ID = Number(process.env.NEXT_PUBLIC_YANDEX_METRIKA_I
 
 export type MetrikaGoal =
   | "click_create_card"
+  | "click_create_similar"
   | "hero_view"
   | "hero_upload_zone_view"
   | "hero_upload_click"

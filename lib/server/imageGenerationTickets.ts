@@ -43,35 +43,34 @@ export async function createImageGenerationTicket(userId: string, purpose = "car
   const now = new Date();
   const id = randomUUID();
 
-  return db.transaction(async (tx) => {
-    const user = await tx.query.users.findFirst({
-      where: eq(users.id, userId)
-    });
-
-    if (!user) {
-      throw new Error("User not found");
-    }
-
-    if (!hasUnlimitedGenerations(user)) {
-      const quota = await getUserQuota(userId);
-      const activeTickets = await countActiveImageGenerationTickets(userId, tx, now);
-
-      if (quota.remaining <= activeTickets) {
-        throw new ImageGenerationQuotaExceededError();
-      }
-    }
-
-    await tx.insert(imageGenerationTickets).values({
-      id,
-      userId,
-      purpose,
-      usedAt: null,
-      expiresAt: new Date(now.getTime() + TICKET_TTL_MS),
-      createdAt: now
-    });
-
-    return id;
+  // better-sqlite3 transactions must be synchronous — do not wrap async work in db.transaction().
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId)
   });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!hasUnlimitedGenerations(user)) {
+    const quota = await getUserQuota(userId);
+    const activeTickets = await countActiveImageGenerationTickets(userId, db, now);
+
+    if (quota.remaining <= activeTickets) {
+      throw new ImageGenerationQuotaExceededError();
+    }
+  }
+
+  await db.insert(imageGenerationTickets).values({
+    id,
+    userId,
+    purpose,
+    usedAt: null,
+    expiresAt: new Date(now.getTime() + TICKET_TTL_MS),
+    createdAt: now
+  });
+
+  return id;
 }
 
 export async function revokeImageGenerationTicket(ticketId: string, userId: string) {

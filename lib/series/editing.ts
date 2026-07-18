@@ -82,6 +82,24 @@ export function buildImageEditInstructionsBlock(editInstructions?: string) {
     return "";
   }
 
+  const isLayoutLock = /LAYOUT_LOCK_FROM_SAMPLE|1 в 1|как в образце|ту же композицию/i.test(
+    editInstructions
+  );
+
+  if (isLayoutLock) {
+    return `\n\nLAYOUT LOCK (highest priority — overrides default composition template):
+${editInstructions.trim()}
+
+CRITICAL IMAGE RULES:
+- Clone the SAMPLE card's layout system almost 1:1.
+- Keep the same block positions, badge style, typography density, spacing and overall art direction.
+- Use the uploaded product photo as the ONLY product hero — do not invent another product.
+- Replace texts/specs for the new product, but do not invent a different template or rearrange the grid.
+- If the sample had a side specs column, keep a side specs column.
+- If the sample had bottom badges, keep bottom badges in the same place.
+- If the sample had detail thumbnails, keep a similar thumbnail strip — do not add a new unrelated collage style.`;
+  }
+
   return `\n\nUSER EDIT REQUEST (must apply to the new image):
 ${editInstructions.trim()}
 Use the uploaded product photo as the main subject — do not invent a different product. Keep the same overall layout, block structure and badge placement when the request asks to preserve the sample design. Update text and accents for the new product.`;

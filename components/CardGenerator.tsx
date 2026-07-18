@@ -28,7 +28,7 @@ import {
   getSimilarCardTitle,
   resolveSimilarCardDescription,
   resolveSimilarCardPhoto,
-  SIMILAR_CARD_LAYOUT_INSTRUCTIONS
+  buildSimilarLayoutInstructions
 } from "@/lib/client/similarCardSeed";
 import {
   KIT_SERIES_DESCRIPTION,
@@ -853,7 +853,9 @@ export function CardGenerator({
     }
 
     try {
-      const similarLayoutInstructions = layoutTemplateCard ? SIMILAR_CARD_LAYOUT_INSTRUCTIONS : undefined;
+      const similarLayoutInstructions = layoutTemplateCard
+        ? buildSimilarLayoutInstructions(layoutTemplateCard)
+        : undefined;
 
       if (cardsCount === 1 && !kitModeActive) {
         const { card: generatedCard, quota, imageGenerationTicket } = await createGeneratedProductCard(payload, {
@@ -1508,6 +1510,14 @@ export function CardGenerator({
           focusBenefits: true,
           includeInfographicText: true
         } satisfies ProductCardInput);
+      const templateStyleGuide =
+        layoutTemplateCard?.seriesStyleGuide ||
+        (layoutTemplateCard
+          ? buildSeriesStyleGuide(layoutTemplateCard.style || style, layoutTemplateCard.marketplace || marketplace)
+          : undefined);
+      const effectiveDesignPreset = normalizeDesignPreset(
+        layoutTemplateCard?.designPreset || designPreset
+      );
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1516,8 +1526,8 @@ export function CardGenerator({
             ? buildSeriesCardDescription(baseCardInput, cardForImage.seriesPlanItem, cardForImage.seriesCount ?? plannedGenerationCount)
             : baseCardInput.productDescription,
           category: cardForImage.category,
-          style,
-          marketplace,
+          style: layoutTemplateCard?.style || style,
+          marketplace: layoutTemplateCard?.marketplace || marketplace,
           title: cardForImage.title,
           benefits: cardForImage.benefits,
           infographicTexts: cardForImage.infographicTexts,
@@ -1529,16 +1539,17 @@ export function CardGenerator({
           headline: headline.trim() || undefined,
           price: price.trim() || undefined,
           ctaText: ctaText.trim() || undefined,
-          designPreset: normalizeDesignPreset(designPreset),
+          designPreset: effectiveDesignPreset,
           model: NANO_BANANA_IMAGE_MODEL,
           aspectRatio: NANO_BANANA_ASPECT_RATIO,
           resolution: NANO_BANANA_RESOLUTION,
           outputFormat: NANO_BANANA_OUTPUT_FORMAT,
           imageGenerationTicket: ticket,
-          seriesStyleGuide: cardForImage.seriesStyleGuide,
+          seriesStyleGuide: cardForImage.seriesStyleGuide || templateStyleGuide,
           seriesCardType: cardForImage.seriesPlanItem?.type,
           seriesCardGoal: cardForImage.seriesPlanItem?.goal,
-          seriesCardVisualIdea: cardForImage.seriesPlanItem?.visualIdea,
+          seriesCardVisualIdea:
+            cardForImage.seriesPlanItem?.visualIdea || layoutTemplateCard?.visualConcept || undefined,
           badges: cardForImage.seriesPlanItem?.badges,
           editInstructions: editInstructions?.trim() || undefined
         })

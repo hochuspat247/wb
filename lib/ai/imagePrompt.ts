@@ -395,6 +395,51 @@ Badges to use: ${listToLines(input.badges, ["Ключевой блок", "Для
 `
     : "";
   const editContext = buildImageEditInstructionsBlock(input.editInstructions);
+  const isLayoutLock = /LAYOUT_LOCK_FROM_SAMPLE/i.test(input.editInstructions || "");
+
+  const compositionBlock = isLayoutLock
+    ? `REQUIRED COMPOSITION (LAYOUT LOCK):
+1. Match the SAMPLE card layout described in LAYOUT LOCK as closely as possible.
+2. Keep the same grid: headline placement, hero product placement, side/specs blocks, badges, thumbnail strip if present.
+3. Do NOT switch to a different marketplace template.
+4. Only swap the product (from uploaded photo) and rewrite visible texts for the new product.
+5. Keep the same visual density, margins, and premium art direction as the sample.
+6. The result must look like the next card in the same design system, not a redesign.`
+    : `REQUIRED COMPOSITION:
+1. Large bold Russian headline at the top.
+2. One large hero product image as the main focal point.
+3. Optional 1–3 small detail previews only if they improve trust or explain the product.
+4. One compact benefits/specifications block, not a long table.
+5. Product-bound premium background with lighting and environment that match the product category and use case.
+6. Clear information hierarchy and readable Russian text.
+7. Visually balanced layout with enough whitespace.
+8. The result must look like a polished premium sales card suitable for marketplace performance creatives.
+9. The card must feel intentionally designed, not assembled from random template parts.`;
+
+  const layoutRulesBlock = isLayoutLock
+    ? `LAYOUT RULES (LAYOUT LOCK):
+- Vertical format, aspect ratio 4:5.
+- Clone sample block positions first; default left/right template rules are secondary.
+- Keep the same badge/chip style and spacing language as the sample.
+- Do not invent extra panels that the sample did not have.
+- Do not remove signature blocks from the sample.
+- Make the uploaded product the hero, but keep the sample's frame and composition.`
+    : `LAYOUT RULES:
+- Vertical format, aspect ratio 4:5.
+- Large product on left, center-left, or center.
+- Text/specifications on right or top-right.
+- Use a clean editorial grid with consistent margins and aligned edges.
+- Keep generous safe margins around the headline and main product.
+- Small detail previews may be in a neat row or column, but only when visually useful.
+- Use rounded rectangles and premium card blocks sparingly; they must look integrated, not like pasted widgets.
+- Maintain strong visual rhythm and clean spacing.
+- Make the product the visual center.
+- Do not make the design empty.
+- Do not make the design cluttered.
+- Do not create a collage of unrelated items.
+- Do not create large beige/yellow info panels unless they look like refined premium packaging or editorial layout.
+- Do not stack many boxes, icons, badges, and thumbnails in every corner.
+- Avoid template-like brochure composition with a huge title, a large text table, three icons at the bottom, and unrelated preview photos.`;
 
   return `
 Create a premium marketplace product card image in Russian.
@@ -444,33 +489,9 @@ ${seriesPlanningContext}
 
 ${seriesContext}
 
-REQUIRED COMPOSITION:
-1. Large bold Russian headline at the top.
-2. One large hero product image as the main focal point.
-3. Optional 1–3 small detail previews only if they improve trust or explain the product.
-4. One compact benefits/specifications block, not a long table.
-5. Product-bound premium background with lighting and environment that match the product category and use case.
-6. Clear information hierarchy and readable Russian text.
-7. Visually balanced layout with enough whitespace.
-8. The result must look like a polished premium sales card suitable for marketplace performance creatives.
-9. The card must feel intentionally designed, not assembled from random template parts.
+${compositionBlock}
 
-LAYOUT RULES:
-- Vertical format, aspect ratio 4:5.
-- Large product on left, center-left, or center.
-- Text/specifications on right or top-right.
-- Use a clean editorial grid with consistent margins and aligned edges.
-- Keep generous safe margins around the headline and main product.
-- Small detail previews may be in a neat row or column, but only when visually useful.
-- Use rounded rectangles and premium card blocks sparingly; they must look integrated, not like pasted widgets.
-- Maintain strong visual rhythm and clean spacing.
-- Make the product the visual center.
-- Do not make the design empty.
-- Do not make the design cluttered.
-- Do not create a collage of unrelated items.
-- Do not create large beige/yellow info panels unless they look like refined premium packaging or editorial layout.
-- Do not stack many boxes, icons, badges, and thumbnails in every corner.
-- Avoid template-like brochure composition with a huge title, a large text table, three icons at the bottom, and unrelated preview photos.
+${layoutRulesBlock}
 
 TYPOGRAPHY:
 - All visible text must be in Russian.

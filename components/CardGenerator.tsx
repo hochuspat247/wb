@@ -208,6 +208,7 @@ export function CardGenerator({
   similarFromCard = null,
   kitFromCard = null,
   kitSlideTypes = null,
+  kitStyleFromCard = null,
   openKitSeries = false,
   onSimilarSeedApplied
 }: {
@@ -225,6 +226,8 @@ export function CardGenerator({
   kitFromCard?: ProductCardResult | null;
   /** Which kit slide types to preselect (missing ones when continuing). */
   kitSlideTypes?: string[] | null;
+  /** New product kit, but copy style/layout from this card (no photo/description). */
+  kitStyleFromCard?: ProductCardResult | null;
   /** Start a blank kit series (5 slides) without a source card. */
   openKitSeries?: boolean;
   onSimilarSeedApplied?: () => void;
@@ -355,12 +358,12 @@ export function CardGenerator({
 
   function applySimilarCardSeed(
     sourceCard: ProductCardResult,
-    mode: "similar" | "kit" = "similar",
+    mode: "similar" | "kit" | "kit-style" = "similar",
     preferredTypes?: string[] | null
   ) {
     const source = sourceCard.sourceInput;
-    const photo = resolveSimilarCardPhoto(sourceCard);
-    const nextDescription = resolveSimilarCardDescription(sourceCard);
+    const photo = mode === "kit-style" ? null : resolveSimilarCardPhoto(sourceCard);
+    const nextDescription = mode === "kit-style" ? "" : resolveSimilarCardDescription(sourceCard);
     const hasExtraFields = Boolean(
       source?.brand ||
         source?.color ||
@@ -379,15 +382,15 @@ export function CardGenerator({
         sourceCard.headline
     );
     const nextCategory = source?.category || sourceCard.category || "";
-    const isKit = mode === "kit";
+    const isKit = mode === "kit" || mode === "kit-style";
     const kitTypes =
       preferredTypes && preferredTypes.length > 0
         ? preferredTypes
         : getDefaultSeriesTypes(normalizeCardsCount(SKU_KIT_SLIDE_COUNT), nextCategory || "Другое");
 
-    setLayoutTemplateCard(isKit ? null : sourceCard);
+    setLayoutTemplateCard(mode === "similar" || mode === "kit-style" ? sourceCard : null);
     setKitModeActive(isKit);
-    setContinueSeriesId(isKit ? sourceCard.seriesId || sourceCard.id : null);
+    setContinueSeriesId(mode === "kit" ? sourceCard.seriesId || sourceCard.id : null);
     setCard(null);
     setSeriesCards([]);
     setEditingCard(null);
@@ -397,21 +400,21 @@ export function CardGenerator({
     setMarketplace(normalizeMarketplaceLabel(source?.marketplace || sourceCard.marketplace));
     setTextMode(normalizeTextMode(source?.textMode || sourceCard.textMode));
     setStyle(normalizeCardStyle(source?.style || sourceCard.style));
-    setBrand(source?.brand || "");
-    setSellerSku(source?.sellerSku || "");
-    setColor(source?.color || "");
-    setSize(source?.size || "");
-    setMaterial(source?.material || "");
-    setDimensions(source?.dimensions || "");
-    setWeight(source?.weight || "");
-    setPackageContents(source?.packageContents || "");
-    setTargetAudience(source?.targetAudience || "");
-    setUseCase(source?.useCase || "");
-    setOldPrice(source?.oldPrice || "");
-    setDiscount(source?.discount || "");
-    setHeadline(source?.headline || sourceCard.headline || "");
-    setPrice(source?.price || sourceCard.price || "");
-    setCtaText(source?.ctaText || sourceCard.ctaText || "");
+    setBrand(mode === "kit-style" ? "" : source?.brand || "");
+    setSellerSku(mode === "kit-style" ? "" : source?.sellerSku || "");
+    setColor(mode === "kit-style" ? "" : source?.color || "");
+    setSize(mode === "kit-style" ? "" : source?.size || "");
+    setMaterial(mode === "kit-style" ? "" : source?.material || "");
+    setDimensions(mode === "kit-style" ? "" : source?.dimensions || "");
+    setWeight(mode === "kit-style" ? "" : source?.weight || "");
+    setPackageContents(mode === "kit-style" ? "" : source?.packageContents || "");
+    setTargetAudience(mode === "kit-style" ? "" : source?.targetAudience || "");
+    setUseCase(mode === "kit-style" ? "" : source?.useCase || "");
+    setOldPrice(mode === "kit-style" ? "" : source?.oldPrice || "");
+    setDiscount(mode === "kit-style" ? "" : source?.discount || "");
+    setHeadline(mode === "kit-style" ? "" : source?.headline || sourceCard.headline || "");
+    setPrice(mode === "kit-style" ? "" : source?.price || sourceCard.price || "");
+    setCtaText(mode === "kit-style" ? "" : source?.ctaText || sourceCard.ctaText || "");
     setDesignPreset(normalizeDesignPreset(source?.designPreset || sourceCard.designPreset));
     setRemoveBackground(Boolean(source?.removeBackground));
     if (isKit) {
@@ -422,17 +425,19 @@ export function CardGenerator({
       setCardsCount(1);
       setSelectedSeriesTypes(["hero"]);
     }
-    setExtraDetailsOpen(hasExtraFields);
+    setExtraDetailsOpen(mode !== "kit-style" && hasExtraFields);
     setImageUrl(photo?.imageUrl || "");
     setImageFileName(photo?.imageFileName || "");
     setNotice(
-      isKit
-        ? photo
-          ? `Товар «${getSimilarCardTitle(sourceCard)}»: фото и описание подставлены. Выберите слайды комплекта и нажмите генерацию.`
-          : `Товар «${getSimilarCardTitle(sourceCard)}»: описание подставлено. Добавьте фото и выберите слайды комплекта.`
-        : photo
-          ? `Шаблон «${getSimilarCardTitle(sourceCard)}»: фото и описание подставлены. Можно сразу сгенерировать ещё 1 карточку.`
-          : `Шаблон «${getSimilarCardTitle(sourceCard)}»: описание подставлено. Добавьте фото для новой карточки.`
+      mode === "kit-style"
+        ? `Новый товар в стиле «${getSimilarCardTitle(sourceCard)}»: загрузите фото и описание, выберите слайды комплекта.`
+        : mode === "kit"
+          ? photo
+            ? `Товар «${getSimilarCardTitle(sourceCard)}»: фото и описание подставлены. Выберите слайды комплекта и нажмите генерацию.`
+            : `Товар «${getSimilarCardTitle(sourceCard)}»: описание подставлено. Добавьте фото и выберите слайды комплекта.`
+          : photo
+            ? `Шаблон «${getSimilarCardTitle(sourceCard)}»: фото и описание подставлены. Можно сразу сгенерировать ещё 1 карточку.`
+            : `Шаблон «${getSimilarCardTitle(sourceCard)}»: описание подставлено. Добавьте фото для новой карточки.`
     );
 
     window.requestAnimationFrame(() => {
@@ -443,6 +448,12 @@ export function CardGenerator({
   useEffect(() => {
     if (kitFromCard) {
       applySimilarCardSeed(kitFromCard, "kit", kitSlideTypes);
+      onSimilarSeedApplied?.();
+      return;
+    }
+
+    if (kitStyleFromCard) {
+      applySimilarCardSeed(kitStyleFromCard, "kit-style", kitSlideTypes);
       onSimilarSeedApplied?.();
       return;
     }
@@ -471,7 +482,7 @@ export function CardGenerator({
     onSimilarSeedApplied?.();
     // Seed once per incoming card reference from the cabinet.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [similarFromCard, kitFromCard, openKitSeries, kitSlideTypes]);
+  }, [similarFromCard, kitFromCard, kitStyleFromCard, openKitSeries, kitSlideTypes]);
 
   useEffect(() => {
     if (cardsCount === 1) {

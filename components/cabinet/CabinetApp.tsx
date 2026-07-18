@@ -52,6 +52,7 @@ import {
 import { GUEST_ID_KEY, INTENDED_GENERATION_KEY, CABINET_DEMO_HINT_DISMISSED_KEY } from "@/lib/guest";
 import { CabinetDemoWelcomeHint } from "@/components/cabinet/CabinetDemoWelcomeHint";
 import { CabinetExamplesSection } from "@/components/cabinet/CabinetExamplesSection";
+import { KitStartModal } from "@/components/cabinet/KitStartModal";
 import { PromoCodeForm } from "@/components/promo/PromoCodeForm";
 import { downloadCardImageAsset } from "@/lib/client/cardImage";
 import { formatKitBalanceSummary } from "@/lib/client/historyGroups";
@@ -140,8 +141,10 @@ export function CabinetApp() {
   const [paidCreditsRemaining, setPaidCreditsRemaining] = useState(0);
   const [similarFromCard, setSimilarFromCard] = useState<ProductCardResult | null>(null);
   const [kitFromCard, setKitFromCard] = useState<ProductCardResult | null>(null);
+  const [kitStyleFromCard, setKitStyleFromCard] = useState<ProductCardResult | null>(null);
   const [kitSlideTypes, setKitSlideTypes] = useState<string[] | null>(null);
   const [openKitSeries, setOpenKitSeries] = useState(false);
+  const [kitStartOpen, setKitStartOpen] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const applyQuotaState = useCallback(
@@ -384,21 +387,25 @@ export function CabinetApp() {
   function openCreateSimilar(card: ProductCardResult) {
     reachGoal("click_create_similar");
     setKitFromCard(null);
+    setKitStyleFromCard(null);
     setKitSlideTypes(null);
     setOpenKitSeries(false);
     setSimilarFromCard(card);
     setSelected(null);
     setPaymentSuccess(false);
+    setKitStartOpen(false);
     setTab("create");
     window.history.replaceState(null, "", "/cabinet#create");
   }
 
   function openCreateKit(card?: ProductCardResult | null) {
     reachGoal("click_create_card");
-    const seed = card || cards[0] || null;
+    const seed = card || null;
     setPaymentSuccess(false);
     setSimilarFromCard(null);
+    setKitStyleFromCard(null);
     setSelected(null);
+    setKitStartOpen(false);
 
     if (seed) {
       const siblings = getSeriesSiblingCards(cards, seed);
@@ -418,9 +425,28 @@ export function CabinetApp() {
     window.history.replaceState(null, "", "/cabinet#create");
   }
 
+  function openCreateKitWithStyle(card: ProductCardResult) {
+    reachGoal("click_create_card");
+    setPaymentSuccess(false);
+    setSimilarFromCard(null);
+    setKitFromCard(null);
+    setSelected(null);
+    setKitStartOpen(false);
+    setKitSlideTypes(getDefaultSeriesTypes(SKU_KIT_SLIDE_COUNT, card.category || "Другое"));
+    setKitStyleFromCard(card);
+    setOpenKitSeries(false);
+    setTab("create");
+    window.history.replaceState(null, "", "/cabinet#create");
+  }
+
+  function openKitStartModal() {
+    setKitStartOpen(true);
+  }
+
   function clearSeedProps() {
     setSimilarFromCard(null);
     setKitFromCard(null);
+    setKitStyleFromCard(null);
     setKitSlideTypes(null);
     setOpenKitSeries(false);
   }
@@ -617,8 +643,8 @@ export function CabinetApp() {
             <PaymentButton className="mt-4" count={SKU_KIT_SLIDE_COUNT} metrikaPlan="cabinet_sidebar_sku_kit" size="sm">
               {kitBuyCta()}
             </PaymentButton>
-          ) : paidLeft >= SKU_KIT_SLIDE_COUNT ? (
-            <Button className="mt-4 w-full" onClick={() => openCreateKit(seedCardForKit)} size="sm">
+          ) : paidLeft >= SKU_KIT_SLIDE_COUNT || remainingGenerations >= 999_000 ? (
+            <Button className="mt-4 w-full" onClick={openKitStartModal} size="sm">
               Создать комплект из {SKU_KIT_SLIDE_COUNT} слайдов
             </Button>
           ) : (
@@ -728,7 +754,7 @@ export function CabinetApp() {
                   </div>
                   <Button
                     className="w-full shrink-0 sm:w-auto"
-                    onClick={() => openCreateKit(seedCardForKit)}
+                    onClick={openKitStartModal}
                     size="sm"
                   >
                     Создать комплект из {SKU_KIT_SLIDE_COUNT} слайдов
@@ -768,10 +794,10 @@ export function CabinetApp() {
                       paidCreditsRemaining: paidLeft
                     })}
                   </p>
-                  {paidLeft >= SKU_KIT_SLIDE_COUNT ? (
+                  {paidLeft >= SKU_KIT_SLIDE_COUNT || remainingGenerations >= 999_000 ? (
                     <Button
                       className="self-start sm:self-auto"
-                      onClick={() => openCreateKit(seedCardForKit)}
+                      onClick={openKitStartModal}
                       size="sm"
                       variant="secondary"
                     >
@@ -788,6 +814,7 @@ export function CabinetApp() {
                 initialVideoOrderId={videoOrderId}
                 kitFromCard={kitFromCard}
                 kitSlideTypes={kitSlideTypes}
+                kitStyleFromCard={kitStyleFromCard}
                 openKitSeries={openKitSeries}
                 onQuotaChange={handleQuotaChange}
                 onSaved={refreshCards}
@@ -1147,6 +1174,15 @@ export function CabinetApp() {
           </Card>
         </div>
       ) : null}
+
+      <KitStartModal
+        cards={cards}
+        onClose={() => setKitStartOpen(false)}
+        onSelectProduct={(card) => openCreateKit(card)}
+        onStartNew={() => openCreateKit(null)}
+        onStartNewWithTemplate={(card) => openCreateKitWithStyle(card)}
+        open={kitStartOpen}
+      />
     </div>
   );
 }

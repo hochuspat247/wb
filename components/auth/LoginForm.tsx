@@ -50,7 +50,11 @@ export function LoginForm() {
 
   useEffect(() => {
     if (searchParams.get("verified") === "1") {
-      setInfo("Email подтверждён. Теперь можно войти.");
+      setInfo("Email подтверждён. Аккаунт готов — войдите, демо-карточка уже в кабинете.");
+      const nextEmail = searchParams.get("email");
+      if (nextEmail) {
+        setEmail(nextEmail);
+      }
       return;
     }
 

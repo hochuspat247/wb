@@ -81,13 +81,6 @@ export function formatMonthlyFreeResetHint(_resetsAt?: string | null) {
   return `${describeMonthlyFreeReset()}.`;
 }
 
-function generationsPhrase(count: number) {
-  const n = Math.abs(count) % 100;
-  const n1 = n % 10;
-  const noun = n > 10 && n < 20 ? "генераций" : n1 === 1 ? "генерация" : n1 >= 2 && n1 <= 4 ? "генерации" : "генераций";
-  return `${count} ${noun}`;
-}
-
 export function formatCabinetQuotaBanner(input: {
   remaining: number;
   unlimited?: boolean;
@@ -119,17 +112,15 @@ export function formatCabinetQuotaBanner(input: {
     return `Пробная карточка использована. ${oneTimeHint} Купите «${PLAN_SKU_KIT_NAME}» — ${KIT_SERIES_DESCRIPTION.toLowerCase()} без метки.`;
   }
 
-  const trialWord = allowance === 1 ? "пробной карточки" : "пробных карточек";
-
   if (paidRemaining > 0 && freeRemaining === 0) {
-    return `Осталось ${generationsPhrase(paidRemaining)} без водяного знака. Можно собрать серию: ${KIT_SERIES_DESCRIPTION.toLowerCase()}.`;
+    return `Разовая покупка активна: ${paidRemaining} слайдов без водяного знака. Создайте комплект — ${KIT_SERIES_DESCRIPTION.toLowerCase()}.`;
   }
 
   if (freeRemaining > 0 && paidRemaining > 0) {
-    return `Осталось ${freeRemaining} из ${allowance} ${trialWord} с водяным знаком и ${generationsPhrase(paidRemaining)} без метки. ${oneTimeHint}`;
+    return `Пробные с водяным знаком: ${freeRemaining} из ${allowance}. Оплаченные слайды без метки: ${paidRemaining}. Разовая покупка, без подписки.`;
   }
 
-  return `Осталось ${freeRemaining} из ${allowance} ${trialWord} с водяным знаком. ${KIT_SERIES_DESCRIPTION} — в платном комплекте. ${oneTimeHint}`;
+  return `Пробные с водяным знаком: ${freeRemaining} из ${allowance}. ${KIT_SERIES_DESCRIPTION} — в платном комплекте. ${oneTimeHint}`;
 }
 
 /** Базовая поштучная цена одного слайда (калькулятор). */

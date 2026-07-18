@@ -39,7 +39,7 @@ export async function GET(request: Request) {
   });
 
   if (user?.emailVerified) {
-    return redirectToLogin("verified=1", user.registrationCallbackUrl);
+    return redirectToLogin(`verified=1&email=${encodeURIComponent(email)}`, user.registrationCallbackUrl);
   }
 
   const record = await db.query.verificationTokens.findFirst({
@@ -53,5 +53,5 @@ export async function GET(request: Request) {
   await db.update(users).set({ emailVerified: new Date() }).where(eq(users.email, email));
   await db.delete(verificationTokens).where(eq(verificationTokens.identifier, `verify:${email}`));
 
-  return redirectToLogin("verified=1", user?.registrationCallbackUrl);
+  return redirectToLogin(`verified=1&email=${encodeURIComponent(email)}`, user?.registrationCallbackUrl);
 }

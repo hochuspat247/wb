@@ -33,6 +33,7 @@ import {
 import {
   KIT_SERIES_DESCRIPTION,
   KIT_UNLOCK_CTA,
+  SKU_KIT_SLIDE_COUNT,
   describeFreeQuotaMarketing,
   formatMonthlyFreeResetHint
 } from "@/lib/pricing";
@@ -205,6 +206,8 @@ export function CardGenerator({
   initialVideoOrderId = null,
   onVideoFlowReset,
   similarFromCard = null,
+  kitFromCard = null,
+  openKitSeries = false,
   onSimilarSeedApplied
 }: {
   hideHistory?: boolean;
@@ -217,6 +220,10 @@ export function CardGenerator({
   initialVideoOrderId?: string | null;
   onVideoFlowReset?: () => void;
   similarFromCard?: ProductCardResult | null;
+  /** Prefill form and open a full SKU kit series (5 slides). */
+  kitFromCard?: ProductCardResult | null;
+  /** Start a blank kit series (5 slides) without a source card. */
+  openKitSeries?: boolean;
   onSimilarSeedApplied?: () => void;
 }) {
   const router = useRouter();
@@ -272,6 +279,7 @@ export function CardGenerator({
   const [demoProgress, setDemoProgress] = useState(0);
   const [isDemoGenerating, setIsDemoGenerating] = useState(false);
   const [layoutTemplateCard, setLayoutTemplateCard] = useState<ProductCardResult | null>(null);
+  const [kitModeActive, setKitModeActive] = useState(false);
   const [extraDetailsOpen, setExtraDetailsOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const videoUpsellRef = useRef<HTMLDivElement>(null);
@@ -284,9 +292,10 @@ export function CardGenerator({
 
   function clearLayoutTemplate() {
     setLayoutTemplateCard(null);
+    setKitModeActive(false);
   }
 
-  function applySimilarCardSeed(sourceCard: ProductCardResult) {
+  function applySimilarCardSeed(sourceCard: ProductCardResult, mode: "similar" | "kit" = "similar") {
     const source = sourceCard.sourceInput;
     const photo = resolveSimilarCardPhoto(sourceCard);
     const nextDescription = resolveSimilarCardDescription(sourceCard);
@@ -307,14 +316,17 @@ export function CardGenerator({
         sourceCard.ctaText ||
         sourceCard.headline
     );
+    const nextCategory = source?.category || sourceCard.category || "";
+    const isKit = mode === "kit";
 
-    setLayoutTemplateCard(sourceCard);
+    setLayoutTemplateCard(isKit ? null : sourceCard);
+    setKitModeActive(isKit);
     setCard(null);
     setSeriesCards([]);
     setEditingCard(null);
     setError("");
     setDescription(nextDescription);
-    setCategory(source?.category || sourceCard.category || "");
+    setCategory(nextCategory);
     setMarketplace(normalizeMarketplaceLabel(source?.marketplace || sourceCard.marketplace));
     setTextMode(normalizeTextMode(source?.textMode || sourceCard.textMode));
     setStyle(normalizeCardStyle(source?.style || sourceCard.style));
@@ -335,15 +347,25 @@ export function CardGenerator({
     setCtaText(source?.ctaText || sourceCard.ctaText || "");
     setDesignPreset(normalizeDesignPreset(source?.designPreset || sourceCard.designPreset));
     setRemoveBackground(Boolean(source?.removeBackground));
-    setCardsCount(1);
-    setSelectedSeriesTypes(["hero"]);
+    if (isKit) {
+      const kitCount = normalizeCardsCount(SKU_KIT_SLIDE_COUNT);
+      setCardsCount(kitCount);
+      setSelectedSeriesTypes(getDefaultSeriesTypes(kitCount, nextCategory || "Другое"));
+    } else {
+      setCardsCount(1);
+      setSelectedSeriesTypes(["hero"]);
+    }
     setExtraDetailsOpen(hasExtraFields);
     setImageUrl(photo?.imageUrl || "");
     setImageFileName(photo?.imageFileName || "");
     setNotice(
-      photo
-        ? `Шаблон из «${getSimilarCardTitle(sourceCard)}»: описание и стиль подставлены. Замените фото, если товар другой.`
-        : `Шаблон из «${getSimilarCardTitle(sourceCard)}»: описание и стиль подставлены. Добавьте фото нового товара.`
+      isKit
+        ? photo
+          ? `Комплект для «${getSimilarCardTitle(sourceCard)}»: фото и описание подставлены. Нажмите «Сгенерировать ${SKU_KIT_SLIDE_COUNT} карточек».`
+          : `Комплект для «${getSimilarCardTitle(sourceCard)}»: описание подставлено. Добавьте фото и создайте ${SKU_KIT_SLIDE_COUNT} слайдов.`
+        : photo
+          ? `Шаблон из «${getSimilarCardTitle(sourceCard)}»: описание и стиль подставлены. Замените фото, если товар другой.`
+          : `Шаблон из «${getSimilarCardTitle(sourceCard)}»: описание и стиль подставлены. Добавьте фото нового товара.`
     );
 
     window.requestAnimationFrame(() => {
@@ -352,15 +374,32 @@ export function CardGenerator({
   }
 
   useEffect(() => {
+    if (kitFromCard) {
+      applySimilarCardSeed(kitFromCard, "kit");
+      onSimilarSeedApplied?.();
+      return;
+    }
+
+    if (openKitSeries) {
+      const kitCount = normalizeCardsCount(SKU_KIT_SLIDE_COUNT);
+      setKitModeActive(true);
+      setLayoutTemplateCard(null);
+      setCardsCount(kitCount);
+      setSelectedSeriesTypes(getDefaultSeriesTypes(kitCount, effectiveCategory || "Другое"));
+      setNotice(`Соберите комплект: ${KIT_SERIES_DESCRIPTION.toLowerCase()}. Загрузите фото и описание товара.`);
+      onSimilarSeedApplied?.();
+      return;
+    }
+
     if (!similarFromCard) {
       return;
     }
 
-    applySimilarCardSeed(similarFromCard);
+    applySimilarCardSeed(similarFromCard, "similar");
     onSimilarSeedApplied?.();
     // Seed once per incoming card reference from the cabinet.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [similarFromCard]);
+  }, [similarFromCard, kitFromCard, openKitSeries]);
 
   const pendingImageGenerationTicketRef = useRef<string | null>(null);
   const descriptionTrackedRef = useRef(false);
@@ -1691,6 +1730,19 @@ export function CardGenerator({
                       : "Фото и описание"}
                 </p>
               </div>
+              {kitModeActive ? (
+                <div
+                  className={`rounded-[16px] border px-3 py-3 ${
+                    darkConsole ? "border-mint/25 bg-mint/10" : "border-mint/30 bg-mint/10"
+                  }`}
+                >
+                  <p className={`text-sm font-black ${labelClass}`}>Комплект приобретён — собираем серию</p>
+                  <p className={`mt-1 text-xs font-semibold leading-relaxed sm:text-sm ${darkConsole ? "text-white/70" : "text-muted"}`}>
+                    {KIT_SERIES_DESCRIPTION}. Фото и описание уже подставлены — нажмите генерацию серии из{" "}
+                    {SKU_KIT_SLIDE_COUNT} слайдов.
+                  </p>
+                </div>
+              ) : null}
               {layoutTemplateCard ? (
                 <div
                   className={`flex flex-col gap-2 rounded-[16px] border px-3 py-3 sm:flex-row sm:items-center sm:justify-between ${

@@ -54,6 +54,7 @@ import { CabinetDemoWelcomeHint } from "@/components/cabinet/CabinetDemoWelcomeH
 import { CabinetExamplesSection } from "@/components/cabinet/CabinetExamplesSection";
 import { PromoCodeForm } from "@/components/promo/PromoCodeForm";
 import { downloadCardImageAsset } from "@/lib/client/cardImage";
+import { formatKitBalanceSummary } from "@/lib/client/historyGroups";
 import { applyDownloadPolicyToCard, canDownloadCardImage, type DownloadPolicy } from "@/lib/client/watermarkPolicy";
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
 import { DEFAULT_IMAGE_SETTINGS, getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
@@ -136,7 +137,11 @@ export function CabinetApp() {
   const [wildberriesUnlocked, setWildberriesUnlocked] = useState(false);
   const [monthlyFreeResetsAt, setMonthlyFreeResetsAt] = useState<string | null>(null);
   const [monthlyFreeRemaining, setMonthlyFreeRemaining] = useState<number | null>(null);
+  const [paidCreditsRemaining, setPaidCreditsRemaining] = useState(0);
   const [similarFromCard, setSimilarFromCard] = useState<ProductCardResult | null>(null);
+  const [kitFromCard, setKitFromCard] = useState<ProductCardResult | null>(null);
+  const [openKitSeries, setOpenKitSeries] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const applyQuotaState = useCallback(
     (quota: {
@@ -149,6 +154,8 @@ export function CabinetApp() {
       unlimited?: boolean;
       monthlyFreeRemaining?: number;
       monthlyFreeResetsAt?: string | null;
+      paidCredits?: number;
+      paidCreditsUsed?: number;
     }) => {
       setRemainingGenerations(quota.remaining);
       setGenerationsUsed(quota.used ?? 0);
@@ -157,6 +164,9 @@ export function CabinetApp() {
         typeof quota.monthlyFreeRemaining === "number" ? quota.monthlyFreeRemaining : null
       );
       setMonthlyFreeResetsAt(quota.monthlyFreeResetsAt ?? null);
+      const paidCredits = Math.max(0, quota.paidCredits ?? 0);
+      const paidUsed = Math.max(0, quota.paidCreditsUsed ?? 0);
+      setPaidCreditsRemaining(Math.max(0, paidCredits - paidUsed));
       setDownloadPolicy({
         cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
         downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
@@ -245,6 +255,22 @@ export function CabinetApp() {
 
         if (searchParams.get("verified") === "1" && !profile.needsEmailVerification) {
           setVerificationMessage("Email подтверждён. Можно генерировать карточки.");
+        }
+
+        const paymentReturn = searchParams.get("payment") === "return";
+        if (paymentReturn) {
+          setPaymentSuccess(true);
+          setTab("create");
+          window.history.replaceState(null, "", "/cabinet#create");
+
+          // Webhook may land a moment after redirect — refresh quota a few times.
+          for (const delayMs of [1200, 3500, 7000]) {
+            window.setTimeout(() => {
+              void fetchUserQuota()
+                .then((nextQuota) => applyQuotaState(nextQuota))
+                .catch(() => null);
+            }, delayMs);
+          }
         }
 
         let nextRemoteCards = remoteCards;
@@ -356,10 +382,34 @@ export function CabinetApp() {
 
   function openCreateSimilar(card: ProductCardResult) {
     reachGoal("click_create_similar");
+    setKitFromCard(null);
     setSimilarFromCard(card);
     setSelected(null);
     setTab("create");
     window.history.replaceState(null, "", "/cabinet#create");
+  }
+
+  function openCreateKit(card?: ProductCardResult | null) {
+    reachGoal("click_create_card");
+    const seed = card || cards[0] || null;
+    setPaymentSuccess(false);
+    setSimilarFromCard(null);
+    setSelected(null);
+    if (seed) {
+      setKitFromCard(seed);
+      setOpenKitSeries(false);
+    } else {
+      setKitFromCard(null);
+      setOpenKitSeries(true);
+    }
+    setTab("create");
+    window.history.replaceState(null, "", "/cabinet#create");
+  }
+
+  function clearSeedProps() {
+    setSimilarFromCard(null);
+    setKitFromCard(null);
+    setOpenKitSeries(false);
   }
 
   function openSettingsTab() {
@@ -525,6 +575,20 @@ export function CabinetApp() {
     { id: "settings" as const, label: "Настройки", shortLabel: "Ещё", icon: Settings }
   ];
   const isQuotaExhausted = remainingGenerations < 999_000 && remainingGenerations === 0;
+  const freeLeft = monthlyFreeRemaining ?? 0;
+  const paidLeft = paidCreditsRemaining > 0 ? paidCreditsRemaining : Math.max(0, remainingGenerations - freeLeft);
+  const kitBalance = formatKitBalanceSummary({
+    freeRemaining: freeLeft,
+    paidRemaining: paidLeft,
+    unlimited: remainingGenerations >= 999_000
+  });
+  const seedCardForKit = cards[0] ?? null;
+  const selectedSeriesIncomplete = Boolean(
+    selected &&
+      (selected.seriesCount || selectedSeriesCards.length > 0) &&
+      selectedSeriesCards.length + 1 < (selected.seriesCount || SKU_KIT_SLIDE_COUNT)
+  );
+
   const skuKit = calculatePackagePrice(SKU_KIT_SLIDE_COUNT);
 
   return (
@@ -533,31 +597,17 @@ export function CabinetApp() {
         <Logo href="/cabinet" />
         <div className="mt-8 rounded-[22px] border border-clay bg-sand p-4">
           <p className="text-xs font-black uppercase tracking-[0.18em] text-muted">Баланс</p>
-          <p className="mt-3 text-3xl font-black text-ink">
-            {remainingGenerations >= 999_000 ? "Безлимит" : remainingGenerations}
-          </p>
-          <p className="mt-1 text-xs font-semibold text-muted">
-            {isQuotaExhausted
-              ? "пробные карточки использованы"
-              : (() => {
-                  const freeLeft = monthlyFreeRemaining ?? 0;
-                  const paidLeft = Math.max(0, remainingGenerations - freeLeft);
-                  if (paidLeft > 0 && freeLeft > 0) {
-                    return `${freeLeft} пробных + ${paidLeft} оплаченных`;
-                  }
-                  if (paidLeft > 0) {
-                    return `${paidLeft} оплаченных генераций`;
-                  }
-                  if (monthlyFreeRemaining !== null) {
-                    return `${monthlyFreeRemaining} из ${FREE_TRIAL_CARDS} ${FREE_TRIAL_CARDS === 1 ? "пробной карточки" : "пробных карточек"} с меткой`;
-                  }
-                  return "пробных карточек доступно";
-                })()}
-          </p>
+          <p className="mt-3 text-3xl font-black text-ink">{kitBalance.headline}</p>
+          <p className="mt-1 text-xs font-semibold leading-relaxed text-muted">{kitBalance.detail}</p>
+          <p className="mt-2 text-[11px] font-semibold text-muted">Разовая покупка · без автопродления</p>
           {isQuotaExhausted ? (
             <PaymentButton className="mt-4" count={SKU_KIT_SLIDE_COUNT} metrikaPlan="cabinet_sidebar_sku_kit" size="sm">
               {kitBuyCta()}
             </PaymentButton>
+          ) : paidLeft >= SKU_KIT_SLIDE_COUNT ? (
+            <Button className="mt-4 w-full" onClick={() => openCreateKit(seedCardForKit)} size="sm">
+              Создать комплект из {SKU_KIT_SLIDE_COUNT} слайдов
+            </Button>
           ) : (
             <CabinetPricingLink className="mt-4 w-full" />
           )}
@@ -653,6 +703,25 @@ export function CabinetApp() {
                   </div>
                 ))}
               </div>
+              {paymentSuccess ? (
+                <div className="flex flex-col gap-3 rounded-[16px] border border-mint/30 bg-mint/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-black text-ink">Комплект приобретён</p>
+                    <p className="mt-1 text-xs font-semibold leading-relaxed text-muted sm:text-sm">
+                      Разовая покупка, без автопродления. Теперь создадим серию для одного товара:{" "}
+                      {KIT_SERIES_DESCRIPTION.toLowerCase()}.
+                      {seedCardForKit ? " Фото и описание из вашей карточки подставим автоматически." : ""}
+                    </p>
+                  </div>
+                  <Button
+                    className="w-full shrink-0 sm:w-auto"
+                    onClick={() => openCreateKit(seedCardForKit)}
+                    size="sm"
+                  >
+                    Создать комплект из {SKU_KIT_SLIDE_COUNT} слайдов
+                  </Button>
+                </div>
+              ) : null}
               {isQuotaExhausted ? (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-accent/30 bg-accent/10 px-3 py-3 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-4">
                   <div className="min-w-0">
@@ -674,7 +743,7 @@ export function CabinetApp() {
                     <CabinetPricingLink className="self-start sm:self-auto" onLight />
                   </div>
                 </div>
-              ) : (
+              ) : !paymentSuccess ? (
                 <div className="flex flex-col gap-3 rounded-[16px] border border-mint/20 bg-mint/10 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:rounded-[18px] sm:px-4 sm:py-3">
                   <p className="text-xs font-bold text-accent-ink sm:text-sm">
                     {formatCabinetQuotaBanner({
@@ -683,22 +752,32 @@ export function CabinetApp() {
                       monthlyFreeRemaining: monthlyFreeRemaining ?? undefined,
                       monthlyFreeAllowance: FREE_TRIAL_CARDS,
                       monthlyFreeResetsAt,
-                      paidCreditsRemaining: Math.max(
-                        0,
-                        remainingGenerations - (monthlyFreeRemaining ?? 0)
-                      )
+                      paidCreditsRemaining: paidLeft
                     })}
                   </p>
-                  <CabinetPricingLink className="self-start sm:self-auto" onLight />
+                  {paidLeft >= SKU_KIT_SLIDE_COUNT ? (
+                    <Button
+                      className="self-start sm:self-auto"
+                      onClick={() => openCreateKit(seedCardForKit)}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      Создать комплект
+                    </Button>
+                  ) : (
+                    <CabinetPricingLink className="self-start sm:self-auto" onLight />
+                  )}
                 </div>
-              )}
+              ) : null}
               <CardGenerator
                 embedded
                 hideHistory
                 initialVideoOrderId={videoOrderId}
+                kitFromCard={kitFromCard}
+                openKitSeries={openKitSeries}
                 onQuotaChange={handleQuotaChange}
                 onSaved={refreshCards}
-                onSimilarSeedApplied={() => setSimilarFromCard(null)}
+                onSimilarSeedApplied={clearSeedProps}
                 onVideoFlowReset={() => {
                   setVideoOrderId(null);
                   window.history.replaceState(null, "", "/cabinet#create");
@@ -764,6 +843,7 @@ export function CabinetApp() {
                 <HistorySection
                   history={displayCards}
                   onClear={handleClearAll}
+                  onContinueKit={(card) => openCreateKit(cards.find((item) => item.id === card.id) ?? card)}
                   onOpen={(card) => setSelected(cards.find((item) => item.id === card.id) ?? card)}
                   onRemove={handleRemove}
                 />
@@ -997,6 +1077,12 @@ export function CabinetApp() {
                       <p className="text-sm text-muted">
                         {selected.marketplace} · {selected.style}
                       </p>
+                      {selectedSeriesCards.length > 0 || selected.seriesCount ? (
+                        <p className="text-xs font-semibold text-accent-ink">
+                          Комплект: {selectedSeriesCards.length + 1} из{" "}
+                          {selected.seriesCount || Math.max(selectedSeriesCards.length + 1, SKU_KIT_SLIDE_COUNT)} слайдов
+                        </p>
+                      ) : null}
                       <p className="text-sm leading-relaxed text-muted">{selected.shortDescription}</p>
                       {selected.price ? <p className="text-2xl font-bold text-ink">{selected.price}</p> : null}
                       <p className="text-xs text-muted">{new Date(selected.generatedAt).toLocaleString("ru-RU")}</p>
@@ -1010,10 +1096,17 @@ export function CabinetApp() {
                           <Download size={16} />
                           Скачать PNG
                         </Button>
-                        <Button className="w-full" onClick={() => openCreateSimilar(selected)} size="sm" variant="secondary">
-                          <ExternalLink size={16} />
-                          Создать похожую
-                        </Button>
+                        {selectedSeriesIncomplete || paidLeft >= SKU_KIT_SLIDE_COUNT ? (
+                          <Button className="w-full" onClick={() => openCreateKit(selected)} size="sm" variant="secondary">
+                            <ExternalLink size={16} />
+                            {selectedSeriesIncomplete ? "Продолжить комплект" : "Создать комплект из 5 слайдов"}
+                          </Button>
+                        ) : (
+                          <Button className="w-full" onClick={() => openCreateSimilar(selected)} size="sm" variant="secondary">
+                            <ExternalLink size={16} />
+                            Ещё слайд по этому товару
+                          </Button>
+                        )}
                       </div>
                       <CardSavedVideosPanel card={selected} compact />
                       <WildberriesPublishPanel

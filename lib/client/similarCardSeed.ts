@@ -2,10 +2,8 @@ import { resolveProductImagePayload } from "@/lib/client/generateCarouselCards";
 import type { ProductCardResult } from "@/types/product-card";
 
 /** Keep layout/blocks 1:1 while swapping product photo + description. */
-export const SIMILAR_CARD_LAYOUT_INSTRUCTIONS = `Сделай новую карточку для НОВОГО товара по описанию и фото пользователя.
-Сохрани композицию, структуру блоков, расположение плашек, плотность текста и визуальный стиль 1 в 1 как в образце.
-Замени только товар, тексты, характеристики и акценты цвета под новое описание и фото.
-Не копируй старое название товара дословно.`;
+export const SIMILAR_CARD_LAYOUT_INSTRUCTIONS =
+  "Новая карточка для нового товара по описанию и фото. Сохрани композицию, блоки и плашки 1 в 1 как в образце. Замени только товар, тексты и акценты. Не копируй старое название.";
 
 export function resolveSimilarCardDescription(card: ProductCardResult) {
   const fromSource = card.sourceInput?.productDescription?.trim();

@@ -21,10 +21,61 @@ import {
 import { getUserQuota } from "@/lib/server/quota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
 import { normalizePreviousCardSnapshot } from "@/lib/series/editing";
-import type { ProductCardInput } from "@/types/product-card";
+import type { ProductCardInput, PreviousCardSnapshot } from "@/types/product-card";
 import type { MarketplaceTextInput } from "@/types/marketplace";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
+
+function getErrorDetails(error: unknown) {
+  if (error instanceof Error) {
+    return error.message.slice(0, 240);
+  }
+
+  return "unknown";
+}
+
+async function generateCardWithOptionalTemplate(cardInput: ProductCardInput) {
+  try {
+    return await generateProductCard(cardInput);
+  } catch (error) {
+    if (!cardInput.previousCard && !cardInput.editInstructions) {
+      throw error;
+    }
+
+    console.warn(
+      "[MarketCard AI] generate-card retry without similar template:",
+      getErrorDetails(error)
+    );
+
+    return generateProductCard({
+      ...cardInput,
+      previousCard: undefined,
+      editInstructions: undefined
+    });
+  }
+}
+
+async function generateMarketplaceTextWithOptionalTemplate(input: MarketplaceTextInput) {
+  try {
+    return await generateMarketplaceText(input);
+  } catch (error) {
+    if (!input.previousCard && !input.editInstructions) {
+      throw error;
+    }
+
+    console.warn(
+      "[MarketCard AI] marketplace text retry without similar template:",
+      getErrorDetails(error)
+    );
+
+    return generateMarketplaceText({
+      ...input,
+      previousCard: undefined,
+      editInstructions: undefined
+    });
+  }
+}
 
 export async function POST(request: Request) {
   let imageGenerationTicket: string | null = null;
@@ -49,7 +100,14 @@ export async function POST(request: Request) {
       return NextResponse.json(verificationError, { status: 403 });
     }
 
-    const body = normalizeProductCardInput((await request.json()) as ProductCardInput);
+    let rawBody: ProductCardInput;
+    try {
+      rawBody = (await request.json()) as ProductCardInput;
+    } catch {
+      return NextResponse.json({ error: "Некорректное тело запроса.", code: "INVALID_JSON" }, { status: 400 });
+    }
+
+    const body = normalizeProductCardInput(rawBody);
     const validationError = validateProductCardInput(body);
 
     if (validationError) {
@@ -97,6 +155,14 @@ export async function POST(request: Request) {
 
     const platform = body.platform ?? normalizeMarketplacePlatform(marketplace);
     const textMode = normalizeTextMode(body.textMode);
+    let previousCard: PreviousCardSnapshot | undefined;
+
+    try {
+      previousCard = normalizePreviousCardSnapshot(rawBody.previousCard ?? body.previousCard);
+    } catch (error) {
+      console.warn("[MarketCard AI] previousCard normalize failed:", getErrorDetails(error));
+      previousCard = undefined;
+    }
 
     const cardInput: ProductCardInput = {
       productDescription: productContext.productDescription,
@@ -125,10 +191,10 @@ export async function POST(request: Request) {
       oldPrice: body.oldPrice?.trim(),
       discount: body.discount?.trim(),
       editInstructions: body.editInstructions?.trim(),
-      previousCard: normalizePreviousCardSnapshot(body.previousCard)
+      previousCard
     };
 
-    const result = await generateProductCard(cardInput);
+    const result = await generateCardWithOptionalTemplate(cardInput);
 
     const marketplaceInput: MarketplaceTextInput = {
       platform,
@@ -150,14 +216,14 @@ export async function POST(request: Request) {
       price: cardInput.price,
       oldPrice: cardInput.oldPrice,
       discount: cardInput.discount,
-      advantages: result.benefits,
-      characteristics: result.characteristics,
-      keywords: result.keywords,
+      advantages: Array.isArray(result.benefits) ? result.benefits : [],
+      characteristics: Array.isArray(result.characteristics) ? result.characteristics : [],
+      keywords: Array.isArray(result.keywords) ? result.keywords : [],
       editInstructions: cardInput.editInstructions,
       previousCard: cardInput.previousCard
     };
 
-    const marketplaceText = await generateMarketplaceText(marketplaceInput);
+    const marketplaceText = await generateMarketplaceTextWithOptionalTemplate(marketplaceInput);
 
     const enrichedResult = {
       ...result,
@@ -182,7 +248,11 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (imageGenerationTicket && userId) {
-      await revokeImageGenerationTicket(imageGenerationTicket, userId);
+      try {
+        await revokeImageGenerationTicket(imageGenerationTicket, userId);
+      } catch (revokeError) {
+        console.warn("[MarketCard AI] ticket revoke failed:", getErrorDetails(revokeError));
+      }
     }
 
     if (error instanceof ImageGenerationQuotaExceededError) {
@@ -198,7 +268,15 @@ export async function POST(request: Request) {
       );
     }
 
+    const details = getErrorDetails(error);
     console.error("[MarketCard AI] generate-card failed", error);
-    return NextResponse.json({ error: "Не удалось сгенерировать карточку." }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Не удалось сгенерировать карточку.",
+        code: "GENERATE_CARD_FAILED",
+        details
+      },
+      { status: 500 }
+    );
   }
 }

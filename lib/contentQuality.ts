@@ -86,7 +86,11 @@ export function sanitizeKeywords(keywords: string[], productName = "") {
   );
 }
 
-export function sanitizeBenefits(benefits: string[]) {
+export function sanitizeBenefits(benefits: string[] | null | undefined) {
+  if (!Array.isArray(benefits)) {
+    return [];
+  }
+
   return benefits
     .map((benefit) => sanitizeGeneratedText(benefit))
     .filter(Boolean)
@@ -95,17 +99,23 @@ export function sanitizeBenefits(benefits: string[]) {
 
 export function sanitizeProductCardResult(card: ProductCardResult, input?: ProductCardInput): ProductCardResult {
   const productName = card.title || input?.productDescription || "";
-  const benefits = sanitizeBenefits(card.benefits);
+  const sourceBenefits = Array.isArray(card.benefits) ? card.benefits : [];
+  const sourceKeywords = Array.isArray(card.keywords) ? card.keywords : [];
+  const sourceInfographic = Array.isArray(card.infographicTexts) ? card.infographicTexts : [];
+  const sourceTips = Array.isArray(card.marketplaceTips) ? card.marketplaceTips : [];
+  const sourceCharacteristics = Array.isArray(card.characteristics) ? card.characteristics : [];
+  const benefits = sanitizeBenefits(sourceBenefits);
 
   return {
     ...card,
     title: sanitizeGeneratedText(card.title),
     shortDescription: sanitizeGeneratedText(card.shortDescription),
     fullDescription: sanitizeGeneratedText(card.fullDescription),
-    benefits: benefits.length ? benefits : card.benefits.map(sanitizeGeneratedText).filter(Boolean),
-    keywords: sanitizeKeywords(card.keywords, productName).slice(0, card.keywords.length || 15),
-    infographicTexts: card.infographicTexts.map(sanitizeGeneratedText).filter(Boolean),
-    marketplaceTips: card.marketplaceTips.map(sanitizeGeneratedText).filter(Boolean),
+    benefits: benefits.length ? benefits : sourceBenefits.map(sanitizeGeneratedText).filter(Boolean),
+    characteristics: sourceCharacteristics,
+    keywords: sanitizeKeywords(sourceKeywords, productName).slice(0, sourceKeywords.length || 15),
+    infographicTexts: sourceInfographic.map(sanitizeGeneratedText).filter(Boolean),
+    marketplaceTips: sourceTips.map(sanitizeGeneratedText).filter(Boolean),
     visualConcept: sanitizeGeneratedText(card.visualConcept)
   };
 }
@@ -132,11 +142,13 @@ export function validateProductCardResultText(card: ProductCardResult): { isVali
     card.shortDescription,
     card.fullDescription,
     card.visualConcept,
-    ...card.benefits,
-    ...card.infographicTexts,
-    ...card.marketplaceTips,
-    ...card.keywords,
-    ...card.characteristics.flatMap((item) => [item.key, item.value])
+    ...(Array.isArray(card.benefits) ? card.benefits : []),
+    ...(Array.isArray(card.infographicTexts) ? card.infographicTexts : []),
+    ...(Array.isArray(card.marketplaceTips) ? card.marketplaceTips : []),
+    ...(Array.isArray(card.keywords) ? card.keywords : []),
+    ...(Array.isArray(card.characteristics)
+      ? card.characteristics.flatMap((item) => [item?.key, item?.value])
+      : [])
   ];
 
   return validateGeneratedCardText(parts.filter(Boolean).join("\n"));

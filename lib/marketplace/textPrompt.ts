@@ -55,7 +55,10 @@ function formatInputFields(input: MarketplaceTextInput): string {
 
   if (input.characteristics?.length) {
     lines.push(
-      `Характеристики (от продавца): ${input.characteristics.map((c) => `${c.key}: ${c.value}`).join("; ")}`
+      `Характеристики (от продавца): ${input.characteristics
+        .filter((item): item is { key: string; value: string } => Boolean(item && (item.key || item.value)))
+        .map((c) => `${c.key}: ${c.value}`)
+        .join("; ")}`
     );
   }
 

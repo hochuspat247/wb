@@ -69,7 +69,7 @@ function buildAdvantages(input: MarketplaceTextInput, productLabel: string) {
 }
 
 function buildBuyerDescription(input: MarketplaceTextInput, productLabel: string) {
-  const lower = `${input.productDescription} ${input.category}`.toLowerCase();
+  const lower = `${input.productDescription} ${input.category} ${productLabel}`.toLowerCase();
   const details: string[] = [];
 
   if (input.color) details.push(`Цвет: ${input.color}.`);
@@ -89,8 +89,22 @@ function buildBuyerDescription(input: MarketplaceTextInput, productLabel: string
       .join(" ");
   }
 
+  if (/шар|надувн|фольг|balloon/.test(lower)) {
+    return [
+      `${productLabel} — надувной декоративный шар для праздника, фотозоны и украшения пространства.`,
+      input.productDescription && !/трениров|мяч|фитнес/.test(input.productDescription.toLowerCase())
+        ? input.productDescription
+        : "Помогает быстро оформить день рождения, вечеринку или фотосессию.",
+      input.useCase ? `Сценарий: ${input.useCase}.` : "Подходит для дома, студии и мероприятия.",
+      ...details,
+      "Перед использованием проверьте целостность и следуйте рекомендациям по надуванию."
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
   return [
-    `${productLabel} подходит для повседневного использования и помогает быстро решить привычную задачу.`,
+    `${productLabel} — описание составлено по данным продавца и подходит для карточки маркетплейса.`,
     input.productDescription,
     input.useCase ? `Сценарий использования: ${input.useCase}.` : "",
     input.targetAudience ? `Подходит для ${input.targetAudience}.` : "",

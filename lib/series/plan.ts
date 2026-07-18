@@ -470,6 +470,24 @@ export function buildSeriesCardDescription(
 - ЗАПРЕЩЕНО писать на картинке системные заголовки блоков: «Характеристики без лишнего», «Главные преимущества», «Ключевые параметры в одном кадре», «Как использовать», «Качество без лишних обещаний», названия площадок и любые служебные подписи про структуру карточки.`;
 }
 
+/** Instructions for the series slide without polluting the product facts used for WB/Ozon copy. */
+export function buildSeriesEditInstructions(planItem: CardSeriesPlanItem, seriesCount: number) {
+  return `Сделай карточку серии ${planItem.index} из ${seriesCount}.
+Тип смыслового блока (не писать на картинке и не путать с названием товара): ${planItem.type} — ${planItem.title}.
+Цель блока: ${planItem.goal}.
+Визуальная идея: ${planItem.visualIdea}.
+На изображении и в WB/Ozon описаниях пиши только про сам товар, без системных заголовков слайда.`;
+}
+
+/** Remove series planning boilerplate if it was mixed into productDescription. */
+export function stripSeriesInstructionsFromDescription(value: string) {
+  const text = value.trim();
+  if (!text) return "";
+
+  const cut = text.split(/\n\s*Сделай карточку серии\s+\d+/i)[0]?.trim();
+  return cut || text;
+}
+
 export function buildSeriesInfographicTexts(planItem: CardSeriesPlanItem) {
   return [planItem.mainHeadline, ...planItem.badges, ...planItem.bullets]
     .map((value) => value.trim())

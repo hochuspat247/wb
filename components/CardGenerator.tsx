@@ -85,6 +85,7 @@ import {
   buildCardSeriesPlanFromTypes,
   buildFailedSeriesCard,
   buildSeriesCardDescription,
+  buildSeriesEditInstructions,
   buildSeriesStyleGuide,
   getDefaultSeriesTypes,
   isMetaMarketplaceVisibleText
@@ -698,18 +699,17 @@ export function CardGenerator({
     const seriesCount = options.seriesCount ?? plannedGenerationCount;
     const snapshotSource = options.preserveCard || options.layoutTemplate;
     const previousCard = snapshotSource ? buildPreviousCardSnapshot(snapshotSource) : undefined;
-    const requestPayload = options.planItem
-      ? {
-          ...payload,
-          productDescription: buildSeriesCardDescription(payload, options.planItem, seriesCount),
-          editInstructions: options.editInstructions,
-          previousCard
-        }
-      : {
-          ...payload,
-          editInstructions: options.editInstructions,
-          previousCard
-        };
+    const seriesInstructions = options.planItem
+      ? buildSeriesEditInstructions(options.planItem, seriesCount)
+      : undefined;
+    const requestPayload = {
+      ...payload,
+      productDescription: payload.productDescription,
+      identifiedProductName:
+        payload.identifiedProductName?.trim() || productName.trim() || payload.identifiedProductName,
+      editInstructions: [options.editInstructions, seriesInstructions].filter(Boolean).join("\n\n") || undefined,
+      previousCard
+    };
 
     const response = await fetch("/api/generate-card", {
       method: "POST",

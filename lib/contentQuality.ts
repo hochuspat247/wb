@@ -171,15 +171,57 @@ export function sanitizeMarketplaceTextResult(
   const advantages = sanitizeBenefits(result.advantages);
   const boundTitle = bindProductTitle(result.title, canonicalName);
   const boundShortTitle = bindProductTitle(result.shortTitle || result.title, canonicalName);
+  const repairedFullDescription = repairProductDescription(
+    result.fullDescription,
+    canonicalName || productName,
+    input?.productDescription
+  );
+  const repairedShortDescription = repairProductDescription(
+    result.shortDescription,
+    canonicalName || productName,
+    input?.productDescription,
+    220
+  );
+  const characteristics = enrichCharacteristics(
+    result.characteristics,
+    input,
+    canonicalName || productName
+  );
+
+  const wb = result.platformSpecific.wildberries
+    ? {
+        ...result.platformSpecific.wildberries,
+        wbName: sanitizeGeneratedText(
+          bindProductTitle(result.platformSpecific.wildberries.wbName, canonicalName)
+        ),
+        wbDescription: repairProductDescription(
+          result.platformSpecific.wildberries.wbDescription,
+          canonicalName || productName,
+          input?.productDescription,
+          1600
+        ),
+        wbCharacteristics: enrichCharacteristics(
+          result.platformSpecific.wildberries.wbCharacteristics,
+          input,
+          canonicalName || productName
+        ),
+        wbSafeImageTexts: result.platformSpecific.wildberries.wbSafeImageTexts
+          .map(sanitizeGeneratedText)
+          .filter(Boolean)
+          .map(fixInfographicTypo)
+          .filter((text) => !looksLikeGibberish(text) && !isOffTopicForProduct(text, canonicalName || productName))
+      }
+    : null;
 
   return {
     ...result,
     title: sanitizeGeneratedText(boundTitle),
     shortTitle: sanitizeGeneratedText(boundShortTitle),
     seoTitle: sanitizeGeneratedText(bindProductTitle(result.seoTitle || result.title, canonicalName)),
-    shortDescription: sanitizeGeneratedText(result.shortDescription),
-    fullDescription: sanitizeGeneratedText(result.fullDescription),
+    shortDescription: sanitizeGeneratedText(repairedShortDescription),
+    fullDescription: sanitizeGeneratedText(repairedFullDescription),
     advantages: advantages.length ? advantages : result.advantages.map(sanitizeGeneratedText).filter(Boolean),
+    characteristics,
     keywords: sanitizeKeywords(result.keywords, productName).slice(0, result.keywords.length || 15),
     imageTexts: result.imageTexts.map(sanitizeGeneratedText).filter(Boolean).map(fixInfographicTypo),
     infographicTexts: result.infographicTexts
@@ -188,28 +230,34 @@ export function sanitizeMarketplaceTextResult(
       .map(fixInfographicTypo)
       .filter((text) => !looksLikeGibberish(text)),
     platformSpecific: {
-      wildberries: result.platformSpecific.wildberries
-        ? {
-            ...result.platformSpecific.wildberries,
-            wbName: sanitizeGeneratedText(
-              bindProductTitle(result.platformSpecific.wildberries.wbName, canonicalName)
-            ),
-            wbDescription: sanitizeGeneratedText(result.platformSpecific.wildberries.wbDescription),
-            wbSafeImageTexts: result.platformSpecific.wildberries.wbSafeImageTexts
-              .map(sanitizeGeneratedText)
-              .filter(Boolean)
-              .map(fixInfographicTypo)
-              .filter((text) => !looksLikeGibberish(text))
-          }
-        : null,
+      wildberries: wb,
       ozon: result.platformSpecific.ozon
         ? {
             ...result.platformSpecific.ozon,
             ozonName: sanitizeGeneratedText(
               bindProductTitle(result.platformSpecific.ozon.ozonName, canonicalName)
             ),
-            ozonAnnotation: sanitizeGeneratedText(result.platformSpecific.ozon.ozonAnnotation),
-            ozonDescription: sanitizeGeneratedText(result.platformSpecific.ozon.ozonDescription),
+            ozonAnnotation: sanitizeGeneratedText(
+              repairProductDescription(
+                result.platformSpecific.ozon.ozonAnnotation,
+                canonicalName || productName,
+                input?.productDescription,
+                400
+              )
+            ),
+            ozonDescription: sanitizeGeneratedText(
+              repairProductDescription(
+                result.platformSpecific.ozon.ozonDescription,
+                canonicalName || productName,
+                input?.productDescription,
+                1600
+              )
+            ),
+            ozonCharacteristics: enrichCharacteristics(
+              result.platformSpecific.ozon.ozonCharacteristics,
+              input,
+              canonicalName || productName
+            ),
             ozonRichContentBlocks: result.platformSpecific.ozon.ozonRichContentBlocks.map((block) => ({
               ...block,
               title: sanitizeGeneratedText(block.title),
@@ -223,7 +271,14 @@ export function sanitizeMarketplaceTextResult(
             avitoTitle: sanitizeGeneratedText(
               bindProductTitle(result.platformSpecific.avito.avitoTitle, canonicalName)
             ),
-            avitoDescription: sanitizeGeneratedText(result.platformSpecific.avito.avitoDescription),
+            avitoDescription: sanitizeGeneratedText(
+              repairProductDescription(
+                result.platformSpecific.avito.avitoDescription,
+                canonicalName || productName,
+                input?.productDescription,
+                1600
+              )
+            ),
             avitoBenefits: sanitizeBenefits(result.platformSpecific.avito.avitoBenefits)
           }
         : null,
@@ -233,7 +288,19 @@ export function sanitizeMarketplaceTextResult(
             yandexName: sanitizeGeneratedText(
               bindProductTitle(result.platformSpecific.yandexMarket.yandexName, canonicalName)
             ),
-            yandexDescription: sanitizeGeneratedText(result.platformSpecific.yandexMarket.yandexDescription),
+            yandexDescription: sanitizeGeneratedText(
+              repairProductDescription(
+                result.platformSpecific.yandexMarket.yandexDescription,
+                canonicalName || productName,
+                input?.productDescription,
+                1600
+              )
+            ),
+            yandexCharacteristics: enrichCharacteristics(
+              result.platformSpecific.yandexMarket.yandexCharacteristics,
+              input,
+              canonicalName || productName
+            ),
             yandexSafeImageTexts: result.platformSpecific.yandexMarket.yandexSafeImageTexts
               .map(sanitizeGeneratedText)
               .filter(Boolean)
@@ -243,6 +310,98 @@ export function sanitizeMarketplaceTextResult(
         : null
     }
   };
+}
+
+function isBalloonLikeProduct(productName: string) {
+  return /шар|balloon|надувн|фольг/i.test(productName);
+}
+
+function isOffTopicForProduct(text: string, productName: string) {
+  if (!text.trim()) return true;
+  if (isBalloonLikeProduct(productName)) {
+    return /трениров|фитнес|мяч(?!ик)|теннис|спортзал|воркаут|гандбол|футбол/i.test(text);
+  }
+  return false;
+}
+
+/** Replace off-topic or too-short marketplace copy with a product-faithful description. */
+export function repairProductDescription(
+  current: string,
+  productName: string,
+  sourceFacts?: string,
+  maxLength = 1200
+) {
+  const cleanName = sanitizeGeneratedText(productName || "Товар");
+  const facts = sanitizeGeneratedText(sourceFacts || "");
+  const cleanCurrent = sanitizeGeneratedText(current || "");
+
+  const offTopic = isOffTopicForProduct(cleanCurrent, cleanName);
+  const tooShort = cleanCurrent.length < 180;
+
+  if (!offTopic && !tooShort) {
+    return cleanCurrent.slice(0, maxLength);
+  }
+
+  const parts = [
+    `${cleanName} — товар для оформления праздника, декора и фотозоны.`,
+    facts && facts.toLowerCase() !== cleanName.toLowerCase() ? facts : "",
+    isBalloonLikeProduct(cleanName)
+      ? "Подходит для дня рождения, фотосессии, украшения комнаты или мероприятия. Перед использованием ознакомьтесь с рекомендациями по надуванию и креплению."
+      : "Описание составлено по данным продавца. Уточняйте цвет, размер и комплектацию в характеристиках карточки.",
+    "Перед заказом проверьте название, фото и параметры — они должны совпадать с получаемым товаром."
+  ].filter(Boolean);
+
+  return parts.join(" ").replace(/\s+/g, " ").trim().slice(0, maxLength);
+}
+
+function enrichCharacteristics(
+  current: { key: string; value: string }[] | undefined,
+  input: MarketplaceTextInput | undefined,
+  productName: string
+) {
+  const map = new Map<string, string>();
+
+  for (const item of current || []) {
+    const key = sanitizeGeneratedText(item?.key || "");
+    const value = sanitizeGeneratedText(item?.value || "");
+    if (key && value && !isOffTopicForProduct(`${key} ${value}`, productName)) {
+      map.set(key.toLowerCase(), value);
+    }
+  }
+
+  const extras: Array<[string, string | undefined]> = [
+    ["Тип товара", productName],
+    ["Категория", input?.category],
+    ["Бренд", input?.brand],
+    ["Цвет", input?.color],
+    ["Размер", input?.size],
+    ["Материал", input?.material],
+    ["Габариты", input?.dimensions],
+    ["Вес", input?.weight],
+    ["Комплектация", input?.packageContents],
+    ["Назначение", input?.useCase || (isBalloonLikeProduct(productName) ? "Праздничный декор" : undefined)],
+    ["Для кого", input?.targetAudience]
+  ];
+
+  for (const [key, value] of extras) {
+    if (!value?.trim()) continue;
+    if (!map.has(key.toLowerCase())) {
+      map.set(key.toLowerCase(), sanitizeGeneratedText(value));
+    }
+  }
+
+  if (isBalloonLikeProduct(productName) && !map.has("форма")) {
+    if (/восклицат/i.test(`${productName} ${input?.productDescription || ""}`)) {
+      map.set("форма", "Восклицательный знак");
+    }
+  }
+
+  return Array.from(map.entries())
+    .map(([key, value]) => ({
+      key: key.charAt(0).toUpperCase() + key.slice(1),
+      value
+    }))
+    .slice(0, 12);
 }
 
 const TITLE_STOPWORDS = new Set([

@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { assessGenerationContentPolicy, scanTextForProhibitedContent } from "@/lib/ai/contentPolicy";
 import { generateProductCard } from "@/lib/ai/providers";
 import { resolveProductContextFromImage } from "@/lib/ai/productVision";
+import { stripSeriesInstructionsFromDescription } from "@/lib/series/plan";
 import { generateMarketplaceText } from "@/lib/marketplace/textGenerator";
 import {
   normalizeCardStyle,
@@ -130,7 +131,7 @@ export async function POST(request: Request) {
 
     const marketplace = normalizeMarketplaceLabel(body.marketplace);
     const productContext = await resolveProductContextFromImage({
-      productDescription: body.productDescription.trim(),
+      productDescription: stripSeriesInstructionsFromDescription(body.productDescription.trim()),
       category: body.category?.trim(),
       brand: body.brand?.trim(),
       identifiedProductName: body.identifiedProductName?.trim(),
@@ -165,8 +166,12 @@ export async function POST(request: Request) {
       previousCard = undefined;
     }
 
+    const cleanProductDescription = stripSeriesInstructionsFromDescription(
+      productContext.productDescription || body.productDescription.trim()
+    );
+
     const cardInput: ProductCardInput = {
-      productDescription: productContext.productDescription,
+      productDescription: cleanProductDescription,
       category,
       marketplace,
       style: normalizeCardStyle(body.style),
@@ -198,10 +203,21 @@ export async function POST(request: Request) {
 
     const result = await generateCardWithOptionalTemplate(cardInput);
 
+    const marketplaceFacts = [
+      cleanProductDescription,
+      productContext.sellerWishes?.trim(),
+      body.productDescription?.trim() !== cleanProductDescription
+        ? stripSeriesInstructionsFromDescription(body.productDescription.trim())
+        : ""
+    ]
+      .filter(Boolean)
+      .filter((value, index, list) => list.indexOf(value) === index)
+      .join(". ");
+
     const marketplaceInput: MarketplaceTextInput = {
       platform,
       mode: textMode,
-      productDescription: cardInput.productDescription,
+      productDescription: marketplaceFacts || cleanProductDescription,
       category,
       sellerWishes: cardInput.sellerWishes,
       identifiedProductName: cardInput.identifiedProductName,
@@ -221,8 +237,8 @@ export async function POST(request: Request) {
       advantages: Array.isArray(result.benefits) ? result.benefits : [],
       characteristics: Array.isArray(result.characteristics) ? result.characteristics : [],
       keywords: Array.isArray(result.keywords) ? result.keywords : [],
-      editInstructions: cardInput.editInstructions,
-      previousCard: cardInput.previousCard
+      editInstructions: undefined,
+      previousCard: undefined
     };
 
     const marketplaceText = await generateMarketplaceTextWithOptionalTemplate(marketplaceInput);

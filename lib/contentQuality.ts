@@ -62,6 +62,14 @@ export function sanitizeGeneratedText(value: string) {
     next = next.replace(pattern, "");
   }
 
+  next = next
+    .replace(/продающ[а-яё]*\s+обложк[а-яё]*/gi, "")
+    .replace(/обложк[а-яё]*\s+для\s+(Wildberries|WB|Ozon|Avito|Яндекс[а-яё\s]*)/gi, "")
+    .replace(/для\s+(Wildberries|WB|Ozon|Avito)\b/gi, "")
+    .replace(/понятн[а-яё]*\s+перв[а-яё]*\s+экран[а-яё]*/gi, "")
+    .replace(/акцент\s+на\s+главн[а-яё]*/gi, "")
+    .replace(/хит\s+для\s+каталог[а-яё]*/gi, "");
+
   return next
     .replace(/\s+([.,;:!?])/g, "$1")
     .replace(/\s{2,}/g, " ")

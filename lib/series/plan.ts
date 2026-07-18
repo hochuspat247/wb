@@ -109,19 +109,19 @@ function getSeriesDefinition(
       title: "Главная обложка",
       goal: "Быстро объяснить, что это за товар и почему его стоит открыть.",
       mainHeadline: productName,
-      subheadline: `Продающая обложка для ${marketplace}`,
-      bullets: ["Крупный товар", "Понятный первый экран", "Акцент на главной выгоде"],
-      badges: ["Хит для каталога", style],
-      visualIdea: "Крупное фото товара, чистый фон, один сильный заголовок и 2-3 аккуратные плашки",
+      subheadline: "",
+      bullets: [],
+      badges: [],
+      visualIdea: "Крупное фото товара, чистый фон, один сильный заголовок и 2-3 короткие плашки про сам товар",
       textDensity: "medium"
     },
     benefits: {
       title: "Преимущества",
       goal: "Показать покупателю главные выгоды без повторения обложки.",
       mainHeadline: "Главные преимущества",
-      subheadline: "Почему товар удобно выбрать",
-      bullets: ["Понятная польза", "Удобство в использовании", "Подходит для ежедневных задач"],
-      badges: ["Польза", "Комфорт"],
+      subheadline: "Почему стоит выбрать",
+      bullets: ["Удобно в использовании", "Заметный результат", "Выгодная покупка"],
+      badges: ["Выгода", "Удобство"],
       visualIdea: "Товар в центре, вокруг крупные иконки преимуществ и короткие подписи",
       textDensity: "medium"
     },
@@ -453,11 +453,33 @@ export function buildSeriesCardDescription(
 Тезисы: ${planItem.bullets.join("; ")}.
 Бейджи: ${planItem.badges.join("; ")}.
 Визуальная идея: ${planItem.visualIdea}.
-Важно: не повторяй смысл других карточек серии, не придумывай неподтвержденные свойства, пиши коротко и на русском.`;
+Важно: не повторяй смысл других карточек серии, не придумывай неподтвержденные свойства, пиши коротко и на русском.
+На изображении и в текстах карточки НЕ пиши служебные фразы вроде «Продающая обложка для Wildberries», «понятный первый экран», названия площадок как заголовок.`;
 }
 
 export function buildSeriesInfographicTexts(planItem: CardSeriesPlanItem) {
-  return [planItem.mainHeadline, ...planItem.badges, ...planItem.bullets].filter(Boolean).slice(0, 4);
+  return [planItem.mainHeadline, ...planItem.badges, ...planItem.bullets]
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .filter((value) => !isMetaMarketplaceVisibleText(value))
+    .slice(0, 4);
+}
+
+/** Layout/service phrases that must never appear as visible text on the card image. */
+export function isMetaMarketplaceVisibleText(value: string) {
+  const text = value.trim();
+  if (!text) return true;
+
+  return (
+    /продающ\w*\s+обложк/i.test(text) ||
+    /обложк\w*\s+для\s+(wildberries|wb|ozon|avito|яндекс)/i.test(text) ||
+    /для\s+(wildberries|wb|ozon|avito|яндекс\s*маркета?)\b/i.test(text) ||
+    /понятн\w*\s+перв\w*\s+экран/i.test(text) ||
+    /акцент\s+на\s+главн/i.test(text) ||
+    /крупн\w*\s+товар/i.test(text) ||
+    /хит\s+для\s+каталог/i.test(text) ||
+    /marketplace|инфографик|seo|промпт/i.test(text)
+  );
 }
 
 export function buildFailedSeriesCard(

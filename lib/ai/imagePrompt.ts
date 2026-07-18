@@ -27,6 +27,13 @@ const FORBIDDEN_VISIBLE_TEXT_PATTERNS = [
   /высок[а-яё]*\s+разрешени[а-яё]*/giu,
   /hd[-\s]?качеств[а-яё]*/giu,
   /4k[-\s]?качеств[а-яё]*/giu,
+  /продающ[а-яё]*\s+обложк[а-яё]*/giu,
+  /обложк[а-яё]*\s+для\s+(wildberries|wb|ozon|avito|яндекс)/giu,
+  /для\s+(wildberries|wb|ozon|avito|яндекс\s*маркета?)/giu,
+  /понятн[а-яё]*\s+перв[а-яё]*\s+экран[а-яё]*/giu,
+  /акцент\s+на\s+главн[а-яё]*/giu,
+  /крупн[а-яё]*\s+товар[а-яё]*/giu,
+  /хит\s+для\s+каталог[а-яё]*/giu,
 ];
 
 function sanitizeVisibleImageText(value: unknown): string {
@@ -505,6 +512,8 @@ TYPOGRAPHY:
 - Never invent misspellings (e.g. "КАЧТЕВО" instead of "КАЧЕСТВО").
 - Keep a safe zone: at least 6% margin from all edges; never clip headlines at the top.
 - Headline max ~32 characters when possible; prefer wrapping to 2 short lines over clipping.
+- NEVER write service/meta phrases on the image: "Продающая обложка", "для Wildberries", "для WB", "для Ozon", "понятный первый экран", "хит для каталога", "акцент на главной выгоде".
+- Visible text must describe the PRODUCT only, never the marketplace, SEO, or layout instructions.
 - Use fewer words, bigger type, stronger hierarchy.
 - Prefer 1 headline, 2–4 short benefit lines, and at most 3 short specs unless the card type specifically requires technical detail.
 - Keep line lengths short and balanced.

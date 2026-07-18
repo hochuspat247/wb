@@ -85,9 +85,9 @@ import {
   buildCardSeriesPlanFromTypes,
   buildFailedSeriesCard,
   buildSeriesCardDescription,
-  buildSeriesInfographicTexts,
   buildSeriesStyleGuide,
-  getDefaultSeriesTypes
+  getDefaultSeriesTypes,
+  isMetaMarketplaceVisibleText
 } from "@/lib/series/plan";
 import type {
   GenerateImageResult,
@@ -742,25 +742,36 @@ export function CardGenerator({
     const planItem = options.planItem;
     const preserveCard = options.preserveCard;
     const { imageBase64: _imageBase64, imageMimeType: _imageMimeType, ...sourceInputPayload } = requestPayload;
+    const aiCard = cardPayload as ProductCardResult;
+    const aiBenefits = Array.isArray(aiCard.benefits) ? aiCard.benefits.filter(Boolean) : [];
+    const aiInfographic = Array.isArray(aiCard.infographicTexts) ? aiCard.infographicTexts.filter(Boolean) : [];
+    const planBullets = (planItem?.bullets || []).filter((item) => item.trim() && !isMetaMarketplaceVisibleText(item));
+    const planSubheadline =
+      planItem?.subheadline?.trim() && !isMetaMarketplaceVisibleText(planItem.subheadline)
+        ? planItem.subheadline.trim()
+        : "";
     const generatedCard: ProductCardResult = {
-      ...(cardPayload as ProductCardResult),
-      id: preserveCard?.id || (cardPayload as ProductCardResult).id,
-      title: planItem?.mainHeadline || (cardPayload as ProductCardResult).title,
-      shortDescription: planItem?.subheadline || (cardPayload as ProductCardResult).shortDescription,
-      benefits: planItem?.bullets?.length
-        ? planItem.bullets
-        : Array.isArray((data as ProductCardResult).benefits)
-          ? (data as ProductCardResult).benefits
-          : [],
-      keywords: Array.isArray((data as ProductCardResult).keywords) ? (data as ProductCardResult).keywords : [],
+      ...aiCard,
+      id: preserveCard?.id || aiCard.id,
+      title: planItem?.mainHeadline || aiCard.title,
+      shortDescription: planSubheadline || aiCard.shortDescription,
+      benefits: aiBenefits.length ? aiBenefits : planBullets.length ? planBullets : [],
+      keywords: Array.isArray(aiCard.keywords) ? aiCard.keywords : [],
       infographicTexts: planItem
-        ? buildSeriesInfographicTexts(planItem)
-        : Array.isArray((data as ProductCardResult).infographicTexts)
-          ? (data as ProductCardResult).infographicTexts
-          : [],
+        ? [
+            planItem.mainHeadline,
+            ...(aiBenefits.length ? aiBenefits : planBullets),
+            ...aiInfographic
+          ]
+            .map((value) => String(value || "").trim())
+            .filter(Boolean)
+            .filter((value) => !isMetaMarketplaceVisibleText(value))
+            .filter((value, index, list) => list.indexOf(value) === index)
+            .slice(0, 4)
+        : aiInfographic,
       visualConcept: planItem
         ? `${planItem.visualIdea}. Единый стиль серии: ${buildSeriesStyleGuide(style, marketplace)}`
-        : (cardPayload as ProductCardResult).visualConcept,
+        : aiCard.visualConcept,
       imageDataUrl: imageUrl || undefined,
       headline: planItem?.mainHeadline || headline.trim() || undefined,
       price: price.trim() || undefined,
@@ -935,6 +946,18 @@ export function CardGenerator({
           setSeriesCards([...completedCards]);
           if (hasGeneratedAiCover(readyCard)) {
             await persistGeneratedCard(readyCard, { silent: true });
+          } else if (readyCard.generationId || extractProviderGenerationId(readyCard.generatedImageError)) {
+            setNotice(`Слайд ${planItem.index}: проверяем результат у провайдера…`);
+            const recovered = await recoverProviderImageForCard(
+              readyCard,
+              (readyCard.generationId ||
+                extractProviderGenerationId(readyCard.generatedImageError)) as string
+            );
+            if (recovered && hasGeneratedAiCover(recovered)) {
+              completedCards[completedCards.length - 1] = recovered;
+              setSeriesCards([...completedCards]);
+              await persistGeneratedCard(recovered, { silent: true });
+            }
           }
         } catch (caught) {
           const message = caught instanceof Error ? caught.message : "Не удалось создать карточку.";
@@ -1679,7 +1702,8 @@ export function CardGenerator({
   ): Promise<ProductCardResult | null> {
     const inSeriesBatch = Boolean(cardForImage.seriesCount && cardForImage.seriesCount > 1 && isLoading);
     const productImage = imageUrl || cardForImage.imageDataUrl;
-    const ticket = imageGenerationTicket ?? pendingImageGenerationTicketRef.current ?? undefined;
+    let ticket = imageGenerationTicket ?? pendingImageGenerationTicketRef.current ?? undefined;
+    const maxAttempts = 3;
 
     if (!productImage) {
       setNotice("Тексты готовы. Загрузите фото, чтобы создать обложку.");
@@ -1689,123 +1713,171 @@ export function CardGenerator({
     setIsGeneratingAiImage(true);
     setError("");
 
-    try {
-      const image = dataUrlToBase64(productImage);
-      const baseCardInput =
-        cardForImage.sourceInput ??
-        ({
-          productDescription: description,
-          category: cardForImage.category,
-          marketplace,
-          style,
-          includeSeo: true,
-          focusBenefits: true,
-          includeInfographicText: true
-        } satisfies ProductCardInput);
-      const templateStyleGuide =
-        layoutTemplateCard?.seriesStyleGuide ||
-        (layoutTemplateCard
-          ? buildSeriesStyleGuide(layoutTemplateCard.style || style, layoutTemplateCard.marketplace || marketplace)
-          : undefined);
-      const effectiveDesignPreset = normalizeDesignPreset(
-        layoutTemplateCard?.designPreset || designPreset
-      );
-      const response = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productDescription: cardForImage.seriesPlanItem
-            ? buildSeriesCardDescription(baseCardInput, cardForImage.seriesPlanItem, cardForImage.seriesCount ?? plannedGenerationCount)
-            : baseCardInput.productDescription,
-          category: cardForImage.category,
-          style: layoutTemplateCard?.style || style,
-          marketplace: layoutTemplateCard?.marketplace || marketplace,
-          title: cardForImage.title,
-          benefits: cardForImage.benefits,
-          infographicTexts: cardForImage.infographicTexts,
-          characteristics: cardForImage.characteristics,
-          keywords: cardForImage.keywords,
-          imageBase64: image.base64,
-          imageMimeType: image.mimeType,
-          imageProvider: resolveNanoBananaImageProvider(getImageSettings().imageProvider),
-          headline: headline.trim() || undefined,
-          price: price.trim() || undefined,
-          ctaText: ctaText.trim() || undefined,
-          designPreset: effectiveDesignPreset,
-          model: NANO_BANANA_IMAGE_MODEL,
-          aspectRatio: NANO_BANANA_ASPECT_RATIO,
-          resolution: NANO_BANANA_RESOLUTION,
-          outputFormat: NANO_BANANA_OUTPUT_FORMAT,
-          imageGenerationTicket: ticket,
-          seriesStyleGuide: cardForImage.seriesStyleGuide || templateStyleGuide,
-          seriesCardType: cardForImage.seriesPlanItem?.type,
-          seriesCardGoal: cardForImage.seriesPlanItem?.goal,
-          seriesCardVisualIdea:
-            cardForImage.seriesPlanItem?.visualIdea || layoutTemplateCard?.visualConcept || undefined,
-          badges: cardForImage.seriesPlanItem?.badges,
-          editInstructions: editInstructions?.trim() || undefined
-        })
-      });
-      const data = (await response.json()) as GenerateImageResult & {
-        error?: string;
-        code?: string;
-        quota?: { remaining: number; used: number; credits: number };
-        imageGenerationTicket?: string;
-      };
+    const image = dataUrlToBase64(productImage);
+    const baseCardInput =
+      cardForImage.sourceInput ??
+      ({
+        productDescription: description,
+        category: cardForImage.category,
+        marketplace,
+        style,
+        includeSeo: true,
+        focusBenefits: true,
+        includeInfographicText: true
+      } satisfies ProductCardInput);
+    const templateStyleGuide =
+      layoutTemplateCard?.seriesStyleGuide ||
+      (layoutTemplateCard
+        ? buildSeriesStyleGuide(layoutTemplateCard.style || style, layoutTemplateCard.marketplace || marketplace)
+        : undefined);
+    const effectiveDesignPreset = normalizeDesignPreset(layoutTemplateCard?.designPreset || designPreset);
+    const visibleInfographicTexts = (cardForImage.infographicTexts || []).filter(
+      (text) => text.trim() && !isMetaMarketplaceVisibleText(text)
+    );
+    const visibleBenefits = (cardForImage.benefits || []).filter(
+      (text) => text.trim() && !isMetaMarketplaceVisibleText(text)
+    );
+    const visibleBadges = (cardForImage.seriesPlanItem?.badges || []).filter(
+      (text) => text.trim() && !isMetaMarketplaceVisibleText(text)
+    );
 
-      if (!response.ok) {
-        if (response.status === 402) {
-          setRemainingGenerations(data.quota?.remaining ?? 0);
-          if (data.quota) onQuotaChange?.(data.quota);
-          openPaywall("quota_exhausted");
+    let lastFailedCard: ProductCardResult | null = null;
+
+    try {
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        if (attempt > 1) {
+          setNotice(
+            inSeriesBatch
+              ? `Повтор ${attempt}/${maxAttempts}: слайд ${cardForImage.seriesIndex ?? ""}…`
+              : `Повтор генерации обложки ${attempt}/${maxAttempts}…`
+          );
+          await new Promise((resolve) => window.setTimeout(resolve, 1200 * (attempt - 1)));
         }
-        if (response.status === 403 && data.code === "EMAIL_NOT_VERIFIED") {
-          setNotice(data.error || "Подтвердите email, чтобы генерировать карточки.");
-        }
-        if (response.status === 502 || response.status === 500) {
-          if (data.imageGenerationTicket) {
-            pendingImageGenerationTicketRef.current = data.imageGenerationTicket;
+
+        try {
+          const response = await fetch("/api/generate-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              productDescription: cardForImage.seriesPlanItem
+                ? buildSeriesCardDescription(
+                    baseCardInput,
+                    cardForImage.seriesPlanItem,
+                    cardForImage.seriesCount ?? plannedGenerationCount
+                  )
+                : baseCardInput.productDescription,
+              category: cardForImage.category,
+              style: layoutTemplateCard?.style || style,
+              marketplace: layoutTemplateCard?.marketplace || marketplace,
+              title: cardForImage.title,
+              benefits: visibleBenefits,
+              infographicTexts: visibleInfographicTexts,
+              characteristics: cardForImage.characteristics,
+              keywords: cardForImage.keywords,
+              imageBase64: image.base64,
+              imageMimeType: image.mimeType,
+              imageProvider: resolveNanoBananaImageProvider(getImageSettings().imageProvider),
+              headline: (productName.trim() || headline.trim() || undefined),
+              price: price.trim() || undefined,
+              ctaText: ctaText.trim() || undefined,
+              designPreset: effectiveDesignPreset,
+              model: NANO_BANANA_IMAGE_MODEL,
+              aspectRatio: NANO_BANANA_ASPECT_RATIO,
+              resolution: NANO_BANANA_RESOLUTION,
+              outputFormat: NANO_BANANA_OUTPUT_FORMAT,
+              imageGenerationTicket: ticket,
+              seriesStyleGuide: cardForImage.seriesStyleGuide || templateStyleGuide,
+              seriesCardType: cardForImage.seriesPlanItem?.type,
+              seriesCardGoal: cardForImage.seriesPlanItem?.goal,
+              seriesCardVisualIdea:
+                cardForImage.seriesPlanItem?.visualIdea || layoutTemplateCard?.visualConcept || undefined,
+              badges: visibleBadges,
+              editInstructions: editInstructions?.trim() || undefined
+            })
+          });
+          const data = (await response.json()) as GenerateImageResult & {
+            error?: string;
+            code?: string;
+            quota?: { remaining: number; used: number; credits: number };
+            imageGenerationTicket?: string;
+          };
+
+          if (response.status === 402) {
+            setRemainingGenerations(data.quota?.remaining ?? 0);
+            if (data.quota) onQuotaChange?.(data.quota);
+            openPaywall("quota_exhausted");
+            throw new Error(data.error || "Лимит генераций исчерпан.");
           }
-          if (data.quota) {
+
+          if (response.status === 403 && data.code === "EMAIL_NOT_VERIFIED") {
+            setNotice(data.error || "Подтвердите email, чтобы генерировать карточки.");
+            throw new Error(data.error || "Подтвердите email.");
+          }
+
+          if (!response.ok) {
+            if (data.imageGenerationTicket) {
+              pendingImageGenerationTicketRef.current = data.imageGenerationTicket;
+              ticket = data.imageGenerationTicket;
+            }
+            if (data.quota) {
+              setRemainingGenerations(data.quota.remaining);
+              onQuotaChange?.(data.quota);
+            }
+
+            const failedCard = applyImageResult(cardForImage, {
+              ...data,
+              error: getImageGenerationRetryMessage(data.error)
+            });
+            lastFailedCard = failedCard;
+
+            if (attempt < maxAttempts && (response.status === 502 || response.status === 500)) {
+              continue;
+            }
+
+            if (!inSeriesBatch) {
+              setNotice("");
+              setError(getImageGenerationRetryMessage(data.error));
+            }
+            return failedCard;
+          }
+
+          if (data.quota?.remaining !== undefined) {
             setRemainingGenerations(data.quota.remaining);
             onQuotaChange?.(data.quota);
+            pendingImageGenerationTicketRef.current = null;
           }
-          const failureMessage = getImageGenerationRetryMessage(data.error);
-          const updatedCard = applyImageResult(cardForImage, {
-            ...data,
-            error: failureMessage
-          });
+
+          const updatedCard = applyImageResult(cardForImage, data);
+
+          if (!hasUsableImage(data)) {
+            lastFailedCard = updatedCard;
+            if (attempt < maxAttempts) {
+              continue;
+            }
+            if (!inSeriesBatch) {
+              setNotice("");
+              setError(getImageGenerationRetryMessage(data.error));
+            }
+            return updatedCard;
+          }
+
           if (!inSeriesBatch) {
-            setNotice("");
-            setError(failureMessage);
+            setError("");
+            setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
           }
           return updatedCard;
+        } catch (caught) {
+          if (attempt >= maxAttempts) {
+            throw caught;
+          }
+          const message = caught instanceof Error ? caught.message : "";
+          if (/лимит|квот|email|исчерпан/i.test(message)) {
+            throw caught;
+          }
         }
-        throw new Error(data.error || "Не удалось создать обложку.");
       }
 
-      if (data.quota?.remaining !== undefined) {
-        setRemainingGenerations(data.quota.remaining);
-        onQuotaChange?.(data.quota);
-        pendingImageGenerationTicketRef.current = null;
-      }
-
-      const updatedCard = applyImageResult(cardForImage, data);
-
-      if (!hasUsableImage(data)) {
-        const failureMessage = getImageGenerationRetryMessage(data.error);
-        if (!inSeriesBatch) {
-          setNotice("");
-          setError(failureMessage);
-        }
-        return updatedCard;
-      }
-
-      if (!inSeriesBatch) {
-        setError("");
-        setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
-      }
-      return updatedCard;
+      return lastFailedCard;
     } catch (caught) {
       const failureMessage = getImageGenerationRetryMessage(
         caught instanceof Error ? caught.message : "Неизвестная ошибка генерации изображения"
@@ -1819,7 +1891,8 @@ export function CardGenerator({
         prompt: cardForImage.generatedImagePrompt || cardForImage.shortDescription,
         generatedAt: new Date().toISOString(),
         isFallback: true,
-        error: failureMessage
+        error: failureMessage,
+        generationId: lastFailedCard?.generationId
       });
       if (!inSeriesBatch) {
         setNotice("");

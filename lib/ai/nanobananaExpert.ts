@@ -418,7 +418,7 @@ export async function recoverNanoBananaExpertImage(generationId: string): Promis
     );
   }
 
-  const maxPollMs = getPositiveEnvNumber("NANOBANANA_EXPERT_RECOVER_POLL_MS", 45_000);
+  const maxPollMs = getPositiveEnvNumber("NANOBANANA_EXPERT_RECOVER_POLL_MS", 180_000);
   const pollIntervalMs = getPositiveEnvNumber("NANOBANANA_EXPERT_POLL_INTERVAL_MS", 3_000);
   const startedAt = Date.now();
   let lastData: NanoBananaExpertApiResponse | null = null;

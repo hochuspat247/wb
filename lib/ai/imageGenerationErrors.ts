@@ -1,7 +1,7 @@
 import type { GenerateImageResult } from "@/types/product-card";
 
 export const IMAGE_GENERATION_RETRY_MESSAGE =
-  "Ошибка связи с интернетом. Повторите генерацию — списание не произойдёт.";
+  "Картинка ещё готовится у провайдера. Нажмите «Проверить у провайдера» — новую генерацию не запускаем.";
 
 export function getImageGenerationRetryMessage(_error?: string | null) {
   return IMAGE_GENERATION_RETRY_MESSAGE;

@@ -951,7 +951,8 @@ export function CardGenerator({
             const recovered = await recoverProviderImageForCard(
               readyCard,
               (readyCard.generationId ||
-                extractProviderGenerationId(readyCard.generatedImageError)) as string
+                extractProviderGenerationId(readyCard.generatedImageError)) as string,
+              { attempts: 3, nested: true }
             );
             if (recovered && hasGeneratedAiCover(recovered)) {
               completedCards[completedCards.length - 1] = recovered;
@@ -1428,116 +1429,91 @@ export function CardGenerator({
     }
 
     const providerJobId = cardToRetry.generationId || extractProviderGenerationId(cardToRetry.generatedImageError);
-    if (providerJobId && !hasGeneratedAiCover(cardToRetry)) {
-      const recovered = await recoverProviderImageForCard(cardToRetry, providerJobId);
-      if (recovered && hasGeneratedAiCover(recovered)) {
-        setSeriesCards((items) => items.map((item) => (item.seriesIndex === planItem.index ? recovered : item)));
-        await persistGeneratedCard(recovered, { silent: true });
-        setNotice(`Слайд ${planItem.index}: результат подтянут у провайдера.`);
-        return;
-      }
-    }
-
-    if (persistToServer && remainingGenerations === 0) {
-      openPaywall("quota_exhausted");
+    if (!providerJobId) {
+      setError("Нет id задания у провайдера. Подождите минуту и нажмите «Проверить у провайдера» ещё раз.");
       return;
     }
 
-    const payload = cardToRetry.sourceInput ?? {
-      productDescription: description,
-      category: effectiveCategory,
-      marketplace,
-      style,
-      includeSeo: true,
-      focusBenefits: true,
-      includeInfographicText: true,
-      imageFileName,
-      platform: marketplaceLabelToPlatform(marketplace),
-      textMode,
-      identifiedProductName: productName.trim() || undefined
-    };
-
-    setError("");
-    setNotice(`Повторяем карточку ${planItem.index} из ${cardToRetry.seriesCount ?? plannedGenerationCount}`);
-    setIsLoading(true);
-
-    try {
-      const { card: generatedCard, imageGenerationTicket } = await createGeneratedProductCard(payload, {
-        planItem,
-        seriesId: cardToRetry.seriesId,
-        seriesCount: cardToRetry.seriesCount ?? plannedGenerationCount,
-        preserveCard: cardToRetry
-      });
-      setCard(generatedCard);
-      const finalCard = await generateAiMarketplaceImage(
-        generatedCard,
-        undefined,
-        imageGenerationTicket ?? pendingImageGenerationTicketRef.current ?? undefined
-      );
-      const readyCard = finalCard ?? generatedCard;
-      setSeriesCards((items) => items.map((item) => (item.seriesIndex === planItem.index ? readyCard : item)));
-      await persistGeneratedCard(readyCard, { silent: true });
-      setNotice(`Карточка ${planItem.index} обновлена.`);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Не удалось повторить карточку.");
-    } finally {
-      setIsLoading(false);
+    const recovered = await recoverProviderImageForCard(cardToRetry, providerJobId, { attempts: 3 });
+    if (recovered && hasGeneratedAiCover(recovered)) {
+      setCard(recovered);
+      setSeriesCards((items) => items.map((item) => (item.seriesIndex === planItem.index ? recovered : item)));
+      await persistGeneratedCard(recovered, { silent: true });
+      setNotice(`Слайд ${planItem.index}: результат подтянут у провайдера.`);
+      return;
     }
+
+    setError("У провайдера пока нет готового файла. Подождите 20–30 секунд и нажмите «Проверить у провайдера».");
   }
 
-  async function recoverProviderImageForCard(cardForImage: ProductCardResult, generationId: string) {
-    setIsGeneratingAiImage(true);
+  async function recoverProviderImageForCard(
+    cardForImage: ProductCardResult,
+    generationId: string,
+    options: { attempts?: number; nested?: boolean } = {}
+  ) {
+    const attempts = Math.max(1, options.attempts ?? 1);
+    if (!options.nested) {
+      setIsGeneratingAiImage(true);
+    }
     setError("");
     setNotice("Проверяем результат у провайдера…");
 
     try {
-      const response = await fetch("/api/generate-image/recover", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          generationId,
-          imageGenerationTicket: pendingImageGenerationTicketRef.current ?? undefined
-        })
-      });
-      const data = (await response.json()) as GenerateImageResult & {
-        error?: string;
-        quota?: { remaining: number; used: number; credits: number; unlimited?: boolean };
-        imageGenerationTicket?: string;
-        recovered?: boolean;
-        charged?: boolean;
-      };
+      for (let attempt = 1; attempt <= attempts; attempt += 1) {
+        if (attempt > 1) {
+          setNotice(`Проверяем у провайдера ещё раз (${attempt}/${attempts})…`);
+          await new Promise((resolve) => window.setTimeout(resolve, 2500));
+        }
 
-      if (data.imageGenerationTicket) {
-        pendingImageGenerationTicketRef.current = data.imageGenerationTicket;
-      }
-      if (data.quota?.remaining !== undefined) {
-        setRemainingGenerations(data.quota.remaining);
-        setHasUnlimitedAccess(Boolean(data.quota.unlimited));
-        onQuotaChange?.(data.quota);
-      }
+        const response = await fetch("/api/generate-image/recover", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            generationId,
+            imageGenerationTicket: pendingImageGenerationTicketRef.current ?? undefined
+          })
+        });
+        const data = (await response.json()) as GenerateImageResult & {
+          error?: string;
+          quota?: { remaining: number; used: number; credits: number; unlimited?: boolean };
+          imageGenerationTicket?: string;
+          recovered?: boolean;
+          charged?: boolean;
+        };
 
-      if (!response.ok) {
-        setNotice("");
-        return null;
-      }
+        if (data.imageGenerationTicket) {
+          pendingImageGenerationTicketRef.current = data.imageGenerationTicket;
+        }
+        if (data.quota?.remaining !== undefined) {
+          setRemainingGenerations(data.quota.remaining);
+          setHasUnlimitedAccess(Boolean(data.quota.unlimited));
+          onQuotaChange?.(data.quota);
+        }
 
-      const updatedCard = applyImageResult(cardForImage, data);
-      if (hasUsableImage(data)) {
-        pendingImageGenerationTicketRef.current = null;
-        setError("");
-        setNotice(
-          data.charged
-            ? "Результат подтянут у провайдера."
-            : "Результат подтянут у провайдера без повторного списания."
-        );
-        return updatedCard;
+        if (!response.ok) {
+          continue;
+        }
+
+        const updatedCard = applyImageResult(cardForImage, data);
+        if (hasUsableImage(data)) {
+          pendingImageGenerationTicketRef.current = null;
+          setError("");
+          setNotice(
+            data.charged
+              ? "Результат подтянут у провайдера."
+              : "Результат подтянут у провайдера без новой генерации."
+          );
+          return updatedCard;
+        }
       }
 
       return null;
     } catch {
       return null;
     } finally {
-      setIsGeneratingAiImage(false);
+      if (!options.nested) {
+        setIsGeneratingAiImage(false);
+      }
     }
   }
 
@@ -1546,13 +1522,13 @@ export function CardGenerator({
       cardToRecover.generationId || extractProviderGenerationId(cardToRecover.generatedImageError);
 
     if (!providerJobId) {
-      setError("Нет id задания у провайдера. Нажмите «Повторить», чтобы сгенерировать заново.");
+      setError("Нет id задания у провайдера. Подождите и нажмите «Проверить у провайдера» ещё раз.");
       return;
     }
 
-    const recovered = await recoverProviderImageForCard(cardToRecover, providerJobId);
+    const recovered = await recoverProviderImageForCard(cardToRecover, providerJobId, { attempts: 3 });
     if (!recovered || !hasGeneratedAiCover(recovered)) {
-      setError("У провайдера пока нет готового результата. Попробуйте позже или нажмите «Повторить».");
+      setError("У провайдера пока нет готового результата. Подождите 20–30 секунд и проверьте снова.");
       return;
     }
 
@@ -1574,64 +1550,26 @@ export function CardGenerator({
 
     setIsLoading(true);
     setError("");
-    setNotice(`Догенерируем недостающие: ${failed.length}…`);
+    setNotice(`Проверяем недостающие у провайдера: ${failed.length}…`);
 
     try {
       for (const failedCard of failed) {
-        const planItem = failedCard.seriesPlanItem;
-        if (!planItem) {
+        const providerJobId = failedCard.generationId || extractProviderGenerationId(failedCard.generatedImageError);
+        if (!providerJobId) {
           continue;
         }
 
-        const providerJobId = failedCard.generationId || extractProviderGenerationId(failedCard.generatedImageError);
-        if (providerJobId) {
-          const recovered = await recoverProviderImageForCard(failedCard, providerJobId);
-          if (recovered && hasGeneratedAiCover(recovered)) {
-            setSeriesCards((items) =>
-              items.map((item) => (item.seriesIndex === failedCard.seriesIndex ? recovered : item))
-            );
-            await persistGeneratedCard(recovered, { silent: true });
-            continue;
-          }
+        const recovered = await recoverProviderImageForCard(failedCard, providerJobId, { attempts: 3 });
+        if (recovered && hasGeneratedAiCover(recovered)) {
+          setSeriesCards((items) =>
+            items.map((item) => (item.seriesIndex === failedCard.seriesIndex ? recovered : item))
+          );
+          await persistGeneratedCard(recovered, { silent: true });
         }
-
-        if (persistToServer && remainingGenerations === 0) {
-          openPaywall("quota_exhausted");
-          break;
-        }
-
-        const payload = failedCard.sourceInput ?? {
-          productDescription: description,
-          category: effectiveCategory,
-          marketplace,
-          style,
-          includeSeo: true,
-          focusBenefits: true,
-          includeInfographicText: true,
-          imageFileName,
-          platform: marketplaceLabelToPlatform(marketplace),
-          textMode,
-          identifiedProductName: productName.trim() || undefined
-        };
-
-        const { card: generatedCard, imageGenerationTicket } = await createGeneratedProductCard(payload, {
-          planItem,
-          seriesId: failedCard.seriesId,
-          seriesCount: failedCard.seriesCount ?? plannedGenerationCount,
-          preserveCard: failedCard
-        });
-        const finalCard = await generateAiMarketplaceImage(
-          generatedCard,
-          undefined,
-          imageGenerationTicket ?? pendingImageGenerationTicketRef.current ?? undefined
-        );
-        const readyCard = finalCard ?? generatedCard;
-        setSeriesCards((items) => items.map((item) => (item.seriesIndex === planItem.index ? readyCard : item)));
-        await persistGeneratedCard(readyCard, { silent: true });
       }
-      setNotice("Недостающие слайды обработаны.");
+      setNotice("Проверка у провайдера завершена.");
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Не удалось догенерировать слайды.");
+      setError(caught instanceof Error ? caught.message : "Не удалось проверить слайды у провайдера.");
     } finally {
       setIsLoading(false);
     }
@@ -1702,8 +1640,7 @@ export function CardGenerator({
   ): Promise<ProductCardResult | null> {
     const inSeriesBatch = Boolean(cardForImage.seriesCount && cardForImage.seriesCount > 1 && isLoading);
     const productImage = imageUrl || cardForImage.imageDataUrl;
-    let ticket = imageGenerationTicket ?? pendingImageGenerationTicketRef.current ?? undefined;
-    const maxAttempts = 3;
+    const ticket = imageGenerationTicket ?? pendingImageGenerationTicketRef.current ?? undefined;
 
     if (!productImage) {
       setNotice("Тексты готовы. Загрузите фото, чтобы создать обложку.");
@@ -1741,143 +1678,121 @@ export function CardGenerator({
       (text) => text.trim() && !isMetaMarketplaceVisibleText(text)
     );
 
-    let lastFailedCard: ProductCardResult | null = null;
-
     try {
-      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-        if (attempt > 1) {
-          setNotice(
-            inSeriesBatch
-              ? `Повтор ${attempt}/${maxAttempts}: слайд ${cardForImage.seriesIndex ?? ""}…`
-              : `Повтор генерации обложки ${attempt}/${maxAttempts}…`
-          );
-          await new Promise((resolve) => window.setTimeout(resolve, 1200 * (attempt - 1)));
+      const response = await fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productDescription: cardForImage.seriesPlanItem
+            ? buildSeriesCardDescription(
+                baseCardInput,
+                cardForImage.seriesPlanItem,
+                cardForImage.seriesCount ?? plannedGenerationCount
+              )
+            : baseCardInput.productDescription,
+          category: cardForImage.category,
+          style: layoutTemplateCard?.style || style,
+          marketplace: layoutTemplateCard?.marketplace || marketplace,
+          title: cardForImage.title,
+          benefits: visibleBenefits,
+          infographicTexts: visibleInfographicTexts,
+          characteristics: cardForImage.characteristics,
+          keywords: cardForImage.keywords,
+          imageBase64: image.base64,
+          imageMimeType: image.mimeType,
+          imageProvider: resolveNanoBananaImageProvider(getImageSettings().imageProvider),
+          headline: productName.trim() || headline.trim() || undefined,
+          price: price.trim() || undefined,
+          ctaText: ctaText.trim() || undefined,
+          designPreset: effectiveDesignPreset,
+          model: NANO_BANANA_IMAGE_MODEL,
+          aspectRatio: NANO_BANANA_ASPECT_RATIO,
+          resolution: NANO_BANANA_RESOLUTION,
+          outputFormat: NANO_BANANA_OUTPUT_FORMAT,
+          imageGenerationTicket: ticket,
+          seriesStyleGuide: cardForImage.seriesStyleGuide || templateStyleGuide,
+          seriesCardType: cardForImage.seriesPlanItem?.type,
+          seriesCardGoal: cardForImage.seriesPlanItem?.goal,
+          seriesCardVisualIdea:
+            cardForImage.seriesPlanItem?.visualIdea || layoutTemplateCard?.visualConcept || undefined,
+          badges: visibleBadges,
+          editInstructions: editInstructions?.trim() || undefined
+        })
+      });
+      const data = (await response.json()) as GenerateImageResult & {
+        error?: string;
+        code?: string;
+        quota?: { remaining: number; used: number; credits: number };
+        imageGenerationTicket?: string;
+      };
+
+      if (response.status === 402) {
+        setRemainingGenerations(data.quota?.remaining ?? 0);
+        if (data.quota) onQuotaChange?.(data.quota);
+        openPaywall("quota_exhausted");
+        throw new Error(data.error || "Лимит генераций исчерпан.");
+      }
+
+      if (response.status === 403 && data.code === "EMAIL_NOT_VERIFIED") {
+        setNotice(data.error || "Подтвердите email, чтобы генерировать карточки.");
+        throw new Error(data.error || "Подтвердите email.");
+      }
+
+      if (data.imageGenerationTicket) {
+        pendingImageGenerationTicketRef.current = data.imageGenerationTicket;
+      }
+      if (data.quota) {
+        setRemainingGenerations(data.quota.remaining);
+        onQuotaChange?.(data.quota);
+      }
+
+      if (response.ok && hasUsableImage(data)) {
+        pendingImageGenerationTicketRef.current = null;
+        const updatedCard = applyImageResult(cardForImage, data);
+        if (!inSeriesBatch) {
+          setError("");
+          setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
         }
+        return updatedCard;
+      }
 
-        try {
-          const response = await fetch("/api/generate-image", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              productDescription: cardForImage.seriesPlanItem
-                ? buildSeriesCardDescription(
-                    baseCardInput,
-                    cardForImage.seriesPlanItem,
-                    cardForImage.seriesCount ?? plannedGenerationCount
-                  )
-                : baseCardInput.productDescription,
-              category: cardForImage.category,
-              style: layoutTemplateCard?.style || style,
-              marketplace: layoutTemplateCard?.marketplace || marketplace,
-              title: cardForImage.title,
-              benefits: visibleBenefits,
-              infographicTexts: visibleInfographicTexts,
-              characteristics: cardForImage.characteristics,
-              keywords: cardForImage.keywords,
-              imageBase64: image.base64,
-              imageMimeType: image.mimeType,
-              imageProvider: resolveNanoBananaImageProvider(getImageSettings().imageProvider),
-              headline: (productName.trim() || headline.trim() || undefined),
-              price: price.trim() || undefined,
-              ctaText: ctaText.trim() || undefined,
-              designPreset: effectiveDesignPreset,
-              model: NANO_BANANA_IMAGE_MODEL,
-              aspectRatio: NANO_BANANA_ASPECT_RATIO,
-              resolution: NANO_BANANA_RESOLUTION,
-              outputFormat: NANO_BANANA_OUTPUT_FORMAT,
-              imageGenerationTicket: ticket,
-              seriesStyleGuide: cardForImage.seriesStyleGuide || templateStyleGuide,
-              seriesCardType: cardForImage.seriesPlanItem?.type,
-              seriesCardGoal: cardForImage.seriesPlanItem?.goal,
-              seriesCardVisualIdea:
-                cardForImage.seriesPlanItem?.visualIdea || layoutTemplateCard?.visualConcept || undefined,
-              badges: visibleBadges,
-              editInstructions: editInstructions?.trim() || undefined
-            })
-          });
-          const data = (await response.json()) as GenerateImageResult & {
-            error?: string;
-            code?: string;
-            quota?: { remaining: number; used: number; credits: number };
-            imageGenerationTicket?: string;
-          };
+      // Image not ready in this response — do NOT start a new generation.
+      // The provider usually already has the job; pull it by generation_id.
+      const failedCard = applyImageResult(cardForImage, {
+        ...data,
+        error: getImageGenerationRetryMessage(data.error),
+        generationId: data.generationId || extractProviderGenerationId(data.error)
+      });
+      const providerJobId = failedCard.generationId || data.generationId || extractProviderGenerationId(data.error);
 
-          if (response.status === 402) {
-            setRemainingGenerations(data.quota?.remaining ?? 0);
-            if (data.quota) onQuotaChange?.(data.quota);
-            openPaywall("quota_exhausted");
-            throw new Error(data.error || "Лимит генераций исчерпан.");
-          }
-
-          if (response.status === 403 && data.code === "EMAIL_NOT_VERIFIED") {
-            setNotice(data.error || "Подтвердите email, чтобы генерировать карточки.");
-            throw new Error(data.error || "Подтвердите email.");
-          }
-
-          if (!response.ok) {
-            if (data.imageGenerationTicket) {
-              pendingImageGenerationTicketRef.current = data.imageGenerationTicket;
-              ticket = data.imageGenerationTicket;
-            }
-            if (data.quota) {
-              setRemainingGenerations(data.quota.remaining);
-              onQuotaChange?.(data.quota);
-            }
-
-            const failedCard = applyImageResult(cardForImage, {
-              ...data,
-              error: getImageGenerationRetryMessage(data.error)
-            });
-            lastFailedCard = failedCard;
-
-            if (attempt < maxAttempts && (response.status === 502 || response.status === 500)) {
-              continue;
-            }
-
-            if (!inSeriesBatch) {
-              setNotice("");
-              setError(getImageGenerationRetryMessage(data.error));
-            }
-            return failedCard;
-          }
-
-          if (data.quota?.remaining !== undefined) {
-            setRemainingGenerations(data.quota.remaining);
-            onQuotaChange?.(data.quota);
-            pendingImageGenerationTicketRef.current = null;
-          }
-
-          const updatedCard = applyImageResult(cardForImage, data);
-
-          if (!hasUsableImage(data)) {
-            lastFailedCard = updatedCard;
-            if (attempt < maxAttempts) {
-              continue;
-            }
-            if (!inSeriesBatch) {
-              setNotice("");
-              setError(getImageGenerationRetryMessage(data.error));
-            }
-            return updatedCard;
-          }
-
+      if (providerJobId) {
+        setNotice(
+          inSeriesBatch
+            ? `Слайд ${cardForImage.seriesIndex ?? ""}: картинка уже у провайдера, подтягиваем…`
+            : "Картинка уже у провайдера — подтягиваем без новой генерации…"
+        );
+        const recovered = await recoverProviderImageForCard(failedCard, providerJobId, {
+          attempts: 3,
+          nested: true
+        });
+        if (recovered && hasGeneratedAiCover(recovered)) {
           if (!inSeriesBatch) {
             setError("");
             setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
           }
-          return updatedCard;
-        } catch (caught) {
-          if (attempt >= maxAttempts) {
-            throw caught;
-          }
-          const message = caught instanceof Error ? caught.message : "";
-          if (/лимит|квот|email|исчерпан/i.test(message)) {
-            throw caught;
-          }
+          return recovered;
         }
       }
 
-      return lastFailedCard;
+      if (!inSeriesBatch) {
+        setNotice("");
+        setError(
+          providerJobId
+            ? "Картинка ещё готовится у провайдера. Нажмите «Проверить у провайдера»."
+            : getImageGenerationRetryMessage(data.error)
+        );
+      }
+      return failedCard;
     } catch (caught) {
       const failureMessage = getImageGenerationRetryMessage(
         caught instanceof Error ? caught.message : "Неизвестная ошибка генерации изображения"
@@ -1891,8 +1806,7 @@ export function CardGenerator({
         prompt: cardForImage.generatedImagePrompt || cardForImage.shortDescription,
         generatedAt: new Date().toISOString(),
         isFallback: true,
-        error: failureMessage,
-        generationId: lastFailedCard?.generationId
+        error: failureMessage
       });
       if (!inSeriesBatch) {
         setNotice("");
@@ -1910,51 +1824,23 @@ export function CardGenerator({
     }
 
     const providerJobId = card.generationId || extractProviderGenerationId(card.generatedImageError);
-    if (providerJobId && !hasGeneratedAiCover(card)) {
-      const recovered = await recoverProviderImageForCard(card, providerJobId);
-      if (recovered && hasGeneratedAiCover(recovered)) {
-        setCard(recovered);
-        await persistGeneratedCard(recovered, { silent: true });
-        return;
-      }
-    }
-
-    setError("");
-    setNotice("Повторяем генерацию обложки…");
-
-    const readyCard = await generateAiMarketplaceImage(card);
-
-    if (!readyCard) {
+    if (!providerJobId) {
+      setError("Нет id задания у провайдера. Подождите и нажмите «Проверить у провайдера».");
       return;
     }
 
-    setCard(readyCard);
-
-    if (hasGeneratedAiCover(readyCard)) {
-      await persistGeneratedCard(readyCard, { silent: true });
-      setNotice("Готово! Скачайте карточку и загрузите на маркетплейс.");
+    const recovered = await recoverProviderImageForCard(card, providerJobId, { attempts: 3 });
+    if (recovered && hasGeneratedAiCover(recovered)) {
+      setCard(recovered);
+      await persistGeneratedCard(recovered, { silent: true });
+      return;
     }
+
+    setError("У провайдера пока нет готового файла. Подождите 20–30 секунд и проверьте снова.");
   }
 
   async function handleRecoverImageCover() {
-    if (!card) {
-      return;
-    }
-
-    const providerJobId = card.generationId || extractProviderGenerationId(card.generatedImageError);
-    if (!providerJobId) {
-      setError("Нет id задания у провайдера. Нажмите «Повторить генерацию».");
-      return;
-    }
-
-    const recovered = await recoverProviderImageForCard(card, providerJobId);
-    if (!recovered || !hasGeneratedAiCover(recovered)) {
-      setError("У провайдера пока нет готового результата. Попробуйте позже или повторите генерацию.");
-      return;
-    }
-
-    setCard(recovered);
-    await persistGeneratedCard(recovered, { silent: true });
+    await handleRetryImageCover();
   }
 
   const displayCard =
@@ -2810,7 +2696,7 @@ export function CardGenerator({
                         variant="secondary"
                       >
                         <Wand2 size={16} />
-                        Догенерировать недостающие
+                        Проверить недостающие у провайдера
                       </Button>
                     ) : null}
                     <Button
@@ -2831,9 +2717,6 @@ export function CardGenerator({
                     const rawSeriesCard = seriesCards.find((item) => item.id === seriesCard.id) ?? seriesCard;
                     const previewReady = hasGeneratedAiCover(rawSeriesCard) || hasGeneratedAiCover(seriesCard);
                     const itemError = seriesCard.generatedImageError;
-                    const canRecover = Boolean(
-                      seriesCard.generationId || extractProviderGenerationId(seriesCard.generatedImageError)
-                    );
 
                     return (
                       <div
@@ -2893,28 +2776,15 @@ export function CardGenerator({
                               </Button>
                             </>
                           ) : (
-                            <>
-                              {canRecover ? (
-                                <Button
-                                  disabled={isWorking}
-                                  onClick={() => void handleRecoverSeriesCard(seriesCard)}
-                                  size="sm"
-                                  variant="secondary"
-                                >
-                                  <RefreshCcw size={15} />
-                                  Проверить ещё раз
-                                </Button>
-                              ) : null}
-                              <Button
-                                disabled={isWorking}
-                                onClick={() => void handleRetrySeriesCard(seriesCard)}
-                                size="sm"
-                                variant="ghost"
-                              >
-                                <RefreshCcw size={15} />
-                                Повторить
-                              </Button>
-                            </>
+                            <Button
+                              disabled={isWorking}
+                              onClick={() => void handleRecoverSeriesCard(seriesCard)}
+                              size="sm"
+                              variant="secondary"
+                            >
+                              <RefreshCcw size={15} />
+                              Проверить у провайдера
+                            </Button>
                           )}
                         </div>
                       </div>
@@ -3304,33 +3174,20 @@ function ImageGenerationRetryCallout({
         Ошибка связи с интернетом
       </p>
       <p className={`mt-2 max-w-sm text-sm font-semibold leading-relaxed sm:text-base ${hintClass}`}>
-        Сначала проверьте результат у провайдера — возможно, картинка уже готова.{" "}
-        <span className={reassuranceClass}>Повтор без новой генерации не спишет лишний слот.</span>
+        Картинка обычно уже готова у провайдера — сначала подтянем её.{" "}
+        <span className={reassuranceClass}>Новую генерацию не запускаем.</span>
       </p>
       <div className={`mt-5 flex w-full max-w-sm flex-col gap-2 ${embedded ? "" : "sm:w-auto"}`}>
-        {onRecover ? (
-          <Button
-            className="w-full shadow-[0_10px_30px_rgba(155,255,141,0.35)]"
-            disabled={disabled}
-            onClick={onRecover}
-            size="lg"
-            type="button"
-            variant="primary"
-          >
-            <RefreshCcw size={18} />
-            Проверить ещё раз
-          </Button>
-        ) : null}
         <Button
-          className="w-full"
+          className="w-full shadow-[0_10px_30px_rgba(155,255,141,0.35)]"
           disabled={disabled}
-          onClick={onRetry}
+          onClick={onRecover || onRetry}
           size="lg"
           type="button"
-          variant={onRecover ? "secondary" : "primary"}
+          variant="primary"
         >
           <RefreshCcw size={18} />
-          Повторить генерацию
+          Проверить у провайдера
         </Button>
       </div>
     </div>

@@ -743,37 +743,49 @@ export function CardGenerator({
     const preserveCard = options.preserveCard;
     const { imageBase64: _imageBase64, imageMimeType: _imageMimeType, ...sourceInputPayload } = requestPayload;
     const aiCard = cardPayload as ProductCardResult;
-    const aiBenefits = Array.isArray(aiCard.benefits) ? aiCard.benefits.filter(Boolean) : [];
-    const aiInfographic = Array.isArray(aiCard.infographicTexts) ? aiCard.infographicTexts.filter(Boolean) : [];
-    const planBullets = (planItem?.bullets || []).filter((item) => item.trim() && !isMetaMarketplaceVisibleText(item));
-    const planSubheadline =
-      planItem?.subheadline?.trim() && !isMetaMarketplaceVisibleText(planItem.subheadline)
-        ? planItem.subheadline.trim()
-        : "";
+    const aiBenefits = Array.isArray(aiCard.benefits)
+      ? aiCard.benefits.filter((item) => item.trim() && !isMetaMarketplaceVisibleText(item))
+      : [];
+    const aiInfographic = Array.isArray(aiCard.infographicTexts)
+      ? aiCard.infographicTexts.filter((item) => item.trim() && !isMetaMarketplaceVisibleText(item))
+      : [];
+    const productHeadline =
+      (payload.identifiedProductName || productName || planItem?.mainHeadline || headline || aiCard.title || "")
+        .trim();
+    const visibleTitle =
+      planItem?.type === "hero"
+        ? productHeadline || aiCard.title
+        : !isMetaMarketplaceVisibleText(aiCard.title)
+          ? aiCard.title
+          : productHeadline || aiCard.title;
+    const visibleShort =
+      planItem?.type === "hero"
+        ? aiCard.shortDescription
+        : !isMetaMarketplaceVisibleText(aiCard.shortDescription)
+          ? aiCard.shortDescription
+          : "";
     const generatedCard: ProductCardResult = {
       ...aiCard,
       id: preserveCard?.id || aiCard.id,
-      title: planItem?.mainHeadline || aiCard.title,
-      shortDescription: planSubheadline || aiCard.shortDescription,
-      benefits: aiBenefits.length ? aiBenefits : planBullets.length ? planBullets : [],
+      title: visibleTitle,
+      shortDescription: visibleShort || aiCard.shortDescription,
+      benefits: aiBenefits,
       keywords: Array.isArray(aiCard.keywords) ? aiCard.keywords : [],
-      infographicTexts: planItem
-        ? [
-            planItem.mainHeadline,
-            ...(aiBenefits.length ? aiBenefits : planBullets),
-            ...aiInfographic
-          ]
-            .map((value) => String(value || "").trim())
-            .filter(Boolean)
-            .filter((value) => !isMetaMarketplaceVisibleText(value))
-            .filter((value, index, list) => list.indexOf(value) === index)
-            .slice(0, 4)
-        : aiInfographic,
+      infographicTexts: [
+        visibleTitle,
+        ...aiBenefits,
+        ...aiInfographic
+      ]
+        .map((value) => String(value || "").trim())
+        .filter(Boolean)
+        .filter((value) => !isMetaMarketplaceVisibleText(value))
+        .filter((value, index, list) => list.indexOf(value) === index)
+        .slice(0, 4),
       visualConcept: planItem
         ? `${planItem.visualIdea}. Единый стиль серии: ${buildSeriesStyleGuide(style, marketplace)}`
         : aiCard.visualConcept,
       imageDataUrl: imageUrl || undefined,
-      headline: planItem?.mainHeadline || headline.trim() || undefined,
+      headline: visibleTitle || headline.trim() || undefined,
       price: price.trim() || undefined,
       ctaText: ctaText.trim() || undefined,
       designPreset,
@@ -787,7 +799,8 @@ export function CardGenerator({
           : preserveCard?.seriesStyleGuide || options.layoutTemplate?.seriesStyleGuide,
       sourceInput: {
         ...sourceInputPayload,
-        headline: planItem?.mainHeadline || headline.trim() || undefined,
+        headline: visibleTitle || headline.trim() || undefined,
+        identifiedProductName: payload.identifiedProductName || productHeadline || undefined,
         price: price.trim() || undefined,
         ctaText: ctaText.trim() || undefined,
         designPreset,

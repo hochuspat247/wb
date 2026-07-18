@@ -513,7 +513,8 @@ TYPOGRAPHY:
 - Keep a safe zone: at least 6% margin from all edges; never clip headlines at the top.
 - Headline max ~32 characters when possible; prefer wrapping to 2 short lines over clipping.
 - NEVER write service/meta phrases on the image: "Продающая обложка", "для Wildberries", "для WB", "для Ozon", "понятный первый экран", "хит для каталога", "акцент на главной выгоде".
-- Visible text must describe the PRODUCT only, never the marketplace, SEO, or layout instructions.
+- NEVER write system slide titles on the image: "Характеристики без лишнего", "Ключевые параметры в одном кадре", "Главные преимущества", "Как использовать", "Качество без лишних обещаний", "Что в комплекте".
+- Visible text must describe the PRODUCT only, never the marketplace, SEO, slide type, or layout instructions.
 - Use fewer words, bigger type, stronger hierarchy.
 - Prefer 1 headline, 2–4 short benefit lines, and at most 3 short specs unless the card type specifically requires technical detail.
 - Keep line lengths short and balanced.

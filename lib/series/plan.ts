@@ -428,7 +428,12 @@ export function buildCardSeriesPlanFromTypes(
     return {
       index: index + 1,
       type,
-      ...definition
+      ...definition,
+      // Visible card text must be about the product, never slide-template titles.
+      mainHeadline: productName,
+      subheadline: "",
+      bullets: [],
+      badges: []
     };
   });
 }
@@ -445,16 +450,16 @@ export function buildSeriesCardDescription(
   return `${payload.productDescription}
 
 Сделай карточку серии ${planItem.index} из ${seriesCount}.
-Тип блока: ${planItem.type}.
-Название блока: ${planItem.title}.
-Цель: ${planItem.goal}.
-Главный заголовок: ${planItem.mainHeadline}.
-Подзаголовок: ${planItem.subheadline}.
-Тезисы: ${planItem.bullets.join("; ")}.
-Бейджи: ${planItem.badges.join("; ")}.
+Тип смыслового блока (ТОЛЬКО для тебя, не писать на картинке): ${planItem.type} — ${planItem.title}.
+Цель блока: ${planItem.goal}.
+Название товара для заголовка на картинке: ${planItem.mainHeadline || payload.identifiedProductName || "товар"}.
 Визуальная идея: ${planItem.visualIdea}.
-Важно: не повторяй смысл других карточек серии, не придумывай неподтвержденные свойства, пиши коротко и на русском.
-На изображении и в текстах карточки НЕ пиши служебные фразы вроде «Продающая обложка для Wildberries», «понятный первый экран», названия площадок как заголовок.`;
+Важно:
+- не повторяй смысл других карточек серии;
+- не придумывай неподтвержденные свойства;
+- пиши коротко и на русском;
+- на изображении пиши ТОЛЬКО факты про товар (название, польза, параметры);
+- ЗАПРЕЩЕНО писать на картинке системные заголовки блоков: «Характеристики без лишнего», «Главные преимущества», «Ключевые параметры в одном кадре», «Как использовать», «Качество без лишних обещаний», названия площадок и любые служебные подписи про структуру карточки.`;
 }
 
 export function buildSeriesInfographicTexts(planItem: CardSeriesPlanItem) {
@@ -470,6 +475,42 @@ export function isMetaMarketplaceVisibleText(value: string) {
   const text = value.trim();
   if (!text) return true;
 
+  const lower = text.toLowerCase();
+
+  const systemHeadlines = [
+    "главные преимущества",
+    "почему стоит выбрать",
+    "почему товар удобно выбрать",
+    "характеристики без лишнего",
+    "ключевые параметры в одном кадре",
+    "состав и детали",
+    "что важно знать перед покупкой",
+    "как использовать",
+    "простой сценарий для покупателя",
+    "для разных задач",
+    "сценарии использования",
+    "качество без лишних обещаний",
+    "понятные факты перед покупкой",
+    "кому подойдет",
+    "быстрый ответ перед покупкой",
+    "выберите свой вариант",
+    "готово для вашего заказа",
+    "финальный акцент серии",
+    "уход и гигиена",
+    "понятные рекомендации",
+    "главные параметры",
+    "что важно знать",
+    "материал / состав",
+    "размер / формат",
+    "шаг 1",
+    "шаг 2",
+    "готовый результат"
+  ];
+
+  if (systemHeadlines.some((phrase) => lower === phrase || lower.includes(phrase))) {
+    return true;
+  }
+
   return (
     /продающ\w*\s+обложк/i.test(text) ||
     /обложк\w*\s+для\s+(wildberries|wb|ozon|avito|яндекс)/i.test(text) ||
@@ -478,7 +519,11 @@ export function isMetaMarketplaceVisibleText(value: string) {
     /акцент\s+на\s+главн/i.test(text) ||
     /крупн\w*\s+товар/i.test(text) ||
     /хит\s+для\s+каталог/i.test(text) ||
-    /marketplace|инфографик|seo|промпт/i.test(text)
+    /без\s+лишн/i.test(text) ||
+    /в\s+одном\s+кадре/i.test(text) ||
+    /параметр\w*\s+в\s+одном/i.test(text) ||
+    /marketplace|инфографик|seo|промпт/i.test(text) ||
+    /^(преимущества|характеристики|применение|доверие|безопасность|комплектация)$/i.test(text)
   );
 }
 

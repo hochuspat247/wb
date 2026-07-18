@@ -20,6 +20,7 @@ import {
 } from "@/lib/server/imageGenerationTickets";
 import { getUserQuota } from "@/lib/server/quota";
 import { getEmailVerificationError, getUserForProtectedAction } from "@/lib/server/require-verified-email";
+import { normalizePreviousCardSnapshot } from "@/lib/series/editing";
 import type { ProductCardInput } from "@/types/product-card";
 import type { MarketplaceTextInput } from "@/types/marketplace";
 
@@ -124,7 +125,7 @@ export async function POST(request: Request) {
       oldPrice: body.oldPrice?.trim(),
       discount: body.discount?.trim(),
       editInstructions: body.editInstructions?.trim(),
-      previousCard: body.previousCard
+      previousCard: normalizePreviousCardSnapshot(body.previousCard)
     };
 
     const result = await generateProductCard(cardInput);

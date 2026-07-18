@@ -154,7 +154,6 @@ function buildHeadline(input: GenerateImageInput): string {
 
   const title = sanitizeVisibleImageText(input.title);
   const product = sanitizeVisibleImageText(input.productDescription);
-  const category = detectSafeCategory(product, input.category);
 
   if (title) {
     return truncateText(title.toUpperCase(), 80);
@@ -164,7 +163,7 @@ function buildHeadline(input: GenerateImageInput): string {
     return truncateText(product.toUpperCase(), 80);
   }
 
-  return truncateText(productDescription.toUpperCase().slice(0, 48) || "ТОВАР", 80);
+  return "ТОВАР";
 }
 
 function getStyleDirection(style: string): string {

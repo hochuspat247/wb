@@ -176,6 +176,7 @@ export function normalizeProductCardInput(input: ProductCardInput): ProductCardI
     oldPrice: normalizeOptionalText(input.oldPrice, 40),
     discount: normalizeOptionalText(input.discount, 40),
     sellerWishes: normalizeOptionalText(input.sellerWishes, 500),
+    identifiedProductName: normalizeOptionalText(input.identifiedProductName, 120),
     editInstructions: normalizeOptionalText(input.editInstructions, 800)
   };
 }

@@ -308,9 +308,15 @@ async function runNanoBananaGeneration(request: NanoBananaGenerationRequest): Pr
     const asset = await hydrateImageAsset(extractImageAsset(resolvedData), outputFormat);
 
     if (!asset) {
-      const generationId = extractGenerationId(data);
+      const generationId = extractGenerationId(resolvedData) ?? extractGenerationId(data);
       const suffix = generationId ? ` generation_id: ${generationId}` : "";
-      return createImageGenerationError("NanoBanana Expert", request.prompt, `Сервис NanoBanana Expert не вернул готовый image_url.${suffix}`, generatedAt);
+      return createImageGenerationError(
+        "NanoBanana Expert",
+        request.prompt,
+        `Сервис NanoBanana Expert не вернул готовый image_url.${suffix}`,
+        generatedAt,
+        generationId
+      );
     }
 
     const mimeType =
@@ -353,38 +359,108 @@ async function resolveNanoBananaImage(initialData: NanoBananaExpertApiResponse) 
   const startedAt = Date.now();
 
   while (Date.now() - startedAt <= maxPollMs) {
-    for (const path of getGenerationStatusPaths(generationId)) {
-      try {
-        const response = await fetch(`${getBaseUrl()}${path}`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${getApiKey()}`
-          },
-          cache: "no-store"
-        });
+    const data = await fetchNanoBananaGenerationStatus(generationId);
 
-        if (!response.ok) {
-          continue;
-        }
+    if (data && extractImageAsset(data)) {
+      return data;
+    }
 
-        const data = (await response.json()) as NanoBananaExpertApiResponse;
-
-        if (extractImageAsset(data)) {
-          return data;
-        }
-
-        if (isTerminalFailedStatus(data.status) || data.successFlag === 3) {
-          return data;
-        }
-      } catch {
-        // Try the next known status route.
-      }
+    if (data && (isTerminalFailedStatus(data.status) || data.successFlag === 3)) {
+      return data;
     }
 
     await sleep(pollIntervalMs);
   }
 
   return null;
+}
+
+async function fetchNanoBananaGenerationStatus(generationId: string) {
+  for (const path of getGenerationStatusPaths(generationId)) {
+    try {
+      const response = await fetch(`${getBaseUrl()}${path}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${getApiKey()}`
+        },
+        cache: "no-store"
+      });
+
+      if (!response.ok) {
+        continue;
+      }
+
+      return (await response.json()) as NanoBananaExpertApiResponse;
+    } catch {
+      // Try the next known status route.
+    }
+  }
+
+  return null;
+}
+
+/** Re-check an existing NanoBanana job and hydrate the image if the provider already finished. */
+export async function recoverNanoBananaExpertImage(generationId: string): Promise<GenerateImageResult> {
+  const generatedAt = new Date().toISOString();
+  const cleanId = generationId.trim();
+
+  if (!cleanId) {
+    return createImageGenerationError("NanoBanana Expert", "", "Не указан generation_id провайдера.", generatedAt);
+  }
+
+  if (!isApiKeyConfigured()) {
+    return createImageGenerationError(
+      "NanoBanana Expert",
+      "",
+      "NANOBANANA_EXPERT_API_KEY is not configured",
+      generatedAt,
+      cleanId
+    );
+  }
+
+  const maxPollMs = getPositiveEnvNumber("NANOBANANA_EXPERT_RECOVER_POLL_MS", 45_000);
+  const pollIntervalMs = getPositiveEnvNumber("NANOBANANA_EXPERT_POLL_INTERVAL_MS", 3_000);
+  const startedAt = Date.now();
+  let lastData: NanoBananaExpertApiResponse | null = null;
+
+  while (Date.now() - startedAt <= maxPollMs) {
+    lastData = await fetchNanoBananaGenerationStatus(cleanId);
+
+    if (lastData && extractImageAsset(lastData)) {
+      const asset = await hydrateImageAsset(extractImageAsset(lastData), "png");
+
+      if (asset) {
+        return {
+          imageBase64: asset.imageBase64 ?? null,
+          imageUrl: asset.imageUrl ?? null,
+          mimeType: asset.mimeType || "image/png",
+          provider: "NanoBanana Expert",
+          model: process.env.NANOBANANA_EXPERT_MODEL || "nb2",
+          prompt: "",
+          generatedAt,
+          isFallback: false,
+          bananasSpent: lastData.bananas_spent,
+          usedCoupon: lastData.used_coupon,
+          generationId: extractGenerationId(lastData) ?? cleanId,
+          seed: lastData.seed
+        };
+      }
+    }
+
+    if (lastData && (isTerminalFailedStatus(lastData.status) || lastData.successFlag === 3)) {
+      break;
+    }
+
+    await sleep(pollIntervalMs);
+  }
+
+  return createImageGenerationError(
+    "NanoBanana Expert",
+    "",
+    `Результат generation_id: ${cleanId} у провайдера ещё не готов или недоступен.`,
+    generatedAt,
+    cleanId
+  );
 }
 
 function getGenerationStatusPaths(generationId: string) {

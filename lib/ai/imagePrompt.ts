@@ -502,11 +502,16 @@ TYPOGRAPHY:
 - Avoid tiny unreadable text.
 - Avoid too much text.
 - Do not create broken or random Cyrillic text.
+- Never invent misspellings (e.g. "КАЧТЕВО" instead of "КАЧЕСТВО").
+- Keep a safe zone: at least 6% margin from all edges; never clip headlines at the top.
+- Headline max ~32 characters when possible; prefer wrapping to 2 short lines over clipping.
 - Use fewer words, bigger type, stronger hierarchy.
 - Prefer 1 headline, 2–4 short benefit lines, and at most 3 short specs unless the card type specifically requires technical detail.
 - Keep line lengths short and balanced.
 - Do not render paragraph-like blocks of tiny copy.
 - Do not use awkward literal labels like "Категория:", "Материал:", "Размер:" if a cleaner premium phrasing would look better.
+- Do not write "премиум" / "премиальный" on the card unless the seller explicitly asked for it.
+- Never invent product specs that are not in the input.
 - Never put SEO/search-query text on the image.
 - Never render phrases like "фотографии", "фото", "картинки", "изображения", "в высоком качестве", "в хорошем качестве", "в высоком разрешении", "HD", or "4K" as visible text, even if the user provided them.
 - If the user provided a search-like phrase such as "фотографии автопарфюма в высоком качестве", extract only the actual product name and write a clean product headline like "АВТОПАРФЮМ".

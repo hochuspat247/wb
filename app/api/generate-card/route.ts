@@ -133,6 +133,7 @@ export async function POST(request: Request) {
       productDescription: body.productDescription.trim(),
       category: body.category?.trim(),
       brand: body.brand?.trim(),
+      identifiedProductName: body.identifiedProductName?.trim(),
       imageBase64: body.imageBase64,
       imageMimeType: body.imageMimeType
     });
@@ -174,7 +175,8 @@ export async function POST(request: Request) {
       includeInfographicText: Boolean(body.includeInfographicText),
       imageFileName: body.imageFileName,
       sellerWishes: productContext.sellerWishes,
-      identifiedProductName: productContext.identifiedProductName,
+      identifiedProductName:
+        body.identifiedProductName?.trim() || productContext.identifiedProductName,
       platform,
       textMode,
       brand: productContext.brand,

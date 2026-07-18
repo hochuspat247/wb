@@ -55,7 +55,11 @@ import {
   normalizeTextMode,
   resolveNanoBananaImageProvider
 } from "@/lib/marketplace/cardFormValidation";
-import { getImageGenerationRetryMessage, IMAGE_GENERATION_RETRY_MESSAGE } from "@/lib/ai/imageGenerationErrors";
+import {
+  extractProviderGenerationId,
+  getImageGenerationRetryMessage,
+  IMAGE_GENERATION_RETRY_MESSAGE
+} from "@/lib/ai/imageGenerationErrors";
 import { resolveCategory } from "@/lib/category";
 import { marketplaceLabelToPlatform } from "@/lib/marketplace/utils";
 import { createPreviewPngDataUrl, downloadPreviewPng } from "@/lib/download";
@@ -255,6 +259,7 @@ export function CardGenerator({
   const [editingCard, setEditingCard] = useState<ProductCardResult | null>(null);
   const [editInstructions, setEditInstructions] = useState("");
   const [headline, setHeadline] = useState("");
+  const [productName, setProductName] = useState("");
   const [price, setPrice] = useState("");
   const [ctaText, setCtaText] = useState("");
   const [designPreset, setDesignPreset] = useState<ImageDesignPreset>(normalizeDesignPreset("premium-marketplace"));
@@ -413,6 +418,15 @@ export function CardGenerator({
     setOldPrice(mode === "kit-style" ? "" : source?.oldPrice || "");
     setDiscount(mode === "kit-style" ? "" : source?.discount || "");
     setHeadline(mode === "kit-style" ? "" : source?.headline || sourceCard.headline || "");
+    setProductName(
+      mode === "kit-style"
+        ? ""
+        : source?.identifiedProductName ||
+            sourceCard.sourceInput?.identifiedProductName ||
+            sourceCard.headline ||
+            sourceCard.title ||
+            ""
+    );
     setPrice(mode === "kit-style" ? "" : source?.price || sourceCard.price || "");
     setCtaText(mode === "kit-style" ? "" : source?.ctaText || sourceCard.ctaText || "");
     setDesignPreset(normalizeDesignPreset(source?.designPreset || sourceCard.designPreset));
@@ -548,9 +562,9 @@ export function CardGenerator({
         marketplace,
         style,
         productDescription: description,
-        headline
+        headline: productName.trim() || headline
       }),
-    [selectedSeriesTypes, description, effectiveCategory, headline, marketplace, style]
+    [selectedSeriesTypes, description, effectiveCategory, headline, marketplace, productName, style]
   );
   const selectedCountExceedsQuota =
     persistToServer && remainingGenerations !== null && plannedGenerationCount > remainingGenerations;
@@ -798,6 +812,12 @@ export function CardGenerator({
       return;
     }
 
+    const confirmedProductName = productName.trim() || headline.trim();
+    if (!confirmedProductName) {
+      setError("Укажите название товара — проверьте, что ИИ поймёт именно ваш товар.");
+      return;
+    }
+
     if (persistToServer && remainingGenerations === 0) {
       openPaywall("quota_exhausted");
       return;
@@ -805,7 +825,7 @@ export function CardGenerator({
 
     if (selectedCountExceedsQuota) {
       setError(
-        `Для серии нужно ${plannedGenerationCount} пробных карточек, а доступно ${remainingGenerations}. Уменьшите количество или купите комплект.`
+        `Для серии нужно ${plannedGenerationCount} слайдов, а доступно ${remainingGenerations}. Уменьшите количество или купите комплект.`
       );
       openPaywall(cardsCount > 1 ? "series" : "quota_exhausted");
       return;
@@ -832,6 +852,7 @@ export function CardGenerator({
       imageMimeType: imagePayload?.mimeType,
       platform: marketplaceLabelToPlatform(marketplace),
       textMode,
+      identifiedProductName: confirmedProductName,
       brand,
       sellerSku,
       color,
@@ -1080,6 +1101,7 @@ export function CardGenerator({
     setEditingCard(null);
     setEditInstructions("");
     setHeadline("");
+    setProductName("");
     setPrice("");
     setCtaText("");
     setDesignPreset(normalizeDesignPreset("premium-marketplace"));
@@ -1227,6 +1249,12 @@ export function CardGenerator({
     setStyle(normalizeCardStyle(cardFromHistory.style));
     setCategory(cardFromHistory.category);
     setHeadline(cardFromHistory.headline || "");
+    setProductName(
+      cardFromHistory.sourceInput?.identifiedProductName ||
+        cardFromHistory.headline ||
+        cardFromHistory.title ||
+        ""
+    );
     setPrice(cardFromHistory.price || "");
     setCtaText(cardFromHistory.ctaText || "");
     setDesignPreset(normalizeDesignPreset(cardFromHistory.designPreset));
@@ -1268,7 +1296,7 @@ export function CardGenerator({
   }
 
   async function handleDownloadSeriesZip() {
-    const downloadableCards = displaySeriesCards;
+    const downloadableCards = displaySeriesCards.filter((item) => hasGeneratedAiCover(item));
 
     const files = await Promise.all(
       downloadableCards.map(async (seriesCard, index) => {
@@ -1376,6 +1404,17 @@ export function CardGenerator({
       return;
     }
 
+    const providerJobId = cardToRetry.generationId || extractProviderGenerationId(cardToRetry.generatedImageError);
+    if (providerJobId && !hasGeneratedAiCover(cardToRetry)) {
+      const recovered = await recoverProviderImageForCard(cardToRetry, providerJobId);
+      if (recovered && hasGeneratedAiCover(recovered)) {
+        setSeriesCards((items) => items.map((item) => (item.seriesIndex === planItem.index ? recovered : item)));
+        await persistGeneratedCard(recovered, { silent: true });
+        setNotice(`Слайд ${planItem.index}: результат подтянут у провайдера.`);
+        return;
+      }
+    }
+
     if (persistToServer && remainingGenerations === 0) {
       openPaywall("quota_exhausted");
       return;
@@ -1391,7 +1430,8 @@ export function CardGenerator({
       includeInfographicText: true,
       imageFileName,
       platform: marketplaceLabelToPlatform(marketplace),
-      textMode
+      textMode,
+      identifiedProductName: productName.trim() || undefined
     };
 
     setError("");
@@ -1417,6 +1457,158 @@ export function CardGenerator({
       setNotice(`Карточка ${planItem.index} обновлена.`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Не удалось повторить карточку.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function recoverProviderImageForCard(cardForImage: ProductCardResult, generationId: string) {
+    setIsGeneratingAiImage(true);
+    setError("");
+    setNotice("Проверяем результат у провайдера…");
+
+    try {
+      const response = await fetch("/api/generate-image/recover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          generationId,
+          imageGenerationTicket: pendingImageGenerationTicketRef.current ?? undefined
+        })
+      });
+      const data = (await response.json()) as GenerateImageResult & {
+        error?: string;
+        quota?: { remaining: number; used: number; credits: number; unlimited?: boolean };
+        imageGenerationTicket?: string;
+        recovered?: boolean;
+        charged?: boolean;
+      };
+
+      if (data.imageGenerationTicket) {
+        pendingImageGenerationTicketRef.current = data.imageGenerationTicket;
+      }
+      if (data.quota?.remaining !== undefined) {
+        setRemainingGenerations(data.quota.remaining);
+        setHasUnlimitedAccess(Boolean(data.quota.unlimited));
+        onQuotaChange?.(data.quota);
+      }
+
+      if (!response.ok) {
+        setNotice("");
+        return null;
+      }
+
+      const updatedCard = applyImageResult(cardForImage, data);
+      if (hasUsableImage(data)) {
+        pendingImageGenerationTicketRef.current = null;
+        setError("");
+        setNotice(
+          data.charged
+            ? "Результат подтянут у провайдера."
+            : "Результат подтянут у провайдера без повторного списания."
+        );
+        return updatedCard;
+      }
+
+      return null;
+    } catch {
+      return null;
+    } finally {
+      setIsGeneratingAiImage(false);
+    }
+  }
+
+  async function handleRecoverSeriesCard(cardToRecover: ProductCardResult) {
+    const providerJobId =
+      cardToRecover.generationId || extractProviderGenerationId(cardToRecover.generatedImageError);
+
+    if (!providerJobId) {
+      setError("Нет id задания у провайдера. Нажмите «Повторить», чтобы сгенерировать заново.");
+      return;
+    }
+
+    const recovered = await recoverProviderImageForCard(cardToRecover, providerJobId);
+    if (!recovered || !hasGeneratedAiCover(recovered)) {
+      setError("У провайдера пока нет готового результата. Попробуйте позже или нажмите «Повторить».");
+      return;
+    }
+
+    setCard(recovered);
+    setSeriesCards((items) =>
+      items.map((item) =>
+        item.id === cardToRecover.id || item.seriesIndex === cardToRecover.seriesIndex ? recovered : item
+      )
+    );
+    await persistGeneratedCard(recovered, { silent: true });
+  }
+
+  async function handleRegenerateMissingSeriesCards() {
+    const failed = seriesCards.filter((item) => !hasGeneratedAiCover(item));
+    if (!failed.length) {
+      setNotice("Все слайды серии уже готовы.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+    setNotice(`Догенерируем недостающие: ${failed.length}…`);
+
+    try {
+      for (const failedCard of failed) {
+        const planItem = failedCard.seriesPlanItem;
+        if (!planItem) {
+          continue;
+        }
+
+        const providerJobId = failedCard.generationId || extractProviderGenerationId(failedCard.generatedImageError);
+        if (providerJobId) {
+          const recovered = await recoverProviderImageForCard(failedCard, providerJobId);
+          if (recovered && hasGeneratedAiCover(recovered)) {
+            setSeriesCards((items) =>
+              items.map((item) => (item.seriesIndex === failedCard.seriesIndex ? recovered : item))
+            );
+            await persistGeneratedCard(recovered, { silent: true });
+            continue;
+          }
+        }
+
+        if (persistToServer && remainingGenerations === 0) {
+          openPaywall("quota_exhausted");
+          break;
+        }
+
+        const payload = failedCard.sourceInput ?? {
+          productDescription: description,
+          category: effectiveCategory,
+          marketplace,
+          style,
+          includeSeo: true,
+          focusBenefits: true,
+          includeInfographicText: true,
+          imageFileName,
+          platform: marketplaceLabelToPlatform(marketplace),
+          textMode,
+          identifiedProductName: productName.trim() || undefined
+        };
+
+        const { card: generatedCard, imageGenerationTicket } = await createGeneratedProductCard(payload, {
+          planItem,
+          seriesId: failedCard.seriesId,
+          seriesCount: failedCard.seriesCount ?? plannedGenerationCount,
+          preserveCard: failedCard
+        });
+        const finalCard = await generateAiMarketplaceImage(
+          generatedCard,
+          undefined,
+          imageGenerationTicket ?? pendingImageGenerationTicketRef.current ?? undefined
+        );
+        const readyCard = finalCard ?? generatedCard;
+        setSeriesCards((items) => items.map((item) => (item.seriesIndex === planItem.index ? readyCard : item)));
+        await persistGeneratedCard(readyCard, { silent: true });
+      }
+      setNotice("Недостающие слайды обработаны.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Не удалось догенерировать слайды.");
     } finally {
       setIsLoading(false);
     }
@@ -1644,6 +1836,16 @@ export function CardGenerator({
       return;
     }
 
+    const providerJobId = card.generationId || extractProviderGenerationId(card.generatedImageError);
+    if (providerJobId && !hasGeneratedAiCover(card)) {
+      const recovered = await recoverProviderImageForCard(card, providerJobId);
+      if (recovered && hasGeneratedAiCover(recovered)) {
+        setCard(recovered);
+        await persistGeneratedCard(recovered, { silent: true });
+        return;
+      }
+    }
+
     setError("");
     setNotice("Повторяем генерацию обложки…");
 
@@ -1661,6 +1863,27 @@ export function CardGenerator({
     }
   }
 
+  async function handleRecoverImageCover() {
+    if (!card) {
+      return;
+    }
+
+    const providerJobId = card.generationId || extractProviderGenerationId(card.generatedImageError);
+    if (!providerJobId) {
+      setError("Нет id задания у провайдера. Нажмите «Повторить генерацию».");
+      return;
+    }
+
+    const recovered = await recoverProviderImageForCard(card, providerJobId);
+    if (!recovered || !hasGeneratedAiCover(recovered)) {
+      setError("У провайдера пока нет готового результата. Попробуйте позже или повторите генерацию.");
+      return;
+    }
+
+    setCard(recovered);
+    await persistGeneratedCard(recovered, { silent: true });
+  }
+
   const displayCard =
     card && persistToServer ? applyDownloadPolicyToCard(card, downloadPolicy, persistToServer) : card;
   const displaySeriesCards = useMemo(
@@ -1669,6 +1892,17 @@ export function CardGenerator({
         ? seriesCards.map((seriesCard) => applyDownloadPolicyToCard(seriesCard, downloadPolicy, persistToServer))
         : seriesCards,
     [downloadPolicy, persistToServer, seriesCards]
+  );
+  const seriesReadyCount = useMemo(
+    () => displaySeriesCards.filter((item) => hasGeneratedAiCover(item)).length,
+    [displaySeriesCards]
+  );
+  const seriesFailedCount = useMemo(
+    () =>
+      displaySeriesCards.filter(
+        (item) => !hasGeneratedAiCover(item) && Boolean(item.generatedImageError || item.generatedImageIsFallback)
+      ).length,
+    [displaySeriesCards]
   );
 
   const hasAiCover = Boolean(
@@ -2196,20 +2430,36 @@ export function CardGenerator({
               <div className={`grid gap-4 md:grid-cols-2 ${darkConsole ? "" : ""}`}>
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                   <span className="grid gap-0.5">
+                    Название товара
+                    <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                      Проверьте перед генерацией — пойдёт в WB/Ozon и на слайды
+                    </span>
+                  </span>
+                  <Input
+                    onChange={(event) => setProductName(event.target.value)}
+                    placeholder="Воздушный шар в виде восклицательного знака"
+                    required
+                    value={productName}
+                  />
+                </label>
+                <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+                  <span className="grid gap-0.5">
                     Заголовок на обложке
                     {persistToServer ? (
                       <span className={`text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
-                        Можно пустым — ИИ напишет сам
+                        Можно пустым — возьмём название товара
                       </span>
                     ) : null}
                   </span>
                   <Input
                     onChange={(event) => setHeadline(event.target.value)}
-                    placeholder="ПРЕМИУМ-ТОВАР"
+                    placeholder="Как на карточке"
                     value={headline}
                   />
                 </label>
-                <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
+              </div>
+              <div className={`grid gap-4 md:grid-cols-2 ${darkConsole ? "" : ""}`}>
+                <label className={`grid gap-2 text-sm font-semibold md:col-span-2 ${labelClass}`}>
                   <span className="grid gap-0.5">
                     Вид карточки
                     {persistToServer ? (
@@ -2247,9 +2497,24 @@ export function CardGenerator({
               {persistToServer && remainingGenerations !== null && !isLoading ? (
                 <div className="space-y-1">
                   <p className="text-sm font-semibold text-muted">
-                    Осталось генераций: <span className="text-accent-ink">{remainingGenerations}</span>
+                    {hasUnlimitedAccess || remainingGenerations >= 999_000 ? (
+                      <>
+                        Баланс: <span className="text-accent-ink">безлимитные серии</span>
+                      </>
+                    ) : downloadPolicy?.downloadsFullyUnlocked ? (
+                      <>
+                        Серия оплачена:{" "}
+                        <span className="text-accent-ink">{remainingGenerations} слайдов без водяного знака</span>
+                      </>
+                    ) : (
+                      <>
+                        Осталось генераций: <span className="text-accent-ink">{remainingGenerations}</span>
+                      </>
+                    )}
                   </p>
-                  <p className="text-xs font-semibold text-muted">{formatMonthlyFreeResetHint(monthlyFreeResetsAt)}</p>
+                  {!hasUnlimitedAccess && remainingGenerations < 999_000 ? (
+                    <p className="text-xs font-semibold text-muted">{formatMonthlyFreeResetHint(monthlyFreeResetsAt)}</p>
+                  ) : null}
                 </div>
               ) : null}
               <div className={`flex flex-col gap-2 border-t pt-3 sm:flex-row sm:flex-wrap sm:gap-3 ${darkConsole ? "border-white/10" : "border-clay"}`}>
@@ -2269,12 +2534,12 @@ export function CardGenerator({
                       : "Сгенерировать демо"
                     : isWorking
                     ? kitModeActive
-                      ? "Генерируем комплект…"
+                      ? "Генерируем серию…"
                       : plannedGenerationCount > 1
                         ? "Генерируем серию…"
                         : "Генерируем…"
                     : kitModeActive
-                      ? `Сгенерировать комплект (${plannedGenerationCount})`
+                      ? `Сгенерировать серию (${plannedGenerationCount})`
                       : plannedGenerationCount > 1
                         ? `Сгенерировать ${plannedGenerationCount} карточек`
                         : layoutTemplateCard
@@ -2360,6 +2625,11 @@ export function CardGenerator({
                       darkConsole={darkConsole}
                       disabled={isWorking}
                       embedded
+                      onRecover={
+                        card.generationId || extractProviderGenerationId(card.generatedImageError)
+                          ? handleRecoverImageCover
+                          : undefined
+                      }
                       onRetry={handleRetryImageCover}
                     />
                   ) : isRenderingImage ? (
@@ -2392,6 +2662,10 @@ export function CardGenerator({
                       {KIT_UNLOCK_CTA}
                     </Button>
                   </div>
+                ) : downloadPolicy?.downloadsFullyUnlocked && hasAiCover && persistToServer ? (
+                  <p className={`mt-3 text-xs font-semibold ${darkConsole ? "text-emerald-300/90" : "text-emerald-700"}`}>
+                    Серия оплачена. Скачивание без водяного знака доступно.
+                  </p>
                 ) : null}
                 {showKitOfferAfterGeneration && persistToServer ? (
                   <div className="mt-4">
@@ -2446,24 +2720,59 @@ export function CardGenerator({
                     <h3 className={`text-lg font-bold ${darkConsole ? "text-white" : "text-ink"}`}>
                       Галерея серии
                     </h3>
+                    <p className={`mt-1 text-sm font-semibold ${darkConsole ? "text-accent-ink" : "text-accent-ink"}`}>
+                      Готово {seriesReadyCount} из {seriesCards.length}
+                      {seriesFailedCount > 0 ? ` · ошибка ${seriesFailedCount}` : ""}
+                    </p>
                     <p className={`mt-1 text-sm ${darkConsole ? "text-white/50" : "text-muted"}`}>
-                      {seriesCards.length} карточек одного товара с разными смысловыми блоками.
+                      Слайды одного товара с разными смысловыми блоками.
                     </p>
                   </div>
-                  <Button onClick={handleDownloadSeriesZip} size="sm" variant="dark">
-                    <Archive size={16} />
-                    Скачать ZIP
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    {seriesFailedCount > 0 ? (
+                      <Button
+                        disabled={isWorking}
+                        onClick={() => void handleRegenerateMissingSeriesCards()}
+                        size="sm"
+                        variant="secondary"
+                      >
+                        <Wand2 size={16} />
+                        Догенерировать недостающие
+                      </Button>
+                    ) : null}
+                    <Button
+                      disabled={seriesReadyCount < 1}
+                      onClick={handleDownloadSeriesZip}
+                      size="sm"
+                      variant="dark"
+                    >
+                      <Archive size={16} />
+                      {seriesReadyCount > 0
+                        ? `Скачать готовые ${seriesReadyCount} ${seriesReadyCount === 1 ? "слайд" : "слайда"} ZIP`
+                        : "Скачать ZIP"}
+                    </Button>
+                  </div>
                 </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   {displaySeriesCards.map((seriesCard, index) => {
                     const rawSeriesCard = seriesCards.find((item) => item.id === seriesCard.id) ?? seriesCard;
                     const previewReady = hasGeneratedAiCover(rawSeriesCard) || hasGeneratedAiCover(seriesCard);
                     const itemError = seriesCard.generatedImageError;
+                    const canRecover = Boolean(
+                      seriesCard.generationId || extractProviderGenerationId(seriesCard.generatedImageError)
+                    );
 
                     return (
                       <div
-                        className={`rounded-[16px] border p-3 ${darkConsole ? "border-white/10 bg-black/10" : "border-clay bg-paper"}`}
+                        className={`rounded-[16px] border p-3 ${
+                          previewReady
+                            ? darkConsole
+                              ? "border-white/10 bg-black/10"
+                              : "border-clay bg-paper"
+                            : darkConsole
+                              ? "border-amber-300/30 bg-amber-300/5 opacity-90"
+                              : "border-amber-200 bg-amber-50/60"
+                        }`}
                         key={seriesCard.id}
                       >
                         <button className="block w-full text-left" onClick={() => openCardEditor(seriesCard)} type="button">
@@ -2480,7 +2789,7 @@ export function CardGenerator({
                                 {seriesCard.watermarkLocked ? <WatermarkOverlay /> : null}
                               </div>
                             ) : (
-                              <div className="grid aspect-[4/5] place-items-center px-4 text-center text-sm font-semibold text-muted">
+                              <div className="grid aspect-[3/2] place-items-center px-4 text-center text-sm font-semibold text-muted">
                                 {itemError ? "Не удалось сгенерировать" : "Карточка готовится"}
                               </div>
                             )}
@@ -2494,23 +2803,46 @@ export function CardGenerator({
                           {itemError ? <p className="mt-2 text-xs font-semibold text-red-400">{itemError}</p> : null}
                         </button>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <Button
-                            disabled={!canDownloadCardImage(seriesCard, downloadPolicy, persistToServer)}
-                            onClick={() => handleDownloadSeriesCard(seriesCard, index)}
-                            size="sm"
-                            variant="secondary"
-                          >
-                            <Download size={15} />
-                            PNG
-                          </Button>
-                          <Button onClick={() => openCardEditor(seriesCard)} size="sm" variant="ghost">
-                            <Pencil size={15} />
-                            Редактировать
-                          </Button>
-                          <Button onClick={() => handleRetrySeriesCard(seriesCard)} size="sm" variant="ghost">
-                            <RefreshCcw size={15} />
-                            Повторить
-                          </Button>
+                          {previewReady ? (
+                            <>
+                              <Button
+                                disabled={!canDownloadCardImage(seriesCard, downloadPolicy, persistToServer)}
+                                onClick={() => handleDownloadSeriesCard(seriesCard, index)}
+                                size="sm"
+                                variant="secondary"
+                              >
+                                <Download size={15} />
+                                PNG
+                              </Button>
+                              <Button onClick={() => openCardEditor(seriesCard)} size="sm" variant="ghost">
+                                <Pencil size={15} />
+                                Редактировать
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              {canRecover ? (
+                                <Button
+                                  disabled={isWorking}
+                                  onClick={() => void handleRecoverSeriesCard(seriesCard)}
+                                  size="sm"
+                                  variant="secondary"
+                                >
+                                  <RefreshCcw size={15} />
+                                  Проверить ещё раз
+                                </Button>
+                              ) : null}
+                              <Button
+                                disabled={isWorking}
+                                onClick={() => void handleRetrySeriesCard(seriesCard)}
+                                size="sm"
+                                variant="ghost"
+                              >
+                                <RefreshCcw size={15} />
+                                Повторить
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
@@ -2525,8 +2857,10 @@ export function CardGenerator({
                 compact={embedded}
                 dark={darkConsole}
                 onDownloadPng={() => downloadPreviewPng(previewRef.current, card?.title)}
+                onDownloadSeriesZip={seriesReadyCount > 0 ? handleDownloadSeriesZip : undefined}
                 onSave={handleSave}
                 previewRef={previewRef}
+                seriesReadyCount={seriesReadyCount}
               />
             ) : null}
           </div>
@@ -2870,12 +3204,14 @@ function ImageGenerationRetryCallout({
   darkConsole = false,
   disabled = false,
   embedded = false,
+  onRecover,
   onRetry
 }: {
   className?: string;
   darkConsole?: boolean;
   disabled?: boolean;
   embedded?: boolean;
+  onRecover?: () => void;
   onRetry: () => void;
 }) {
   const panelClass = darkConsole
@@ -2895,19 +3231,35 @@ function ImageGenerationRetryCallout({
         Ошибка связи с интернетом
       </p>
       <p className={`mt-2 max-w-sm text-sm font-semibold leading-relaxed sm:text-base ${hintClass}`}>
-        Повторите генерацию — <span className={reassuranceClass}>списание не произойдёт</span>.
+        Сначала проверьте результат у провайдера — возможно, картинка уже готова.{" "}
+        <span className={reassuranceClass}>Повтор без новой генерации не спишет лишний слот.</span>
       </p>
-      <Button
-        className={`mt-5 w-full max-w-sm shadow-[0_10px_30px_rgba(155,255,141,0.35)] ${embedded ? "" : "sm:w-auto"}`}
-        disabled={disabled}
-        onClick={onRetry}
-        size="lg"
-        type="button"
-        variant="primary"
-      >
-        <RefreshCcw size={18} />
-        Повторить генерацию
-      </Button>
+      <div className={`mt-5 flex w-full max-w-sm flex-col gap-2 ${embedded ? "" : "sm:w-auto"}`}>
+        {onRecover ? (
+          <Button
+            className="w-full shadow-[0_10px_30px_rgba(155,255,141,0.35)]"
+            disabled={disabled}
+            onClick={onRecover}
+            size="lg"
+            type="button"
+            variant="primary"
+          >
+            <RefreshCcw size={18} />
+            Проверить ещё раз
+          </Button>
+        ) : null}
+        <Button
+          className="w-full"
+          disabled={disabled}
+          onClick={onRetry}
+          size="lg"
+          type="button"
+          variant={onRecover ? "secondary" : "primary"}
+        >
+          <RefreshCcw size={18} />
+          Повторить генерацию
+        </Button>
+      </div>
     </div>
   );
 }

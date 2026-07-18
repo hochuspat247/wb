@@ -645,7 +645,7 @@ export function CabinetApp() {
             </PaymentButton>
           ) : paidLeft >= SKU_KIT_SLIDE_COUNT || remainingGenerations >= 999_000 ? (
             <Button className="mt-4 w-full" onClick={openKitStartModal} size="sm">
-              Создать комплект из {SKU_KIT_SLIDE_COUNT} слайдов
+              Создать серию из {SKU_KIT_SLIDE_COUNT} карточек
             </Button>
           ) : (
             <CabinetPricingLink className="mt-4 w-full" />
@@ -757,7 +757,7 @@ export function CabinetApp() {
                     onClick={openKitStartModal}
                     size="sm"
                   >
-                    Создать комплект из {SKU_KIT_SLIDE_COUNT} слайдов
+                    Создать серию из {SKU_KIT_SLIDE_COUNT} карточек
                   </Button>
                 </div>
               ) : null}
@@ -801,7 +801,7 @@ export function CabinetApp() {
                       size="sm"
                       variant="secondary"
                     >
-                      Создать комплект
+                      Создать серию
                     </Button>
                   ) : (
                     <CabinetPricingLink className="self-start sm:self-auto" onLight />

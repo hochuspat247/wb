@@ -32,6 +32,8 @@ type ResultPanelProps = {
   dark?: boolean;
   compact?: boolean;
   canDownload?: boolean;
+  onDownloadSeriesZip?: () => void | Promise<void>;
+  seriesReadyCount?: number;
 };
 
 const ALL_TABS = [
@@ -119,11 +121,14 @@ export function ResultPanel({
   previewRef,
   dark = false,
   compact = false,
-  canDownload = true
+  canDownload = true,
+  onDownloadSeriesZip,
+  seriesReadyCount = 0
 }: ResultPanelProps) {
   const platform = card?.platform ?? card?.marketplaceText?.platform;
   const tabs = useMemo(() => orderTabs(platform), [platform]);
   const [activeTab, setActiveTab] = useState<string>(tabs[0]?.id ?? "general");
+  const [moreExportsOpen, setMoreExportsOpen] = useState(false);
   const [wbPublishOpen, setWbPublishOpen] = useState(false);
   const [wbSubjectQuery, setWbSubjectQuery] = useState("");
   const [wbSubjects, setWbSubjects] = useState<WildberriesSubject[]>([]);
@@ -682,65 +687,93 @@ export function ResultPanel({
 
       <div className={`mt-6 grid gap-2 ${compact ? "grid-cols-1" : "grid-cols-1 sm:flex sm:flex-wrap"}`}>
         {hasAiImage ? <NanoBananaRetentionNotice className="w-full sm:mb-1" variant={dark ? "dark" : "default"} /> : null}
+        {onDownloadSeriesZip && seriesReadyCount > 0 ? (
+          <Button
+            className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"}
+            onClick={() => void onDownloadSeriesZip()}
+            size="sm"
+            variant="dark"
+          >
+            <Download size={16} />
+            Скачать серию ZIP ({seriesReadyCount})
+          </Button>
+        ) : null}
         <Button
           className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"}
           disabled={!canDownload}
           onClick={handleDownloadPng}
           size="sm"
-          variant="dark"
+          variant={onDownloadSeriesZip && seriesReadyCount > 0 ? "secondary" : "dark"}
         >
           <Download size={16} />
           Скачать PNG
         </Button>
-        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopyDescription} size="sm" variant="secondary">
+        <Button
+          className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"}
+          onClick={() => handleCopyPlatformText("wildberries")}
+          size="sm"
+          variant="secondary"
+        >
           <Clipboard size={16} />
-          Скопировать описание
+          Скопировать описание для Wildberries
         </Button>
-        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("wildberries")} size="sm" variant="secondary">
-          <Clipboard size={16} />
-          Скопировать для WB
+        <Button
+          className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"}
+          onClick={() => setMoreExportsOpen((value) => !value)}
+          size="sm"
+          variant="ghost"
+        >
+          {moreExportsOpen ? "Скрыть" : "Ещё"}
         </Button>
-        {wb ? (
-          <Button
-            className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"}
-            onClick={() => {
-              setActiveTab("wildberries");
-              setWbPublishOpen(true);
-            }}
-            size="sm"
-            variant="secondary"
-          >
-            <UploadCloud size={16} />
-            Создать в WB
-          </Button>
+        {moreExportsOpen ? (
+          <>
+            <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopyDescription} size="sm" variant="secondary">
+              <Clipboard size={16} />
+              Скопировать описание
+            </Button>
+            {wb ? (
+              <Button
+                className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"}
+                onClick={() => {
+                  setActiveTab("wildberries");
+                  setWbPublishOpen(true);
+                }}
+                size="sm"
+                variant="secondary"
+              >
+                <UploadCloud size={16} />
+                Создать в WB
+              </Button>
+            ) : null}
+            <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("ozon")} size="sm" variant="secondary">
+              <Clipboard size={16} />
+              Скопировать для Ozon
+            </Button>
+            <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("avito")} size="sm" variant="secondary">
+              <Clipboard size={16} />
+              Скопировать для Avito
+            </Button>
+            <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("yandex_market")} size="sm" variant="secondary">
+              <Clipboard size={16} />
+              Скопировать для Яндекс Маркета
+            </Button>
+            <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopySeoText} size="sm" variant="secondary">
+              <Clipboard size={16} />
+              Скопировать СЕО
+            </Button>
+            <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopyInfographicText} size="sm" variant="secondary">
+              <Clipboard size={16} />
+              Скопировать тексты для инфографики
+            </Button>
+            <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleDownloadJson} size="sm" variant="secondary">
+              <FileJson size={16} />
+              Скачать JSON
+            </Button>
+            <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={onSave} size="sm" variant="ghost">
+              Сохранить в историю
+            </Button>
+          </>
         ) : null}
-        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("ozon")} size="sm" variant="secondary">
-          <Clipboard size={16} />
-          Скопировать для Ozon
-        </Button>
-        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("avito")} size="sm" variant="secondary">
-          <Clipboard size={16} />
-          Скопировать для Avito
-        </Button>
-        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={() => handleCopyPlatformText("yandex_market")} size="sm" variant="secondary">
-          <Clipboard size={16} />
-          Скопировать для Яндекс Маркета
-        </Button>
-        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopySeoText} size="sm" variant="secondary">
-          <Clipboard size={16} />
-          Скопировать СЕО
-        </Button>
-        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleCopyInfographicText} size="sm" variant="secondary">
-          <Clipboard size={16} />
-          Скопировать тексты для инфографики
-        </Button>
-        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={handleDownloadJson} size="sm" variant="secondary">
-          <FileJson size={16} />
-          Скачать JSON
-        </Button>
-        <Button className={compact ? "w-full justify-center sm:w-auto" : "w-full sm:w-auto"} onClick={onSave} size="sm" variant="ghost">
-          Сохранить в историю
-        </Button>
       </div>
     </Card>
   );

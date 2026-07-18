@@ -132,10 +132,36 @@ function buildFactualDescription(vision: ProductVisionResult) {
 }
 
 export function resolveProductContext(
-  input: { productDescription: string; category?: string; brand?: string },
+  input: {
+    productDescription: string;
+    category?: string;
+    brand?: string;
+    identifiedProductName?: string;
+  },
   vision: ProductVisionResult | null
 ): ResolvedProductContext {
   const userText = input.productDescription.trim();
+  const confirmedName = input.identifiedProductName?.trim();
+
+  if (confirmedName) {
+    const category = resolveCategory({
+      description: userText,
+      productName: confirmedName,
+      productType: vision?.productType,
+      category: input.category?.trim() || vision?.category
+    });
+
+    return {
+      productDescription: vision && vision.confidence !== "low"
+        ? `${confirmedName}. ${buildFactualDescription(vision)}`.replace(/\.\s*\./g, ".").trim()
+        : userText || confirmedName,
+      category,
+      brand: input.brand?.trim() || vision?.brand,
+      sellerWishes: userText && userText.toLowerCase() !== confirmedName.toLowerCase() ? userText : undefined,
+      identifiedProductName: confirmedName,
+      vision: vision ?? undefined
+    };
+  }
 
   if (!vision || vision.confidence === "low") {
     return {
@@ -172,6 +198,7 @@ export async function resolveProductContextFromImage(input: {
   productDescription: string;
   category?: string;
   brand?: string;
+  identifiedProductName?: string;
   imageBase64?: string;
   imageMimeType?: string;
 }): Promise<ResolvedProductContext> {

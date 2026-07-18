@@ -90,7 +90,7 @@ export function formatCabinetQuotaBanner(input: {
   paidCreditsRemaining?: number;
 }) {
   if (input.unlimited || input.remaining >= 999_000) {
-    return "Безлимитные комплекты для вашего аккаунта.";
+    return "Безлимитные серии для вашего аккаунта. Скачивание без водяного знака доступно.";
   }
 
   const allowance = input.monthlyFreeAllowance ?? FREE_TRIAL_CARDS;
@@ -113,7 +113,7 @@ export function formatCabinetQuotaBanner(input: {
   }
 
   if (paidRemaining > 0 && freeRemaining === 0) {
-    return `Разовая покупка активна: ${paidRemaining} слайдов без водяного знака. Создайте комплект — ${KIT_SERIES_DESCRIPTION.toLowerCase()}.`;
+    return `Серия оплачена: ${paidRemaining} слайдов без водяного знака. Создайте серию — ${KIT_SERIES_DESCRIPTION.toLowerCase()}.`;
   }
 
   if (freeRemaining > 0 && paidRemaining > 0) {

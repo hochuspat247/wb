@@ -138,6 +138,7 @@ export async function POST(request: Request) {
         {
           error: IMAGE_GENERATION_RETRY_MESSAGE,
           code: "IMAGE_GENERATION_FAILED",
+          generationId: result.generationId,
           imageGenerationTicket: billing.mode === "ticket" ? billing.ticketId : undefined,
           quota
         },

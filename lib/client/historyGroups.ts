@@ -69,7 +69,7 @@ export function formatKitBalanceSummary(input: {
   if (input.unlimited) {
     return {
       headline: "Безлимит",
-      detail: "Комплекты без ограничения"
+      detail: "Генерация серий без ограничения по балансу"
     };
   }
 

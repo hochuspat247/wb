@@ -17,7 +17,12 @@ function formatInputFields(input: MarketplaceTextInput): string {
   ];
 
   if (input.identifiedProductName) {
-    lines.push(`Определено по фото: ${input.identifiedProductName}`);
+    lines.push(
+      `КАНОНИЧЕСКОЕ НАЗВАНИЕ ТОВАРА (обязательно): ${input.identifiedProductName}`,
+      "Во всех title / shortTitle / wbName / ozonName / avitoTitle / yandexName используй ЭТО название товара.",
+      "ЗАПРЕЩЕНО подменять товар другим (например писать «теннисные мячи», если товар — воздушный шар).",
+      "Не выдумывай бренд, комплектность и характеристики, которых нет во входных данных."
+    );
   }
 
   if (input.sellerWishes?.trim()) {
@@ -79,8 +84,12 @@ function allPlatformsPrompt(input: MarketplaceTextInput): string {
 
 Общие правила:
 - не выдумывай свойства, которых нет во входных данных
-- если свойство неизвестно, формулируй нейтрально
+- если свойство неизвестно, формулируй нейтрально или опусти
+- не используй слова «премиум» / «премиальный», если их нет во входных данных
 - заполни platformSpecific.wildberries, platformSpecific.ozon, platformSpecific.avito и platformSpecific.yandexMarket полностью
+- title и названия площадок должны описывать ТОТ ЖЕ товар, что в каноническом названии / описании
+- infographicTexts: короткие фразы без опечаток, без выдуманных слов, максимум 28 символов на фразу
+- заголовки короткие: title до 60 символов, shortTitle до 40
 
 Wildberries:
 - короткое точное наименование, описание без воды, safe-тексты для инфографики

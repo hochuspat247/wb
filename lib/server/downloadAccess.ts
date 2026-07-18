@@ -1,6 +1,7 @@
 import { and, eq, isNotNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { demoGenerations, payments, productCards, users } from "@/lib/db/schema";
+import { hasUnlimitedGenerations } from "@/lib/server/unlimitedGenerations";
 
 export type UserDownloadAccess = {
   freeCleanDownloadGenerationId: string | null;
@@ -8,7 +9,7 @@ export type UserDownloadAccess = {
 };
 
 export function isGenerationDownloadUnlocked(access: UserDownloadAccess, _generationId: string) {
-  // Free tier is watermark-only. Clean downloads unlock only after a paid purchase.
+  // Free tier is watermark-only. Clean downloads unlock after purchase or unlimited access.
   return access.downloadsFullyUnlocked;
 }
 
@@ -17,7 +18,9 @@ export async function getUserDownloadAccess(userId: string): Promise<UserDownloa
     where: eq(users.id, userId),
     columns: {
       freeCleanDownloadGenerationId: true,
-      hasPurchasedGenerationCredits: true
+      hasPurchasedGenerationCredits: true,
+      name: true,
+      email: true
     }
   });
 
@@ -27,7 +30,8 @@ export async function getUserDownloadAccess(userId: string): Promise<UserDownloa
 
   return {
     freeCleanDownloadGenerationId: user.freeCleanDownloadGenerationId ?? null,
-    downloadsFullyUnlocked: Boolean(user.hasPurchasedGenerationCredits)
+    downloadsFullyUnlocked:
+      Boolean(user.hasPurchasedGenerationCredits) || hasUnlimitedGenerations(user)
   };
 }
 

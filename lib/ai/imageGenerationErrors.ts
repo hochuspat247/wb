@@ -86,7 +86,8 @@ export function createImageGenerationError(
   provider: string,
   prompt: string,
   error: string,
-  generatedAt = new Date().toISOString()
+  generatedAt = new Date().toISOString(),
+  generationId?: string
 ): GenerateImageResult {
   return {
     imageBase64: null,
@@ -97,6 +98,17 @@ export function createImageGenerationError(
     prompt,
     generatedAt,
     isFallback: true,
-    error: formatImageProviderError(error)
+    error: formatImageProviderError(error),
+    generationId: generationId || undefined
   };
+}
+
+/** Pull provider job id from stored error text when the field was lost. */
+export function extractProviderGenerationId(errorOrText?: string | null) {
+  if (!errorOrText) {
+    return undefined;
+  }
+
+  const match = errorOrText.match(/generation_id:\s*([A-Za-z0-9_-]+)/i);
+  return match?.[1]?.trim() || undefined;
 }

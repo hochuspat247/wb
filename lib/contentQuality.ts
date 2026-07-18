@@ -158,35 +158,48 @@ export function sanitizeMarketplaceTextResult(
   result: MarketplaceTextResult,
   input?: MarketplaceTextInput
 ): MarketplaceTextResult {
-  const productName = result.title || input?.productDescription || "";
+  const canonicalName = input?.identifiedProductName?.trim() || "";
+  const productName = canonicalName || result.title || input?.productDescription || "";
   const advantages = sanitizeBenefits(result.advantages);
+  const boundTitle = bindProductTitle(result.title, canonicalName);
+  const boundShortTitle = bindProductTitle(result.shortTitle || result.title, canonicalName);
 
   return {
     ...result,
-    title: sanitizeGeneratedText(result.title),
-    shortTitle: sanitizeGeneratedText(result.shortTitle),
-    seoTitle: sanitizeGeneratedText(result.seoTitle),
+    title: sanitizeGeneratedText(boundTitle),
+    shortTitle: sanitizeGeneratedText(boundShortTitle),
+    seoTitle: sanitizeGeneratedText(bindProductTitle(result.seoTitle || result.title, canonicalName)),
     shortDescription: sanitizeGeneratedText(result.shortDescription),
     fullDescription: sanitizeGeneratedText(result.fullDescription),
     advantages: advantages.length ? advantages : result.advantages.map(sanitizeGeneratedText).filter(Boolean),
     keywords: sanitizeKeywords(result.keywords, productName).slice(0, result.keywords.length || 15),
-    imageTexts: result.imageTexts.map(sanitizeGeneratedText).filter(Boolean),
-    infographicTexts: result.infographicTexts.map(sanitizeGeneratedText).filter(Boolean),
+    imageTexts: result.imageTexts.map(sanitizeGeneratedText).filter(Boolean).map(fixInfographicTypo),
+    infographicTexts: result.infographicTexts
+      .map(sanitizeGeneratedText)
+      .filter(Boolean)
+      .map(fixInfographicTypo)
+      .filter((text) => !looksLikeGibberish(text)),
     platformSpecific: {
       wildberries: result.platformSpecific.wildberries
         ? {
             ...result.platformSpecific.wildberries,
-            wbName: sanitizeGeneratedText(result.platformSpecific.wildberries.wbName),
+            wbName: sanitizeGeneratedText(
+              bindProductTitle(result.platformSpecific.wildberries.wbName, canonicalName)
+            ),
             wbDescription: sanitizeGeneratedText(result.platformSpecific.wildberries.wbDescription),
             wbSafeImageTexts: result.platformSpecific.wildberries.wbSafeImageTexts
               .map(sanitizeGeneratedText)
               .filter(Boolean)
+              .map(fixInfographicTypo)
+              .filter((text) => !looksLikeGibberish(text))
           }
         : null,
       ozon: result.platformSpecific.ozon
         ? {
             ...result.platformSpecific.ozon,
-            ozonName: sanitizeGeneratedText(result.platformSpecific.ozon.ozonName),
+            ozonName: sanitizeGeneratedText(
+              bindProductTitle(result.platformSpecific.ozon.ozonName, canonicalName)
+            ),
             ozonAnnotation: sanitizeGeneratedText(result.platformSpecific.ozon.ozonAnnotation),
             ozonDescription: sanitizeGeneratedText(result.platformSpecific.ozon.ozonDescription),
             ozonRichContentBlocks: result.platformSpecific.ozon.ozonRichContentBlocks.map((block) => ({
@@ -199,7 +212,9 @@ export function sanitizeMarketplaceTextResult(
       avito: result.platformSpecific.avito
         ? {
             ...result.platformSpecific.avito,
-            avitoTitle: sanitizeGeneratedText(result.platformSpecific.avito.avitoTitle),
+            avitoTitle: sanitizeGeneratedText(
+              bindProductTitle(result.platformSpecific.avito.avitoTitle, canonicalName)
+            ),
             avitoDescription: sanitizeGeneratedText(result.platformSpecific.avito.avitoDescription),
             avitoBenefits: sanitizeBenefits(result.platformSpecific.avito.avitoBenefits)
           }
@@ -207,13 +222,122 @@ export function sanitizeMarketplaceTextResult(
       yandexMarket: result.platformSpecific.yandexMarket
         ? {
             ...result.platformSpecific.yandexMarket,
-            yandexName: sanitizeGeneratedText(result.platformSpecific.yandexMarket.yandexName),
+            yandexName: sanitizeGeneratedText(
+              bindProductTitle(result.platformSpecific.yandexMarket.yandexName, canonicalName)
+            ),
             yandexDescription: sanitizeGeneratedText(result.platformSpecific.yandexMarket.yandexDescription),
             yandexSafeImageTexts: result.platformSpecific.yandexMarket.yandexSafeImageTexts
               .map(sanitizeGeneratedText)
               .filter(Boolean)
+              .map(fixInfographicTypo)
+              .filter((text) => !looksLikeGibberish(text))
           }
         : null
     }
   };
+}
+
+const TITLE_STOPWORDS = new Set([
+  "для",
+  "и",
+  "на",
+  "с",
+  "из",
+  "по",
+  "в",
+  "the",
+  "a",
+  "of",
+  "набор",
+  "комплект",
+  "товар"
+]);
+
+function tokenizeProductName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 2 && !TITLE_STOPWORDS.has(token));
+}
+
+/** Force marketplace titles onto the confirmed product when the model drifts to another SKU. */
+export function bindProductTitle(current: string, canonicalName: string) {
+  const cleanCurrent = sanitizeGeneratedText(current || "").slice(0, 120);
+  const canonical = sanitizeGeneratedText(canonicalName || "").slice(0, 120);
+
+  if (!canonical) {
+    return cleanCurrent;
+  }
+
+  if (!cleanCurrent) {
+    return canonical;
+  }
+
+  const canonicalTokens = tokenizeProductName(canonical);
+  const currentTokens = tokenizeProductName(cleanCurrent);
+
+  if (!canonicalTokens.length) {
+    return cleanCurrent;
+  }
+
+  const overlap = canonicalTokens.filter((token) =>
+    currentTokens.some((current) => current.includes(token) || token.includes(current))
+  ).length;
+  const overlapRatio = overlap / canonicalTokens.length;
+
+  if (overlapRatio < 0.4) {
+    return canonical;
+  }
+
+  const lowerCurrent = cleanCurrent.toLowerCase();
+  const lowerCanonical = canonical.toLowerCase();
+
+  if (!lowerCurrent.includes(lowerCanonical) && !lowerCanonical.includes(lowerCurrent.slice(0, 24))) {
+    return canonical;
+  }
+
+  return cleanCurrent.slice(0, 80);
+}
+
+const INFOGRAPHIC_TYPO_MAP: Array<[RegExp, string]> = [
+  [/\bКАЧТЕВО\b/gi, "КАЧЕСТВО"],
+  [/\bкачтево\b/gi, "качество"],
+  [/\bПРЕИМУЩЕТВА\b/gi, "ПРЕИМУЩЕСТВА"],
+  [/\bХАРАКТЕРИТИКИ\b/gi, "ХАРАКТЕРИСТИКИ"]
+];
+
+export function fixInfographicTypo(value: string) {
+  let next = value;
+  for (const [pattern, replacement] of INFOGRAPHIC_TYPO_MAP) {
+    next = next.replace(pattern, replacement);
+  }
+  return next;
+}
+
+/** Detect OCR/LLM gibberish like «Прямег» / «Понтршиодный». */
+export function looksLikeGibberish(value: string) {
+  const words = value
+    .split(/\s+/)
+    .map((word) => word.replace(/[^\p{L}\p{N}-]/gu, ""))
+    .filter((word) => word.length >= 5);
+
+  if (!words.length) {
+    return false;
+  }
+
+  let suspicious = 0;
+  for (const word of words) {
+    const vowels = (word.match(/[аеёиоуыэюяaeiouy]/gi) || []).length;
+    const letters = (word.match(/\p{L}/gu) || []).length;
+    if (letters >= 6 && vowels / letters < 0.18) {
+      suspicious += 1;
+    }
+    if (/(.)\1{3,}/i.test(word)) {
+      suspicious += 1;
+    }
+  }
+
+  return suspicious >= Math.max(1, Math.ceil(words.length * 0.5));
 }

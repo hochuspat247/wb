@@ -321,8 +321,8 @@ export function buildProductEnvironmentPromptBlock(input: GenerateImageInput): s
 PRODUCT-BOUND ENVIRONMENT:
 Before composing the image, infer the product environment from the product type, category, use case, material, target buyer, and this card's role.
 Detected environment family: ${detectedCategory}
-Card role: ${cardRules.role}
-Card goal: ${clean(input.seriesCardGoal) || cardRules.goal}
+Card role (internal only, never print on image): ${cardRules.role}
+Card goal (internal only, never quote as headline): ${clean(input.seriesCardGoal) || cardRules.goal}
 Card-specific visual angle: ${clean(input.seriesCardVisualIdea) || cardRules.environmentAngle}
 
 Required environment:

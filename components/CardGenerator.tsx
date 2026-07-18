@@ -1687,9 +1687,6 @@ export function CardGenerator({
     const visibleBenefits = (cardForImage.benefits || []).filter(
       (text) => text.trim() && !isMetaMarketplaceVisibleText(text)
     );
-    const visibleBadges = (cardForImage.seriesPlanItem?.badges || []).filter(
-      (text) => text.trim() && !isMetaMarketplaceVisibleText(text)
-    );
 
     try {
       const response = await fetch("/api/generate-image", {
@@ -1728,7 +1725,7 @@ export function CardGenerator({
           seriesCardGoal: cardForImage.seriesPlanItem?.goal,
           seriesCardVisualIdea:
             cardForImage.seriesPlanItem?.visualIdea || layoutTemplateCard?.visualConcept || undefined,
-          badges: visibleBadges,
+          badges: [],
           editInstructions: editInstructions?.trim() || undefined
         })
       });

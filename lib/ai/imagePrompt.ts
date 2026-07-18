@@ -34,6 +34,12 @@ const FORBIDDEN_VISIBLE_TEXT_PATTERNS = [
   /акцент\s+на\s+главн[а-яё]*/giu,
   /крупн[а-яё]*\s+товар[а-яё]*/giu,
   /хит\s+для\s+каталог[а-яё]*/giu,
+  /как\s+использовать/giu,
+  /прост[а-яё]*\s+сценари[а-яё]*\s+для\s+покупател[а-яё]*/giu,
+  /качеств[а-яё]*\s+без\s+лишн[а-яё]*\s+обещан[а-яё]*/giu,
+  /характеристик[а-яё]*\s+без\s+лишн[а-яё]*/giu,
+  /ключев[а-яё]*\s+параметр[а-яё]*\s+в\s+одном\s+кадре/giu,
+  /\bинструкция\b/giu,
 ];
 
 function sanitizeVisibleImageText(value: unknown): string {
@@ -158,7 +164,7 @@ function buildHeadline(input: GenerateImageInput): string {
     return truncateText(product.toUpperCase(), 80);
   }
 
-  return truncateText(`ПРЕМИУМ-ТОВАР: ${category}`.toUpperCase(), 80);
+  return truncateText(productDescription.toUpperCase().slice(0, 48) || "ТОВАР", 80);
 }
 
 function getStyleDirection(style: string): string {
@@ -362,43 +368,40 @@ export function buildPremiumMarketplaceImagePrompt(input: GenerateImageInput): s
   const headline = buildHeadline(input);
   const designPreset = input.designPreset || "premium-marketplace";
 
-  const benefits = listToLines(input.benefits, [
-    "Удобно каждый день",
-    "Для дома и подарка",
-    "Понятная польза",
-    "Легко выбрать",
-    "Подходит под разные задачи",
-  ], 4);
+  const benefits = listToLines(
+    (input.benefits || []).filter((item) => item.trim() && !/как использовать|без лишн|в одном кадре|инструкция|сценарий для/i.test(item)),
+    [],
+    4
+  );
 
-  const infographicTexts = listToLines(input.infographicTexts, [
-    "Премиальный вид",
-    "Для подарка",
-    "Каждый день",
-    "Удобный формат",
-  ], 3);
+  const infographicTexts = listToLines(
+    (input.infographicTexts || []).filter(
+      (item) => item.trim() && !/как использовать|без лишн|в одном кадре|инструкция|сценарий для|премиальный вид/i.test(item)
+    ),
+    [],
+    3
+  );
 
-  const specs = characteristicsToLines(input.characteristics, [
-    `Категория: ${category}`,
-    `Маркетплейс: ${marketplace}`,
-    `Стиль: ${style}`,
-    "Формат: премиум-карточка 4:5",
-    "Подача: коммерческий e-commerce creative",
-  ], 4);
+  const specs = characteristicsToLines(input.characteristics, [], 4);
 
   const styleDirection = getStyleDirection(style);
   const presetDirection = getPresetDirection(designPreset);
   const productEnvironmentContext = buildProductEnvironmentPromptBlock(input);
   const seriesPlanningContext = input.seriesCardType ? buildSeriesPlanPrompt(input) : "";
+  const safeBadges = (input.badges || []).filter(
+    (item) => item.trim() && !/инструкция|просто|параметры|детали|выгода|удобство|доверие|качество|ключевой блок|маркетплейс/i.test(item)
+  );
   const seriesContext = input.seriesCardType
     ? `
-SERIES CARD CONTEXT:
+SERIES CARD CONTEXT (internal only — NEVER print these labels on the image):
 This image is one card inside a product gallery series.
-Keep the same visual system across the series, but make this card focus on its own meaning.
+Keep the same visual system across the series, but make this card focus on its own product meaning.
 Series style guide: ${cleanText(input.seriesStyleGuide || "единая палитра, похожие плашки, крупная типографика")}
-Card type: ${cleanText(input.seriesCardType)}
-Card goal: ${cleanText(input.seriesCardGoal || "раскрыть один понятный смысловой блок товара")}
-Visual idea: ${cleanText(input.seriesCardVisualIdea || "крупный товар, аккуратные плашки и один главный акцент")}
-Badges to use: ${listToLines(input.badges, ["Ключевой блок", "Для маркетплейса"])}
+Internal slide role (do NOT write this word/phrase on the image): ${cleanText(input.seriesCardType)}
+Internal goal (do NOT quote as headline): ${cleanText(input.seriesCardGoal || "показать пользу товара")}
+Visual idea: ${cleanText(input.seriesCardVisualIdea || "крупный товар и факты про него")}
+${safeBadges.length ? `Optional product badges only if factual: ${safeBadges.join(", ")}` : "Do NOT add decorative badges or chips (no «Инструкция», «Просто», «Параметры», «Выгода»)."}
+CRITICAL: Headline must be the PRODUCT name or a concrete product fact. Forbidden on-image titles: «Как использовать», «Качество без лишних обещаний», «Характеристики без лишнего», «Главные преимущества», «Простой сценарий для покупателя».
 `
     : "";
   const editContext = buildImageEditInstructionsBlock(input.editInstructions);
@@ -482,13 +485,13 @@ Product title: ${title}
 Main headline: ${headline}
 
 BENEFITS TO USE:
-${benefits}
+${benefits || "- Use 2–3 short factual product benefits from the description only. Do not invent template slogans."}
 
 SPECIFICATIONS / FEATURE BLOCK:
-${specs}
+${specs || "- Only real product specs from the input. If unknown, omit the block."}
 
 INFOGRAPHIC TEXTS TO USE:
-${infographicTexts}
+${infographicTexts || "- Short product facts only. No slide-type titles."}
 
 ${productEnvironmentContext}
 

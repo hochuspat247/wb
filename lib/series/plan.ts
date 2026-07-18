@@ -367,18 +367,26 @@ function getSeriesDefinition(
     }
   };
 
-  return (
+  const raw =
     definitions[type] ?? {
       title: "Смысловой блок",
       goal: "Раскрыть товар с новой стороны.",
-      mainHeadline: "Новый аргумент",
-      subheadline: "Отдельный блок серии",
-      bullets: ["Польза", "Детали", "Выбор"],
-      badges: ["Серия", style],
+      mainHeadline: productName,
+      subheadline: "",
+      bullets: [],
+      badges: [],
       visualIdea: "Единая карточка серии с товаром и одним главным сообщением",
-      textDensity: "medium"
-    }
-  );
+      textDensity: "medium" as const
+    };
+
+  // Internal title/goal stay for planning; never use template slogans as on-image copy.
+  return {
+    ...raw,
+    mainHeadline: productName,
+    subheadline: "",
+    bullets: [],
+    badges: []
+  };
 }
 
 export function buildCardSeriesPlan({
@@ -504,7 +512,17 @@ export function isMetaMarketplaceVisibleText(value: string) {
     "размер / формат",
     "шаг 1",
     "шаг 2",
-    "готовый результат"
+    "готовый результат",
+    "инструкция",
+    "просто",
+    "параметры",
+    "детали",
+    "выгода",
+    "удобство",
+    "доверие",
+    "качество",
+    "для маркетплейса",
+    "ключевой блок"
   ];
 
   if (systemHeadlines.some((phrase) => lower === phrase || lower.includes(phrase))) {
@@ -522,8 +540,9 @@ export function isMetaMarketplaceVisibleText(value: string) {
     /без\s+лишн/i.test(text) ||
     /в\s+одном\s+кадре/i.test(text) ||
     /параметр\w*\s+в\s+одном/i.test(text) ||
+    /сценари[йя]\s+для\s+покупател/i.test(text) ||
     /marketplace|инфографик|seo|промпт/i.test(text) ||
-    /^(преимущества|характеристики|применение|доверие|безопасность|комплектация)$/i.test(text)
+    /^(преимущества|характеристики|применение|доверие|безопасность|комплектация|инструкция|просто)$/i.test(text)
   );
 }
 

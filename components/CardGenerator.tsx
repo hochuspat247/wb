@@ -207,6 +207,7 @@ export function CardGenerator({
   onVideoFlowReset,
   similarFromCard = null,
   kitFromCard = null,
+  kitSlideTypes = null,
   openKitSeries = false,
   onSimilarSeedApplied
 }: {
@@ -222,6 +223,8 @@ export function CardGenerator({
   similarFromCard?: ProductCardResult | null;
   /** Prefill form and open a full SKU kit series (5 slides). */
   kitFromCard?: ProductCardResult | null;
+  /** Which kit slide types to preselect (missing ones when continuing). */
+  kitSlideTypes?: string[] | null;
   /** Start a blank kit series (5 slides) without a source card. */
   openKitSeries?: boolean;
   onSimilarSeedApplied?: () => void;
@@ -280,22 +283,81 @@ export function CardGenerator({
   const [isDemoGenerating, setIsDemoGenerating] = useState(false);
   const [layoutTemplateCard, setLayoutTemplateCard] = useState<ProductCardResult | null>(null);
   const [kitModeActive, setKitModeActive] = useState(false);
+  const [continueSeriesId, setContinueSeriesId] = useState<string | null>(null);
   const [extraDetailsOpen, setExtraDetailsOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
   const videoUpsellRef = useRef<HTMLDivElement>(null);
   const formTopRef = useRef<HTMLDivElement>(null);
+  const pendingImageGenerationTicketRef = useRef<string | null>(null);
+  const descriptionTrackedRef = useRef(false);
+  const videoUpsellTrackedRef = useRef<string | null>(null);
+  const [emphasizeVideoOffer, setEmphasizeVideoOffer] = useState(false);
+  const [requestVideoConfig, setRequestVideoConfig] = useState(false);
+
+  const effectiveCategory = useMemo(
+    () => resolveCategory({ description, category }),
+    [category, description]
+  );
 
   function openPaywall(variant: "series" | "quota_exhausted" = "series") {
     setPaywallVariant(variant);
     setShowPaywall(true);
   }
 
+  async function refreshDownloadPolicy() {
+    const quota = await fetchUserQuota();
+    setRemainingGenerations(quota.remaining);
+    setMonthlyFreeResetsAt(quota.monthlyFreeResetsAt ?? null);
+    setHasUnlimitedAccess(Boolean(quota.unlimited));
+    setDownloadPolicy({
+      cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
+      downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
+    });
+    onQuotaChange?.(quota);
+    return quota;
+  }
+
+  useEffect(() => {
+    if (!persistToServer) return;
+
+    refreshDownloadPolicy().catch(() => {
+      setRemainingGenerations(null);
+      setDownloadPolicy(null);
+    });
+  }, [persistToServer, onQuotaChange]);
+
+  useEffect(() => {
+    if (!isDemoGenerating) {
+      return;
+    }
+
+    const startedAt = Date.now();
+    const timer = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const progress = Math.min(95, Math.round((elapsed / DEMO_PROGRESS_DURATION_MS) * 95));
+      const statusIndex = Math.min(
+        DEMO_LOADING_STATUSES.length - 1,
+        Math.floor(elapsed / (DEMO_PROGRESS_DURATION_MS / DEMO_LOADING_STATUSES.length))
+      );
+
+      setDemoProgress(progress);
+      setDemoStatusIndex(statusIndex);
+    }, 450);
+
+    return () => window.clearInterval(timer);
+  }, [isDemoGenerating]);
+
   function clearLayoutTemplate() {
     setLayoutTemplateCard(null);
     setKitModeActive(false);
+    setContinueSeriesId(null);
   }
 
-  function applySimilarCardSeed(sourceCard: ProductCardResult, mode: "similar" | "kit" = "similar") {
+  function applySimilarCardSeed(
+    sourceCard: ProductCardResult,
+    mode: "similar" | "kit" = "similar",
+    preferredTypes?: string[] | null
+  ) {
     const source = sourceCard.sourceInput;
     const photo = resolveSimilarCardPhoto(sourceCard);
     const nextDescription = resolveSimilarCardDescription(sourceCard);
@@ -318,9 +380,14 @@ export function CardGenerator({
     );
     const nextCategory = source?.category || sourceCard.category || "";
     const isKit = mode === "kit";
+    const kitTypes =
+      preferredTypes && preferredTypes.length > 0
+        ? preferredTypes
+        : getDefaultSeriesTypes(normalizeCardsCount(SKU_KIT_SLIDE_COUNT), nextCategory || "Другое");
 
     setLayoutTemplateCard(isKit ? null : sourceCard);
     setKitModeActive(isKit);
+    setContinueSeriesId(isKit ? sourceCard.seriesId || sourceCard.id : null);
     setCard(null);
     setSeriesCards([]);
     setEditingCard(null);
@@ -348,9 +415,9 @@ export function CardGenerator({
     setDesignPreset(normalizeDesignPreset(source?.designPreset || sourceCard.designPreset));
     setRemoveBackground(Boolean(source?.removeBackground));
     if (isKit) {
-      const kitCount = normalizeCardsCount(SKU_KIT_SLIDE_COUNT);
+      const kitCount = normalizeCardsCount(Math.max(kitTypes.length, SKU_KIT_SLIDE_COUNT));
       setCardsCount(kitCount);
-      setSelectedSeriesTypes(getDefaultSeriesTypes(kitCount, nextCategory || "Другое"));
+      setSelectedSeriesTypes(kitTypes);
     } else {
       setCardsCount(1);
       setSelectedSeriesTypes(["hero"]);
@@ -361,11 +428,11 @@ export function CardGenerator({
     setNotice(
       isKit
         ? photo
-          ? `Комплект для «${getSimilarCardTitle(sourceCard)}»: фото и описание подставлены. Нажмите «Сгенерировать ${SKU_KIT_SLIDE_COUNT} карточек».`
-          : `Комплект для «${getSimilarCardTitle(sourceCard)}»: описание подставлено. Добавьте фото и создайте ${SKU_KIT_SLIDE_COUNT} слайдов.`
+          ? `Товар «${getSimilarCardTitle(sourceCard)}»: фото и описание подставлены. Выберите слайды комплекта и нажмите генерацию.`
+          : `Товар «${getSimilarCardTitle(sourceCard)}»: описание подставлено. Добавьте фото и выберите слайды комплекта.`
         : photo
-          ? `Шаблон из «${getSimilarCardTitle(sourceCard)}»: описание и стиль подставлены. Замените фото, если товар другой.`
-          : `Шаблон из «${getSimilarCardTitle(sourceCard)}»: описание и стиль подставлены. Добавьте фото нового товара.`
+          ? `Шаблон «${getSimilarCardTitle(sourceCard)}»: фото и описание подставлены. Можно сразу сгенерировать ещё 1 карточку.`
+          : `Шаблон «${getSimilarCardTitle(sourceCard)}»: описание подставлено. Добавьте фото для новой карточки.`
     );
 
     window.requestAnimationFrame(() => {
@@ -375,18 +442,23 @@ export function CardGenerator({
 
   useEffect(() => {
     if (kitFromCard) {
-      applySimilarCardSeed(kitFromCard, "kit");
+      applySimilarCardSeed(kitFromCard, "kit", kitSlideTypes);
       onSimilarSeedApplied?.();
       return;
     }
 
     if (openKitSeries) {
       const kitCount = normalizeCardsCount(SKU_KIT_SLIDE_COUNT);
+      const types =
+        kitSlideTypes && kitSlideTypes.length > 0
+          ? kitSlideTypes
+          : getDefaultSeriesTypes(kitCount, "Другое");
       setKitModeActive(true);
+      setContinueSeriesId(null);
       setLayoutTemplateCard(null);
       setCardsCount(kitCount);
-      setSelectedSeriesTypes(getDefaultSeriesTypes(kitCount, effectiveCategory || "Другое"));
-      setNotice(`Соберите комплект: ${KIT_SERIES_DESCRIPTION.toLowerCase()}. Загрузите фото и описание товара.`);
+      setSelectedSeriesTypes(types);
+      setNotice(`Соберите комплект: выберите нужные слайды ниже. ${KIT_SERIES_DESCRIPTION}.`);
       onSimilarSeedApplied?.();
       return;
     }
@@ -399,80 +471,48 @@ export function CardGenerator({
     onSimilarSeedApplied?.();
     // Seed once per incoming card reference from the cabinet.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [similarFromCard, kitFromCard, openKitSeries]);
-
-  const pendingImageGenerationTicketRef = useRef<string | null>(null);
-  const descriptionTrackedRef = useRef(false);
-  const videoUpsellTrackedRef = useRef<string | null>(null);
-  const [emphasizeVideoOffer, setEmphasizeVideoOffer] = useState(false);
-  const [requestVideoConfig, setRequestVideoConfig] = useState(false);
-
-  useEffect(() => {
-    if (!persistToServer) return;
-
-    refreshDownloadPolicy().catch(() => {
-      setRemainingGenerations(null);
-      setDownloadPolicy(null);
-    });
-  }, [persistToServer, onQuotaChange]);
-
-  async function refreshDownloadPolicy() {
-    const quota = await fetchUserQuota();
-    setRemainingGenerations(quota.remaining);
-    setMonthlyFreeResetsAt(quota.monthlyFreeResetsAt ?? null);
-    setHasUnlimitedAccess(Boolean(quota.unlimited));
-    setDownloadPolicy({
-      cleanDownloadGenerationId: quota.cleanDownloadGenerationId ?? null,
-      downloadsFullyUnlocked: Boolean(quota.downloadsFullyUnlocked)
-    });
-    onQuotaChange?.(quota);
-    return quota;
-  }
-
-  useEffect(() => {
-    if (!isDemoGenerating) {
-      return;
-    }
-
-    const startedAt = Date.now();
-    const timer = window.setInterval(() => {
-      const elapsed = Date.now() - startedAt;
-      const progress = Math.min(95, Math.round((elapsed / DEMO_PROGRESS_DURATION_MS) * 95));
-      const statusIndex = Math.min(
-        DEMO_LOADING_STATUSES.length - 1,
-        Math.floor(elapsed / (DEMO_PROGRESS_DURATION_MS / DEMO_LOADING_STATUSES.length))
-      );
-
-      setDemoProgress(progress);
-      setDemoStatusIndex(statusIndex);
-    }, 450);
-
-    return () => window.clearInterval(timer);
-  }, [isDemoGenerating]);
-
-  const effectiveCategory = useMemo(
-    () => resolveCategory({ description, category }),
-    [category, description]
-  );
+  }, [similarFromCard, kitFromCard, openKitSeries, kitSlideTypes]);
 
   useEffect(() => {
     if (cardsCount === 1) {
-      setSelectedSeriesTypes(["hero"]);
+      if (!kitModeActive) {
+        setSelectedSeriesTypes(["hero"]);
+      }
+      return;
+    }
+
+    if (kitModeActive) {
       return;
     }
 
     setSelectedSeriesTypes(getDefaultSeriesTypes(cardsCount, effectiveCategory));
-  }, [cardsCount, effectiveCategory]);
+  }, [cardsCount, effectiveCategory, kitModeActive]);
 
   useEffect(() => {
     const seriesUnlocked = Boolean(downloadPolicy?.downloadsFullyUnlocked || hasUnlimitedAccess);
-    if (persistToServer && cardsCount > 1 && !seriesUnlocked) {
+    // Never silently collapse an intentional kit flow back to 1 card.
+    if (persistToServer && cardsCount > 1 && !seriesUnlocked && !kitModeActive) {
       setCardsCount(1);
     }
-  }, [cardsCount, downloadPolicy?.downloadsFullyUnlocked, hasUnlimitedAccess, persistToServer]);
+  }, [cardsCount, downloadPolicy?.downloadsFullyUnlocked, hasUnlimitedAccess, kitModeActive, persistToServer]);
+
+  useEffect(() => {
+    if (!kitModeActive) {
+      return;
+    }
+
+    const seriesUnlocked = Boolean(downloadPolicy?.downloadsFullyUnlocked || hasUnlimitedAccess);
+    if (seriesUnlocked && cardsCount < SKU_KIT_SLIDE_COUNT) {
+      setCardsCount(normalizeCardsCount(SKU_KIT_SLIDE_COUNT));
+    }
+  }, [kitModeActive, downloadPolicy?.downloadsFullyUnlocked, hasUnlimitedAccess, cardsCount]);
 
   useEffect(() => {
     if (!persistToServer || remainingGenerations === null || remainingGenerations >= 999_000) {
+      return;
+    }
+
+    if (kitModeActive) {
       return;
     }
 
@@ -486,9 +526,10 @@ export function CardGenerator({
         .find((count) => getRequiredGenerationsForCardsCount(count, effectiveCategory) <= remainingGenerations) ?? 1;
 
     setCardsCount(fallback);
-  }, [cardsCount, effectiveCategory, persistToServer, remainingGenerations]);
+  }, [cardsCount, effectiveCategory, persistToServer, remainingGenerations, kitModeActive]);
 
-  const plannedGenerationCount = cardsCount === 1 ? 1 : selectedSeriesTypes.length;
+  const plannedGenerationCount =
+    kitModeActive || cardsCount > 1 ? Math.max(1, selectedSeriesTypes.length) : 1;
   const seriesPlan = useMemo(
     () =>
       buildCardSeriesPlanFromTypes(selectedSeriesTypes, {
@@ -803,7 +844,7 @@ export function CardGenerator({
     try {
       const similarLayoutInstructions = layoutTemplateCard ? SIMILAR_CARD_LAYOUT_INSTRUCTIONS : undefined;
 
-      if (cardsCount === 1) {
+      if (cardsCount === 1 && !kitModeActive) {
         const { card: generatedCard, quota, imageGenerationTicket } = await createGeneratedProductCard(payload, {
           layoutTemplate: layoutTemplateCard || undefined,
           editInstructions: similarLayoutInstructions
@@ -834,14 +875,14 @@ export function CardGenerator({
         return;
       }
 
-      const seriesId = crypto.randomUUID();
+      const seriesId = continueSeriesId || crypto.randomUUID();
       const completedCards: ProductCardResult[] = [];
-      const seriesTotal = seriesPlan.length;
+      const seriesTotal = kitModeActive ? SKU_KIT_SLIDE_COUNT : seriesPlan.length;
 
       for (const planItem of seriesPlan) {
         try {
-          setSeriesProgress(`Генерируется карточка ${planItem.index} из ${seriesTotal}`);
-          setNotice(`Генерируется карточка ${planItem.index} из ${seriesTotal}: ${planItem.title}`);
+          setSeriesProgress(`Генерируется слайд ${planItem.index} из ${seriesPlan.length}`);
+          setNotice(`Генерируется слайд комплекта: ${planItem.title}`);
           const { card: generatedCard, imageGenerationTicket } = await createGeneratedProductCard(payload, {
             planItem,
             seriesId,
@@ -881,7 +922,13 @@ export function CardGenerator({
 
       if (readyCards.length) {
         setCard(readyCards[readyCards.length - 1]);
-        setNotice(`Готово: создано ${readyCards.length} из ${seriesTotal} карточек серии.`);
+        setNotice(
+          kitModeActive
+            ? `Готово: добавлено ${readyCards.length} слайдов комплекта.`
+            : `Готово: создано ${readyCards.length} из ${seriesTotal} карточек серии.`
+        );
+        setKitModeActive(false);
+        setContinueSeriesId(null);
         trackConversion("generation_complete", {
           marketplace,
           platform: payload.platform || "wildberries",
@@ -1736,10 +1783,10 @@ export function CardGenerator({
                     darkConsole ? "border-mint/25 bg-mint/10" : "border-mint/30 bg-mint/10"
                   }`}
                 >
-                  <p className={`text-sm font-black ${labelClass}`}>Комплект приобретён — собираем серию</p>
+                  <p className={`text-sm font-black ${labelClass}`}>Комплект для этого товара</p>
                   <p className={`mt-1 text-xs font-semibold leading-relaxed sm:text-sm ${darkConsole ? "text-white/70" : "text-muted"}`}>
-                    {KIT_SERIES_DESCRIPTION}. Фото и описание уже подставлены — нажмите генерацию серии из{" "}
-                    {SKU_KIT_SLIDE_COUNT} слайдов.
+                    Фото и описание уже подставлены. Отметьте, какие слайды сгенерировать — остальные можно добавить позже.
+                    Не создаём заново то, что уже есть, если вы снимите галочки.
                   </p>
                 </div>
               ) : null}
@@ -1899,6 +1946,33 @@ export function CardGenerator({
                 onChange={(event) => setRemoveBackground(event.target.checked)}
               />
               <div className={`border-t pt-5 ${darkConsole ? "border-white/10" : "border-clay"}`}>
+                {kitModeActive ? (
+                  <div className="grid gap-3">
+                    <div>
+                      <p className={`text-sm font-semibold ${labelClass}`}>Какие слайды комплекта сгенерировать</p>
+                      <p className={`mt-1 text-xs font-normal ${darkConsole ? "text-white/40" : "text-muted"}`}>
+                        Отметьте нужные типы. Уже готовые можно не выбирать — генерируем только отмеченные.
+                      </p>
+                    </div>
+                    <SeriesTypePicker
+                      category={effectiveCategory}
+                      darkConsole={darkConsole}
+                      marketplace={marketplace}
+                      onChange={(types) => {
+                        setSelectedSeriesTypes(types);
+                        if (types.length > 1) {
+                          setCardsCount(normalizeCardsCount(Math.max(types.length, SKU_KIT_SLIDE_COUNT)));
+                        }
+                      }}
+                      selectedTypes={selectedSeriesTypes}
+                      style={style}
+                    />
+                    <p className={`text-sm ${darkConsole ? "text-white/50" : "text-muted"}`}>
+                      Выбрано{" "}
+                      <span className="font-semibold text-accent-ink">{plannedGenerationCount}</span> слайдов комплекта.
+                    </p>
+                  </div>
+                ) : (
                 <label className={`grid gap-2 text-sm font-semibold ${labelClass}`}>
                   Сколько карточек
                   <Select
@@ -1925,7 +1999,9 @@ export function CardGenerator({
                     })}
                   </Select>
                 </label>
-                {persistToServer &&
+                )}
+                {!kitModeActive &&
+                persistToServer &&
                 remainingGenerations !== null &&
                 remainingGenerations < 999_000 &&
                 !downloadPolicy?.downloadsFullyUnlocked &&
@@ -1941,7 +2017,8 @@ export function CardGenerator({
                     </button>
                     .
                   </p>
-                ) : persistToServer &&
+                ) : !kitModeActive &&
+                  persistToServer &&
                   remainingGenerations !== null &&
                   remainingGenerations < 999_000 &&
                   cardCountOptions.some((count) =>
@@ -1958,7 +2035,7 @@ export function CardGenerator({
                     {remainingGenerations === 1 ? "карточку" : "карточки"}.
                   </p>
                 ) : null}
-                {cardsCount > 1 ? (
+                {!kitModeActive && cardsCount > 1 ? (
                   <div className="mt-4 grid gap-3">
                     <p className={`text-sm ${darkConsole ? "text-white/50" : "text-muted"}`}>
                       {KIT_SERIES_DESCRIPTION}. Выбрано{" "}
@@ -2169,12 +2246,18 @@ export function CardGenerator({
                       ? "Генерируем демо…"
                       : "Сгенерировать демо"
                     : isWorking
-                    ? plannedGenerationCount > 1
-                      ? "Генерируем серию…"
-                      : "Генерируем…"
-                    : plannedGenerationCount > 1
-                      ? `Сгенерировать ${plannedGenerationCount} карточек`
-                      : "Сгенерировать карточку"}
+                    ? kitModeActive
+                      ? "Генерируем комплект…"
+                      : plannedGenerationCount > 1
+                        ? "Генерируем серию…"
+                        : "Генерируем…"
+                    : kitModeActive
+                      ? `Сгенерировать комплект (${plannedGenerationCount})`
+                      : plannedGenerationCount > 1
+                        ? `Сгенерировать ${plannedGenerationCount} карточек`
+                        : layoutTemplateCard
+                          ? "Сгенерировать ещё 1 по шаблону"
+                          : "Сгенерировать карточку"}
                 </Button>
                 {compactDemoEntry ? null : (
                 <Button className="w-full sm:w-auto" onClick={handleClear} type="button" variant="secondary">

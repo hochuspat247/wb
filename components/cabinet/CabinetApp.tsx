@@ -59,7 +59,7 @@ import { applyDownloadPolicyToCard, canDownloadCardImage, type DownloadPolicy } 
 import { downloadBase64Image, downloadImageFromUrl, getGeneratedCoverSrc } from "@/lib/image";
 import { DEFAULT_IMAGE_SETTINGS, getImageSettings, saveImageSettings, type ImageSettings } from "@/lib/imageSettings";
 import { reachGoal } from "@/lib/metrika";
-import { getSeriesSiblingCards } from "@/lib/series/plan";
+import { getMissingSeriesTypes, getSeriesSiblingCards, getDefaultSeriesTypes } from "@/lib/series/plan";
 import {
   FREE_TRIAL_CARDS,
   KIT_SERIES_DESCRIPTION,
@@ -140,6 +140,7 @@ export function CabinetApp() {
   const [paidCreditsRemaining, setPaidCreditsRemaining] = useState(0);
   const [similarFromCard, setSimilarFromCard] = useState<ProductCardResult | null>(null);
   const [kitFromCard, setKitFromCard] = useState<ProductCardResult | null>(null);
+  const [kitSlideTypes, setKitSlideTypes] = useState<string[] | null>(null);
   const [openKitSeries, setOpenKitSeries] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
@@ -383,8 +384,11 @@ export function CabinetApp() {
   function openCreateSimilar(card: ProductCardResult) {
     reachGoal("click_create_similar");
     setKitFromCard(null);
+    setKitSlideTypes(null);
+    setOpenKitSeries(false);
     setSimilarFromCard(card);
     setSelected(null);
+    setPaymentSuccess(false);
     setTab("create");
     window.history.replaceState(null, "", "/cabinet#create");
   }
@@ -395,13 +399,21 @@ export function CabinetApp() {
     setPaymentSuccess(false);
     setSimilarFromCard(null);
     setSelected(null);
+
     if (seed) {
+      const siblings = getSeriesSiblingCards(cards, seed);
+      const seriesCards = [seed, ...siblings];
+      const missing = getMissingSeriesTypes(seed.category || "Другое", seriesCards);
+      const defaults = getDefaultSeriesTypes(SKU_KIT_SLIDE_COUNT, seed.category || "Другое");
+      setKitSlideTypes(missing.length > 0 ? missing : defaults);
       setKitFromCard(seed);
       setOpenKitSeries(false);
     } else {
       setKitFromCard(null);
+      setKitSlideTypes(getDefaultSeriesTypes(SKU_KIT_SLIDE_COUNT, "Другое"));
       setOpenKitSeries(true);
     }
+
     setTab("create");
     window.history.replaceState(null, "", "/cabinet#create");
   }
@@ -409,6 +421,7 @@ export function CabinetApp() {
   function clearSeedProps() {
     setSimilarFromCard(null);
     setKitFromCard(null);
+    setKitSlideTypes(null);
     setOpenKitSeries(false);
   }
 
@@ -774,6 +787,7 @@ export function CabinetApp() {
                 hideHistory
                 initialVideoOrderId={videoOrderId}
                 kitFromCard={kitFromCard}
+                kitSlideTypes={kitSlideTypes}
                 openKitSeries={openKitSeries}
                 onQuotaChange={handleQuotaChange}
                 onSaved={refreshCards}
@@ -1086,7 +1100,7 @@ export function CabinetApp() {
                       <p className="text-sm leading-relaxed text-muted">{selected.shortDescription}</p>
                       {selected.price ? <p className="text-2xl font-bold text-ink">{selected.price}</p> : null}
                       <p className="text-xs text-muted">{new Date(selected.generatedAt).toLocaleString("ru-RU")}</p>
-                      <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="grid gap-2">
                         <Button
                           className="w-full"
                           disabled={!canDownloadSelected}
@@ -1096,17 +1110,16 @@ export function CabinetApp() {
                           <Download size={16} />
                           Скачать PNG
                         </Button>
-                        {selectedSeriesIncomplete || paidLeft >= SKU_KIT_SLIDE_COUNT ? (
-                          <Button className="w-full" onClick={() => openCreateKit(selected)} size="sm" variant="secondary">
-                            <ExternalLink size={16} />
-                            {selectedSeriesIncomplete ? "Продолжить комплект" : "Создать комплект из 5 слайдов"}
-                          </Button>
-                        ) : (
-                          <Button className="w-full" onClick={() => openCreateSimilar(selected)} size="sm" variant="secondary">
-                            <ExternalLink size={16} />
-                            Ещё слайд по этому товару
-                          </Button>
-                        )}
+                        <Button className="w-full" onClick={() => openCreateSimilar(selected)} size="sm" variant="secondary">
+                          <ExternalLink size={16} />
+                          Ещё 1 карточка по этому шаблону
+                        </Button>
+                        <Button className="w-full" onClick={() => openCreateKit(selected)} size="sm">
+                          <Wand2 size={16} />
+                          {selectedSeriesIncomplete
+                            ? "Дособрать комплект — выбрать слайды"
+                            : "Сгенерировать комплект для этого товара"}
+                        </Button>
                       </div>
                       <CardSavedVideosPanel card={selected} compact />
                       <WildberriesPublishPanel
